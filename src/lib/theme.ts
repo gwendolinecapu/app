@@ -29,6 +29,9 @@ export const colors = {
     error: '#EF4444',         // Rouge - erreurs
     warning: '#F59E0B',       // Orange - avertissements
     info: '#3B82F6',          // Bleu - informations
+
+    // Couleur secondaire (utilisée pour les badges Premium, indicateurs host)
+    secondary: '#F59E0B',     // Orange/doré - pour éléments premium et indicateurs
 };
 
 // Couleurs disponibles pour les profils (alters)

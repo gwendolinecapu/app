@@ -54,6 +54,7 @@ export default function RootLayout() {
                             name="settings"
                             options={{
                                 title: 'Paramètres',
+                                headerShown: false,
                             }}
                         />
                         <Stack.Screen

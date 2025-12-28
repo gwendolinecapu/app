@@ -20,7 +20,7 @@ import { supabase } from '../src/lib/supabase';
 import { Alter } from '../src/types';
 import { colors, spacing, borderRadius, typography, alterColors } from '../src/lib/theme';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const MAX_WIDTH = 430;
 const containerWidth = width > MAX_WIDTH ? MAX_WIDTH : width;
 const BUBBLE_SIZE = 85;

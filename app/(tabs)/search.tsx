@@ -3,7 +3,6 @@ import {
     View,
     Text,
     StyleSheet,
-    FlatList,
     TextInput,
 } from 'react-native';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';

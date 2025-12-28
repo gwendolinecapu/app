@@ -7,6 +7,7 @@ import {
     StyleSheet,
     RefreshControl,
     Image,
+    ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -35,7 +36,7 @@ export default function FeedScreen() {
           alter:alters(*)
         `)
                 .eq('system_id', system.id)
-                .order('created_at', { ascending: false });
+                if (error) throw error;
 
             if (data) {
                 setPosts(data);
@@ -139,10 +140,14 @@ export default function FeedScreen() {
     const renderEmptyState = () => (
         <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>📝</Text>
-            <Text style={styles.emptyTitle}>Aucune publication</Text>
-            <Text style={styles.emptySubtitle}>
-                Créez votre première publication !
+            <Text style={styles.emptyTitle}>
+                {loading ? 'Chargement...' : 'Aucune publication'}
             </Text>
+            {!loading && (
+                <Text style={styles.emptySubtitle}>
+                    Créez votre première publication !
+                </Text>
+            )}
             <TouchableOpacity
                 style={styles.createButton}
                 onPress={() => router.push('/post/create')}
@@ -168,6 +173,7 @@ export default function FeedScreen() {
                         tintColor={colors.primary}
                     />
                 }
+                ListFooterComponent={loading && !refreshing ? <ActivityIndicator color={colors.primary} style={{ margin: 20 }} /> : null}
             />
         </View>
     );

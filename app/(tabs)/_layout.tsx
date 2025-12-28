@@ -70,7 +70,7 @@ export default function TabLayout() {
                         listeners={({ navigation }) => ({
                             tabPress: (e) => {
                                 e.preventDefault();
-                                navigation.navigate('post/create');
+                                router.push('/post/create');
                             },
                         })}
                     />

@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     ScrollView,
     Dimensions,
+    TouchableOpacity,
 } from 'react-native';
+import { router } from 'expo-router';
 import { useAuth } from '../src/contexts/AuthContext';
 import { colors, spacing, borderRadius, typography } from '../src/lib/theme';
 
@@ -15,20 +17,24 @@ export default function StatsScreen() {
     const { alters, currentAlter } = useAuth();
 
     // Mock data for demonstration
-    const frontTimeData = alters.map(alter => ({
+    const frontTimeData = useMemo(() => alters.map(alter => ({
         id: alter.id,
         name: alter.name,
         color: alter.color,
         hours: Math.floor(Math.random() * 24),
         percentage: Math.floor(Math.random() * 100),
-    }));
+    })), [alters]);
 
     const totalHours = frontTimeData.reduce((sum, alter) => sum + alter.hours, 0);
 
     return (
         <ScrollView style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>Statistiques et Fronts</Text>
+                <TouchableOpacity onPress={() => router.back()}>
+                    <Text style={styles.backIcon}>←</Text>
+                </TouchableOpacity>
+                <Text style={styles.title}>Statistiques</Text>
+                <View style={{ width: 24 }} />
             </View>
 
             {/* Summary Card */}
@@ -120,6 +126,13 @@ const styles = StyleSheet.create({
     header: {
         padding: spacing.lg,
         paddingTop: spacing.xl,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    backIcon: {
+        fontSize: 24,
+        color: colors.text,
     },
     title: {
         ...typography.h2,

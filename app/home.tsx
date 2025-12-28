@@ -12,6 +12,7 @@ import {
     Image,
     Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
@@ -155,7 +156,7 @@ export default function HomeScreen() {
     );
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header minimal */}
             <View style={styles.header}>
                 <Text style={styles.logo}>PluralConnect</Text>
@@ -308,7 +309,6 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: spacing.lg,
-        paddingTop: spacing.xxl,
         paddingBottom: spacing.md,
     },
     logo: {

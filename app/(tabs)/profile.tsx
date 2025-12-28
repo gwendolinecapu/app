@@ -8,6 +8,7 @@ import {
     Image,
     Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { supabase } from '../../src/lib/supabase';
@@ -37,6 +38,11 @@ export default function ProfileScreen() {
             .eq('alter_id', currentAlter.id)
             .order('created_at', { ascending: false });
 
+        if (error) {
+            console.error('Error fetching profile posts:', error);
+            return;
+        }
+
         if (data) {
             setPosts(data);
             setStats(prev => ({ ...prev, posts: data.length }));
@@ -61,10 +67,11 @@ export default function ProfileScreen() {
     }
 
     return (
-        <ScrollView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
+            <ScrollView style={styles.scrollView}>
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()}>
+                <TouchableOpacity onPress={() => router.push('/(tabs)/alters')}>
                     <Text style={styles.backIcon}>←</Text>
                 </TouchableOpacity>
                 <Text style={styles.username}>@{currentAlter.name.toLowerCase()}</Text>
@@ -148,7 +155,8 @@ export default function ProfileScreen() {
                     ))
                 )}
             </View>
-        </ScrollView>
+            </ScrollView>
+        </SafeAreaView>
     );
 }
 
@@ -156,6 +164,9 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,
+    },
+    scrollView: {
+        flex: 1,
     },
     header: {
         flexDirection: 'row',

@@ -6,7 +6,10 @@ import {
     StyleSheet,
     ScrollView,
     Alert,
+    Switch,
+    Linking,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuth } from '../src/contexts/AuthContext';
 import { colors, spacing, borderRadius, typography } from '../src/lib/theme';
@@ -33,7 +36,7 @@ export default function SettingsScreen() {
     };
 
     return (
-        <ScrollView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()}>
                     <Text style={styles.backIcon}>←</Text>
@@ -42,120 +45,122 @@ export default function SettingsScreen() {
                 <View style={{ width: 24 }} />
             </View>
 
-            {/* Account Section */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Compte</Text>
+            <ScrollView>
+                {/* Account Section */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Compte</Text>
 
-                <View style={styles.card}>
-                    <View style={styles.accountInfo}>
-                        <View style={styles.avatar}>
-                            <Text style={styles.avatarEmoji}>💜</Text>
-                        </View>
-                        <View>
-                            <Text style={styles.username}>@{system?.username || 'user'}</Text>
-                            <Text style={styles.email}>{user?.email}</Text>
+                    <View style={styles.card}>
+                        <View style={styles.accountInfo}>
+                            <View style={styles.avatar}>
+                                <Text style={styles.avatarEmoji}>💜</Text>
+                            </View>
+                            <View>
+                                <Text style={styles.username}>@{system?.username || 'user'}</Text>
+                                <Text style={styles.email}>{user?.email}</Text>
+                            </View>
                         </View>
                     </View>
                 </View>
-            </View>
 
-            {/* Appearance Section */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Apparence</Text>
+                {/* Appearance Section */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Apparence</Text>
 
-                <TouchableOpacity style={styles.menuItem}>
-                    <Text style={styles.menuIcon}>🎨</Text>
-                    <View style={styles.menuContent}>
-                        <Text style={styles.menuText}>Thème</Text>
-                        <Text style={styles.menuValue}>Bleu foncé</Text>
-                    </View>
-                    <Text style={styles.arrow}>›</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.menuItem}>
-                    <Text style={styles.menuIcon}>✨</Text>
-                    <View style={styles.menuContent}>
-                        <Text style={styles.menuText}>Personnalisation</Text>
-                        <View style={styles.premiumBadge}>
-                            <Text style={styles.premiumText}>Premium</Text>
+                    <TouchableOpacity style={styles.menuItem}>
+                        <Text style={styles.menuIcon}>🎨</Text>
+                        <View style={styles.menuContent}>
+                            <Text style={styles.menuText}>Thème</Text>
+                            <Text style={styles.menuValue}>Bleu foncé</Text>
                         </View>
-                    </View>
-                    <Text style={styles.arrow}>›</Text>
+                        <Text style={styles.arrow}>›</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.menuItem}>
+                        <Text style={styles.menuIcon}>✨</Text>
+                        <View style={styles.menuContent}>
+                            <Text style={styles.menuText}>Personnalisation</Text>
+                            <View style={styles.premiumBadge}>
+                                <Text style={styles.premiumText}>Premium</Text>
+                            </View>
+                        </View>
+                        <Text style={styles.arrow}>›</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Stats Section */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Statistiques</Text>
+
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => router.push('/stats')}
+                    >
+                        <Text style={styles.menuIcon}>📊</Text>
+                        <Text style={styles.menuText}>Temps de front</Text>
+                        <Text style={styles.arrow}>›</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.menuItem}>
+                        <Text style={styles.menuIcon}>📱</Text>
+                        <Text style={styles.menuText}>Temps d'écran</Text>
+                        <Text style={styles.arrow}>›</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Privacy Section */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Confidentialité</Text>
+
+                    <TouchableOpacity style={styles.menuItem}>
+                        <Text style={styles.menuIcon}>🔒</Text>
+                        <Text style={styles.menuText}>Compte privé</Text>
+                        <Text style={styles.arrow}>›</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.menuItem}>
+                        <Text style={styles.menuIcon}>🚫</Text>
+                        <Text style={styles.menuText}>Comptes bloqués</Text>
+                        <Text style={styles.arrow}>›</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Support Section */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Support</Text>
+
+                    <TouchableOpacity style={styles.menuItem}>
+                        <Text style={styles.menuIcon}>❓</Text>
+                        <Text style={styles.menuText}>Aide</Text>
+                        <Text style={styles.arrow}>›</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.menuItem}>
+                        <Text style={styles.menuIcon}>📝</Text>
+                        <Text style={styles.menuText}>Signaler un bug</Text>
+                        <Text style={styles.arrow}>›</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Premium */}
+                <View style={styles.premiumCard}>
+                    <Text style={styles.premiumTitle}>✨ PluralConnect Premium</Text>
+                    <Text style={styles.premiumDescription}>
+                        Débloquez les thèmes personnalisés, polices d'écriture, et plus encore !
+                    </Text>
+                    <TouchableOpacity style={styles.premiumButton}>
+                        <Text style={styles.premiumButtonText}>Voir les offres</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Logout */}
+                <TouchableOpacity style={styles.logoutButton} onPress={handleSignOut}>
+                    <Text style={styles.logoutText}>Se déconnecter</Text>
                 </TouchableOpacity>
-            </View>
 
-            {/* Stats Section */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Statistiques</Text>
-
-                <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => router.push('/stats')}
-                >
-                    <Text style={styles.menuIcon}>📊</Text>
-                    <Text style={styles.menuText}>Temps de front</Text>
-                    <Text style={styles.arrow}>›</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.menuItem}>
-                    <Text style={styles.menuIcon}>📱</Text>
-                    <Text style={styles.menuText}>Temps d'écran</Text>
-                    <Text style={styles.arrow}>›</Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* Privacy Section */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Confidentialité</Text>
-
-                <TouchableOpacity style={styles.menuItem}>
-                    <Text style={styles.menuIcon}>🔒</Text>
-                    <Text style={styles.menuText}>Compte privé</Text>
-                    <Text style={styles.arrow}>›</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.menuItem}>
-                    <Text style={styles.menuIcon}>🚫</Text>
-                    <Text style={styles.menuText}>Comptes bloqués</Text>
-                    <Text style={styles.arrow}>›</Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* Support Section */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Support</Text>
-
-                <TouchableOpacity style={styles.menuItem}>
-                    <Text style={styles.menuIcon}>❓</Text>
-                    <Text style={styles.menuText}>Aide</Text>
-                    <Text style={styles.arrow}>›</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.menuItem}>
-                    <Text style={styles.menuIcon}>📝</Text>
-                    <Text style={styles.menuText}>Signaler un bug</Text>
-                    <Text style={styles.arrow}>›</Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* Premium */}
-            <View style={styles.premiumCard}>
-                <Text style={styles.premiumTitle}>✨ PluralConnect Premium</Text>
-                <Text style={styles.premiumDescription}>
-                    Débloquez les thèmes personnalisés, polices d'écriture, et plus encore !
-                </Text>
-                <TouchableOpacity style={styles.premiumButton}>
-                    <Text style={styles.premiumButtonText}>Voir les offres</Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* Logout */}
-            <TouchableOpacity style={styles.logoutButton} onPress={handleSignOut}>
-                <Text style={styles.logoutText}>Se déconnecter</Text>
-            </TouchableOpacity>
-
-            <Text style={styles.version}>PluralConnect v1.0.0</Text>
-        </ScrollView>
+                <Text style={styles.version}>PluralConnect v1.0.0</Text>
+            </ScrollView>
+        </SafeAreaView>
     );
 }
 
@@ -166,10 +171,11 @@ const styles = StyleSheet.create({
     },
     header: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        padding: spacing.md,
-        paddingTop: spacing.xl,
+        padding: spacing.lg,
+        paddingBottom: spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
     },
     backIcon: {
         fontSize: 24,
@@ -183,11 +189,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.md,
     },
     sectionTitle: {
-        ...typography.caption,
-        color: colors.textSecondary,
-        marginBottom: spacing.sm,
+        ...typography.h3,
+        marginBottom: spacing.md,
         marginLeft: spacing.sm,
-        textTransform: 'uppercase',
     },
     card: {
         backgroundColor: colors.backgroundCard,

@@ -40,6 +40,7 @@ export default function TabLayout() {
                                     name={focused ? "grid" : "grid-outline"}
                                     size={24}
                                     color={color}
+                                    accessibilityLabel="Fil d'actualité"
                                 />
                             ),
                         }}
@@ -63,7 +64,7 @@ export default function TabLayout() {
                             title: 'Créer',
                             tabBarIcon: ({ focused }) => (
                                 <View style={styles.addButton}>
-                                    <Ionicons name="add" size={28} color={colors.text} />
+                                    <Ionicons name="add" size={32} color="#FFF" accessibilityLabel="Créer un post" />
                                 </View>
                             ),
                         }}
@@ -83,6 +84,7 @@ export default function TabLayout() {
                                     name={focused ? "search" : "search-outline"}
                                     size={24}
                                     color={color}
+                                    accessibilityLabel="Recherche"
                                 />
                             ),
                         }}
@@ -93,9 +95,10 @@ export default function TabLayout() {
                             title: 'Messages',
                             tabBarIcon: ({ focused, color }) => (
                                 <Ionicons
-                                    name={focused ? "chatbubble" : "chatbubble-outline"}
+                                    name={focused ? "chatbubbles" : "chatbubbles-outline"}
                                     size={24}
                                     color={color}
+                                    accessibilityLabel="Messages"
                                 />
                             ),
                         }}

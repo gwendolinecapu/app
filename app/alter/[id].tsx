@@ -96,13 +96,15 @@ export default function AlterProfileScreen() {
         );
     };
 
-    if (!alter) {
+    if (!alter && !loading) {
         return (
             <View style={styles.container}>
                 <Text style={styles.notFound}>Alter non trouvé</Text>
             </View>
         );
     }
+
+    if (!alter) return null; // Loading state
 
     return (
         <ScrollView style={styles.container}>

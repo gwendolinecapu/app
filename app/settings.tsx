@@ -6,8 +6,6 @@ import {
     StyleSheet,
     ScrollView,
     Alert,
-    Switch,
-    Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -181,8 +179,14 @@ const styles = StyleSheet.create({
         fontSize: 24,
         color: colors.text,
     },
+    headerButton: {
+        width: 40,
+        alignItems: 'center',
+    },
     title: {
         ...typography.h2,
+        flex: 1,
+        textAlign: 'center',
     },
     section: {
         marginTop: spacing.lg,

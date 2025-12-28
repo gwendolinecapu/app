@@ -253,7 +253,7 @@ export default function HomeScreen() {
                             <View style={styles.inputContainer}>
                                 <Text style={styles.label}>Couleur</Text>
                                 <View style={styles.colorPicker}>
-                                    {alterColors.map((color) => (
+                                    {alterColors.map((color: string) => (
                                         <TouchableOpacity
                                             key={color}
                                             style={[

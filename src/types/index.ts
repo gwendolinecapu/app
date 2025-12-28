@@ -63,3 +63,82 @@ export interface ConversationParticipant {
     alter_id: string;
     joined_at: string;
 }
+
+// ============================================
+// Sprint 1: Émotions & Journal
+// ============================================
+
+/**
+ * Emotion - Enregistrement d'une émotion
+ * Permet de suivre l'état émotionnel d'un alter au fil du temps
+ */
+export interface Emotion {
+    id: string;
+    alter_id: string;
+    emotion: EmotionType;
+    intensity: 1 | 2 | 3 | 4 | 5; // 1 = faible, 5 = très forte
+    note?: string;
+    created_at: string;
+    // Relations
+    alter?: Alter;
+}
+
+/**
+ * Types d'émotions disponibles avec leurs emojis associés
+ */
+export type EmotionType =
+    | 'happy'     // 😊
+    | 'sad'       // 😢
+    | 'anxious'   // 😰
+    | 'angry'     // 😡
+    | 'tired'     // 😴
+    | 'calm'      // 😌
+    | 'confused'  // 😕
+    | 'excited';  // 🤩
+
+/**
+ * Mapping émotion -> emoji pour l'affichage
+ */
+export const EMOTION_EMOJIS: Record<EmotionType, string> = {
+    happy: '😊',
+    sad: '😢',
+    anxious: '😰',
+    angry: '😡',
+    tired: '😴',
+    calm: '😌',
+    confused: '😕',
+    excited: '🤩',
+};
+
+/**
+ * Mapping émotion -> label en français
+ */
+export const EMOTION_LABELS: Record<EmotionType, string> = {
+    happy: 'Heureux·se',
+    sad: 'Triste',
+    anxious: 'Anxieux·se',
+    angry: 'En colère',
+    tired: 'Fatigué·e',
+    calm: 'Calme',
+    confused: 'Confus·e',
+    excited: 'Excité·e',
+};
+
+/**
+ * JournalEntry - Entrée de journal personnel
+ * Avec option de verrouillage pour les entrées privées
+ */
+export interface JournalEntry {
+    id: string;
+    alter_id: string;
+    title?: string;
+    content: string;
+    mood?: EmotionType; // Lien avec l'émotion
+    is_audio: boolean;
+    audio_url?: string;
+    is_locked: boolean;
+    created_at: string;
+    updated_at: string;
+    // Relations
+    alter?: Alter;
+}

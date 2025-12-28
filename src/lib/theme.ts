@@ -32,6 +32,10 @@ export const colors = {
 
     // Couleur secondaire (utilisée pour les badges Premium, indicateurs host)
     secondary: '#F59E0B',     // Orange/doré - pour éléments premium et indicateurs
+
+    // Couleurs de gradient (utilisées pour les LinearGradient)
+    gradientStart: '#8B5CF6', // Violet - début du gradient
+    gradientEnd: '#6366F1',   // Indigo - fin du gradient
 };
 
 // Couleurs disponibles pour les profils (alters)

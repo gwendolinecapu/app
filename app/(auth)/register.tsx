@@ -28,21 +28,27 @@ export default function RegisterScreen() {
             return;
         }
 
-        if (password !== confirmPassword) {
+        const trimmedEmail = email.trim();
+        const trimmedUsername = username.trim();
+        const trimmedPassword = password.trim();
+        const trimmedConfirmPassword = confirmPassword.trim();
+
+        if (trimmedPassword !== trimmedConfirmPassword) {
             Alert.alert('Erreur', 'Les mots de passe ne correspondent pas');
             return;
         }
 
-        if (password.length < 6) {
+        if (trimmedPassword.length < 6) {
             Alert.alert('Erreur', 'Le mot de passe doit contenir au moins 6 caractères');
             return;
         }
 
         setLoading(true);
-        const { error } = await signUp(email, password, username);
+        const { error } = await signUp(trimmedEmail, trimmedPassword, trimmedUsername);
         setLoading(false);
 
         if (error) {
+            console.error('Registration error:', error.message);
             // Check if user already exists
             if (error.message.includes('already registered') ||
                 error.message.includes('already exists') ||

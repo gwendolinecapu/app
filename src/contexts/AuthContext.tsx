@@ -138,15 +138,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (error) return { error };
 
-        // Créer le système dans la base
+        // Créer le système dans la base (utiliser upsert pour éviter les erreurs si un trigger existe déjà)
         if (data.user) {
-            const { error: systemError } = await supabase.from('systems').insert({
+            const { error: systemError } = await supabase.from('systems').upsert({
                 id: data.user.id,
                 email,
                 username,
             });
 
-            if (systemError) return { error: systemError };
+            // Si erreur, on la log mais on ne bloque pas l'inscription si l'utilisateur auth est créé
+            if (systemError) {
+                console.error('Error creating system entry:', systemError);
+                // Si c'est une erreur de duplicata qui persiste malgré l'upsert (rare), on considère que c'est bon
+                if (!systemError.message.includes('duplicate key')) {
+                    return { error: systemError };
+                }
+            }
         }
 
         return { error: null };

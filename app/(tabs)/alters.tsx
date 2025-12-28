@@ -11,6 +11,7 @@ import {
     Dimensions,
     Image,
     Platform,
+    FlatList,
 } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';

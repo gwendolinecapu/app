@@ -32,7 +32,7 @@ export default function ProfileScreen() {
     const fetchPosts = async () => {
         if (!currentAlter) return;
 
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from('posts')
             .select('*')
             .eq('alter_id', currentAlter.id)
@@ -69,92 +69,92 @@ export default function ProfileScreen() {
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <ScrollView style={styles.scrollView}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.push('/(tabs)/alters')}>
-                    <Text style={styles.backIcon}>←</Text>
-                </TouchableOpacity>
-                <Text style={styles.username}>@{currentAlter.name.toLowerCase()}</Text>
-                <TouchableOpacity onPress={() => router.push(`/alter/${currentAlter.id}`)}>
-                    <Text style={styles.menuIcon}>⋯</Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* Profile Info */}
-            <View style={styles.profileSection}>
-                <View style={[styles.avatar, { backgroundColor: currentAlter.color }]}>
-                    <Text style={styles.avatarText}>
-                        {currentAlter.name.charAt(0).toUpperCase()}
-                    </Text>
+                {/* Header */}
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => router.push('/(tabs)/alters')}>
+                        <Text style={styles.backIcon}>←</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.username}>@{currentAlter.name.toLowerCase()}</Text>
+                    <TouchableOpacity onPress={() => router.push(`/alter/${currentAlter.id}`)}>
+                        <Text style={styles.menuIcon}>⋯</Text>
+                    </TouchableOpacity>
                 </View>
 
-                <View style={styles.statsRow}>
-                    <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>{stats.posts}</Text>
-                        <Text style={styles.statLabel}>Posts</Text>
+                {/* Profile Info */}
+                <View style={styles.profileSection}>
+                    <View style={[styles.avatar, { backgroundColor: currentAlter.color }]}>
+                        <Text style={styles.avatarText}>
+                            {currentAlter.name.charAt(0).toUpperCase()}
+                        </Text>
                     </View>
-                    <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>{stats.friends}</Text>
-                        <Text style={styles.statLabel}>Friends</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>{alters.length}</Text>
-                        <Text style={styles.statLabel}>Alters</Text>
+
+                    <View style={styles.statsRow}>
+                        <View style={styles.statItem}>
+                            <Text style={styles.statNumber}>{stats.posts}</Text>
+                            <Text style={styles.statLabel}>Posts</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                            <Text style={styles.statNumber}>{stats.friends}</Text>
+                            <Text style={styles.statLabel}>Friends</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                            <Text style={styles.statNumber}>{alters.length}</Text>
+                            <Text style={styles.statLabel}>Alters</Text>
+                        </View>
                     </View>
                 </View>
-            </View>
 
-            {/* Bio */}
-            <View style={styles.bioSection}>
-                <Text style={styles.name}>{currentAlter.name}</Text>
-                {currentAlter.pronouns && (
-                    <Text style={styles.pronouns}>{currentAlter.pronouns}</Text>
-                )}
-                {currentAlter.bio && (
-                    <Text style={styles.bio}>{currentAlter.bio}</Text>
-                )}
-            </View>
+                {/* Bio */}
+                <View style={styles.bioSection}>
+                    <Text style={styles.name}>{currentAlter.name}</Text>
+                    {currentAlter.pronouns && (
+                        <Text style={styles.pronouns}>{currentAlter.pronouns}</Text>
+                    )}
+                    {currentAlter.bio && (
+                        <Text style={styles.bio}>{currentAlter.bio}</Text>
+                    )}
+                </View>
 
-            {/* Action Buttons */}
-            <View style={styles.actionButtons}>
-                <TouchableOpacity
-                    style={styles.editButton}
-                    onPress={() => router.push(`/alter/${currentAlter.id}`)}
-                >
-                    <Text style={styles.editButtonText}>Modifier le profil</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.statsButton}
-                    onPress={() => router.push('/stats')}
-                >
-                    <Text style={styles.statsButtonText}>📊</Text>
-                </TouchableOpacity>
-            </View>
+                {/* Action Buttons */}
+                <View style={styles.actionButtons}>
+                    <TouchableOpacity
+                        style={styles.editButton}
+                        onPress={() => router.push(`/alter/${currentAlter.id}`)}
+                    >
+                        <Text style={styles.editButtonText}>Modifier le profil</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.statsButton}
+                        onPress={() => router.push('/stats')}
+                    >
+                        <Text style={styles.statsButtonText}>📊</Text>
+                    </TouchableOpacity>
+                </View>
 
-            {/* Posts Grid */}
-            <View style={styles.postsGrid}>
-                {posts.length === 0 ? (
-                    <View style={styles.noPostsContainer}>
-                        <Text style={styles.noPosts}>Aucune publication</Text>
-                        <TouchableOpacity
-                            style={styles.createPostButton}
-                            onPress={() => router.push('/post/create')}
-                        >
-                            <Text style={styles.createPostText}>Créer une publication</Text>
-                        </TouchableOpacity>
-                    </View>
-                ) : (
-                    posts.map((post) => (
-                        <TouchableOpacity key={post.id} style={styles.gridItem}>
-                            <View style={styles.gridItemContent}>
-                                <Text style={styles.gridItemText} numberOfLines={3}>
-                                    {post.content}
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
-                    ))
-                )}
-            </View>
+                {/* Posts Grid */}
+                <View style={styles.postsGrid}>
+                    {posts.length === 0 ? (
+                        <View style={styles.noPostsContainer}>
+                            <Text style={styles.noPosts}>Aucune publication</Text>
+                            <TouchableOpacity
+                                style={styles.createPostButton}
+                                onPress={() => router.push('/post/create')}
+                            >
+                                <Text style={styles.createPostText}>Créer une publication</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        posts.map((post) => (
+                            <TouchableOpacity key={post.id} style={styles.gridItem}>
+                                <View style={styles.gridItemContent}>
+                                    <Text style={styles.gridItemText} numberOfLines={3}>
+                                        {post.content}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        ))
+                    )}
+                </View>
             </ScrollView>
         </SafeAreaView>
     );

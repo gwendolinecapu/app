@@ -21,16 +21,19 @@ const { width } = Dimensions.get('window');
 const MAX_WIDTH = 430;
 const GALLERY_ITEM_SIZE = (Math.min(width, MAX_WIDTH) - spacing.md * 4) / 3;
 
-type TabType = 'feed' | 'gallery' | 'messages';
+type TabType = 'gallery' | 'search' | 'settings';
 
 export default function AlterSpaceScreen() {
     const { alterId } = useLocalSearchParams<{ alterId: string }>();
     const { alters, system } = useAuth();
     const [alter, setAlter] = useState<Alter | null>(null);
-    const [activeTab, setActiveTab] = useState<TabType>('feed');
+    const [activeTab, setActiveTab] = useState<TabType>('gallery');
     const [posts, setPosts] = useState<Post[]>([]);
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(true);
+
+    // Filter states for search
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         const foundAlter = alters.find((a) => a.id === alterId);
@@ -92,57 +95,47 @@ export default function AlterSpaceScreen() {
         );
     }
 
-    const renderFeed = () => (
-        <FlatList
-            data={posts}
-            keyExtractor={(item) => item.id}
-            refreshControl={
-                <RefreshControl
-                    refreshing={refreshing}
-                    onRefresh={onRefresh}
-                    tintColor={colors.primary}
-                />
-            }
-            renderItem={({ item }) => (
-                <View style={styles.postCard}>
-                    <Text style={styles.postContent}>{item.content}</Text>
-                    <Text style={styles.postTime}>{formatTime(item.created_at)}</Text>
-                </View>
-            )}
-            ListEmptyComponent={
-                <View style={styles.emptyState}>
-                    <Text style={styles.emptyEmoji}>📝</Text>
-                    <Text style={styles.emptyTitle}>Aucune publication</Text>
-                    <Text style={styles.emptySubtitle}>
-                        {alter.name} n'a pas encore publié
-                    </Text>
-                </View>
-            }
-            contentContainerStyle={styles.feedContent}
-        />
-    );
-
     const renderGallery = () => {
-        const postsWithMedia = posts.filter(p => p.media_url);
-
+        // In "Gallery" mode, we show all posts in a grid
         return (
             <View style={styles.galleryContainer}>
-                {postsWithMedia.length === 0 ? (
+                {posts.length === 0 ? (
                     <View style={styles.emptyState}>
-                        <Text style={styles.emptyEmoji}>🖼️</Text>
-                        <Text style={styles.emptyTitle}>Aucune photo</Text>
+                        <Image
+                            source={require('../../../assets/icon.png')} // Fallback until we have a specific illustration
+                            style={{ width: 64, height: 64, marginBottom: 16, opacity: 0.5 }}
+                        />
+                        <Text style={styles.emptyTitle}>Aucune publication</Text>
+                        <Text style={styles.emptySubtitle}>
+                            {alter.name} n'a pas encore publié
+                        </Text>
                     </View>
                 ) : (
                     <FlatList
-                        data={postsWithMedia}
+                        data={posts}
                         numColumns={3}
                         keyExtractor={(item) => item.id}
+                        refreshControl={
+                            <RefreshControl
+                                refreshing={refreshing}
+                                onRefresh={onRefresh}
+                                tintColor={colors.primary}
+                            />
+                        }
                         renderItem={({ item }) => (
                             <TouchableOpacity style={styles.galleryItem}>
-                                <Image
-                                    source={{ uri: item.media_url }}
-                                    style={styles.galleryImage}
-                                />
+                                {item.media_url ? (
+                                    <Image
+                                        source={{ uri: item.media_url }}
+                                        style={styles.galleryImage}
+                                    />
+                                ) : (
+                                    <View style={styles.textPostPreview}>
+                                        <Text style={styles.textPostContent} numberOfLines={3}>
+                                            {item.content}
+                                        </Text>
+                                    </View>
+                                )}
                             </TouchableOpacity>
                         )}
                     />
@@ -151,16 +144,66 @@ export default function AlterSpaceScreen() {
         );
     };
 
-    const renderMessages = () => (
-        <View style={styles.messagesContainer}>
+    const renderSearch = () => (
+        <View style={styles.tabContent}>
+            <View style={styles.searchContainer}>
+                <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
+                <View style={styles.searchInputPlaceholder}>
+                    <Text style={{ color: colors.textSecondary }}>Rechercher...</Text>
+                </View>
+            </View>
             <View style={styles.emptyState}>
-                <Text style={styles.emptyEmoji}>💬</Text>
-                <Text style={styles.emptyTitle}>Messages de {alter.name}</Text>
+                <Text style={styles.emptyTitle}>Recherche</Text>
                 <Text style={styles.emptySubtitle}>
-                    Les conversations privées de cet alter apparaîtront ici
+                    Rechercher dans les publications et amis de {alter.name}
                 </Text>
             </View>
         </View>
+    );
+
+    const renderSettings = () => (
+        <ScrollView style={styles.settingsContainer}>
+            <View style={styles.settingSection}>
+                <Text style={styles.settingSectionTitle}>Compte</Text>
+                <TouchableOpacity style={styles.settingItem} onPress={() => router.push(`/alter-space/${alter.id}/edit`)}>
+                    <Ionicons name="person-outline" size={24} color={colors.text} />
+                    <Text style={styles.settingText}>Modifier le profil</Text>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.settingItem}>
+                    <Ionicons name="lock-closed-outline" size={24} color={colors.text} />
+                    <Text style={styles.settingText}>Confidentialité</Text>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.settingItem}>
+                    <Ionicons name="notifications-outline" size={24} color={colors.text} />
+                    <Text style={styles.settingText}>Notifications</Text>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+            </View>
+
+            <View style={styles.settingSection}>
+                <Text style={styles.settingSectionTitle}>Interactions</Text>
+                <TouchableOpacity style={styles.settingItem}>
+                    <Ionicons name="people-outline" size={24} color={colors.text} />
+                    <Text style={styles.settingText}>Amis proches</Text>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.settingItem}>
+                    <Ionicons name="ban-outline" size={24} color={colors.text} />
+                    <Text style={styles.settingText}>Comptes bloqués</Text>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+            </View>
+
+            <View style={styles.settingSection}>
+                <Text style={styles.settingSectionTitle}>Système</Text>
+                <TouchableOpacity style={styles.settingItem}>
+                    <Ionicons name="eye-off-outline" size={24} color={colors.error} />
+                    <Text style={[styles.settingText, { color: colors.error }]}>Masquer cet alter</Text>
+                </TouchableOpacity>
+            </View>
+        </ScrollView>
     );
 
     return (
@@ -171,11 +214,18 @@ export default function AlterSpaceScreen() {
                     style={styles.backButton}
                     onPress={() => router.push('/home')}
                 >
-                    <Ionicons name="chevron-back" size={24} color={colors.text} />
+                    <Ionicons name="chevron-back" size={28} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{alter.name}</Text>
-                <TouchableOpacity onPress={() => router.push(`/alter/${alter.id}`)}>
-                    <Ionicons name="settings-outline" size={24} color={colors.text} />
+                <TouchableOpacity
+                    style={styles.messageButton}
+                    onPress={() => {
+                        // For now, go to global messages.
+                        // Ideal: Open specific conversation with this alter.
+                        router.push('/(tabs)/messages');
+                    }}
+                >
+                    <Ionicons name="chatbubble-ellipses-outline" size={26} color={colors.text} />
                 </TouchableOpacity>
             </View>
 
@@ -191,8 +241,10 @@ export default function AlterSpaceScreen() {
                     )}
                 </View>
                 <Text style={styles.name}>{alter.name}</Text>
-                {alter.pronouns && <Text style={styles.pronouns}>{alter.pronouns}</Text>}
-                {alter.bio && <Text style={styles.bio}>{alter.bio}</Text>}
+                {/* Fallback bio if empty */}
+                <Text style={styles.bio}>
+                    {alter.bio || "Aucune biographie"}
+                </Text>
 
                 {/* Stats */}
                 <View style={styles.statsRow}>
@@ -210,51 +262,53 @@ export default function AlterSpaceScreen() {
             {/* Tab Navigation */}
             <View style={styles.tabs}>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'feed' && styles.tabActive]}
-                    onPress={() => setActiveTab('feed')}
-                >
-                    <Ionicons
-                        name={activeTab === 'feed' ? 'grid' : 'grid-outline'}
-                        size={22}
-                        color={activeTab === 'feed' ? colors.primary : colors.textMuted}
-                    />
-                </TouchableOpacity>
-                <TouchableOpacity
                     style={[styles.tab, activeTab === 'gallery' && styles.tabActive]}
                     onPress={() => setActiveTab('gallery')}
                 >
                     <Ionicons
-                        name={activeTab === 'gallery' ? 'images' : 'images-outline'}
-                        size={22}
+                        name={activeTab === 'gallery' ? 'grid' : 'grid-outline'}
+                        size={24}
                         color={activeTab === 'gallery' ? colors.primary : colors.textMuted}
                     />
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'messages' && styles.tabActive]}
-                    onPress={() => setActiveTab('messages')}
+                    style={[styles.tab, activeTab === 'search' && styles.tabActive]}
+                    onPress={() => setActiveTab('search')}
                 >
                     <Ionicons
-                        name={activeTab === 'messages' ? 'chatbubble' : 'chatbubble-outline'}
-                        size={22}
-                        color={activeTab === 'messages' ? colors.primary : colors.textMuted}
+                        name={activeTab === 'search' ? 'search' : 'search-outline'}
+                        size={24}
+                        color={activeTab === 'search' ? colors.primary : colors.textMuted}
+                    />
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'settings' && styles.tabActive]}
+                    onPress={() => setActiveTab('settings')}
+                >
+                    <Ionicons
+                        name={activeTab === 'settings' ? 'settings' : 'settings-outline'}
+                        size={24}
+                        color={activeTab === 'settings' ? colors.primary : colors.textMuted}
                     />
                 </TouchableOpacity>
             </View>
 
             {/* Content Area */}
             <View style={styles.contentArea}>
-                {activeTab === 'feed' && renderFeed()}
                 {activeTab === 'gallery' && renderGallery()}
-                {activeTab === 'messages' && renderMessages()}
+                {activeTab === 'search' && renderSearch()}
+                {activeTab === 'settings' && renderSettings()}
             </View>
 
-            {/* Floating Action Button */}
-            <TouchableOpacity
-                style={styles.fab}
-                onPress={() => router.push('/post/create')}
-            >
-                <Ionicons name="add" size={28} color={colors.text} />
-            </TouchableOpacity>
+            {/* Floating Action Button (Only on Gallery) */}
+            {activeTab === 'gallery' && (
+                <TouchableOpacity
+                    style={styles.fab}
+                    onPress={() => router.push('/post/create')}
+                >
+                    <Ionicons name="add" size={30} color="#FFF" />
+                </TouchableOpacity>
+            )}
         </View>
     );
 }
@@ -274,20 +328,24 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: spacing.md,
-        paddingTop: spacing.xxl,
-        paddingBottom: spacing.md,
+        paddingTop: 60, // Adjusted for safe area roughly
+        paddingBottom: spacing.sm,
+        backgroundColor: colors.background,
+        zIndex: 10,
     },
     backButton: {
         padding: spacing.xs,
     },
+    messageButton: {
+        padding: spacing.xs,
+    },
     headerTitle: {
         ...typography.h3,
+        fontWeight: 'bold',
     },
     profileSection: {
         alignItems: 'center',
         paddingVertical: spacing.lg,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
     },
     avatar: {
         width: 90,
@@ -310,11 +368,7 @@ const styles = StyleSheet.create({
     name: {
         ...typography.h2,
         marginBottom: spacing.xs,
-    },
-    pronouns: {
-        ...typography.bodySmall,
-        color: colors.textSecondary,
-        marginBottom: spacing.xs,
+        fontSize: 24,
     },
     bio: {
         ...typography.body,
@@ -325,7 +379,7 @@ const styles = StyleSheet.create({
     },
     statsRow: {
         flexDirection: 'row',
-        gap: spacing.xl,
+        gap: 40,
         marginTop: spacing.sm,
     },
     statItem: {
@@ -333,15 +387,18 @@ const styles = StyleSheet.create({
     },
     statNumber: {
         ...typography.h3,
+        fontWeight: 'bold',
     },
     statLabel: {
         ...typography.caption,
         color: colors.textSecondary,
+        fontSize: 14,
     },
     tabs: {
         flexDirection: 'row',
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
+        marginTop: spacing.md,
     },
     tab: {
         flex: 1,
@@ -356,37 +413,77 @@ const styles = StyleSheet.create({
     contentArea: {
         flex: 1,
     },
-    feedContent: {
-        padding: spacing.md,
-    },
-    postCard: {
-        backgroundColor: colors.backgroundCard,
-        borderRadius: borderRadius.lg,
-        padding: spacing.md,
-        marginBottom: spacing.md,
-    },
-    postContent: {
-        ...typography.body,
-        marginBottom: spacing.sm,
-    },
-    postTime: {
-        ...typography.caption,
-        color: colors.textMuted,
-    },
     galleryContainer: {
         flex: 1,
+        padding: 1,
     },
     galleryItem: {
         width: GALLERY_ITEM_SIZE,
         height: GALLERY_ITEM_SIZE,
         margin: 1,
+        backgroundColor: colors.backgroundCard,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     galleryImage: {
         width: '100%',
         height: '100%',
     },
-    messagesContainer: {
+    textPostPreview: {
+        padding: spacing.xs,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '100%',
+        height: '100%',
+    },
+    textPostContent: {
+        ...typography.caption,
+        color: colors.text,
+        textAlign: 'center',
+        fontSize: 10,
+    },
+    tabContent: {
         flex: 1,
+        padding: spacing.md,
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.backgroundLight,
+        borderRadius: borderRadius.lg,
+        padding: spacing.sm,
+        marginBottom: spacing.lg,
+    },
+    searchIcon: {
+        marginRight: spacing.sm,
+    },
+    searchInputPlaceholder: {
+        flex: 1,
+    },
+    settingsContainer: {
+        flex: 1,
+    },
+    settingSection: {
+        marginBottom: spacing.xl,
+    },
+    settingSectionTitle: {
+        ...typography.h3,
+        fontSize: 18,
+        marginBottom: spacing.md,
+        paddingHorizontal: spacing.md,
+    },
+    settingItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.md,
+        backgroundColor: colors.backgroundCard,
+        marginBottom: 1,
+    },
+    settingText: {
+        ...typography.body,
+        flex: 1,
+        marginLeft: spacing.md,
     },
     emptyState: {
         alignItems: 'center',
@@ -400,6 +497,7 @@ const styles = StyleSheet.create({
     emptyTitle: {
         ...typography.h3,
         marginBottom: spacing.xs,
+        fontSize: 20,
     },
     emptySubtitle: {
         ...typography.bodySmall,
@@ -408,11 +506,11 @@ const styles = StyleSheet.create({
     },
     fab: {
         position: 'absolute',
-        bottom: spacing.xl,
-        right: spacing.xl,
-        width: 56,
-        height: 56,
-        borderRadius: 28,
+        bottom: 30,
+        right: 30,
+        width: 60,
+        height: 60,
+        borderRadius: 30,
         backgroundColor: colors.primary,
         justifyContent: 'center',
         alignItems: 'center',

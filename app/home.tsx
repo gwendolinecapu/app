@@ -8,7 +8,6 @@ import {
     Modal,
     TextInput,
     Alert,
-    Dimensions,
     Image,
     Platform,
 } from 'react-native';
@@ -20,11 +19,7 @@ import { useAuth } from '../src/contexts/AuthContext';
 import { supabase } from '../src/lib/supabase';
 import { Alter } from '../src/types';
 import { colors, spacing, borderRadius, typography, alterColors } from '../src/lib/theme';
-import { AlterBubble } from '../src/components/AlterBubble';
 
-const { width } = Dimensions.get('window');
-const MAX_WIDTH = 430;
-const containerWidth = width > MAX_WIDTH ? MAX_WIDTH : width;
 const BUBBLE_SIZE = 85;
 
 export default function HomeScreen() {
@@ -336,14 +331,6 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         justifyContent: 'center',
         gap: spacing.lg,
-    },
-    alterListContent: {
-        paddingVertical: spacing.md,
-    },
-    addBubbleContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginHorizontal: spacing.sm,
     },
     bubbleContainer: {
         alignItems: 'center',

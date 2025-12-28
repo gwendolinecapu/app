@@ -38,11 +38,11 @@ export default function SettingsScreen() {
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
                     <Text style={styles.backIcon}>←</Text>
                 </TouchableOpacity>
                 <Text style={styles.title}>Paramètres</Text>
-                <View style={{ width: 24 }} />
+                <View style={styles.headerButton} />
             </View>
 
             <ScrollView>

@@ -296,7 +296,7 @@ export default function HomeScreen() {
                     </View>
                 </View>
             </Modal>
-        </View>
+        </SafeAreaView>
     );
 }
 

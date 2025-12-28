@@ -18,6 +18,7 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { supabase } from '../../src/lib/supabase';
 import { Alter } from '../../src/types';
 import { colors, spacing, borderRadius, typography, alterColors } from '../../src/lib/theme';
+import { AlterBubble } from '../../src/components/AlterBubble';
 
 const { width } = Dimensions.get('window');
 const MAX_WIDTH = 430;
@@ -140,44 +141,17 @@ export default function AltersScreen() {
         setSelectedImage(null);
     };
 
-    const renderAlterBubble = (alter: Alter) => {
-        const isActive = currentAlter?.id === alter.id;
-
-        return (
-            <TouchableOpacity
-                key={alter.id}
-                style={styles.bubbleContainer}
-                onPress={() => handleSwitchAlter(alter)}
-                onLongPress={() => router.push(`/alter/${alter.id}`)}
-                activeOpacity={0.7}
-            >
-                <View
-                    style={[
-                        styles.bubble,
-                        { backgroundColor: alter.color },
-                        isActive && styles.bubbleActive,
-                    ]}
-                >
-                    {alter.avatar_url ? (
-                        <Image
-                            source={{ uri: alter.avatar_url }}
-                            style={styles.bubbleImage}
-                        />
-                    ) : (
-                        <Text style={styles.bubbleText}>
-                            {alter.name.charAt(0).toUpperCase()}
-                        </Text>
-                    )}
-                </View>
-                <Text style={styles.bubbleName} numberOfLines={1}>
-                    {alter.name}
-                </Text>
-                {isActive && (
-                    <View style={styles.activeDot} />
-                )}
-            </TouchableOpacity>
-        );
-    };
+    const renderAlterItem = ({ item }: { item: Alter }) => (
+        <View style={styles.gridItem}>
+            <AlterBubble
+                alter={item}
+                isActive={currentAlter?.id === item.id}
+                onPress={() => handleSwitchAlter(item)}
+                onLongPress={() => router.push(`/alter/${item.id}`)}
+                size={BUBBLE_SIZE}
+            />
+        </View>
+    );
 
     return (
         <View style={styles.container}>
@@ -193,21 +167,26 @@ export default function AltersScreen() {
             </View>
 
             {/* Bubbles Grid */}
-            <ScrollView contentContainerStyle={styles.bubblesContainer}>
-                {/* Add Button */}
-                <TouchableOpacity
-                    style={styles.bubbleContainer}
-                    onPress={() => setModalVisible(true)}
-                >
-                    <View style={[styles.bubble, styles.addBubble]}>
-                        <Text style={styles.addIcon}>+</Text>
+            <FlatList
+                data={alters}
+                renderItem={renderAlterItem}
+                keyExtractor={(item) => item.id}
+                numColumns={3}
+                contentContainerStyle={styles.gridContent}
+                ListHeaderComponent={() => (
+                    <View style={styles.gridItem}>
+                        <TouchableOpacity
+                            style={styles.addBubbleContainer}
+                            onPress={() => setModalVisible(true)}
+                        >
+                            <View style={[styles.bubble, styles.addBubble]}>
+                                <Text style={styles.addIcon}>+</Text>
+                            </View>
+                            <Text style={styles.bubbleName}>Ajouter</Text>
+                        </TouchableOpacity>
                     </View>
-                    <Text style={styles.bubbleName}>Ajouter</Text>
-                </TouchableOpacity>
-
-                {/* Alter Bubbles */}
-                {alters.map(renderAlterBubble)}
-            </ScrollView>
+                )}
+            />
 
             {/* Current Alter Info */}
             {currentAlter && (
@@ -360,14 +339,16 @@ const styles = StyleSheet.create({
     title: {
         ...typography.h2,
     },
-    bubblesContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        padding: spacing.lg,
-        paddingBottom: 120,
-        justifyContent: 'flex-start',
+    gridContent: {
+        padding: spacing.md,
+        paddingBottom: 100, // Space for bottom bar
     },
-    bubbleContainer: {
+    gridItem: {
+        flex: 1,
+        alignItems: 'center',
+        marginBottom: spacing.lg,
+    },
+    addBubbleContainer: {
         width: BUBBLE_SIZE + 10,
         alignItems: 'center',
         marginBottom: spacing.md,
@@ -383,37 +364,6 @@ const styles = StyleSheet.create({
         borderColor: 'transparent',
         overflow: 'hidden',
     },
-    bubbleActive: {
-        borderColor: colors.primary,
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.5,
-        shadowRadius: 10,
-        elevation: 10,
-    },
-    bubbleImage: {
-        width: '100%',
-        height: '100%',
-    },
-    bubbleText: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: colors.text,
-    },
-    bubbleName: {
-        ...typography.bodySmall,
-        marginTop: spacing.xs,
-        textAlign: 'center',
-    },
-    activeDot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: colors.success,
-        position: 'absolute',
-        top: 5,
-        right: 15,
-    },
     addBubble: {
         backgroundColor: colors.backgroundCard,
         borderWidth: 2,
@@ -423,6 +373,11 @@ const styles = StyleSheet.create({
     addIcon: {
         fontSize: 40,
         color: colors.textMuted,
+    },
+    bubbleName: {
+        ...typography.bodySmall,
+        marginTop: spacing.xs,
+        textAlign: 'center',
     },
     currentAlterBar: {
         position: 'absolute',

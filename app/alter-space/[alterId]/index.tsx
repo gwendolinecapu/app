@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -14,11 +14,11 @@ import {
     TextInput,
 } from 'react-native';
 // import { Video, ResizeMode, Audio } from 'expo-av'; // TODO: Fix expo-av installation
-import { useLocalSearchParams, router } from 'expo-router';
+import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { db } from '../../../src/lib/firebase';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, doc, getDoc } from 'firebase/firestore';
 import { Alter, Post } from '../../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../../src/lib/theme';
 import { PostService } from '../../../src/services/posts';
@@ -58,16 +58,37 @@ export default function AlterSpaceScreen() {
     const [friendStatuses, setFriendStatuses] = useState<Record<string, string>>({});
     const [friendCount, setFriendCount] = useState(0);
 
+    // Refresh alter data from Firestore when screen gains focus (after edit)
+    const fetchAlterFromFirestore = useCallback(async () => {
+        if (!alterId) return;
+        try {
+            const docRef = doc(db, 'alters', alterId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const alterData = { id: docSnap.id, ...docSnap.data() } as Alter;
+                setAlter(alterData);
+                FriendService.getFriends(alterData.id).then(friends => setFriendCount(friends.length));
+            }
+        } catch (error) {
+            console.error('Error fetching alter:', error);
+        }
+    }, [alterId]);
+
+    // Use focus effect to refresh data when coming back from edit screen
+    useFocusEffect(
+        useCallback(() => {
+            fetchAlterFromFirestore();
+        }, [fetchAlterFromFirestore])
+    );
+
     useEffect(() => {
+        // Initial load from local context
         const foundAlter = alters.find((a) => a.id === alterId);
         if (foundAlter) {
             setAlter(foundAlter);
-            // Fetch friend count
             FriendService.getFriends(foundAlter.id).then(friends => setFriendCount(friends.length));
-        } else {
-            // ... (keep existing fallback or error)
         }
-    }, [alterId, alters]); // Depend on alters to refresh if updated
+    }, [alterId, alters]);
 
     useEffect(() => {
         if (alter) {

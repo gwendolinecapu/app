@@ -113,10 +113,10 @@ export default function EditAlterProfileScreen() {
 
             const updateData: Partial<Alter> = {
                 name: name.trim(),
-                pronouns: pronouns.trim() || undefined,
-                bio: bio.trim() || undefined,
+                pronouns: pronouns.trim() || '',
+                bio: bio.trim() || '',
                 color,
-                avatar_url: finalAvatarUrl || undefined,
+                avatar_url: finalAvatarUrl || '',
                 custom_fields: customFields
             };
 

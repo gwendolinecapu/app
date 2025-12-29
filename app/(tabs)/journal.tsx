@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { db } from '../../src/lib/firebase';
 import { collection, query, where, getDocs, orderBy, deleteDoc, doc } from 'firebase/firestore';
@@ -20,7 +21,7 @@ import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { JournalEntry, EmotionType, EMOTION_EMOJIS } from '../../src/types';
 
 export default function JournalScreen() {
-    const { currentAlter } = useAuth();
+    const { currentAlter, user } = useAuth();
     const [entries, setEntries] = useState<JournalEntry[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -34,12 +35,13 @@ export default function JournalScreen() {
     );
 
     const fetchEntries = async () => {
-        if (!currentAlter) return;
+        if (!currentAlter || !user) return;
         setLoading(true);
 
         try {
             const q = query(
                 collection(db, 'journal_entries'),
+                where('system_id', '==', user.uid),
                 where('alter_id', '==', currentAlter.id),
                 orderBy('created_at', 'desc')
             );
@@ -153,11 +155,16 @@ export default function JournalScreen() {
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.title}>Mon Journal</Text>
-                <Text style={styles.subtitle}>
-                    Par {currentAlter.name}
-                </Text>
+            <View style={[styles.header, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }]}>
+                <View>
+                    <Text style={styles.title}>Mon Journal</Text>
+                    <Text style={styles.subtitle}>
+                        Par {currentAlter.name}
+                    </Text>
+                </View>
+                <TouchableOpacity onPress={() => router.push('/crisis' as any)}>
+                    <Ionicons name="warning-outline" size={28} color={colors.error || '#FF4444'} />
+                </TouchableOpacity>
             </View>
 
             {/* Liste des entrées */}

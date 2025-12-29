@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { db } from '../../src/lib/firebase';
 import { collection, addDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
@@ -35,7 +36,7 @@ const EMOTIONS: EmotionType[] = [
 ];
 
 export default function EmotionsScreen() {
-    const { currentAlter } = useAuth();
+    const { currentAlter, user } = useAuth();
     const [selectedEmotion, setSelectedEmotion] = useState<EmotionType | null>(null);
     const [intensity, setIntensity] = useState<number>(3);
     const [note, setNote] = useState('');
@@ -99,6 +100,7 @@ export default function EmotionsScreen() {
         setLoading(true);
         try {
             const newEmotion = {
+                system_id: user?.uid,
                 alter_id: currentAlter.id,
                 emotion: selectedEmotion,
                 intensity,
@@ -152,11 +154,16 @@ export default function EmotionsScreen() {
         <SafeAreaView style={styles.container} edges={['top']}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 {/* Header */}
-                <View style={styles.header}>
-                    <Text style={styles.title}>Comment te sens-tu ?</Text>
-                    <Text style={styles.subtitle}>
-                        En tant que {currentAlter.name}
-                    </Text>
+                <View style={[styles.header, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }]}>
+                    <View>
+                        <Text style={styles.title}>Comment te sens-tu ?</Text>
+                        <Text style={styles.subtitle}>
+                            En tant que {currentAlter.name}
+                        </Text>
+                    </View>
+                    <TouchableOpacity onPress={() => router.push('/crisis' as any)}>
+                        <Ionicons name="warning-outline" size={28} color={colors.error || '#FF4444'} />
+                    </TouchableOpacity>
                 </View>
 
                 {/* Info si déjà enregistré aujourd'hui */}

@@ -14,6 +14,7 @@ import {
     FlatList,
 } from 'react-native';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { db, storage } from '../../src/lib/firebase';
@@ -29,7 +30,7 @@ const containerWidth = width > MAX_WIDTH ? MAX_WIDTH : width;
 const BUBBLE_SIZE = 90; // Fixed size for bubbles
 
 export default function AltersScreen() {
-    const { alters, currentAlter, switchAlter, refreshAlters, user } = useAuth();
+    const { alters, currentAlter, setFronting, refreshAlters, user } = useAuth();
     const [modalVisible, setModalVisible] = useState(false);
     const [newAlterName, setNewAlterName] = useState('');
     const [newAlterPronouns, setNewAlterPronouns] = useState('');
@@ -38,8 +39,8 @@ export default function AltersScreen() {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const handleSwitchAlter = (alter: Alter) => {
-        switchAlter(alter);
+    const handleSwitchAlter = async (alter: Alter) => {
+        await setFronting([alter], 'single');
     };
 
     const pickImage = async () => {
@@ -145,13 +146,18 @@ export default function AltersScreen() {
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.push('/settings')}>
+                <TouchableOpacity onPress={() => router.push('/settings/' as any)}>
                     <Text style={styles.headerIcon}>⚙️</Text>
                 </TouchableOpacity>
                 <Text style={styles.title}>Mes Alters</Text>
-                <TouchableOpacity onPress={() => router.push('/(tabs)/profile')}>
-                    <Text style={styles.headerIcon}>👤</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
+                    <TouchableOpacity onPress={() => router.push('/crisis' as any)}>
+                        <Ionicons name="warning-outline" size={28} color={colors.error || '#FF4444'} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push('/(tabs)/profile')}>
+                        <Text style={styles.headerIcon}>👤</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Bubbles Grid */}

@@ -38,7 +38,7 @@ export default function LoginScreen() {
             console.error('Login error:', error.message);
             Alert.alert('Erreur', error.message);
         } else {
-            router.replace('/home');
+            router.replace('/(tabs)/dashboard');
         }
     };
 

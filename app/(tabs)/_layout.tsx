@@ -1,26 +1,21 @@
 import { Tabs, router } from 'expo-router';
 import { View, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../../src/lib/theme';
+import { colors as defaultColors } from '../../src/lib/theme';
+import { useTheme } from '../../src/contexts/ThemeContext';
 
 const { width } = Dimensions.get('window');
 const MAX_WIDTH = 430; // iPhone 14 Pro Max width
 
 export default function TabLayout() {
+    const { colors } = useTheme();
+
     return (
         <View style={styles.phoneContainer}>
             <View style={styles.phoneFrame}>
                 <Tabs
                     screenOptions={{
-                        headerShown: true,
-                        headerRight: () => (
-                            <TouchableOpacity
-                                onPress={() => router.push('/crisis')}
-                                style={{ marginRight: 16, padding: 8 }}
-                            >
-                                <Ionicons name="warning-outline" size={24} color={colors.error} />
-                            </TouchableOpacity>
-                        ),
+                        headerShown: false,
                         tabBarActiveTintColor: colors.primary,
                         tabBarInactiveTintColor: colors.textMuted,
                         tabBarStyle: {
@@ -37,39 +32,24 @@ export default function TabLayout() {
                         },
                         headerTintColor: colors.text,
                     }}
-                    initialRouteName="alters"
+                    initialRouteName="dashboard"
                 >
-                    {/* Onglet 1: Alters - Gestion des profils */}
+                    {/* Onglet 1: Feed - Fil d'actualité */}
                     <Tabs.Screen
-                        name="alters"
+                        name="feed"
                         options={{
-                            title: 'Alters',
+                            title: 'Feed',
                             tabBarIcon: ({ focused, color }) => (
                                 <Ionicons
-                                    name={focused ? "grid" : "grid-outline"}
+                                    name={focused ? "newspaper" : "newspaper-outline"}
                                     size={24}
                                     color={color}
-                                    accessibilityLabel="Mes Alters"
+                                    accessibilityLabel="Fil d'actualité"
                                 />
                             ),
                         }}
                     />
-                    {/* Onglet 2: Émotions - Suivi émotionnel */}
-                    <Tabs.Screen
-                        name="emotions"
-                        options={{
-                            title: 'Émotions',
-                            tabBarIcon: ({ focused, color }) => (
-                                <Ionicons
-                                    name={focused ? "heart" : "heart-outline"}
-                                    size={24}
-                                    color={color}
-                                    accessibilityLabel="Émotions"
-                                />
-                            ),
-                        }}
-                    />
-                    {/* Onglet 3: Journal - Journal personnel */}
+                    {/* Onglet 2: Journal - Journal personnel */}
                     <Tabs.Screen
                         name="journal"
                         options={{
@@ -84,11 +64,44 @@ export default function TabLayout() {
                             ),
                         }}
                     />
-                    {/* Onglet 4: Messages - Communication */}
+                    {/* Onglet 3: Dashboard - Accueil Système (Central) */}
+                    <Tabs.Screen
+                        name="dashboard"
+                        options={{
+                            title: 'Système',
+                            tabBarIcon: ({ focused, color }) => (
+                                <View style={styles.addButton}>
+                                    <Ionicons
+                                        name="planet"
+                                        size={32}
+                                        color="white"
+                                        style={{ marginLeft: 1 }} // Optical adjustment
+                                    />
+                                </View>
+                            ),
+                            tabBarLabel: () => null, // Hide label for center button
+                        }}
+                    />
+                    {/* Onglet 4: Émotions - Suivi émotionnel */}
+                    <Tabs.Screen
+                        name="emotions"
+                        options={{
+                            title: 'Émotions',
+                            tabBarIcon: ({ focused, color }) => (
+                                <Ionicons
+                                    name={focused ? "heart" : "heart-outline"}
+                                    size={24}
+                                    color={color}
+                                    accessibilityLabel="Émotions"
+                                />
+                            ),
+                        }}
+                    />
+                    {/* Onglet 5: Messages - Communication */}
                     <Tabs.Screen
                         name="messages"
                         options={{
-                            title: 'Messages',
+                            title: 'Discut.',
                             tabBarIcon: ({ focused, color }) => (
                                 <Ionicons
                                     name={focused ? "chatbubbles" : "chatbubbles-outline"}
@@ -99,32 +112,32 @@ export default function TabLayout() {
                             ),
                         }}
                     />
-                    {/* Écrans cachés (accessibles mais pas dans la tab bar) */}
+
+                    {/* Écrans cachés ou secondaires */}
                     <Tabs.Screen
-                        name="profile"
+                        name="alters"
                         options={{
-                            href: null, // Caché de la tab bar
+                            href: null, // Accessible via Dashboard
                         }}
                     />
                     <Tabs.Screen
-                        name="feed"
+                        name="profile"
                         options={{
-                            href: null, // Caché pour Sprint futur
+                            href: null,
                         }}
                     />
                     <Tabs.Screen
                         name="search"
                         options={{
-                            href: null, // Caché pour Sprint futur
+                            href: null,
                         }}
                     />
                     <Tabs.Screen
                         name="create"
                         options={{
-                            href: null, // Redirigé vers /post/create
+                            href: null,
                         }}
                     />
-                </Tabs>
             </View>
         </View>
     );
@@ -141,18 +154,18 @@ const styles = StyleSheet.create({
         width: width > MAX_WIDTH ? MAX_WIDTH : '100%',
         height: '100%',
         maxWidth: MAX_WIDTH,
-        backgroundColor: colors.background,
+        backgroundColor: defaultColors.background,
         overflow: 'hidden',
     },
     addButton: {
         width: 50,
         height: 50,
         borderRadius: 25,
-        backgroundColor: colors.primary,
+        backgroundColor: defaultColors.primary,
         justifyContent: 'center',
         alignItems: 'center',
         marginTop: -15,
-        shadowColor: colors.primary,
+        shadowColor: defaultColors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,

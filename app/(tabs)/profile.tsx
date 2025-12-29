@@ -20,22 +20,23 @@ const { width } = Dimensions.get('window');
 const GRID_SIZE = (width - 4) / 3;
 
 export default function ProfileScreen() {
-    const { currentAlter, system, alters } = useAuth();
+    const { currentAlter, system, alters, user } = useAuth();
     const [posts, setPosts] = useState<Post[]>([]);
     const [stats, setStats] = useState({ posts: 0, friends: 0 });
 
     useEffect(() => {
-        if (currentAlter) {
+        if (currentAlter && user) {
             fetchPosts();
         }
-    }, [currentAlter]);
+    }, [currentAlter, user]);
 
     const fetchPosts = async () => {
-        if (!currentAlter) return;
+        if (!currentAlter || !user) return;
 
         try {
             const q = query(
                 collection(db, 'posts'),
+                where('system_id', '==', user.uid),
                 where('alter_id', '==', currentAlter.id),
                 orderBy('created_at', 'desc')
             );
@@ -81,7 +82,7 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
                     <Text style={styles.username}>@{currentAlter.name.toLowerCase()}</Text>
                     <View style={{ flexDirection: 'row', gap: 16 }}>
-                        <TouchableOpacity onPress={() => router.push('/settings')}>
+                        <TouchableOpacity onPress={() => router.push('/settings/' as any)}>
                             <Text style={styles.menuIcon}>⚙️</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => router.push(`/alter/${currentAlter.id}`)}>

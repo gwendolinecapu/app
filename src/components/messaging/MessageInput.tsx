@@ -6,7 +6,9 @@ import {
     StyleSheet,
     Modal,
     Text,
-    Platform
+    Platform,
+    ViewStyle,
+    TextStyle
 } from 'react-native';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -100,15 +102,16 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     );
 };
 
+// Define styles with explicit types to avoid StyleSheet inference issues
 const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
-        alignItems: 'end',
+        alignItems: 'flex-end',
         padding: spacing.md,
         backgroundColor: colors.backgroundCard,
         borderTopWidth: 1,
         borderTopColor: colors.border,
-    },
+    } as ViewStyle,
     input: {
         flex: 1,
         backgroundColor: colors.backgroundLight,
@@ -120,7 +123,7 @@ const styles = StyleSheet.create({
         color: colors.text,
         maxHeight: 100,
         minHeight: 40,
-    },
+    } as TextStyle,
     attachButton: {
         width: 40,
         height: 40,
@@ -128,7 +131,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderRadius: 20,
         backgroundColor: colors.backgroundLight,
-    },
+    } as ViewStyle,
     sendButton: {
         width: 40,
         height: 40,
@@ -136,16 +139,16 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderRadius: 20,
         backgroundColor: colors.primary,
-    },
+    } as ViewStyle,
     sendButtonDisabled: {
         backgroundColor: colors.textMuted,
         opacity: 0.5,
-    },
+    } as ViewStyle,
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'flex-end',
-    },
+    } as ViewStyle,
     menuContainer: {
         backgroundColor: colors.backgroundCard,
         borderTopLeftRadius: borderRadius.xl,
@@ -154,10 +157,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-around',
         paddingBottom: Platform.OS === 'ios' ? 40 : spacing.xl,
-    },
+    } as ViewStyle,
     menuItem: {
         alignItems: 'center',
-    },
+    } as ViewStyle,
     iconContainer: {
         width: 50,
         height: 50,
@@ -165,10 +168,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: spacing.xs,
-    },
+    } as ViewStyle,
     menuText: {
-        ...typography.caption,
+        fontSize: 12,
         color: colors.text,
         fontWeight: '600',
-    }
+    } as TextStyle
 });

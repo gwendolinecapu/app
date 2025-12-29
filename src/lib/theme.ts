@@ -39,6 +39,8 @@ export const colors = {
     gradientEnd: '#6366F1',   // Indigo - fin du gradient
 };
 
+export type ThemeColors = typeof colors;
+
 // Couleurs disponibles pour les profils (alters)
 // Ces couleurs sont proposées lors de la création/édition d'un alter
 export const alterColors = [
@@ -109,5 +111,10 @@ export const typography = {
         fontSize: 12,
         fontWeight: 'normal' as const,
         color: colors.textMuted,
+    },
+    button: {
+        fontSize: 16,
+        fontWeight: 'bold' as const,
+        color: colors.text,
     },
 };

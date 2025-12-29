@@ -123,5 +123,58 @@ export const FrontingService = {
         });
 
         return stats;
+    },
+
+    /**
+     * Stats par jour pour le graphe (7 derniers jours)
+     */
+    async getWeeklyBreakdown(systemId: string): Promise<{ label: string, value: number }[]> {
+        const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+        const today = new Date();
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+
+        const q = query(
+            collection(db, 'fronting_history'),
+            where('system_id', '==', systemId),
+            where('start_time', '>=', sevenDaysAgo),
+            orderBy('start_time', 'asc')
+        );
+
+        const snapshot = await getDocs(q);
+        const dailyMap = new Map<string, number>();
+        const orderedLabels: string[] = [];
+
+        // Init map avec les 7 derniers jours dans l'ordre
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(today.getDate() - i);
+            const key = days[d.getDay()];
+            dailyMap.set(key, 0);
+            orderedLabels.push(key);
+        }
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const date = data.start_time.toDate();
+            const key = days[date.getDay()];
+
+            let duration = data.duration || 0;
+            if (!data.end_time) {
+                const start = data.start_time.toDate();
+                duration = Math.floor((Date.now() - start.getTime()) / 1000);
+            }
+
+            if (dailyMap.has(key)) {
+                const current = dailyMap.get(key) || 0;
+                dailyMap.set(key, current + duration);
+            }
+        });
+
+        return orderedLabels.map(label => ({
+            label,
+            value: parseFloat(((dailyMap.get(label) || 0) / 3600).toFixed(1))
+        }));
     }
 };

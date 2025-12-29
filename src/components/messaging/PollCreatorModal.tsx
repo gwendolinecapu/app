@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     label: {
-        ...typography.subtitle,
+        ...typography.bodySmall,
         marginBottom: spacing.xs,
         marginTop: spacing.sm,
     },

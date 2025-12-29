@@ -1,15 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Platform, TouchableOpacity } from 'react-native';
-import Animated, {
-    FadeInUp,
-    FadeOutUp,
-    SlideInUp,
-    SlideOutUp,
-    withSpring,
-    useAnimatedStyle,
-    useSharedValue,
-    withTiming
-} from 'react-native-reanimated';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import { colors } from '../../lib/theme';
 import { triggerHaptic } from '../../lib/haptics';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,6 +25,45 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     const [activeToast, setActiveToast] = useState<Toast | null>(null);
     const insets = useSafeAreaInsets();
     const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+    const slideAnim = useRef(new Animated.Value(-100)).current;
+    const opacityAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        if (activeToast) {
+            // Animate in
+            Animated.parallel([
+                Animated.spring(slideAnim, {
+                    toValue: 0,
+                    useNativeDriver: true,
+                    tension: 100,
+                    friction: 10,
+                }),
+                Animated.timing(opacityAnim, {
+                    toValue: 1,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        }
+    }, [activeToast]);
+
+    const animateOut = useCallback(() => {
+        Animated.parallel([
+            Animated.timing(slideAnim, {
+                toValue: -100,
+                duration: 200,
+                useNativeDriver: true,
+            }),
+            Animated.timing(opacityAnim, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+            }),
+        ]).start(() => {
+            setActiveToast(null);
+            slideAnim.setValue(-100);
+        });
+    }, [slideAnim, opacityAnim]);
 
     const showToast = useCallback((message: string, type: ToastType = 'info', duration: number = 3000) => {
         // Clear existing timeout if any
@@ -57,14 +86,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
         // Auto hide
         timeoutRef.current = setTimeout(() => {
-            setActiveToast(null);
+            animateOut();
         }, duration);
-    }, []);
+    }, [animateOut]);
 
     const hideToast = useCallback(() => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        setActiveToast(null);
-    }, []);
+        animateOut();
+    }, [animateOut]);
 
     return (
         <ToastContext.Provider value={{ showToast, hideToast }}>
@@ -72,11 +101,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             {activeToast && (
                 <View style={[styles.container, { top: insets.top + 10 }]}>
                     <Animated.View
-                        entering={SlideInUp.springify().damping(15)}
-                        exiting={SlideOutUp}
                         style={[
                             styles.toast,
-                            styles[`toast_${activeToast.type}`]
+                            styles[`toast_${activeToast.type}` as keyof typeof styles],
+                            {
+                                transform: [{ translateY: slideAnim }],
+                                opacity: opacityAnim,
+                            }
                         ]}
                     >
                         <View style={styles.iconContainer}>

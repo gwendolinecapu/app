@@ -1,5 +1,43 @@
 # Changelog
 
+## [2025-12-29] Système de Notifications Complet 🔔
+
+### Types de Notifications
+- **Front**: Rappel "Qui est en front ?", Check-in matinal, Front longue durée
+- **Humeur**: Check humeur, Rappel respiration, Post-switch check
+- **Journal**: Rappel quotidien, Alerte streak, Milestones
+- **Social**: Nouveau follower, Nouveau message, Réactions (Push)
+- **Bien-être**: Affirmations, Auto-compassion, Messages entre alters
+
+### Personnalisation Fréquences
+- Toutes les heures → 1x/semaine
+- Heures personnalisées
+- Heures calmes configurables
+
+### Notification Persistante
+- Sélection d'alter depuis le fond d'écran
+- Actions rapides pour switch
+- iOS: Notification avec actions
+- Android: Foreground Service
+
+### Dynamic Island (iOS 16.1+)
+- Live Activity pour front actuel
+- Affiche alter, durée, co-fronters
+- Mise à jour en temps réel
+
+### Fichiers Créés
+- `src/services/NotificationTypes.ts`
+- `src/services/NotificationService.ts`
+- `src/services/PersistentNotificationService.ts`
+- `src/services/DynamicIslandService.ts`
+- `src/hooks/useNotifications.ts`
+- `src/hooks/useFrontNotifications.ts`
+- `ios/PluralConnect/LiveActivityModule.swift`
+- `ios/PluralConnect/LiveActivityModule.m`
+- `app/settings/notifications.tsx` (amélioré)
+
+---
+
 ## [2025-12-29] 7 Widgets Android (AppWidgetProvider) 🤖
 
 ### Widgets Créés

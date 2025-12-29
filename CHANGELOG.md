@@ -1,5 +1,29 @@
 # Changelog
 
+## [2025-12-29] Correction Problèmes Illogiques (15+ fixes)
+
+### Bugs Critiques
+- **`dashboard.tsx`** : Route `alter-space` changée vers `/alter/[id]` (route existante)
+- **`dashboard.tsx`** : FlatList avec `key={NUM_COLUMNS}` pour éviter crash numColumns dynamique
+- **`feed.tsx`** : Couleur tip card corrigée (thème sombre au lieu de #FFFBE6 jaune clair)
+
+### Routes Corrigées
+- **5 fichiers** : `/crisis` → `/crisis/index` (emotions, messages, alters, journal, feed)
+
+### Boutons Sans Action Corrigés
+- **`feed.tsx`** : Boutons J'aime/Commenter/Partager avec Alert "coming soon"
+- **`feed.tsx`** : Bouton ellipsis (menu) avec action
+- **`feed.tsx`** : Bouton "En savoir plus" des tips avec action
+
+### Dead Code Supprimé
+- **`dashboard.tsx`** : Variable `pressedId` non utilisée supprimée
+- **`dashboard.tsx`** : Logique `is_host` corrigée (false par défaut au lieu de alters.length === 0)
+
+### UX Corrigé
+- **`messages.tsx`** : Bordure active retirée sur alter actif (illogique de s'envoyer un message)
+
+---
+
 ## [2025-12-29] Audit Sécurité & Auto-Fix
 
 ### Corrections critiques

@@ -74,8 +74,6 @@ export default function DashboardScreen() {
     const [selectedAlters, setSelectedAlters] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Animation scale pour le feedback tactile
-    const [pressedId, setPressedId] = useState<string | null>(null);
 
     // Create new alter state
     const [newAlterName, setNewAlterName] = useState('');
@@ -181,7 +179,8 @@ export default function DashboardScreen() {
     };
 
     const handleOpenAlterSpace = (alter: Alter) => {
-        router.push(`/alter-space/${alter.id}`);
+        // Navigation vers la page de détail de l'alter (route existante)
+        router.push(`/alter/${alter.id}` as any);
     };
 
     const pickImage = async () => {
@@ -241,7 +240,9 @@ export default function DashboardScreen() {
                 bio: newAlterBio.trim() || null,
                 color: selectedColor,
                 avatar_url: avatarUrl,
-                is_host: alters.length === 0,
+                // is_host: false par défaut, l'utilisateur peut le définir plus tard
+                // L'ancienne logique `alters.length === 0` était bugguée si on créait 2 alters rapidement
+                is_host: false,
                 is_active: false,
                 created_at: new Date().toISOString(),
             };
@@ -432,9 +433,11 @@ export default function DashboardScreen() {
             {/* =====================================================
                 APPLE WATCH STYLE GRID
                 FlatList optimisée pour performance avec 2000+ alters
+                key prop obligatoire pour permettre changement de numColumns
                 ===================================================== */}
             <View style={styles.gridContainer}>
                 <FlatList
+                    key={`grid-${NUM_COLUMNS}`}  // IMPORTANT: permet changement dynamique de numColumns
                     data={gridData}
                     renderItem={renderBubble}
                     keyExtractor={keyExtractor}

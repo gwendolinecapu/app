@@ -137,7 +137,7 @@ export default function MessagesScreen() {
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={styles.title}>Messages</Text>
                     <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
-                        <TouchableOpacity onPress={() => router.push('/crisis' as any)}>
+                        <TouchableOpacity onPress={() => router.push('/crisis/index' as any)}>
                             <Ionicons name="warning-outline" size={28} color={colors.error || '#FF4444'} />
                         </TouchableOpacity>
                         {activeTab === 'groups' && (
@@ -160,7 +160,7 @@ export default function MessagesScreen() {
                                     style={[
                                         styles.rowAvatar,
                                         { backgroundColor: alter.color },
-                                        currentAlter?.id === alter.id && styles.rowAvatarActive,
+                                        // Ne pas montrer comme "actif" car on ne s'envoie pas de message à soi-même
                                     ]}
                                 >
                                     <Text style={styles.rowAvatarText}>

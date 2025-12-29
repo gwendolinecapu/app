@@ -8,6 +8,7 @@ import {
     RefreshControl,
     Image,
     ActivityIndicator,
+    Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -94,7 +95,10 @@ export default function FeedScreen() {
                 </View>
             </View>
             <Text style={styles.tipContent}>{item.content}</Text>
-            <TouchableOpacity style={styles.tipAction}>
+            <TouchableOpacity
+                style={styles.tipAction}
+                onPress={() => Alert.alert('💡 Conseil', item.content)}
+            >
                 <Text style={styles.tipActionText}>En savoir plus</Text>
                 <Ionicons name="arrow-forward" size={16} color={colors.primary} />
             </TouchableOpacity>
@@ -141,7 +145,7 @@ export default function FeedScreen() {
                         </Text>
                     </View>
                 </View>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => Alert.alert('Options', 'Options du post bientôt disponibles')}>
                     <Ionicons name="ellipsis-horizontal" size={20} color={colors.textMuted} />
                 </TouchableOpacity>
             </View>
@@ -151,15 +155,24 @@ export default function FeedScreen() {
 
             {/* Post Actions */}
             <View style={styles.postActions}>
-                <TouchableOpacity style={styles.actionButton}>
+                <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => Alert.alert('❤️', 'Fonctionnalité likes bientôt disponible !')}
+                >
                     <Text style={styles.actionIcon}>🤍</Text>
                     <Text style={styles.actionText}>J'aime</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionButton}>
+                <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => Alert.alert('💬', 'Commentaires bientôt disponibles !')}
+                >
                     <Text style={styles.actionIcon}>💬</Text>
                     <Text style={styles.actionText}>Commenter</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionButton}>
+                <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => Alert.alert('↗️', 'Partage bientôt disponible !')}
+                >
                     <Text style={styles.actionIcon}>↗️</Text>
                     <Text style={styles.actionText}>Partager</Text>
                 </TouchableOpacity>
@@ -207,7 +220,7 @@ export default function FeedScreen() {
         <View style={styles.header}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md }}>
                 <Text style={[styles.title, { marginBottom: 0 }]}>Newsfeed</Text>
-                <TouchableOpacity onPress={() => router.push('/crisis' as any)}>
+                <TouchableOpacity onPress={() => router.push('/crisis/index' as any)}>
                     <Ionicons name="warning-outline" size={28} color={colors.error || '#FF4444'} />
                 </TouchableOpacity>
             </View>
@@ -447,8 +460,8 @@ const styles = StyleSheet.create({
         elevation: 8,
     },
     tipCard: {
-        backgroundColor: '#FFFBE6', // Light yellow for tips? Or gradient?
-        // Let's use card background but with a colored border
+        // Utilise le thème au lieu de couleur claire hardcodée
+        backgroundColor: colors.backgroundCard,
         marginHorizontal: spacing.md,
         marginBottom: spacing.md,
         borderRadius: borderRadius.lg,

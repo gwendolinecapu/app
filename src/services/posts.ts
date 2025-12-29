@@ -82,6 +82,46 @@ export const PostService = {
     },
 
     /**
+     * Fetch global feed (all public posts)
+     */
+    fetchGlobalFeed: async (lastVisible: QueryDocumentSnapshot | null = null, pageSize: number = 20) => {
+        try {
+            // For now, fetch all posts ordered by date.
+            // In a real app, you'd filter by public visibility and maybe followed users.
+            let q = query(
+                collection(db, POSTS_COLLECTION),
+                orderBy('created_at', 'desc'),
+                limit(pageSize)
+            );
+
+            if (lastVisible) {
+                q = query(q, startAfter(lastVisible));
+            }
+
+            const querySnapshot = await getDocs(q);
+            const posts: Post[] = [];
+
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                posts.push({
+                    id: doc.id,
+                    ...data,
+                    created_at: data.created_at?.toDate().toISOString() || new Date().toISOString(),
+                    updated_at: data.updated_at?.toDate().toISOString() || new Date().toISOString(),
+                } as Post);
+            });
+
+            return {
+                posts,
+                lastVisible: querySnapshot.docs[querySnapshot.docs.length - 1]
+            };
+        } catch (error) {
+            console.error('Error fetching global feed:', error);
+            throw error;
+        }
+    },
+
+    /**
      * Upload an image for a post
      */
     uploadImage: async (uri: string, systemId: string): Promise<string> => {

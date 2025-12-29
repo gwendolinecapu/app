@@ -36,13 +36,13 @@ export function useNotifications() {
                 // Router vers l'écran approprié
                 switch (actionIdentifier) {
                     case 'switch_front':
-                        router.push('/(tabs)/');
+                        router.push('/' as any);
                         break;
                     case 'record_mood':
-                        router.push('/mood');
+                        router.push('/emotions/history' as any);
                         break;
                     case 'write_journal':
-                        router.push('/journal/new');
+                        router.push('/journal/create' as any);
                         break;
                     default:
                         // Tap sur la notification elle-même
@@ -68,19 +68,19 @@ export function useNotifications() {
     const handleNotificationTap = (category?: string | null) => {
         switch (category) {
             case 'front':
-                router.push('/(tabs)/');
+                router.push('/' as any);
                 break;
             case 'mood':
-                router.push('/mood');
+                router.push('/emotions/history' as any);
                 break;
             case 'journal':
-                router.push('/journal');
+                router.push('/journal' as any);
                 break;
             case 'social':
-                router.push('/(tabs)/feed');
+                router.push('/discover/index' as any);
                 break;
             default:
-                router.push('/(tabs)/');
+                router.push('/' as any);
         }
     };
 

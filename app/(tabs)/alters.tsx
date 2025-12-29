@@ -146,7 +146,7 @@ export default function AltersScreen() {
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.push('/settings/' as any)}>
+                <TouchableOpacity onPress={() => router.push('/settings/index' as any)}>
                     <Text style={styles.headerIcon}>⚙️</Text>
                 </TouchableOpacity>
                 <Text style={styles.title}>Mes Alters</Text>

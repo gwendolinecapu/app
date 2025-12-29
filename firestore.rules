@@ -54,11 +54,12 @@ service cloud.firestore {
     
     // ============================================
     // Emotions Collection
+    // SÉCURISÉ: Seul le propriétaire peut accéder à ses émotions
     // ============================================
     match /emotions/{emotionId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated();
+      allow read: if isOwner(resource);
+      allow create: if isOwnerCreate();
+      allow update, delete: if isOwner(resource);
     }
 
     // ============================================
@@ -142,16 +143,30 @@ service cloud.firestore {
 
     // ============================================
     // Conversations Collection
+    // SÉCURISÉ: Seuls les participants peuvent accéder
     // ============================================
     match /conversations/{conversationId} {
-      allow read, write: if isAuthenticated();
+      // Lecture autorisée si l'utilisateur est participant
+      allow read: if isAuthenticated() && 
+        (resource.data.participants != null && request.auth.uid in resource.data.participants);
+      // Création autorisée si l'utilisateur s'inclut dans les participants
+      allow create: if isAuthenticated() && 
+        (request.resource.data.participants != null && request.auth.uid in request.resource.data.participants);
+      // Modification autorisée si participant existant
+      allow update: if isAuthenticated() && 
+        (resource.data.participants != null && request.auth.uid in resource.data.participants);
+      allow delete: if false; // Désactiver la suppression pour préserver l'historique
     }
 
     // ============================================
     // Conversation Participants Collection
+    // SÉCURISÉ: Lecture si auth, création/suppression de ses propres participations
     // ============================================
     match /conversation_participants/{participantId} {
-       allow read, write: if isAuthenticated();
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.system_id == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.system_id == request.auth.uid;
+      allow update: if false; // Pas de modification, uniquement création/suppression
     }
   }
 }

@@ -1,5 +1,77 @@
 # Changelog
 
+## [2025-12-29] Audit Sécurité & Auto-Fix
+
+### Corrections critiques
+- **`app/_layout.tsx`** : Supprimé la route `home` fantôme qui causait les warnings de navigation
+- **`firestore.rules`** : Sécurisé collection `emotions` (restreint au propriétaire au lieu de tous les users auth)
+- **`firestore.rules`** : Sécurisé `conversations` et `conversation_participants` (accès limité aux participants)
+- **`src/services/groups.ts`** : Ajouté paramètre `senderId` requis par les règles Firestore
+- **`app/groups/[id].tsx`** : Mis à jour l'appel `sendGroupMessage` avec `user.uid`
+- **`app/settings/index.tsx`** : Corrigé routes `/roles` → `/roles/index` et `/help` → `/help/index`
+- **`app/(tabs)/dashboard.tsx`** : Corrigé `/settings/` → `/settings/index`
+- **`app/(tabs)/profile.tsx`** : Corrigé `/settings/` → `/settings/index`
+- **`app/(tabs)/alters.tsx`** : Corrigé `/settings/` → `/settings/index`
+
+### Impact
+- 🔒 Vulnérabilité d'accès données corrigée pour émotions et conversations
+- 🛠️ Warnings navigation "No route named home/settings" éliminés
+- ✅ Messages de groupe fonctionnels avec senderId
+
+---
+
+## [2025-12-29] Correction Headers Navigation
+
+### Correction
+- **`app/_layout.tsx`** : Ajouté `headerShown: false` à tous les écrans avec leur propre header custom
+  - Écrans concernés : `roles`, `help`, `journal`, `tasks`, `groups`, `crisis`, `emotions/history`, `fronting/history`, `stats`, `settings`, `alter/[id]`, `conversation/[id]`, `post/create`
+- Le header de navigation Stack par défaut ("settings/index", "roles/index") ne s'affiche plus en double
+
+---
+
+## [2025-12-29] Corrections Firebase et Bulles Dynamiques
+
+### Corrections critiques
+- **`app/post/create.tsx`** : Corrigé le bug `media_url: undefined` qui crashait Firestore (Firestore n'accepte pas les valeurs undefined)
+- **`app/journal/create.tsx`** : Ajouté `system_id` manquant pour matcher les règles de sécurité Firestore
+
+### Améliorations Dashboard
+- **Bulles dynamiques** : La taille des bulles s'adapte au nombre d'alters :
+  - ≤ 5 alters : grandes bulles (80px) pour une meilleure visibilité
+  - 6-20 alters : bulles moyennes (64px)
+  - > 20 alters : petites bulles (48px) pour afficher plus d'alters
+- Migration de `FlashList` vers `FlatList` natif avec optimisations (`removeClippedSubviews`, `windowSize`)
+
+---
+
+## [2025-12-29] Redesign Dashboard - Style Apple Watch
+
+### Nouvelles fonctionnalités
+- **Design Apple Watch** : Bulles d'alters avec design compact et élégant
+- **Performance 2000+ alters** : Liste virtualisée ultra-performante
+- **Barre de recherche** : Recherche instantanée d'alters (affichée automatiquement si > 10 alters)
+- **Colonnes dynamiques** : Calcul automatique du nombre de colonnes selon la largeur de l'écran
+- **Compteur d'alters** : Affichage du nombre d'alters filtrés
+
+### Améliorations UI
+- Icônes standardisées avec `Ionicons` (remplace les emojis)
+- Ombres subtiles style Apple
+- Animations de sélection améliorées
+- Espacement optimisé pour une meilleure lisibilité
+
+---
+
+## [2025-12-29] Correction Bug JSX Layout
+
+### Correction
+- **`app/(tabs)/_layout.tsx`** : Ajouté la balise fermante `</Tabs>` manquante qui causait l'erreur de compilation `Expected corresponding JSX closing tag for <Tabs>`
+- **Cause** : La structure JSX était mal fermée - les balises `</View>` étaient présentes mais `</Tabs>` était absent
+
+### Résultat
+✅ Compilation réussie - L'app se lance correctement dans le simulateur
+
+---
+
 ## [2025-12-29] Migration Supabase vers Firebase
 
 ### Migration Backend

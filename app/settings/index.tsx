@@ -126,7 +126,7 @@ export default function SettingsScreen() {
                     "people-outline",
                     "Gestion des Rôles",
                     "Définir les rôles (Protecteur, Gatekeeper...)",
-                    "/roles",
+                    "/roles/index",
                     "#8B5CF6"
                 )}
 
@@ -134,7 +134,7 @@ export default function SettingsScreen() {
                     "hand-left-outline",
                     "Demandes d'Aide",
                     "Voir et résoudre les besoins du système",
-                    "/help",
+                    "/help/index",
                     "#10B981"
                 )}
 

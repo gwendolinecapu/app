@@ -63,11 +63,13 @@ export default function GroupChatScreen() {
     };
 
     const handleSendMessage = async (content: string, type: 'text' | 'image' | 'poll' | 'note', extraData?: any) => {
-        if (!currentAlter) return;
+        if (!currentAlter || !user) return;
 
         try {
+            // IMPORTANT: senderId (user.uid) est requis par les règles Firestore
             await GroupService.sendGroupMessage(
                 id,
+                user.uid, // senderId requis par firestore.rules
                 currentAlter.id,
                 content,
                 type,

@@ -82,7 +82,7 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
                     <Text style={styles.username}>@{currentAlter.name.toLowerCase()}</Text>
                     <View style={{ flexDirection: 'row', gap: 16 }}>
-                        <TouchableOpacity onPress={() => router.push('/settings/' as any)}>
+                        <TouchableOpacity onPress={() => router.push('/settings/index' as any)}>
                             <Text style={styles.menuIcon}>⚙️</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => router.push(`/alter/${currentAlter.id}`)}>

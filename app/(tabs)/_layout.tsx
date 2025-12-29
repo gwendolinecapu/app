@@ -49,19 +49,11 @@ export default function TabLayout() {
                             ),
                         }}
                     />
-                    {/* Onglet 2: Journal - Journal personnel */}
+                    {/* Journal - Masqué car déplacé dans chaque profil d'alter */}
                     <Tabs.Screen
                         name="journal"
                         options={{
-                            title: 'Journal',
-                            tabBarIcon: ({ focused, color }) => (
-                                <Ionicons
-                                    name={focused ? "book" : "book-outline"}
-                                    size={24}
-                                    color={color}
-                                    accessibilityLabel="Journal"
-                                />
-                            ),
+                            href: null, // Masqué - accessible via Alter Space
                         }}
                     />
                     {/* Onglet 3: Dashboard - Accueil Système (Central) */}

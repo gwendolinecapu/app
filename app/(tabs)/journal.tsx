@@ -19,6 +19,8 @@ import { db } from '../../src/lib/firebase';
 import { collection, query, where, getDocs, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { JournalEntry, EmotionType, EMOTION_EMOJIS } from '../../src/types';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 export default function JournalScreen() {
     const { currentAlter, user } = useAuth();
@@ -61,21 +63,10 @@ export default function JournalScreen() {
     };
 
     const formatDate = (dateStr: string) => {
-        const date = new Date(dateStr);
-        const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-
-        if (date.toDateString() === today.toDateString()) {
-            return "Aujourd'hui";
-        } else if (date.toDateString() === yesterday.toDateString()) {
-            return 'Hier';
-        } else {
-            return date.toLocaleDateString('fr-FR', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long'
-            });
+        try {
+            return formatDistanceToNow(new Date(dateStr), { addSuffix: true, locale: fr });
+        } catch (e) {
+            return 'Récemment';
         }
     };
 

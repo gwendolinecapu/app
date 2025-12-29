@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 // ... imports
 import { Skeleton } from '../../src/components/ui/Skeleton';
+import { SystemWeather } from '../../src/components/SystemWeather';
 
 // ... inside component
 const { alters, user, refreshAlters, setFronting, activeFront, loading: authLoading } = useAuth();
@@ -439,24 +440,10 @@ export default function DashboardScreen() {
                 </TouchableOpacity>
             </View>
 
-            {/* Recherche - visible uniquement si beaucoup d'alters */}
-            {alters.length > 10 && (
-                <View style={styles.searchContainer}>
-                    <Ionicons name="search" size={18} color={colors.textMuted} style={styles.searchIcon} />
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Rechercher un alter..."
-                        placeholderTextColor={colors.textMuted}
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                    />
-                    {searchQuery.length > 0 && (
-                        <TouchableOpacity onPress={() => setSearchQuery('')}>
-                            <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-                        </TouchableOpacity>
-                    )}
-                </View>
-            )}
+            {/* System Weather Widget */}
+            <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+                <SystemWeather />
+            </View>
 
             {/* Mode Switcher */}
             <View style={styles.modeSwitchContainer}>

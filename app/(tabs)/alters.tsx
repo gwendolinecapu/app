@@ -24,14 +24,26 @@ import { Alter } from '../../src/types';
 import { colors, spacing, borderRadius, typography, alterColors } from '../../src/lib/theme';
 import { AlterBubble } from '../../src/components/AlterBubble';
 
+import { Badge } from '../../src/components/ui/Badge';
+import { SearchBar } from '../../src/components/ui/SearchBar';
+
 const { width } = Dimensions.get('window');
 const MAX_WIDTH = 430;
 const containerWidth = width > MAX_WIDTH ? MAX_WIDTH : width;
-const BUBBLE_SIZE = 90; // Fixed size for bubbles
+const BUBBLE_SIZE = 90;
+
+type SortOption = 'name' | 'recent' | 'created';
 
 export default function AltersScreen() {
-    const { alters, currentAlter, setFronting, refreshAlters, user } = useAuth();
+    const { alters, currentAlter, setFronting, refreshAlters, user, togglePin, toggleArchive } = useAuth();
     const [modalVisible, setModalVisible] = useState(false);
+
+    // UI State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [sortBy, setSortBy] = useState<SortOption>('name');
+    const [showArchived, setShowArchived] = useState(false);
+
+    // Form State
     const [newAlterName, setNewAlterName] = useState('');
     const [newAlterPronouns, setNewAlterPronouns] = useState('');
     const [newAlterBio, setNewAlterBio] = useState('');
@@ -142,6 +154,67 @@ export default function AltersScreen() {
         </View>
     );
 
+    const filteredAlters = React.useMemo(() => {
+        let result = [...alters];
+
+        // 1. Filter by Archive
+        if (!showArchived) {
+            result = result.filter(a => !a.isArchived);
+        } else {
+            result = result.filter(a => a.isArchived);
+        }
+
+        // 2. Filter by Search
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(a =>
+                a.name.toLowerCase().includes(query) ||
+                a.pronouns?.toLowerCase().includes(query) ||
+                a.role_ids?.includes(query) // Simple check, ideally map roles
+            );
+        }
+
+        // 3. Sort
+        result.sort((a, b) => {
+            // Always pinned first
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
+
+            switch (sortBy) {
+                case 'name':
+                    return a.name.localeCompare(b.name);
+                case 'created':
+                    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                case 'recent':
+                    // Approximated by created for now if no lastFronted available
+                    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                default:
+                    return 0;
+            }
+        });
+
+        return result;
+    }, [alters, searchQuery, sortBy, showArchived]);
+
+    const handleLongPress = (alter: Alter) => {
+        Alert.alert(
+            alter.name,
+            'Options de gestion',
+            [
+                {
+                    text: alter.isPinned ? 'Désépingler' : 'Épingler',
+                    onPress: () => togglePin(alter.id)
+                },
+                {
+                    text: alter.isArchived ? 'Désarchiver' : 'Archiver',
+                    onPress: () => toggleArchive(alter.id),
+                    style: 'destructive'
+                },
+                { text: 'Annuler', style: 'cancel' }
+            ]
+        );
+    };
+
     return (
         <View style={styles.container}>
             {/* Header */}
@@ -158,6 +231,21 @@ export default function AltersScreen() {
                         <Text style={styles.headerIcon}>👤</Text>
                     </TouchableOpacity>
                 </View>
+            </View>
+
+            {/* Search & Filter Bar */}
+            <View style={styles.filterContainer}>
+                <SearchBar
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    containerStyle={{ flex: 1, marginRight: 10 }}
+                />
+                <TouchableOpacity
+                    style={[styles.filterButton, showArchived && styles.filterButtonActive]}
+                    onPress={() => setShowArchived(!showArchived)}
+                >
+                    <Ionicons name="archive-outline" size={20} color={showArchived ? colors.primary : colors.textMuted} />
+                </TouchableOpacity>
             </View>
 
             {/* Bubbles Grid */}
@@ -334,6 +422,40 @@ const styles = StyleSheet.create({
     },
     title: {
         ...typography.h2,
+    },
+    // Filter & Search Styles
+    filterContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: spacing.md,
+        marginBottom: spacing.md,
+    },
+    filterButton: {
+        width: 44,
+        height: 44,
+        borderRadius: borderRadius.lg,
+        backgroundColor: colors.backgroundLight,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    filterButtonActive: {
+        backgroundColor: colors.backgroundCard,
+        borderColor: colors.primary,
+    },
+    pinBadge: {
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        zIndex: 10,
+        backgroundColor: colors.primary,
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1.5,
+        borderColor: colors.background,
     },
     gridContent: {
         padding: spacing.md,

@@ -14,6 +14,8 @@ import {
     TextInput,
 } from 'react-native';
 // import { Video, ResizeMode, Audio } from 'expo-av'; // TODO: Fix expo-av installation
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../src/contexts/AuthContext';
@@ -221,67 +223,95 @@ export default function AlterSpaceScreen() {
 
     const renderProfile = () => {
         const ProfileHeader = () => (
-            <View style={styles.profileSection}>
-                <View style={[styles.avatar, { backgroundColor: alter.color }]}>
-                    {alter.avatar_url ? (
-                        <Image source={{ uri: alter.avatar_url }} style={styles.avatarImage} />
-                    ) : (
-                        <Text style={styles.avatarText}>
-                            {alter.name.charAt(0).toUpperCase()}
-                        </Text>
-                    )}
-                </View>
-                <Text style={styles.name}>{alter.name}</Text>
-                {alter.pronouns ? (
-                    <Text style={styles.pronouns}>{alter.pronouns}</Text>
-                ) : null}
-                {alter.custom_fields?.find(f => f.label === 'Role')?.value ? (
-                    <View style={styles.roleTag}>
-                        <Ionicons name="shield" size={12} color={colors.primary} />
-                        <Text style={styles.roleText}>
-                            {alter.custom_fields.find(f => f.label === 'Role')?.value}
-                        </Text>
-                    </View>
-                ) : null}
-                <Text style={styles.bio}>
-                    {alter.bio || "Aucune biographie"}
-                </Text>
-                <View style={styles.statsRow}>
-                    <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>{posts.length}</Text>
-                        <Text style={styles.statLabel}>Posts</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>{friendCount}</Text>
-                        <Text style={styles.statLabel}>Amis</Text>
-                    </View>
-                </View>
+            <View style={styles.profileSectionWrapper}>
+                <LinearGradient
+                    colors={['#0F2847', '#1E4275', '#2A0845']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.profileGradientBackground}
+                />
 
-                {/* Profile Actions */}
-                <View style={styles.profileActions}>
-                    {isOwner ? (
-                        <TouchableOpacity
-                            style={styles.editProfileButton}
-                            onPress={() => router.push(`/alter-space/${alter.id}/edit`)}
-                        >
-                            <Text style={styles.editProfileText}>Modifier le profil</Text>
-                        </TouchableOpacity>
-                    ) : (
-                        <>
+                <View style={[styles.profileSection, { backgroundColor: 'transparent' }]}>
+                    <View style={[styles.avatarContainer, { borderColor: alter.color || colors.primary }]}>
+                        {alter.avatar_url ? (
+                            <Image source={{ uri: alter.avatar_url }} style={styles.avatarImage} />
+                        ) : (
+                            <View style={[styles.avatarPlaceholder, { backgroundColor: alter.color }]}>
+                                <Text style={styles.avatarText}>
+                                    {alter.name.charAt(0).toUpperCase()}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+
+                    <Text style={styles.name}>{alter.name}</Text>
+                    {alter.pronouns ? (
+                        <Text style={styles.pronouns}>{alter.pronouns}</Text>
+                    ) : null}
+
+                    {alter.custom_fields?.find(f => f.label === 'Role')?.value ? (
+                        <View style={styles.roleTag}>
+                            <Ionicons name="shield" size={12} color={colors.primary} />
+                            <Text style={styles.roleText}>
+                                {alter.custom_fields.find(f => f.label === 'Role')?.value}
+                            </Text>
+                        </View>
+                    ) : null}
+
+                    {/* Glassmorphism Card for Bio & Stats */}
+                    <BlurView intensity={20} tint="dark" style={styles.glassCard}>
+                        <Text style={styles.bio}>
+                            {alter.bio || "Aucune biographie"}
+                        </Text>
+
+                        <View style={styles.statsDivider} />
+
+                        <View style={styles.statsRow}>
+                            <View style={styles.statItem}>
+                                <Text style={styles.statNumber}>{posts.length}</Text>
+                                <Text style={styles.statLabel}>Posts</Text>
+                            </View>
+                            <View style={styles.statSeparator} />
+                            <View style={styles.statItem}>
+                                <Text style={styles.statNumber}>{friendCount}</Text>
+                                <Text style={styles.statLabel}>Amis</Text>
+                            </View>
+                            {/* Hidden for now until groups implemented
+                            <View style={styles.statSeparator} />
+                            <View style={styles.statItem}>
+                                <Text style={styles.statNumber}>0</Text>
+                                <Text style={styles.statLabel}>Groupes</Text>
+                            </View>
+                            */}
+                        </View>
+                    </BlurView>
+
+                    {/* Profile Actions */}
+                    <View style={styles.profileActions}>
+                        {isOwner ? (
                             <TouchableOpacity
                                 style={styles.editProfileButton}
-                                onPress={() => router.push({ pathname: '/conversation/[id]', params: { id: alter.id } })}
+                                onPress={() => router.push(`/alter-space/${alter.id}/edit`)}
                             >
-                                <Text style={styles.editProfileText}>Message</Text>
+                                <Text style={styles.editProfileText}>Modifier le profil</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.followButton} onPress={() => handleFriendAction(alter.id)}>
-                                <Text style={styles.followButtonText}>
-                                    {friendStatuses[alter.id] === 'friends' ? 'Amis' :
-                                        friendStatuses[alter.id] === 'pending' ? 'Demande envoyée' : 'Ajouter'}
-                                </Text>
-                            </TouchableOpacity>
-                        </>
-                    )}
+                        ) : (
+                            <>
+                                <TouchableOpacity
+                                    style={styles.editProfileButton}
+                                    onPress={() => router.push({ pathname: '/conversation/[id]', params: { id: alter.id } })}
+                                >
+                                    <Text style={styles.editProfileText}>Message</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.followButton} onPress={() => handleFriendAction(alter.id)}>
+                                    <Text style={styles.followButtonText}>
+                                        {friendStatuses[alter.id] === 'friends' ? 'Amis' :
+                                            friendStatuses[alter.id] === 'pending' ? 'Demande envoyée' : 'Ajouter'}
+                                    </Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
+                    </View>
                 </View>
             </View>
         );
@@ -802,34 +832,101 @@ const styles = StyleSheet.create({
     backButton: {
         padding: spacing.xs,
     },
+    profileSectionWrapper: {
+        overflow: 'hidden',
+        borderBottomLeftRadius: 30,
+        borderBottomRightRadius: 30,
+        marginBottom: spacing.md,
+    },
+    profileGradientBackground: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
+    profileSection: {
+        alignItems: 'center',
+        padding: spacing.xl,
+        paddingTop: 80, // Space for status bar/header
+    },
+    avatarContainer: {
+        width: 100,
+        height: 100,
+        marginBottom: spacing.md,
+        borderRadius: 50,
+        borderWidth: 3,
+        padding: 3, // Ring effect
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        elevation: 8,
+    },
+    avatarImage: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 50,
+    },
+    avatarPlaceholder: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 50,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    avatarText: {
+        fontSize: 36,
+        fontWeight: 'bold',
+        color: colors.text,
+    },
+    glassCard: {
+        width: '100%',
+        borderRadius: borderRadius.lg,
+        padding: spacing.md,
+        marginTop: spacing.sm,
+        marginBottom: spacing.lg,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        alignItems: 'center',
+    },
+    statsDivider: {
+        width: '80%',
+        height: 1,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        marginVertical: spacing.md,
+    },
+    statsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+    },
+    statItem: {
+        alignItems: 'center',
+        paddingHorizontal: spacing.xl,
+    },
+    statSeparator: {
+        width: 1,
+        height: 24,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+    },
+    statNumber: {
+        ...typography.h3,
+        fontWeight: 'bold',
+    },
+    statLabel: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        fontSize: 14,
+    },
     messageButton: {
         padding: spacing.xs,
     },
     headerTitle: {
         ...typography.h3,
         fontWeight: 'bold',
-    },
-    profileSection: {
-        alignItems: 'center',
-        paddingVertical: spacing.lg,
-    },
-    avatar: {
-        width: 90,
-        height: 90,
-        borderRadius: 45,
-        justifyContent: 'center',
-        alignItems: 'center',
-        overflow: 'hidden',
-        marginBottom: spacing.md,
-    },
-    avatarImage: {
-        width: '100%',
-        height: '100%',
-    },
-    avatarText: {
-        fontSize: 36,
-        fontWeight: 'bold',
-        color: colors.text,
     },
     name: {
         ...typography.h2,
@@ -863,341 +960,332 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.xl,
         marginBottom: spacing.md,
     },
-    statsRow: {
-        flexDirection: 'row',
-        gap: 40,
-        marginTop: spacing.sm,
-    },
-    statItem: {
-        alignItems: 'center',
-    },
-    statNumber: {
-        ...typography.h3,
-        fontWeight: 'bold',
-    },
+    ...typography.h3,
+    fontWeight: 'bold',
+},
     statLabel: {
-        ...typography.caption,
-        color: colors.textSecondary,
-        fontSize: 14,
-    },
+    ...typography.caption,
+    color: colors.textSecondary,
+    fontSize: 14,
+},
     profileActions: {
-        flexDirection: 'row',
-        gap: 10,
-        marginTop: spacing.md,
-        width: '100%',
-        paddingHorizontal: spacing.xl,
-        justifyContent: 'center',
-    },
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: spacing.md,
+    width: '100%',
+    paddingHorizontal: spacing.xl,
+    justifyContent: 'center',
+},
     editProfileButton: {
-        backgroundColor: colors.backgroundLight,
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 8,
-        flex: 1,
-        alignItems: 'center',
-    },
+    backgroundColor: colors.backgroundLight,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    flex: 1,
+    alignItems: 'center',
+},
     editProfileText: {
-        color: colors.text,
-        fontWeight: '600',
-        fontSize: 14,
-    },
+    color: colors.text,
+    fontWeight: '600',
+    fontSize: 14,
+},
     followButton: {
-        backgroundColor: colors.primary,
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 8,
-        flex: 1,
-        alignItems: 'center',
-    },
+    backgroundColor: colors.primary,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    flex: 1,
+    alignItems: 'center',
+},
     followButtonText: {
-        color: 'white',
-        fontWeight: '600',
-        fontSize: 14,
-    },
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
+},
     bottomTabs: {
-        flexDirection: 'row',
-        borderTopWidth: 1,
-        borderTopColor: colors.border,
-        backgroundColor: colors.backgroundCard,
-        paddingBottom: spacing.lg,
-        paddingTop: spacing.sm,
-        height: 85,
-        alignItems: 'center',
-        justifyContent: 'space-around',
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-    },
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.backgroundCard,
+    paddingBottom: spacing.lg,
+    paddingTop: spacing.sm,
+    height: 85,
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+},
     tab: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: spacing.xs,
-        minWidth: 50,
-    },
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xs,
+    minWidth: 50,
+},
     tabActive: {
-        // No border, just color change handled in JSX
-    },
+    // No border, just color change handled in JSX
+},
     contentArea: {
-        flex: 1,
-        paddingBottom: 85, // Space for bottom tabs
-    },
+    flex: 1,
+    paddingBottom: 85, // Space for bottom tabs
+},
     galleryContainer: {
-        flex: 1,
-        padding: 1,
-    },
+    flex: 1,
+    padding: 1,
+},
     galleryItem: {
-        width: GALLERY_ITEM_SIZE,
-        height: GALLERY_ITEM_SIZE,
-        margin: 1,
-        backgroundColor: colors.backgroundCard,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
+    width: GALLERY_ITEM_SIZE,
+    height: GALLERY_ITEM_SIZE,
+    margin: 1,
+    backgroundColor: colors.backgroundCard,
+    justifyContent: 'center',
+    alignItems: 'center',
+},
     galleryImage: {
-        width: '100%',
-        height: '100%',
-    },
+    width: '100%',
+    height: '100%',
+},
     textPostPreview: {
-        padding: spacing.xs,
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: '100%',
-        height: '100%',
-    },
+    padding: spacing.xs,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    height: '100%',
+},
     textPostContent: {
-        ...typography.caption,
-        color: colors.text,
-        textAlign: 'center',
-        fontSize: 10,
-    },
+    ...typography.caption,
+    color: colors.text,
+    textAlign: 'center',
+    fontSize: 10,
+},
     tabContent: {
-        flex: 1,
-        padding: spacing.md,
-    },
+    flex: 1,
+    padding: spacing.md,
+},
     searchContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.backgroundLight,
-        borderRadius: borderRadius.lg,
-        padding: spacing.sm,
-        marginBottom: spacing.lg,
-    },
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundLight,
+    borderRadius: borderRadius.lg,
+    padding: spacing.sm,
+    marginBottom: spacing.lg,
+},
     searchIcon: {
-        marginRight: spacing.sm,
-    },
+    marginRight: spacing.sm,
+},
     searchInputPlaceholder: {
-        flex: 1,
-    },
+    flex: 1,
+},
     settingsContainer: {
-        flex: 1,
-    },
+    flex: 1,
+},
     settingSection: {
-        marginBottom: spacing.xl,
-    },
+    marginBottom: spacing.xl,
+},
     settingSectionTitle: {
-        ...typography.h3,
-        fontSize: 18,
-        marginBottom: spacing.md,
-        paddingHorizontal: spacing.md,
-    },
+    ...typography.h3,
+    fontSize: 18,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+},
     settingItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.md,
-        backgroundColor: colors.backgroundCard,
-        marginBottom: 1,
-    },
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.backgroundCard,
+    marginBottom: 1,
+},
     settingText: {
-        ...typography.body,
-        flex: 1,
-        marginLeft: spacing.md,
-    },
+    ...typography.body,
+    flex: 1,
+    marginLeft: spacing.md,
+},
     emptyState: {
-        alignItems: 'center',
-        padding: spacing.xxl,
-        marginTop: spacing.xl,
-    },
+    alignItems: 'center',
+    padding: spacing.xxl,
+    marginTop: spacing.xl,
+},
     emptyEmoji: {
-        fontSize: 64,
-        marginBottom: spacing.md,
-    },
+    fontSize: 64,
+    marginBottom: spacing.md,
+},
     emptyTitle: {
-        ...typography.h3,
-        marginBottom: spacing.xs,
-        fontSize: 20,
-    },
+    ...typography.h3,
+    marginBottom: spacing.xs,
+    fontSize: 20,
+},
     emptySubtitle: {
-        ...typography.bodySmall,
-        color: colors.textSecondary,
-        textAlign: 'center',
-    },
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    textAlign: 'center',
+},
     sectionTitle: {
-        ...typography.h3,
-        marginBottom: spacing.md,
-        color: colors.text,
-    },
+    ...typography.h3,
+    marginBottom: spacing.md,
+    color: colors.text,
+},
     startChatButton: {
-        backgroundColor: colors.primary,
-        paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.lg,
-        borderRadius: borderRadius.full,
-        marginTop: spacing.lg,
-    },
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.full,
+    marginTop: spacing.lg,
+},
     startChatText: {
-        color: 'white',
-        fontWeight: '600' as const,
-    },
+    color: 'white',
+    fontWeight: '600' as const,
+},
     fab: {
-        position: 'absolute',
-        bottom: 100, // Adjusted to clear bottom tab bar
-        alignSelf: 'center', // Center horizontally
-        // right: 30, // Removed right alignment
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: colors.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
-        shadowRadius: 8,
-        elevation: 8,
-        zIndex: 20, // Ensure it's above everything
-    },
+    position: 'absolute',
+    bottom: 100, // Adjusted to clear bottom tab bar
+    alignSelf: 'center', // Center horizontally
+    // right: 30, // Removed right alignment
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 20, // Ensure it's above everything
+},
     postCard: {
-        backgroundColor: colors.backgroundCard,
-        marginBottom: spacing.md,
-        borderRadius: borderRadius.lg,
-        padding: spacing.md,
-        borderWidth: 1,
-        borderColor: colors.border,
-    },
+    backgroundColor: colors.backgroundCard,
+    marginBottom: spacing.md,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+},
     postHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: spacing.sm,
-    },
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+},
     postAuthorInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
+    flexDirection: 'row',
+    alignItems: 'center',
+},
     postAvatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: colors.secondary,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: spacing.sm,
-        overflow: 'hidden',
-    },
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.sm,
+    overflow: 'hidden',
+},
     postAvatarImage: {
-        width: '100%',
-        height: '100%',
-    },
+    width: '100%',
+    height: '100%',
+},
     postAvatarText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 18,
-    },
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 18,
+},
     postAuthorName: {
-        ...typography.body,
-        fontWeight: 'bold',
-    },
+    ...typography.body,
+    fontWeight: 'bold',
+},
     postTime: {
-        ...typography.caption,
-        color: colors.textSecondary,
-    },
+    ...typography.caption,
+    color: colors.textSecondary,
+},
     postContent: {
-        ...typography.body,
-        marginBottom: spacing.md,
-        lineHeight: 22,
-    },
+    ...typography.body,
+    marginBottom: spacing.md,
+    lineHeight: 22,
+},
     postImage: {
-        width: '100%',
-        height: 200,
-        borderRadius: borderRadius.md,
-        marginBottom: spacing.md,
-    },
+    width: '100%',
+    height: 200,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
+},
     postActions: {
-        flexDirection: 'row',
-        borderTopWidth: 1,
-        borderTopColor: colors.border,
-        paddingTop: spacing.sm,
-    },
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: spacing.sm,
+},
     postAction: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginRight: spacing.xl,
-    },
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: spacing.xl,
+},
     postActionText: {
-        ...typography.caption,
-        marginLeft: spacing.xs,
-        color: colors.textSecondary,
-    },
+    ...typography.caption,
+    marginLeft: spacing.xs,
+    color: colors.textSecondary,
+},
     tipCard: {
-        backgroundColor: colors.backgroundCard, // Or a slightly different color for tips
-        marginBottom: spacing.md,
-        borderRadius: borderRadius.lg,
-        padding: spacing.md,
-        borderWidth: 1,
-        borderColor: colors.primary + '40', // slightly colored border
-    },
+    backgroundColor: colors.backgroundCard, // Or a slightly different color for tips
+    marginBottom: spacing.md,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.primary + '40', // slightly colored border
+},
     tipHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: spacing.xs,
-    },
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+},
     tipTitle: {
-        ...typography.h3,
-        fontSize: 16,
-        marginLeft: spacing.xs,
-        color: colors.primary,
-    },
+    ...typography.h3,
+    fontSize: 16,
+    marginLeft: spacing.xs,
+    color: colors.primary,
+},
     tipContent: {
-        ...typography.body,
-        fontSize: 14,
-        color: colors.text,
-        marginBottom: spacing.sm,
-    },
+    ...typography.body,
+    fontSize: 14,
+    color: colors.text,
+    marginBottom: spacing.sm,
+},
     tipAction: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
+    flexDirection: 'row',
+    alignItems: 'center',
+},
     tipActionText: {
-        ...typography.caption,
-        fontWeight: 'bold',
-        color: colors.primary,
-        marginRight: spacing.xs,
-    },
+    ...typography.caption,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginRight: spacing.xs,
+},
     emotionGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: spacing.sm,
-        padding: spacing.md,
-        justifyContent: 'center',
-    },
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    padding: spacing.md,
+    justifyContent: 'center',
+},
     emotionButton: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: colors.backgroundCard,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: colors.border,
-    },
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.backgroundCard,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+},
     emotionEmoji: {
-        fontSize: 30,
-    },
+    fontSize: 30,
+},
     mediaContainer: {
-        marginTop: spacing.sm,
-        marginBottom: spacing.sm,
-        borderRadius: borderRadius.md,
-        overflow: 'hidden',
-    },
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+    borderRadius: borderRadius.md,
+    overflow: 'hidden',
+},
 });

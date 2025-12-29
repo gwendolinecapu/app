@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>logFormatVersion</key>
+	<integer>12</integer>
+	<key>logs</key>
+	<dict>
+		<key>1B40285A-7D81-41F8-91EC-7722294EB7F6</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>1B40285A-7D81-41F8-91EC-7722294EB7F6.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>W</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>1</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>PluralConnect project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>PluralConnectWatch Watch App</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Building workspace PluralConnect with scheme PluralConnectWatch Watch App</string>
+			<key>timeStartedRecording</key>
+			<real>788716841.45913994</real>
+			<key>timeStoppedRecording</key>
+			<real>788716853.00166702</real>
+			<key>title</key>
+			<string>Building workspace PluralConnect with scheme PluralConnectWatch Watch App</string>
+			<key>uniqueIdentifier</key>
+			<string>1B40285A-7D81-41F8-91EC-7722294EB7F6</string>
+		</dict>
+		<key>721E65B2-F19F-4841-9095-2951D7209FE9</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>721E65B2-F19F-4841-9095-2951D7209FE9.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>E</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>3</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>1</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>PluralConnect project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>PluralConnectWatch Watch App</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Building workspace PluralConnect with scheme PluralConnectWatch Watch App</string>
+			<key>timeStartedRecording</key>
+			<real>788716128.70320594</real>
+			<key>timeStoppedRecording</key>
+			<real>788716196.56306195</real>
+			<key>title</key>
+			<string>Building workspace PluralConnect with scheme PluralConnectWatch Watch App</string>
+			<key>uniqueIdentifier</key>
+			<string>721E65B2-F19F-4841-9095-2951D7209FE9</string>
+		</dict>
+		<key>F0BCC3F5-D2D5-4DC0-914A-BB1F4751F564</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>F0BCC3F5-D2D5-4DC0-914A-BB1F4751F564.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>S</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>0</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>PluralConnect project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>PluralConnectWatch Watch App</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Archiving workspace PluralConnect with scheme PluralConnectWatch Watch App</string>
+			<key>timeStartedRecording</key>
+			<real>788716853.042997</real>
+			<key>timeStoppedRecording</key>
+			<real>788716870.22188795</real>
+			<key>title</key>
+			<string>Archiving workspace PluralConnect with scheme PluralConnectWatch Watch App</string>
+			<key>uniqueIdentifier</key>
+			<string>F0BCC3F5-D2D5-4DC0-914A-BB1F4751F564</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

@@ -1,0 +1,40 @@
+{
+  "source": "/Users/leo/Sans titre/ios/PluralConnectWatch Watch App/Views/AlterSelectionView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Alter",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 76
+        }
+      },
+      {
+        "comment": "",
+        "key": "Co-Front",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 30
+        }
+      },
+      {
+        "comment": "",
+        "key": "Chargement...",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 42
+        }
+      },
+      {
+        "comment": "",
+        "key": "Valider (%lld)",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 68
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,39 @@
+{
+  "" : {
+    "diagnostics" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/PluralConnectWatch Watch App-primary.dia",
+    "emit-module-dependencies" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/PluralConnectWatch Watch App-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/PluralConnectWatch Watch App-primary-emit-module.dia",
+    "pch" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/PluralConnectWatch Watch App-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/PluralConnectWatch Watch App-primary.swiftdeps"
+  },
+  "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/GeneratedAssetSymbols~partial.swiftmodule"
+  },
+  "/Users/leo/Sans titre/ios/PluralConnectWatch Watch App/ContentView.swift" : {
+    "const-values" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/ContentView.swiftconstvalues",
+    "dependencies" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/ContentView.d",
+    "diagnostics" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/ContentView.dia",
+    "index-unit-output-path" : "/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/ContentView.o",
+    "llvm-bc" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/ContentView.bc",
+    "object" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/ContentView.o",
+    "swift-dependencies" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/ContentView.swiftdeps",
+    "swiftmodule" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/ContentView~partial.swiftmodule"
+  },
+  "/Users/leo/Sans titre/ios/PluralConnectWatch Watch App/PluralConnectWatchApp.swift" : {
+    "const-values" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/PluralConnectWatchApp.swiftconstvalues",
+    "dependencies" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/PluralConnectWatchApp.d",
+    "diagnostics" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/PluralConnectWatchApp.dia",
+    "index-unit-output-path" : "/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/PluralConnectWatchApp.o",
+    "llvm-bc" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/PluralConnectWatchApp.bc",
+    "object" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/PluralConnectWatchApp.o",
+    "swift-dependencies" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/PluralConnectWatchApp.swiftdeps",
+    "swiftmodule" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PluralConnect.build/Debug-watchsimulator/PluralConnectWatch Watch App.build/Objects-normal/arm64/PluralConnectWatchApp~partial.swiftmodule"
+  }
+}

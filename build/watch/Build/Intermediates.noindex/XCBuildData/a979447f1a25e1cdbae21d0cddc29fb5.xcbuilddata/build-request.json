@@ -1,0 +1,75 @@
+{
+  "buildCommand" : {
+    "command" : "build",
+    "skipDependencies" : false,
+    "style" : "buildOnly"
+  },
+  "configuredTargets" : [
+    {
+      "guid" : "d52d1424ee86d170dc007708b3376e0c03cc926ba8d7760dea42bae58806d589"
+    },
+    {
+      "guid" : "d52d1424ee86d170dc007708b3376e0ce1ae1d628854a8c648d06e157f15ad8b"
+    }
+  ],
+  "containerPath" : "/Users/leo/Sans titre/ios/PluralConnect.xcworkspace",
+  "continueBuildingAfterErrors" : false,
+  "dependencyScope" : "workspace",
+  "enableIndexBuildArena" : false,
+  "hideShellScriptEnvironment" : false,
+  "parameters" : {
+    "action" : "build",
+    "activeArchitecture" : "arm64",
+    "activeRunDestination" : {
+      "disableOnlyActiveArch" : false,
+      "platform" : "watchsimulator",
+      "sdk" : "watchsimulator26.2",
+      "sdkVariant" : "watchsimulator",
+      "supportedArchitectures" : [
+        "arm64"
+      ],
+      "targetArchitecture" : "arm64"
+    },
+    "arenaInfo" : {
+      "buildIntermediatesPath" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex",
+      "buildProductsPath" : "/Users/leo/Sans titre/build/watch/Build/Products",
+      "derivedDataPath" : "/Users/leo/Sans titre/build/watch",
+      "indexDataStoreFolderPath" : "/Users/leo/Sans titre/build/watch/Index.noindex/DataStore",
+      "indexEnableDataStore" : true,
+      "indexPCHPath" : "/Users/leo/Sans titre/build/watch/Index.noindex/PrecompiledHeaders",
+      "pchPath" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PrecompiledHeaders"
+    },
+    "configurationName" : "Debug",
+    "overrides" : {
+      "commandLine" : {
+        "table" : {
+
+        }
+      },
+      "synthesized" : {
+        "table" : {
+          "ACTION" : "build",
+          "ASSETCATALOG_FILTER_FOR_DEVICE_MODEL" : "Watch7,18",
+          "ASSETCATALOG_FILTER_FOR_DEVICE_OS_VERSION" : "26.2",
+          "ASSETCATALOG_FILTER_FOR_THINNING_DEVICE_CONFIGURATION" : "Watch7,18",
+          "BUILD_ACTIVE_RESOURCES_ONLY" : "YES",
+          "CLANG_COVERAGE_MAPPING" : "YES",
+          "CLANG_PROFILE_DATA_DIRECTORY" : "/Users/leo/Sans titre/build/watch/Build/ProfileData",
+          "ENABLE_PREVIEWS" : "NO",
+          "ENABLE_XOJIT_PREVIEWS" : "YES",
+          "ONLY_ACTIVE_ARCH" : "YES",
+          "TARGET_DEVICE_IDENTIFIER" : "7C3D357D-E6C1-4F8F-A78B-575CC2D7C4DA",
+          "TARGET_DEVICE_MODEL" : "Watch7,18",
+          "TARGET_DEVICE_OS_VERSION" : "26.2",
+          "TARGET_DEVICE_PLATFORM_NAME" : "watchsimulator"
+        }
+      }
+    }
+  },
+  "schemeCommand" : "launch",
+  "showNonLoggedProgress" : true,
+  "useDryRun" : false,
+  "useImplicitDependencies" : true,
+  "useLegacyBuildLocations" : false,
+  "useParallelTargets" : true
+}

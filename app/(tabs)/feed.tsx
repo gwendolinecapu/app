@@ -269,15 +269,10 @@ export default function FeedScreen() {
             </Text>
             {!loading && (
                 <Text style={styles.emptySubtitle}>
-                    Créez votre première publication !
+                    Les publications de votre système apparaîtront ici.
+                    Créez des posts depuis l'espace de chaque alter !
                 </Text>
             )}
-            <TouchableOpacity
-                style={styles.createButton}
-                onPress={() => router.push('/post/create')}
-            >
-                <Text style={styles.createButtonText}>Créer un post</Text>
-            </TouchableOpacity>
         </View>
     );
 
@@ -299,14 +294,6 @@ export default function FeedScreen() {
                 }
                 ListFooterComponent={loading && !refreshing ? <ActivityIndicator color={colors.primary} style={{ margin: 20 }} /> : null}
             />
-
-            {/* FAB */}
-            <TouchableOpacity
-                style={styles.fab}
-                onPress={() => router.push('/post/create')}
-            >
-                <Ionicons name="add" size={30} color="#FFF" />
-            </TouchableOpacity>
         </View>
     );
 }

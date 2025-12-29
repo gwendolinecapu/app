@@ -22,7 +22,7 @@ const { width } = Dimensions.get('window');
 const MAX_WIDTH = 430;
 const GALLERY_ITEM_SIZE = (Math.min(width, MAX_WIDTH) - spacing.md * 4) / 3;
 
-type TabType = 'gallery' | 'search' | 'emotions' | 'settings';
+type TabType = 'gallery' | 'journal' | 'search' | 'emotions' | 'settings';
 
 export default function AlterSpaceScreen() {
     const { alterId } = useLocalSearchParams<{ alterId: string }>();
@@ -149,6 +149,26 @@ export default function AlterSpaceScreen() {
             </View>
         );
     };
+
+    const renderJournal = () => (
+        <ScrollView style={styles.tabContent}>
+            <Text style={styles.sectionTitle}>Journal de {alter.name}</Text>
+            <View style={styles.emptyState}>
+                <Ionicons name="book-outline" size={64} color={colors.textMuted} />
+                <Text style={styles.emptyTitle}>Journal personnel</Text>
+                <Text style={styles.emptySubtitle}>
+                    Les entrées du journal de {alter.name} apparaîtront ici.
+                    Ce journal est privé et indépendant des autres alters.
+                </Text>
+                <TouchableOpacity
+                    style={styles.startChatButton}
+                    onPress={() => router.push('/(tabs)/journal')}
+                >
+                    <Text style={styles.startChatText}>Nouvelle entrée</Text>
+                </TouchableOpacity>
+            </View>
+        </ScrollView>
+    );
 
     const renderMessages = () => (
         <View style={styles.tabContent}>
@@ -308,7 +328,7 @@ export default function AlterSpaceScreen() {
                 </View>
             </View>
 
-            {/* Tab Navigation - 4 icônes (messages en haut à droite) */}
+            {/* Tab Navigation - 5 icônes (messages en haut à droite) */}
             <View style={styles.tabs}>
                 <TouchableOpacity
                     style={[styles.tab, activeTab === 'gallery' && styles.tabActive]}
@@ -316,8 +336,18 @@ export default function AlterSpaceScreen() {
                 >
                     <Ionicons
                         name={activeTab === 'gallery' ? 'grid' : 'grid-outline'}
-                        size={24}
+                        size={22}
                         color={activeTab === 'gallery' ? colors.primary : colors.textMuted}
+                    />
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'journal' && styles.tabActive]}
+                    onPress={() => setActiveTab('journal')}
+                >
+                    <Ionicons
+                        name={activeTab === 'journal' ? 'book' : 'book-outline'}
+                        size={22}
+                        color={activeTab === 'journal' ? colors.primary : colors.textMuted}
                     />
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -326,7 +356,7 @@ export default function AlterSpaceScreen() {
                 >
                     <Ionicons
                         name={activeTab === 'search' ? 'search' : 'search-outline'}
-                        size={24}
+                        size={22}
                         color={activeTab === 'search' ? colors.primary : colors.textMuted}
                     />
                 </TouchableOpacity>
@@ -355,13 +385,14 @@ export default function AlterSpaceScreen() {
             {/* Content Area */}
             <View style={styles.contentArea}>
                 {activeTab === 'gallery' && renderGallery()}
+                {activeTab === 'journal' && renderJournal()}
                 {activeTab === 'search' && renderSearch()}
                 {activeTab === 'emotions' && renderEmotions()}
                 {activeTab === 'settings' && renderSettings()}
             </View>
 
-            {/* Floating Action Button (Only on Gallery) */}
-            {activeTab === 'gallery' && (
+            {/* Floating Action Button (Only on Gallery or Journal) */}
+            {(activeTab === 'gallery' || activeTab === 'journal') && (
                 <TouchableOpacity
                     style={styles.fab}
                     onPress={() => router.push('/post/create')}

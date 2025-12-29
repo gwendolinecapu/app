@@ -9,6 +9,8 @@ import {
     Image,
     RefreshControl,
     Dimensions,
+    ActivityIndicator,
+    Alert,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,19 +19,23 @@ import { db } from '../../../src/lib/firebase';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { Alter, Post } from '../../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../../src/lib/theme';
+import { PostService } from '../../../src/services/posts';
+import { SYSTEM_TIPS, SystemTip } from '../../../src/data/tips';
 
 const { width } = Dimensions.get('window');
 const MAX_WIDTH = 430;
 const GALLERY_ITEM_SIZE = (Math.min(width, MAX_WIDTH) - spacing.md * 4) / 3;
 
-type TabType = 'gallery' | 'journal' | 'search' | 'emotions' | 'settings';
+type TabType = 'feed' | 'gallery' | 'journal' | 'search' | 'emotions' | 'settings';
+type FeedItem = Post | SystemTip;
 
 export default function AlterSpaceScreen() {
     const { alterId } = useLocalSearchParams<{ alterId: string }>();
     const { alters, system } = useAuth();
     const [alter, setAlter] = useState<Alter | null>(null);
-    const [activeTab, setActiveTab] = useState<TabType>('gallery');
-    const [posts, setPosts] = useState<Post[]>([]);
+    const [activeTab, setActiveTab] = useState<TabType>('feed');
+    const [posts, setPosts] = useState<Post[]>([]); // Gallery posts
+    const [feedItems, setFeedItems] = useState<FeedItem[]>([]); // Global feed items
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(true);
 
@@ -46,8 +52,32 @@ export default function AlterSpaceScreen() {
     useEffect(() => {
         if (alter) {
             fetchPosts();
+            fetchGlobalFeed();
         }
     }, [alter]);
+
+    const fetchGlobalFeed = async () => {
+        try {
+            const globalPosts = await PostService.fetchGlobalFeed();
+
+            // Integrer les tips systeme
+            const items: FeedItem[] = [...globalPosts];
+
+            // Ajouter un tip tous les 5 posts
+            SYSTEM_TIPS.forEach((tip, index) => {
+                const position = (index + 1) * 5;
+                if (items.length >= position) {
+                    items.splice(position, 0, tip);
+                } else {
+                    items.push(tip); // Si pas assez de posts, ajouter a la fin
+                }
+            });
+
+            setFeedItems(items);
+        } catch (error) {
+            console.error('Error fetching global feed:', error);
+        }
+    };
 
     const fetchPosts = async () => {
         if (!alter) return;
@@ -76,7 +106,7 @@ export default function AlterSpaceScreen() {
 
     const onRefresh = async () => {
         setRefreshing(true);
-        await fetchPosts();
+        await Promise.all([fetchPosts(), fetchGlobalFeed()]);
         setRefreshing(false);
     };
 

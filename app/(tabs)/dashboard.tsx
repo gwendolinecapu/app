@@ -159,7 +159,7 @@ export default function DashboardScreen() {
         } else {
             await setFronting(selectedAlterObjects, 'co-front');
         }
-        router.push('/(tabs)/feed');
+        router.push('/(tabs)/dashboard');
     };
 
     const handleBlurryMode = async () => {
@@ -172,7 +172,7 @@ export default function DashboardScreen() {
                     text: "Continuer",
                     onPress: async () => {
                         await setFronting([], 'blurry');
-                        router.push('/(tabs)/feed');
+                        router.push('/(tabs)/dashboard');
                     }
                 }
             ]

@@ -66,7 +66,7 @@ export default function SettingsScreen() {
                 version: "1.0.0"
             };
 
-            const fileUri = FileSystem.documentDirectory + 'pluralconnect_backup.json';
+            const fileUri = (FileSystem as any).documentDirectory + 'pluralconnect_backup.json';
             await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(exportData, null, 2));
 
             if (await Sharing.isAvailableAsync()) {
@@ -98,7 +98,7 @@ export default function SettingsScreen() {
                     style: "destructive",
                     onPress: async () => {
                         try {
-                            const cacheDir = FileSystem.cacheDirectory as string | null;
+                            const cacheDir = (FileSystem as any).cacheDirectory;
                             if (cacheDir) {
                                 triggerHaptic.success();
                                 Alert.alert("Cache vidé", "L'espace temporaire a été nettoyé.");

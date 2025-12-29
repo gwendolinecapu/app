@@ -22,7 +22,7 @@ const { width } = Dimensions.get('window');
 const MAX_WIDTH = 430;
 const GALLERY_ITEM_SIZE = (Math.min(width, MAX_WIDTH) - spacing.md * 4) / 3;
 
-type TabType = 'gallery' | 'search' | 'settings';
+type TabType = 'gallery' | 'search' | 'emotions' | 'settings';
 
 export default function AlterSpaceScreen() {
     const { alterId } = useLocalSearchParams<{ alterId: string }>();
@@ -187,6 +187,29 @@ export default function AlterSpaceScreen() {
         </View>
     );
 
+    const renderEmotions = () => (
+        <ScrollView style={styles.tabContent}>
+            <Text style={styles.sectionTitle}>Comment te sens-tu, {alter.name} ?</Text>
+
+            {/* Emotion Grid */}
+            <View style={styles.emotionGrid}>
+                {['😊', '😢', '😰', '😡', '😴', '😌', '😕', '🤩'].map((emoji, index) => (
+                    <TouchableOpacity key={index} style={styles.emotionButton}>
+                        <Text style={styles.emotionEmoji}>{emoji}</Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+
+            <View style={styles.emptyState}>
+                <Ionicons name="heart-outline" size={48} color={colors.textMuted} />
+                <Text style={styles.emptyTitle}>Suivi émotionnel</Text>
+                <Text style={styles.emptySubtitle}>
+                    Enregistrer les émotions de {alter.name} pour suivre son bien-être au fil du temps.
+                </Text>
+            </View>
+        </ScrollView>
+    );
+
     const renderSettings = () => (
         <ScrollView style={styles.settingsContainer}>
             <View style={styles.settingSection}>
@@ -285,7 +308,7 @@ export default function AlterSpaceScreen() {
                 </View>
             </View>
 
-            {/* Tab Navigation - 3 icônes (messages en haut à droite) */}
+            {/* Tab Navigation - 4 icônes (messages en haut à droite) */}
             <View style={styles.tabs}>
                 <TouchableOpacity
                     style={[styles.tab, activeTab === 'gallery' && styles.tabActive]}
@@ -308,6 +331,16 @@ export default function AlterSpaceScreen() {
                     />
                 </TouchableOpacity>
                 <TouchableOpacity
+                    style={[styles.tab, activeTab === 'emotions' && styles.tabActive]}
+                    onPress={() => setActiveTab('emotions')}
+                >
+                    <Ionicons
+                        name={activeTab === 'emotions' ? 'heart' : 'heart-outline'}
+                        size={24}
+                        color={activeTab === 'emotions' ? colors.primary : colors.textMuted}
+                    />
+                </TouchableOpacity>
+                <TouchableOpacity
                     style={[styles.tab, activeTab === 'settings' && styles.tabActive]}
                     onPress={() => setActiveTab('settings')}
                 >
@@ -323,6 +356,7 @@ export default function AlterSpaceScreen() {
             <View style={styles.contentArea}>
                 {activeTab === 'gallery' && renderGallery()}
                 {activeTab === 'search' && renderSearch()}
+                {activeTab === 'emotions' && renderEmotions()}
                 {activeTab === 'settings' && renderSettings()}
             </View>
 

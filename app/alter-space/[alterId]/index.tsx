@@ -13,7 +13,8 @@ import {
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../src/contexts/AuthContext';
-import { supabase } from '../../../src/lib/supabase';
+import { db } from '../../../src/lib/firebase';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { Alter, Post } from '../../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../../src/lib/theme';
 
@@ -52,15 +53,20 @@ export default function AlterSpaceScreen() {
         if (!alter) return;
 
         try {
-            const { data, error } = await supabase
-                .from('posts')
-                .select('*')
-                .eq('alter_id', alter.id)
-                .order('created_at', { ascending: false });
+            const q = query(
+                collection(db, 'posts'),
+                where('alter_id', '==', alter.id),
+                orderBy('created_at', 'desc')
+            );
 
-            if (data) {
-                setPosts(data);
-            }
+            const querySnapshot = await getDocs(q);
+            const data: Post[] = [];
+
+            querySnapshot.forEach((doc) => {
+                data.push({ id: doc.id, ...doc.data() } as Post);
+            });
+
+            setPosts(data);
         } catch (error) {
             console.error('Error fetching posts:', error);
         } finally {

@@ -1,5 +1,5 @@
 import { Tabs, router } from 'expo-router';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../src/lib/theme';
 
@@ -12,6 +12,15 @@ export default function TabLayout() {
             <View style={styles.phoneFrame}>
                 <Tabs
                     screenOptions={{
+                        headerShown: true,
+                        headerRight: () => (
+                            <TouchableOpacity
+                                onPress={() => router.push('/crisis')}
+                                style={{ marginRight: 16, padding: 8 }}
+                            >
+                                <Ionicons name="warning-outline" size={24} color={colors.error} />
+                            </TouchableOpacity>
+                        ),
                         tabBarActiveTintColor: colors.primary,
                         tabBarInactiveTintColor: colors.textMuted,
                         tabBarStyle: {
@@ -27,10 +36,10 @@ export default function TabLayout() {
                             backgroundColor: colors.background,
                         },
                         headerTintColor: colors.text,
-                        headerShown: false,
                     }}
                     initialRouteName="alters"
                 >
+                    {/* Onglet 1: Alters - Gestion des profils */}
                     <Tabs.Screen
                         name="alters"
                         options={{
@@ -40,55 +49,42 @@ export default function TabLayout() {
                                     name={focused ? "grid" : "grid-outline"}
                                     size={24}
                                     color={color}
-                                    accessibilityLabel="Fil d'actualité"
+                                    accessibilityLabel="Mes Alters"
                                 />
                             ),
                         }}
                     />
+                    {/* Onglet 2: Émotions - Suivi émotionnel */}
                     <Tabs.Screen
-                        name="feed"
+                        name="emotions"
                         options={{
-                            title: 'Feed',
+                            title: 'Émotions',
                             tabBarIcon: ({ focused, color }) => (
                                 <Ionicons
-                                    name={focused ? "images" : "images-outline"}
+                                    name={focused ? "heart" : "heart-outline"}
                                     size={24}
                                     color={color}
+                                    accessibilityLabel="Émotions"
                                 />
                             ),
                         }}
                     />
+                    {/* Onglet 3: Journal - Journal personnel */}
                     <Tabs.Screen
-                        name="create"
+                        name="journal"
                         options={{
-                            title: 'Créer',
-                            tabBarIcon: ({ focused }) => (
-                                <View style={styles.addButton}>
-                                    <Ionicons name="add" size={32} color="#FFF" accessibilityLabel="Créer un post" />
-                                </View>
-                            ),
-                        }}
-                        listeners={({ navigation }) => ({
-                            tabPress: (e) => {
-                                e.preventDefault();
-                                router.push('/post/create');
-                            },
-                        })}
-                    />
-                    <Tabs.Screen
-                        name="search"
-                        options={{
-                            title: 'Recherche',
+                            title: 'Journal',
                             tabBarIcon: ({ focused, color }) => (
                                 <Ionicons
-                                    name={focused ? "search" : "search-outline"}
+                                    name={focused ? "book" : "book-outline"}
                                     size={24}
                                     color={color}
-                                    accessibilityLabel="Recherche"
+                                    accessibilityLabel="Journal"
                                 />
                             ),
                         }}
                     />
+                    {/* Onglet 4: Messages - Communication */}
                     <Tabs.Screen
                         name="messages"
                         options={{
@@ -103,10 +99,29 @@ export default function TabLayout() {
                             ),
                         }}
                     />
+                    {/* Écrans cachés (accessibles mais pas dans la tab bar) */}
                     <Tabs.Screen
                         name="profile"
                         options={{
-                            href: null,
+                            href: null, // Caché de la tab bar
+                        }}
+                    />
+                    <Tabs.Screen
+                        name="feed"
+                        options={{
+                            href: null, // Caché pour Sprint futur
+                        }}
+                    />
+                    <Tabs.Screen
+                        name="search"
+                        options={{
+                            href: null, // Caché pour Sprint futur
+                        }}
+                    />
+                    <Tabs.Screen
+                        name="create"
+                        options={{
+                            href: null, // Redirigé vers /post/create
                         }}
                     />
                 </Tabs>

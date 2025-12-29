@@ -16,7 +16,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { supabase } from '../../src/lib/supabase';
+import { db, storage } from '../../src/lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 
 type PostType = 'text' | 'photo' | 'video';
@@ -69,23 +71,40 @@ export default function CreatePostScreen() {
 
         setLoading(true);
         try {
-            // Upload media if present
-            // Note: Actual Supabase storage upload is mocked here as we don't have bucket setup/context confirmed.
-            // We'll proceed as if the URI is valid or store it directly (DB might reject long URI).
-            // For production, insert upload logic here.
+            let mediaUrl = null;
+
+            if (mediaUri) {
+                try {
+                    const response = await fetch(mediaUri);
+                    const blob = await response.blob();
+                    // Extension based on type usually, simplified here
+                    const extension = postType === 'video' ? 'mp4' : 'jpg';
+                    const fileName = `posts/${system.id}/${Date.now()}.${extension}`;
+                    const storageRef = ref(storage, fileName);
+
+                    await uploadBytes(storageRef, blob);
+                    mediaUrl = await getDownloadURL(storageRef);
+                } catch (uploadErr) {
+                    console.log('Media upload failed:', uploadErr);
+                    // On continue ou on arrête ? Pour un post avec media seul, c'est bloquant.
+                    if (!content.trim()) {
+                        throw new Error("Impossible d'uploader le média");
+                    }
+                }
+            }
 
             const postData = {
                 system_id: system.id,
                 alter_id: currentAlter.id,
                 content: content.trim(),
-                media_url: mediaUri, // This should be the public URL after upload
-                visibility: 'public', // Default to public as requested
-                // type: postType, // If we had a type column
+                media_url: mediaUrl,
+                visibility: 'public',
+                created_at: new Date().toISOString(),
+                likes: 0,
+                comments_count: 0
             };
 
-            const { error } = await supabase.from('posts').insert(postData);
-
-            if (error) throw error;
+            await addDoc(collection(db, 'posts'), postData);
 
             router.back();
         } catch (error: any) {

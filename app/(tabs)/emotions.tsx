@@ -16,7 +16,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { supabase } from '../../src/lib/supabase';
+import { db } from '../../src/lib/firebase';
+import { collection, addDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import {
     Emotion,
@@ -55,26 +56,31 @@ export default function EmotionsScreen() {
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-        const { data, error } = await supabase
-            .from('emotions')
-            .select('*')
-            .eq('alter_id', currentAlter.id)
-            .gte('created_at', sevenDaysAgo.toISOString())
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error('Error fetching emotions:', error);
-            return;
-        }
-
-        if (data) {
-            setRecentEmotions(data);
-            // Vérifier si une émotion a été enregistrée aujourd'hui
-            const today = new Date().toDateString();
-            const todaysEntry = data.find(e =>
-                new Date(e.created_at).toDateString() === today
+        try {
+            const q = query(
+                collection(db, 'emotions'),
+                where('alter_id', '==', currentAlter.id),
+                where('created_at', '>=', sevenDaysAgo.toISOString()),
+                orderBy('created_at', 'desc')
             );
-            setTodayEmotion(todaysEntry || null);
+
+            const querySnapshot = await getDocs(q);
+            const data: Emotion[] = [];
+            querySnapshot.forEach((doc) => {
+                data.push({ id: doc.id, ...doc.data() } as Emotion);
+            });
+
+            if (data) {
+                setRecentEmotions(data);
+                // Vérifier si une émotion a été enregistrée aujourd'hui
+                const today = new Date().toDateString();
+                const todaysEntry = data.find(e =>
+                    new Date(e.created_at).toDateString() === today
+                );
+                setTodayEmotion(todaysEntry || null);
+            }
+        } catch (error) {
+            console.error('Error fetching emotions:', error);
         }
     };
 
@@ -92,14 +98,15 @@ export default function EmotionsScreen() {
 
         setLoading(true);
         try {
-            const { error } = await supabase.from('emotions').insert({
+            const newEmotion = {
                 alter_id: currentAlter.id,
                 emotion: selectedEmotion,
                 intensity,
                 note: note.trim() || null,
-            });
+                created_at: new Date().toISOString(),
+            };
 
-            if (error) throw error;
+            await addDoc(collection(db, 'emotions'), newEmotion);
 
             Alert.alert('✨', 'Émotion enregistrée !');
             setSelectedEmotion(null);

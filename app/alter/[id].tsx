@@ -7,11 +7,13 @@ import {
     ScrollView,
     TextInput,
     Alert,
+    Linking,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { supabase } from '../../src/lib/supabase';
+import { db } from '../../src/lib/firebase';
+import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { Alter } from '../../src/types';
 import { colors, spacing, borderRadius, typography, alterColors } from '../../src/lib/theme';
 
@@ -20,10 +22,19 @@ export default function AlterProfileScreen() {
     const { alters, refreshAlters } = useAuth();
     const [alter, setAlter] = useState<Alter | null>(null);
     const [editing, setEditing] = useState(false);
+
+    // Core info
     const [name, setName] = useState('');
     const [pronouns, setPronouns] = useState('');
     const [bio, setBio] = useState('');
     const [selectedColor, setSelectedColor] = useState('');
+
+    // Safety info
+    const [triggers, setTriggers] = useState('');
+    const [frontingHelp, setFrontingHelp] = useState('');
+    const [safetyNotes, setSafetyNotes] = useState('');
+    const [crisisContact, setCrisisContact] = useState('');
+
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -33,7 +44,12 @@ export default function AlterProfileScreen() {
             setName(foundAlter.name);
             setPronouns(foundAlter.pronouns || '');
             setBio(foundAlter.bio || '');
-            setSelectedColor(foundAlter.color);
+            setSelectedColor(foundAlter.color || '#000000'); // Default color if undefined
+            // Safety Init
+            setTriggers(foundAlter.triggers?.join(', ') || '');
+            setFrontingHelp(foundAlter.fronting_help || '');
+            setSafetyNotes(foundAlter.safety_notes || '');
+            setCrisisContact(foundAlter.crisis_contact || '');
         }
     }, [id, alters]);
 
@@ -45,17 +61,24 @@ export default function AlterProfileScreen() {
 
         setLoading(true);
         try {
-            const { error } = await supabase
-                .from('alters')
-                .update({
-                    name: name.trim(),
-                    pronouns: pronouns.trim() || null,
-                    bio: bio.trim() || null,
-                    color: selectedColor,
-                })
-                .eq('id', id);
+            const alterRef = doc(db, 'alters', id);
 
-            if (error) throw error;
+            // Convert comma-separated string to array, trimming whitespace
+            const triggersArray = triggers
+                .split(',')
+                .map(t => t.trim())
+                .filter(t => t.length > 0);
+
+            await updateDoc(alterRef, {
+                name: name.trim(),
+                pronouns: pronouns.trim() || null,
+                bio: bio.trim() || null,
+                color: selectedColor,
+                triggers: triggersArray,
+                fronting_help: frontingHelp.trim() || null,
+                safety_notes: safetyNotes.trim() || null,
+                crisis_contact: crisisContact.trim() || null,
+            });
 
             await refreshAlters();
             setEditing(false);
@@ -78,13 +101,7 @@ export default function AlterProfileScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            const { error } = await supabase
-                                .from('alters')
-                                .delete()
-                                .eq('id', id);
-
-                            if (error) throw error;
-
+                            await deleteDoc(doc(db, 'alters', id));
                             await refreshAlters();
                             router.back();
                         } catch (error: any) {
@@ -123,6 +140,8 @@ export default function AlterProfileScreen() {
 
             {editing ? (
                 <View style={styles.form}>
+                    <Text style={styles.sectionTitle}>Information Générale</Text>
+
                     <View style={styles.inputContainer}>
                         <Text style={styles.label}>Nom</Text>
                         <TextInput
@@ -175,6 +194,57 @@ export default function AlterProfileScreen() {
                         </View>
                     </View>
 
+                    <Text style={[styles.sectionTitle, { marginTop: spacing.xl }]}>Sécurité & Bien-être</Text>
+
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Triggers (séparés par des virgules)</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={triggers}
+                            onChangeText={setTriggers}
+                            placeholder="Ex: Bruit fort, foule, orage..."
+                            placeholderTextColor={colors.textMuted}
+                        />
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Comment m'aider au front ?</Text>
+                        <TextInput
+                            style={[styles.input, styles.inputMultiline]}
+                            value={frontingHelp}
+                            onChangeText={setFrontingHelp}
+                            placeholder="Instructions pour l'entourage quand je suis là..."
+                            placeholderTextColor={colors.textMuted}
+                            multiline
+                            numberOfLines={3}
+                        />
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Notes de sécurité privées</Text>
+                        <TextInput
+                            style={[styles.input, styles.inputMultiline]}
+                            value={safetyNotes}
+                            onChangeText={setSafetyNotes}
+                            placeholder="Infos médicales, contacts d'urgence, etc."
+                            placeholderTextColor={colors.textMuted}
+                            multiline
+                            numberOfLines={3}
+                        />
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Contact Crise (Téléphone)</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={crisisContact}
+                            onChangeText={setCrisisContact}
+                            placeholder="Numéro à appeler en cas d'urgence"
+                            placeholderTextColor={colors.textMuted}
+                            keyboardType="phone-pad"
+                        />
+                    </View>
+
                     <View style={styles.actions}>
                         <TouchableOpacity
                             style={styles.cancelButton}
@@ -201,6 +271,52 @@ export default function AlterProfileScreen() {
                         <Text style={styles.pronouns}>{alter.pronouns}</Text>
                     )}
                     {alter.bio && <Text style={styles.bio}>{alter.bio}</Text>}
+
+                    {/* Section Sécurité Affichage */}
+                    {(alter.triggers?.length || alter.fronting_help || alter.safety_notes || alter.crisis_contact) ? (
+                        <View style={styles.safetySection}>
+                            <Text style={styles.sectionHeader}>🛡️ Sécurité & Aide</Text>
+
+                            {alter.triggers && alter.triggers.length > 0 && (
+                                <View style={styles.infoBlock}>
+                                    <Text style={styles.infoLabel}>⚠️ Triggers :</Text>
+                                    <View style={styles.tagsContainer}>
+                                        {alter.triggers.map((trigger, idx) => (
+                                            <View key={idx} style={styles.triggerTag}>
+                                                <Text style={styles.triggerText}>{trigger}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
+                                </View>
+                            )}
+
+                            {alter.fronting_help && (
+                                <View style={styles.infoBlock}>
+                                    <Text style={styles.infoLabel}>🤝 Comment m'aider :</Text>
+                                    <Text style={styles.infoText}>{alter.fronting_help}</Text>
+                                </View>
+                            )}
+
+                            {alter.safety_notes && (
+                                <View style={styles.infoBlock}>
+                                    <Text style={styles.infoLabel}>🔒 Notes privées :</Text>
+                                    <Text style={styles.infoText}>{alter.safety_notes}</Text>
+                                </View>
+                            )}
+
+                            {alter.crisis_contact && (
+                                <View style={styles.infoBlock}>
+                                    <Text style={styles.infoLabel}>📞 Contact Crise :</Text>
+                                    <TouchableOpacity
+                                        onPress={() => Linking.openURL(`tel:${alter.crisis_contact}`)}
+                                        style={styles.contactLink}
+                                    >
+                                        <Text style={styles.contactLinkText}>{alter.crisis_contact}</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                        </View>
+                    ) : null}
 
                     <TouchableOpacity
                         style={styles.editButton}
@@ -311,13 +427,20 @@ const styles = StyleSheet.create({
         borderRadius: borderRadius.md,
         padding: spacing.md,
         color: colors.text,
-        fontSize: 16,
         borderWidth: 1,
         borderColor: colors.border,
+        fontSize: 16,
     },
     inputMultiline: {
-        height: 100,
         textAlignVertical: 'top',
+        height: 100,
+    },
+    sectionTitle: {
+        ...typography.h2,
+        marginBottom: spacing.lg,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+        paddingBottom: spacing.sm,
     },
     colorPicker: {
         flexDirection: 'row',
@@ -328,37 +451,93 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        borderWidth: 3,
+        borderWidth: 2,
         borderColor: 'transparent',
     },
     colorOptionSelected: {
         borderColor: colors.text,
+        transform: [{ scale: 1.1 }],
     },
     actions: {
         flexDirection: 'row',
-        gap: spacing.md,
-        marginTop: spacing.lg,
+        justifyContent: 'space-between',
+        marginTop: spacing.xl,
+        marginBottom: spacing.xxl,
     },
     cancelButton: {
-        flex: 1,
         padding: spacing.md,
-        alignItems: 'center',
-        backgroundColor: colors.backgroundCard,
-        borderRadius: borderRadius.md,
+        justifyContent: 'center',
     },
     cancelButtonText: {
         color: colors.textSecondary,
-        fontWeight: 'bold',
+        fontWeight: '600',
     },
     saveButton: {
-        flex: 1,
-        padding: spacing.md,
-        alignItems: 'center',
-        borderRadius: borderRadius.md,
         paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.md,
     },
     saveButtonText: {
-        color: colors.text,
+        color: 'white',
         fontWeight: 'bold',
+    },
+    safetySection: {
+        width: '100%',
+        backgroundColor: colors.backgroundCard + '40', // slightly transparent
+        padding: spacing.lg,
+        borderRadius: borderRadius.lg,
+        marginBottom: spacing.xl,
+        borderWidth: 1,
+        borderColor: colors.primary + '30',
+    },
+    sectionHeader: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: colors.text,
+        marginBottom: spacing.lg,
+        textAlign: 'center',
+    },
+    infoBlock: {
+        marginBottom: spacing.lg,
+    },
+    infoLabel: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: colors.textSecondary,
+        marginBottom: spacing.xs,
+    },
+    infoText: {
+        fontSize: 16,
+        color: colors.text,
+        lineHeight: 22,
+    },
+    tagsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.sm,
+    },
+    triggerTag: {
+        backgroundColor: '#FFE5E5',
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+        borderRadius: borderRadius.sm,
+        borderWidth: 1,
+        borderColor: '#FFCDCD',
+    },
+    triggerText: {
+        color: '#D32F2F',
+        fontWeight: '600',
+    },
+    contactLink: {
+        padding: spacing.md,
+        backgroundColor: colors.primary + '10',
+        borderRadius: borderRadius.md,
+        alignItems: 'center',
+        marginTop: spacing.xs,
+    },
+    contactLinkText: {
+        color: colors.primary,
+        fontWeight: 'bold',
+        fontSize: 18,
     },
 });

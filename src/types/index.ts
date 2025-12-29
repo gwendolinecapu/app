@@ -14,10 +14,15 @@ export interface Alter {
     avatar_url?: string;
     bio?: string;
     pronouns?: string;
-    color: string;
+    color?: string;
     is_host: boolean;
     is_active: boolean;
     created_at: string;
+    // Champs de sécurité / crise
+    triggers?: string[];
+    fronting_help?: string;
+    safety_notes?: string;
+    crisis_contact?: string;
 }
 
 export interface Post {

@@ -16,7 +16,9 @@ import {
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { supabase } from '../../src/lib/supabase';
+import { db, storage } from '../../src/lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Alter } from '../../src/types';
 import { colors, spacing, borderRadius, typography, alterColors } from '../../src/lib/theme';
 import { AlterBubble } from '../../src/components/AlterBubble';
@@ -82,30 +84,18 @@ export default function AltersScreen() {
                 try {
                     const response = await fetch(selectedImage);
                     const blob = await response.blob();
-                    const fileName = `${user.id}/${Date.now()}.jpg`;
+                    const fileName = `${user.uid}/${Date.now()}.jpg`;
 
-                    const { data: uploadData, error: uploadError } = await supabase.storage
-                        .from('avatars')
-                        .upload(fileName, blob, {
-                            contentType: 'image/jpeg',
-                        });
-
-                    if (uploadError) {
-                        console.log('Upload error:', uploadError);
-                        // Continue without avatar if upload fails
-                    } else if (uploadData) {
-                        const { data: urlData } = supabase.storage
-                            .from('avatars')
-                            .getPublicUrl(uploadData.path);
-                        avatarUrl = urlData.publicUrl;
-                    }
+                    const storageRef = ref(storage, `avatars/${fileName}`);
+                    await uploadBytes(storageRef, blob);
+                    avatarUrl = await getDownloadURL(storageRef);
                 } catch (uploadErr) {
                     console.log('Image upload failed, continuing without avatar:', uploadErr);
                 }
             }
 
-            const { data, error } = await supabase.from('alters').insert({
-                system_id: user.id,
+            const newAlterData = {
+                system_id: user.uid,
                 name: newAlterName.trim(),
                 pronouns: newAlterPronouns.trim() || null,
                 bio: newAlterBio.trim() || null,
@@ -113,14 +103,11 @@ export default function AltersScreen() {
                 avatar_url: avatarUrl,
                 is_host: alters.length === 0,
                 is_active: false,
-            }).select();
+                created_at: new Date().toISOString(),
+            };
 
-            if (error) {
-                console.log('Supabase error:', error);
-                throw error;
-            }
-
-            console.log('Alter created:', data);
+            const docRef = await addDoc(collection(db, 'alters'), newAlterData);
+            console.log('Alter created with ID:', docRef.id);
 
             await refreshAlters();
             setModalVisible(false);

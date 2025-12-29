@@ -16,7 +16,9 @@ import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { useAuth } from '../src/contexts/AuthContext';
-import { supabase } from '../src/lib/supabase';
+import { db, storage } from '../src/lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Alter } from '../src/types';
 import { colors, spacing, borderRadius, typography, alterColors } from '../src/lib/theme';
 
@@ -76,29 +78,19 @@ export default function HomeScreen() {
                 try {
                     const response = await fetch(selectedImage);
                     const blob = await response.blob();
-                    const fileName = `${user.id}/${Date.now()}.jpg`;
+                    const fileName = `avatars/${user.uid}/${Date.now()}.jpg`;
+                    const storageRef = ref(storage, fileName);
 
-                    const { data: uploadData, error: uploadError } = await supabase.storage
-                        .from('avatars')
-                        .upload(fileName, blob, {
-                            contentType: 'image/jpeg',
-                        });
-
-                    if (uploadError) {
-                        console.log('Upload error:', uploadError);
-                    } else if (uploadData) {
-                        const { data: urlData } = supabase.storage
-                            .from('avatars')
-                            .getPublicUrl(uploadData.path);
-                        avatarUrl = urlData.publicUrl;
-                    }
+                    await uploadBytes(storageRef, blob);
+                    avatarUrl = await getDownloadURL(storageRef);
                 } catch (uploadErr) {
                     console.log('Image upload failed:', uploadErr);
+                    // On continue même sans avatar si ça échoue
                 }
             }
 
-            const { error } = await supabase.from('alters').insert({
-                system_id: user.id,
+            const newAlter = {
+                system_id: user.uid,
                 name: newAlterName.trim(),
                 pronouns: newAlterPronouns.trim() || null,
                 bio: newAlterBio.trim() || null,
@@ -106,9 +98,10 @@ export default function HomeScreen() {
                 avatar_url: avatarUrl,
                 is_host: alters.length === 0,
                 is_active: false,
-            });
+                created_at: new Date().toISOString(),
+            };
 
-            if (error) throw error;
+            await addDoc(collection(db, 'alters'), newAlter);
 
             await refreshAlters();
             setModalVisible(false);

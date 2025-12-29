@@ -18,7 +18,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { supabase } from '../../src/lib/supabase';
+import { db } from '../../src/lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { EmotionType, EMOTION_EMOJIS, EMOTION_LABELS } from '../../src/types';
 
@@ -48,16 +49,18 @@ export default function CreateJournalEntryScreen() {
 
         setLoading(true);
         try {
-            const { error } = await supabase.from('journal_entries').insert({
+            const newEntry = {
                 alter_id: currentAlter.id,
                 title: title.trim() || null,
                 content: content.trim(),
                 mood: selectedMood,
                 is_locked: isLocked,
                 is_audio: false,
-            });
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            };
 
-            if (error) throw error;
+            await addDoc(collection(db, 'journal_entries'), newEntry);
 
             Alert.alert('✨', 'Entrée enregistrée !', [
                 { text: 'OK', onPress: () => router.back() }

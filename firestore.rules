@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns the document (assuming system_id field)
+    function isOwner(resource) {
+      return isAuthenticated() && resource.data.system_id == request.auth.uid;
+    }
+    
+    // Helper for creating documents
+    function isOwnerCreate(request) {
+        return isAuthenticated() && request.resource.data.system_id == request.auth.uid;
+    }
+
+    match /alters/{alterId} {
+      allow read: if isOwner(resource);
+      allow create: if isOwnerCreate(request);
+      allow update, delete: if isOwner(resource);
+    }
+    
+    match /posts/{postId} {
+      // Posts might be public or system-only. Assuming system-only for now or shared?
+      // Supabase RLS policies were complex. Let's start with System ownership.
+       allow read: if isOwner(resource); // Or public?
+       allow create: if isOwnerCreate(request);
+       allow update, delete: if isOwner(resource);
+    }
+    
+    match /emotions/{emotionId} {
+       allow read, write: if false; // TBD, likely via subcollection or similar field check
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

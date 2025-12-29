@@ -13,7 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { supabase } from '../../src/lib/supabase';
+import { db } from '../../src/lib/firebase';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import {
     Emotion,
@@ -40,27 +41,37 @@ export default function EmotionsHistoryScreen() {
         if (!currentAlter) return;
         setLoading(true);
 
-        let query = supabase
-            .from('emotions')
-            .select('*')
-            .eq('alter_id', currentAlter.id)
-            .order('created_at', { ascending: false });
+        try {
+            let q = query(
+                collection(db, 'emotions'),
+                where('alter_id', '==', currentAlter.id),
+                orderBy('created_at', 'desc')
+            );
 
-        // Filtrer par période
-        if (selectedPeriod !== 'all') {
-            const daysAgo = new Date();
-            daysAgo.setDate(daysAgo.getDate() - (selectedPeriod === '7d' ? 7 : 30));
-            query = query.gte('created_at', daysAgo.toISOString());
-        }
+            // Filtrer par période
+            if (selectedPeriod !== 'all') {
+                const daysAgo = new Date();
+                daysAgo.setDate(daysAgo.getDate() - (selectedPeriod === '7d' ? 7 : 30));
+                q = query(
+                    collection(db, 'emotions'),
+                    where('alter_id', '==', currentAlter.id),
+                    where('created_at', '>=', daysAgo.toISOString()),
+                    orderBy('created_at', 'desc')
+                );
+            }
 
-        const { data, error } = await query;
+            const querySnapshot = await getDocs(q);
+            const data: Emotion[] = [];
+            querySnapshot.forEach((doc) => {
+                data.push({ id: doc.id, ...doc.data() } as Emotion);
+            });
 
-        if (error) {
+            setEmotions(data);
+        } catch (error) {
             console.error('Error fetching emotions:', error);
-        } else {
-            setEmotions(data || []);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     // Calculer les statistiques

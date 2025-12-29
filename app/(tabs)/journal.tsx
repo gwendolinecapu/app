@@ -14,7 +14,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { supabase } from '../../src/lib/supabase';
+import { db } from '../../src/lib/firebase';
+import { collection, query, where, getDocs, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { JournalEntry, EmotionType, EMOTION_EMOJIS } from '../../src/types';
 
@@ -36,18 +37,25 @@ export default function JournalScreen() {
         if (!currentAlter) return;
         setLoading(true);
 
-        const { data, error } = await supabase
-            .from('journal_entries')
-            .select('*')
-            .eq('alter_id', currentAlter.id)
-            .order('created_at', { ascending: false });
+        try {
+            const q = query(
+                collection(db, 'journal_entries'),
+                where('alter_id', '==', currentAlter.id),
+                orderBy('created_at', 'desc')
+            );
 
-        if (error) {
+            const querySnapshot = await getDocs(q);
+            const data: JournalEntry[] = [];
+            querySnapshot.forEach((doc) => {
+                data.push({ id: doc.id, ...doc.data() } as JournalEntry);
+            });
+
+            setEntries(data);
+        } catch (error) {
             console.error('Error fetching journal entries:', error);
-        } else {
-            setEntries(data || []);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const formatDate = (dateStr: string) => {
@@ -79,15 +87,12 @@ export default function JournalScreen() {
                     text: 'Supprimer',
                     style: 'destructive',
                     onPress: async () => {
-                        const { error } = await supabase
-                            .from('journal_entries')
-                            .delete()
-                            .eq('id', entryId);
-
-                        if (error) {
-                            Alert.alert('Erreur', 'Impossible de supprimer');
-                        } else {
+                        try {
+                            await deleteDoc(doc(db, 'journal_entries', entryId));
                             fetchEntries();
+                        } catch (error) {
+                            console.error('Error deleting entry:', error);
+                            Alert.alert('Erreur', 'Impossible de supprimer');
                         }
                     }
                 },

@@ -11,7 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { supabase } from '../../src/lib/supabase';
+import { db } from '../../src/lib/firebase';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { Post } from '../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 
@@ -32,20 +33,24 @@ export default function ProfileScreen() {
     const fetchPosts = async () => {
         if (!currentAlter) return;
 
-        const { data, error } = await supabase
-            .from('posts')
-            .select('*')
-            .eq('alter_id', currentAlter.id)
-            .order('created_at', { ascending: false });
+        try {
+            const q = query(
+                collection(db, 'posts'),
+                where('alter_id', '==', currentAlter.id),
+                orderBy('created_at', 'desc')
+            );
 
-        if (error) {
-            console.error('Error fetching profile posts:', error);
-            return;
-        }
+            const querySnapshot = await getDocs(q);
+            const data: Post[] = [];
 
-        if (data) {
+            querySnapshot.forEach((doc) => {
+                data.push({ id: doc.id, ...doc.data() } as Post);
+            });
+
             setPosts(data);
             setStats(prev => ({ ...prev, posts: data.length }));
+        } catch (error) {
+            console.error('Error fetching profile posts:', error);
         }
     };
 
@@ -75,9 +80,14 @@ export default function ProfileScreen() {
                         <Text style={styles.backIcon}>←</Text>
                     </TouchableOpacity>
                     <Text style={styles.username}>@{currentAlter.name.toLowerCase()}</Text>
-                    <TouchableOpacity onPress={() => router.push(`/alter/${currentAlter.id}`)}>
-                        <Text style={styles.menuIcon}>⋯</Text>
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', gap: 16 }}>
+                        <TouchableOpacity onPress={() => router.push('/settings/notifications')}>
+                            <Text style={styles.menuIcon}>⚙️</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => router.push(`/alter/${currentAlter.id}`)}>
+                            <Text style={styles.menuIcon}>⋯</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Profile Info */}

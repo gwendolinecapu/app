@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { supabase } from '../../src/lib/supabase';
+import { db } from '../../src/lib/firebase';
+import { collection, addDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { Message, Alter } from '../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 
@@ -23,28 +24,40 @@ export default function ConversationScreen() {
     const [otherAlter, setOtherAlter] = useState<Alter | null>(null);
     const [loading, setLoading] = useState(false);
 
+    const getConversationId = (id1: string, id2: string) => {
+        return [id1, id2].sort().join('_');
+    };
+
     useEffect(() => {
         // Trouver l'autre participant
         const alter = alters.find((a) => a.id === id);
         setOtherAlter(alter || null);
 
-        fetchMessages();
-    }, [id, alters]);
+        if (currentAlter && id) {
+            fetchMessages();
+        }
+    }, [id, alters, currentAlter]);
 
     const fetchMessages = async () => {
         if (!currentAlter || !id) return;
 
         try {
-            const { data } = await supabase
-                .from('messages')
-                .select('*')
-                .or(`sender_alter_id.eq.${currentAlter.id},receiver_alter_id.eq.${currentAlter.id}`)
-                .or(`sender_alter_id.eq.${id},receiver_alter_id.eq.${id}`)
-                .order('created_at', { ascending: true });
+            const conversationId = getConversationId(currentAlter.id, id);
+            const q = query(
+                collection(db, 'messages'),
+                where('conversation_id', '==', conversationId),
+                orderBy('created_at', 'asc')
+            );
 
-            if (data) {
-                setMessages(data);
-            }
+            // Note: onSnapshot pourrait être utilisé ici pour le temps réel
+            const querySnapshot = await getDocs(q);
+            const data: Message[] = [];
+
+            querySnapshot.forEach((doc) => {
+                data.push({ id: doc.id, ...doc.data() } as Message);
+            });
+
+            setMessages(data);
         } catch (error) {
             console.error('Error fetching messages:', error);
         }
@@ -55,19 +68,20 @@ export default function ConversationScreen() {
 
         setLoading(true);
         try {
-            const { error } = await supabase.from('messages').insert({
+            const conversationId = getConversationId(currentAlter.id, id);
+
+            await addDoc(collection(db, 'messages'), {
                 sender_alter_id: currentAlter.id,
                 receiver_alter_id: id,
-                conversation_id: `${currentAlter.id}-${id}`, // Simplifié
+                conversation_id: conversationId,
                 content: newMessage.trim(),
                 is_internal: internal === 'true',
                 is_read: false,
+                created_at: new Date().toISOString(),
             });
 
-            if (!error) {
-                setNewMessage('');
-                fetchMessages();
-            }
+            setNewMessage('');
+            fetchMessages();
         } catch (error) {
             console.error('Error sending message:', error);
         } finally {

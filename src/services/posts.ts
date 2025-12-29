@@ -87,7 +87,6 @@ export const PostService = {
     fetchGlobalFeed: async (lastVisible: QueryDocumentSnapshot | null = null, pageSize: number = 20) => {
         try {
             // For now, fetch all posts ordered by date.
-            // In a real app, you'd filter by public visibility and maybe followed users.
             let q = query(
                 collection(db, POSTS_COLLECTION),
                 orderBy('created_at', 'desc'),
@@ -117,6 +116,61 @@ export const PostService = {
             };
         } catch (error) {
             console.error('Error fetching global feed:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Fetch feed including friends
+     * @param friendIds - Array of friend alter/system IDs to include in the feed
+     */
+    fetchFeed: async (friendIds: string[], lastVisible: QueryDocumentSnapshot | null = null, pageSize: number = 20) => {
+        try {
+            // Firestore 'in' query supports max 10 values. For real feeds, we need a better structure 
+            // (e.g. duplicating posts to feeds or querying 'public' + client side filter if small).
+            // For this MVP, if friendIds is small, we use 'in'.
+            // If friendIds is empty, show global.
+
+            let q;
+
+            if (friendIds.length > 0) {
+                // Limit to 10 for 'in' query constraint
+                const targetIds = friendIds.slice(0, 10);
+                q = query(
+                    collection(db, POSTS_COLLECTION),
+                    where('alter_id', 'in', targetIds),
+                    orderBy('created_at', 'desc'),
+                    limit(pageSize)
+                );
+            } else {
+                // Fallback to global if no friends (or empty feed?)
+                // User wants "friends in our feed". If no friends, maybe show global?
+                return PostService.fetchGlobalFeed(lastVisible, pageSize);
+            }
+
+            if (lastVisible) {
+                q = query(q, startAfter(lastVisible));
+            }
+
+            const querySnapshot = await getDocs(q);
+            const posts: Post[] = [];
+
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                posts.push({
+                    id: doc.id,
+                    ...data,
+                    created_at: data.created_at?.toDate().toISOString() || new Date().toISOString(),
+                    updated_at: data.updated_at?.toDate().toISOString() || new Date().toISOString(),
+                } as Post);
+            });
+
+            return {
+                posts,
+                lastVisible: querySnapshot.docs[querySnapshot.docs.length - 1]
+            };
+        } catch (error) {
+            console.error('Error fetching friend feed:', error);
             throw error;
         }
     },

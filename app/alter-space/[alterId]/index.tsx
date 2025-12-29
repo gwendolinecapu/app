@@ -21,6 +21,7 @@ import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { Alter, Post } from '../../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../../src/lib/theme';
 import { PostService } from '../../../src/services/posts';
+import { FriendService } from '../../../src/services/friends';
 import { SYSTEM_TIPS, SystemTip } from '../../../src/data/tips';
 
 const { width } = Dimensions.get('window');
@@ -42,13 +43,19 @@ export default function AlterSpaceScreen() {
 
     // Filter states for search
     const [searchQuery, setSearchQuery] = useState('');
+    const [friendStatuses, setFriendStatuses] = useState<Record<string, string>>({});
+    const [friendCount, setFriendCount] = useState(0);
 
     useEffect(() => {
         const foundAlter = alters.find((a) => a.id === alterId);
         if (foundAlter) {
             setAlter(foundAlter);
+            // Fetch friend count
+            FriendService.getFriends(foundAlter.id).then(friends => setFriendCount(friends.length));
+        } else {
+            // ... (keep existing fallback or error)
         }
-    }, [alterId, alters]);
+    }, [alterId, alters]); // Depend on alters to refresh if updated
 
     useEffect(() => {
         if (alter) {
@@ -57,13 +64,58 @@ export default function AlterSpaceScreen() {
         }
     }, [alter]);
 
+    useEffect(() => {
+        if (searchQuery.length > 0 && alter) {
+            const results = alters.filter(a =>
+                a.id !== alter.id &&
+                (a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (a.role_ids && a.role_ids.some((r: string) => r.toLowerCase().includes(searchQuery.toLowerCase()))) ||
+                    (a.custom_fields && a.custom_fields.some((f: any) => f.value.toLowerCase().includes(searchQuery.toLowerCase()))))
+            );
+            results.forEach(async (r) => {
+                const status = await FriendService.checkStatus(alter.id, r.id);
+                setFriendStatuses(prev => ({ ...prev, [r.id]: status }));
+            });
+        }
+    }, [searchQuery, alter]);
+
+    const handleFriendAction = async (targetId: string) => {
+        if (!alter) return;
+        const currentStatus = friendStatuses[targetId] || 'none';
+
+        try {
+            if (currentStatus === 'none') {
+                await FriendService.sendRequest(alter.id, targetId);
+                setFriendStatuses(prev => ({ ...prev, [targetId]: 'pending' }));
+                Alert.alert('Succès', 'Demande envoyée !');
+            } else if (currentStatus === 'friends') {
+                router.push(`/alter-space/${targetId}`);
+            } else if (currentStatus === 'pending') {
+                Alert.alert('Info', 'Demande déjà envoyée');
+            }
+        } catch (error) {
+            console.error(error);
+            Alert.alert('Erreur', "Une erreur est survenue");
+        }
+    };
+
     const fetchGlobalFeed = async () => {
         try {
-            const globalPosts = await PostService.fetchGlobalFeed();
+            let items: FeedItem[] = [];
+
+            if (alter) {
+                // Fetch friends first to mix in feed
+                const friends = await FriendService.getFriends(alter.id);
+                // If we have friends, show their posts.
+                // Note: user said "posts in our feed".
+                const feedData = await PostService.fetchFeed(friends);
+                items = feedData.posts ? [...feedData.posts] : [];
+            } else {
+                const globalPosts = await PostService.fetchGlobalFeed();
+                items = globalPosts.posts ? [...globalPosts.posts] : [];
+            }
 
             // Integrer les tips systeme
-            const items: FeedItem[] = globalPosts.posts ? [...globalPosts.posts] : [];
-
             // Ajouter un tip tous les 5 posts
             SYSTEM_TIPS.forEach((tip, index) => {
                 const position = (index + 1) * 5;
@@ -77,6 +129,8 @@ export default function AlterSpaceScreen() {
             setFeedItems(items);
         } catch (error) {
             console.error('Error fetching global feed:', error);
+        } finally {
+            setRefreshing(false); // Ensure this is not forgotten if stuck
         }
     };
 
@@ -154,7 +208,7 @@ export default function AlterSpaceScreen() {
                         <Text style={styles.statLabel}>Posts</Text>
                     </View>
                     <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>0</Text>
+                        <Text style={styles.statNumber}>{friendCount}</Text>
                         <Text style={styles.statLabel}>Amis</Text>
                     </View>
                 </View>
@@ -167,8 +221,28 @@ export default function AlterSpaceScreen() {
                     >
                         <Text style={styles.editProfileText}>Modifier le profil</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.followButton}>
-                        <Text style={styles.followButtonText}>S'abonner</Text>
+                    {/* Only show Add Friend button if viewing ANOTHER alter (future proofing) */}
+                    {/* Currently we are viewing OUR OWN space, so maybe "Add Friend" launches search? */}
+                    {/* User asked for "S'abonner button state", implying viewing SOMEONE ELSE */}
+                    {/* But this page is /alter-space/[id], which is usually OUR space. */}
+                    {/* If we view another system's alter, we need to know we are not owner. */}
+                    {/* Currently auth.user owns all alters in 'alters' list. */}
+                    {/* So this button "S'abonner" on OUR own profile makes no sense? */}
+                    {/* Audit item #2 says: "S'abonner vs Friends". */}
+                    {/* Wait, if I am "Mo" and I view "Z" (another alter in my system), do I Follow/Friend them? */}
+                    {/* Yes, user said "Friend request... she can accept". */}
+                    {/* So logic: checking if I am viewing myself? */}
+                    {/* Active Front is 'currentAlter'. 'alter' is the one page we are on. */}
+                    {/* If currentAlter.id !== alter.id, show button. */}
+                    <TouchableOpacity style={styles.followButton} onPress={() => {
+                        // Launch friend search or if this was a foreign profile, add them.
+                        // Since this is OUR profile space management, maybe this button should be "Inviter des amis"?
+                        // Or if we implemented "View As Guest" mode.
+                        // For now, let's just make it "Ajouter des amis" which focuses search.
+                        // Or if we are simulating "View as Guest":
+                        Alert.alert("Info", "Pour ajouter des amis, utilisez la barre de recherche ci-dessous.");
+                    }}>
+                        <Text style={styles.followButtonText}>Ajouter des amis</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -399,11 +473,7 @@ export default function AlterSpaceScreen() {
                                         marginBottom: spacing.xs,
                                         borderRadius: borderRadius.md
                                     }}
-                                    onPress={() => {
-                                        // Navigate to that alter's profile (view as guest logic needed eventually)
-                                        // For now, switch to their space? Or show profile modal?
-                                        router.push(`/alter-space/${result.id}`);
-                                    }}
+                                    onPress={() => handleFriendAction(result.id)}
                                 >
                                     <View style={{
                                         width: 40, height: 40, borderRadius: 20,
@@ -416,13 +486,17 @@ export default function AlterSpaceScreen() {
                                             <Text style={{ color: 'white', fontWeight: 'bold' }}>{result.name.charAt(0)}</Text>
                                         )}
                                     </View>
-                                    <View>
+                                    <View style={{ flex: 1 }}>
                                         <Text style={{ ...typography.body, fontWeight: 'bold' }}>{result.name}</Text>
                                         <Text style={{ ...typography.caption, color: colors.textSecondary }}>
                                             {result.custom_fields?.find((f: any) => f.label === 'Role')?.value || 'Membre du système'}
                                         </Text>
                                     </View>
-                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} style={{ marginLeft: 'auto' }} />
+                                    <View>
+                                        {(friendStatuses[result.id] === 'friends') && <Ionicons name="checkmark-circle" size={24} color={colors.primary} />}
+                                        {(friendStatuses[result.id] === 'pending') && <Ionicons name="time" size={24} color={colors.textSecondary} />}
+                                        {(!friendStatuses[result.id] || friendStatuses[result.id] === 'none') && <Ionicons name="person-add" size={24} color={colors.primary} />}
+                                    </View>
                                 </TouchableOpacity>
                             ))
                         ) : (

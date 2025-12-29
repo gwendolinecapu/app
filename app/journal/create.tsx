@@ -29,7 +29,7 @@ const MOODS: EmotionType[] = [
 ];
 
 export default function CreateJournalEntryScreen() {
-    const { currentAlter } = useAuth();
+    const { currentAlter, system } = useAuth();
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [selectedMood, setSelectedMood] = useState<EmotionType | null>(null);
@@ -47,9 +47,16 @@ export default function CreateJournalEntryScreen() {
             return;
         }
 
+        if (!system) {
+            Alert.alert('Erreur', 'Système non identifié');
+            return;
+        }
+
         setLoading(true);
         try {
+            // IMPORTANT: system_id est requis par les règles Firestore pour les permissions
             const newEntry = {
+                system_id: system.id, // Requis pour les règles de sécurité
                 alter_id: currentAlter.id,
                 title: title.trim() || null,
                 content: content.trim(),

@@ -85,13 +85,19 @@ export default function CreatePostScreen() {
             }
 
             // Construct post data based on activeFront
+            // IMPORTANT: Firestore n'accepte pas les valeurs undefined
+            // On n'inclut media_url que si elle existe
             const postData: any = {
                 system_id: system.id,
                 content: content.trim(),
-                media_url: mediaUrl,
                 visibility: 'public', // Could be selectable
                 author_type: activeFront.type,
             };
+
+            // Ajouter media_url seulement si elle existe (Firestore rejette undefined)
+            if (mediaUrl) {
+                postData.media_url = mediaUrl;
+            }
 
             if (activeFront.type === 'single' && activeFront.alters.length > 0) {
                 postData.alter_id = activeFront.alters[0].id;

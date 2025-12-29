@@ -1,16 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     View,
     Text,
     TouchableOpacity,
     StyleSheet,
-    ScrollView,
     Modal,
     TextInput,
     Alert,
     Image,
     Platform,
     KeyboardAvoidingView,
+    ScrollView,
+    Dimensions,
+    FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -23,13 +25,57 @@ import { Alter } from '../../src/types';
 import { colors, spacing, borderRadius, typography, alterColors } from '../../src/lib/theme';
 import { Ionicons } from '@expo/vector-icons';
 
-const BUBBLE_SIZE = 85;
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// =====================================================
+// APPLE WATCH STYLE BUBBLE CONFIGURATION
+// Taille DYNAMIQUE basée sur le nombre d'alters :
+// - Peu d'alters (< 6) : grandes bulles (80px)
+// - Moyen (6-20) : bulles moyennes (64px)  
+// - Beaucoup (> 20) : petites bulles (48px)
+// Support pour 2000+ alters avec FlatList optimisée
+// =====================================================
+const CONTAINER_PADDING = 16;
+const AVAILABLE_WIDTH = SCREEN_WIDTH - (CONTAINER_PADDING * 2);
+
+// Fonction pour calculer la taille des bulles selon le nombre d'alters
+const getBubbleConfig = (alterCount: number) => {
+    if (alterCount <= 5) {
+        // Peu d'alters : grandes bulles style Apple Watch
+        const size = 80;
+        const spacing = 20;
+        const columns = Math.floor(AVAILABLE_WIDTH / (size + spacing));
+        return { size, spacing, columns: Math.max(3, columns) };
+    } else if (alterCount <= 20) {
+        // Nombre moyen : bulles moyennes
+        const size = 64;
+        const spacing = 14;
+        const columns = Math.floor(AVAILABLE_WIDTH / (size + spacing));
+        return { size, spacing, columns: Math.max(4, columns) };
+    } else {
+        // Beaucoup d'alters : petites bulles compactes
+        const size = 48;
+        const spacing = 10;
+        const columns = Math.floor(AVAILABLE_WIDTH / (size + spacing));
+        return { size, spacing, columns: Math.max(5, columns) };
+    }
+};
+
+// Types pour les items de la grille (bubbles + actions spéciales)
+type GridItem =
+    | { type: 'blurry' }
+    | { type: 'add' }
+    | { type: 'alter'; data: Alter };
 
 export default function DashboardScreen() {
     const { alters, user, refreshAlters, setFronting, activeFront } = useAuth();
     const [modalVisible, setModalVisible] = useState(false);
     const [selectionMode, setSelectionMode] = useState<'single' | 'multi'>('single');
     const [selectedAlters, setSelectedAlters] = useState<string[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    // Animation scale pour le feedback tactile
+    const [pressedId, setPressedId] = useState<string | null>(null);
 
     // Create new alter state
     const [newAlterName, setNewAlterName] = useState('');
@@ -49,7 +95,40 @@ export default function DashboardScreen() {
         }
     }, [activeFront]);
 
-    const toggleSelection = (alterId: string) => {
+    // =====================================================
+    // CONFIG DYNAMIQUE DES BULLES
+    // Taille calculée selon le nombre d'alters pour un rendu optimal
+    // =====================================================
+    const bubbleConfig = useMemo(() => getBubbleConfig(alters.length), [alters.length]);
+    const { size: BUBBLE_SIZE, spacing: BUBBLE_SPACING, columns: NUM_COLUMNS } = bubbleConfig;
+
+    // =====================================================
+    // RECHERCHE ET FILTRAGE
+    // Filtrage optimisé pour 2000+ alters avec useMemo
+    // =====================================================
+    const filteredAlters = useMemo(() => {
+        if (!searchQuery.trim()) return alters;
+        const query = searchQuery.toLowerCase();
+        return alters.filter(alter =>
+            alter.name.toLowerCase().includes(query) ||
+            alter.pronouns?.toLowerCase().includes(query)
+        );
+    }, [alters, searchQuery]);
+
+    // =====================================================
+    // GRID DATA
+    // Combine les boutons spéciaux + alters filtrés pour FlashList
+    // =====================================================
+    const gridData = useMemo((): GridItem[] => {
+        const items: GridItem[] = [
+            { type: 'blurry' },
+            { type: 'add' },
+            ...filteredAlters.map(alter => ({ type: 'alter' as const, data: alter }))
+        ];
+        return items;
+    }, [filteredAlters]);
+
+    const toggleSelection = useCallback((alterId: string) => {
         if (selectionMode === 'single') {
             handleSelectSingle(alterId);
         } else {
@@ -61,7 +140,7 @@ export default function DashboardScreen() {
                 }
             });
         }
-    };
+    }, [selectionMode, alters]);
 
     const handleSelectSingle = async (alterId: string) => {
         const alter = alters.find(a => a.id === alterId);
@@ -102,7 +181,6 @@ export default function DashboardScreen() {
     };
 
     const handleOpenAlterSpace = (alter: Alter) => {
-        // Long press action? Or specific button
         router.push(`/alter-space/${alter.id}`);
     };
 
@@ -189,42 +267,105 @@ export default function DashboardScreen() {
         setSelectedImage(null);
     };
 
-    const renderAlterBubble = (alter: Alter) => {
+    // =====================================================
+    // APPLE WATCH STYLE BUBBLE RENDERER
+    // Design compact, fluide avec animations subtiles
+    // Styles dynamiques calculés via bubbleConfig
+    // =====================================================
+    const renderBubble = useCallback(({ item, index }: { item: GridItem; index: number }) => {
+        // Styles dynamiques basés sur le nombre d'alters
+        const dynamicStyles = {
+            wrapper: { width: AVAILABLE_WIDTH / NUM_COLUMNS },
+            bubble: {
+                width: BUBBLE_SIZE,
+                height: BUBBLE_SIZE,
+                borderRadius: BUBBLE_SIZE / 2
+            },
+            bubbleName: { maxWidth: BUBBLE_SIZE + 10 },
+            iconSize: BUBBLE_SIZE < 60 ? 20 : BUBBLE_SIZE < 70 ? 24 : 28,
+            initialFontSize: BUBBLE_SIZE < 60 ? 18 : BUBBLE_SIZE < 70 ? 22 : 28,
+        };
+
+        if (item.type === 'blurry') {
+            return (
+                <TouchableOpacity
+                    style={[styles.bubbleWrapper, dynamicStyles.wrapper]}
+                    onPress={handleBlurryMode}
+                    activeOpacity={0.7}
+                >
+                    <View style={[styles.bubble, styles.blurryBubble, dynamicStyles.bubble]}>
+                        <Ionicons name="help" size={dynamicStyles.iconSize} color={colors.textMuted} />
+                    </View>
+                    <Text style={[styles.bubbleName, dynamicStyles.bubbleName]} numberOfLines={1}>Flou</Text>
+                </TouchableOpacity>
+            );
+        }
+
+        if (item.type === 'add') {
+            return (
+                <TouchableOpacity
+                    style={[styles.bubbleWrapper, dynamicStyles.wrapper]}
+                    onPress={() => setModalVisible(true)}
+                    activeOpacity={0.7}
+                >
+                    <View style={[styles.bubble, styles.addBubble, dynamicStyles.bubble]}>
+                        <Ionicons name="add" size={dynamicStyles.iconSize + 4} color={colors.textMuted} />
+                    </View>
+                    <Text style={[styles.bubbleName, dynamicStyles.bubbleName]} numberOfLines={1}>Ajouter</Text>
+                </TouchableOpacity>
+            );
+        }
+
+        // Alter bubble
+        const alter = item.data;
         const isSelected = selectedAlters.includes(alter.id);
         const showCheck = selectionMode === 'multi' && isSelected;
+        const dimmed = selectionMode === 'multi' && !isSelected && selectedAlters.length > 0;
 
         return (
             <TouchableOpacity
-                key={alter.id}
-                style={[styles.bubbleContainer, { opacity: (selectionMode === 'multi' && !isSelected && selectedAlters.length > 0) ? 0.6 : 1 }]}
+                style={[styles.bubbleWrapper, dynamicStyles.wrapper, dimmed && styles.bubbleDimmed]}
                 onPress={() => toggleSelection(alter.id)}
                 onLongPress={() => handleOpenAlterSpace(alter)}
                 activeOpacity={0.7}
+                delayLongPress={300}
             >
                 <View style={[
                     styles.bubble,
+                    dynamicStyles.bubble,
                     { backgroundColor: alter.color },
-                    showCheck && styles.bubbleSelected
+                    isSelected && styles.bubbleSelected
                 ]}>
                     {alter.avatar_url ? (
                         <Image source={{ uri: alter.avatar_url }} style={styles.bubbleImage} />
                     ) : (
-                        <Text style={styles.bubbleText}>
+                        <Text style={[styles.bubbleInitial, { fontSize: dynamicStyles.initialFontSize }]}>
                             {alter.name.charAt(0).toUpperCase()}
                         </Text>
                     )}
+                    {/* Checkmark badge pour le mode co-front */}
                     {showCheck && (
                         <View style={styles.checkBadge}>
-                            <Ionicons name="checkmark" size={16} color="white" />
+                            <Ionicons name="checkmark" size={12} color="white" />
                         </View>
                     )}
                 </View>
-                <Text style={[styles.bubbleName, isSelected && styles.bubbleNameSelected]} numberOfLines={1}>
+                <Text
+                    style={[styles.bubbleName, dynamicStyles.bubbleName, isSelected && styles.bubbleNameSelected]}
+                    numberOfLines={1}
+                >
                     {alter.name}
                 </Text>
             </TouchableOpacity>
         );
-    };
+    }, [selectedAlters, selectionMode, alters, toggleSelection, BUBBLE_SIZE, NUM_COLUMNS]);
+
+    // Key extractor pour FlashList (performance optimale)
+    const keyExtractor = useCallback((item: GridItem, index: number) => {
+        if (item.type === 'blurry') return 'blurry';
+        if (item.type === 'add') return 'add';
+        return item.data.id;
+    }, []);
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -234,10 +375,32 @@ export default function DashboardScreen() {
                     <Text style={styles.greeting}>Bonjour,</Text>
                     <Text style={styles.title}>Qui est là ?</Text>
                 </View>
-                <TouchableOpacity onPress={() => router.push('/settings/' as any)}>
-                    <Text style={styles.settingsIcon}>⚙️</Text>
+                <TouchableOpacity
+                    style={styles.settingsButton}
+                    onPress={() => router.push('/settings/index' as any)}
+                >
+                    <Ionicons name="settings-outline" size={24} color={colors.textSecondary} />
                 </TouchableOpacity>
             </View>
+
+            {/* Recherche - visible uniquement si beaucoup d'alters */}
+            {alters.length > 10 && (
+                <View style={styles.searchContainer}>
+                    <Ionicons name="search" size={18} color={colors.textMuted} style={styles.searchIcon} />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Rechercher un alter..."
+                        placeholderTextColor={colors.textMuted}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                    />
+                    {searchQuery.length > 0 && (
+                        <TouchableOpacity onPress={() => setSearchQuery('')}>
+                            <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                        </TouchableOpacity>
+                    )}
+                </View>
+            )}
 
             {/* Mode Switcher */}
             <View style={styles.modeSwitchContainer}>
@@ -258,38 +421,38 @@ export default function DashboardScreen() {
                 </TouchableOpacity>
             </View>
 
-            {/* Bubbles Area */}
-            <ScrollView
-                contentContainerStyle={styles.bubblesArea}
-                showsVerticalScrollIndicator={false}
-            >
-                <View style={styles.bubblesGrid}>
-                    {/* Blurry Mode Button */}
-                    <TouchableOpacity
-                        style={styles.bubbleContainer}
-                        onPress={handleBlurryMode}
-                    >
-                        <View style={[styles.bubble, styles.blurryBubble]}>
-                            <Text style={styles.blurryIcon}>?</Text>
-                        </View>
-                        <Text style={styles.bubbleName}>Flou / ?</Text>
-                    </TouchableOpacity>
+            {/* Compteur d'alters */}
+            <View style={styles.alterCountContainer}>
+                <Text style={styles.alterCountText}>
+                    {filteredAlters.length} alter{filteredAlters.length !== 1 ? 's' : ''}
+                    {searchQuery && ` (sur ${alters.length})`}
+                </Text>
+            </View>
 
-                    {/* Add Button */}
-                    <TouchableOpacity
-                        style={styles.bubbleContainer}
-                        onPress={() => setModalVisible(true)}
-                    >
-                        <View style={[styles.bubble, styles.addBubble]}>
-                            <Text style={styles.addIcon}>+</Text>
-                        </View>
-                        <Text style={styles.bubbleName}>Nouveau</Text>
-                    </TouchableOpacity>
-
-                    {/* Alter Bubbles */}
-                    {alters.map(renderAlterBubble)}
-                </View>
-            </ScrollView>
+            {/* =====================================================
+                APPLE WATCH STYLE GRID
+                FlatList optimisée pour performance avec 2000+ alters
+                ===================================================== */}
+            <View style={styles.gridContainer}>
+                <FlatList
+                    data={gridData}
+                    renderItem={renderBubble}
+                    keyExtractor={keyExtractor}
+                    numColumns={NUM_COLUMNS}
+                    contentContainerStyle={styles.gridContent}
+                    showsVerticalScrollIndicator={false}
+                    // Optimisations pour très grandes listes (2000+ items)
+                    removeClippedSubviews={true}
+                    maxToRenderPerBatch={20}
+                    windowSize={10}
+                    initialNumToRender={30}
+                    getItemLayout={(data, index) => ({
+                        length: BUBBLE_SIZE + 24,
+                        offset: (BUBBLE_SIZE + 24) * Math.floor(index / NUM_COLUMNS),
+                        index,
+                    })}
+                />
+            </View>
 
             {/* Co-Front Floating Action Button */}
             {selectionMode === 'multi' && selectedAlters.length > 0 && (
@@ -298,7 +461,7 @@ export default function DashboardScreen() {
                         <Text style={styles.fabText}>
                             Confirmer ({selectedAlters.length})
                         </Text>
-                        <Ionicons name="arrow-forward" size={24} color="white" />
+                        <Ionicons name="arrow-forward" size={20} color="white" />
                     </TouchableOpacity>
                 </View>
             )}
@@ -309,7 +472,8 @@ export default function DashboardScreen() {
                     style={styles.footerButton}
                     onPress={() => router.push('/fronting/history')}
                 >
-                    <Text style={styles.footerButtonText}>🕒 Historique</Text>
+                    <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
+                    <Text style={styles.footerButtonText}>Historique</Text>
                 </TouchableOpacity>
             </View>
 
@@ -342,7 +506,7 @@ export default function DashboardScreen() {
                                             </View>
                                         )}
                                         <View style={styles.cameraIcon}>
-                                            <Text>📷</Text>
+                                            <Ionicons name="camera" size={16} color="white" />
                                         </View>
                                     </TouchableOpacity>
                                 </View>
@@ -428,6 +592,10 @@ export default function DashboardScreen() {
     );
 }
 
+// =====================================================
+// STYLES - APPLE WATCH INSPIRED DESIGN
+// Bulles compactes, espacement fluide, animations subtiles
+// =====================================================
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -438,8 +606,8 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: spacing.lg,
-        paddingBottom: spacing.md,
-        paddingTop: spacing.md,
+        paddingBottom: spacing.sm,
+        paddingTop: spacing.sm,
     },
     greeting: {
         ...typography.body,
@@ -448,21 +616,47 @@ const styles = StyleSheet.create({
     title: {
         ...typography.h1,
         color: colors.text,
+        fontSize: 26,
     },
-    settingsIcon: {
-        fontSize: 24,
+    settingsButton: {
+        padding: spacing.sm,
     },
+
+    // Search bar
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.backgroundLight,
+        marginHorizontal: spacing.lg,
+        marginBottom: spacing.sm,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    searchIcon: {
+        marginRight: spacing.sm,
+    },
+    searchInput: {
+        flex: 1,
+        color: colors.text,
+        fontSize: 14,
+        padding: 0,
+    },
+
+    // Mode switcher
     modeSwitchContainer: {
         flexDirection: 'row',
         marginHorizontal: spacing.lg,
         backgroundColor: colors.backgroundLight,
         borderRadius: borderRadius.lg,
-        padding: 4,
-        marginBottom: spacing.lg,
+        padding: 3,
+        marginBottom: spacing.sm,
     },
     modeButton: {
         flex: 1,
-        paddingVertical: spacing.sm,
+        paddingVertical: spacing.xs,
         alignItems: 'center',
         borderRadius: borderRadius.md,
     },
@@ -478,100 +672,114 @@ const styles = StyleSheet.create({
         ...typography.bodySmall,
         fontWeight: '600',
         color: colors.textMuted,
+        fontSize: 13,
     },
     modeButtonTextActive: {
         color: colors.text,
     },
-    bubblesArea: {
-        flexGrow: 1,
+
+    // Alter count
+    alterCountContainer: {
         paddingHorizontal: spacing.lg,
-        paddingBottom: 100, // Space for FAB
+        marginBottom: spacing.xs,
     },
-    bubblesGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-        gap: spacing.lg,
+    alterCountText: {
+        ...typography.caption,
+        color: colors.textMuted,
     },
-    bubbleContainer: {
+
+    // Grid container
+    gridContainer: {
+        flex: 1,
+        paddingHorizontal: CONTAINER_PADDING,
+    },
+    gridContent: {
+        paddingBottom: 120,
+    },
+
+    // Apple Watch style bubbles - width dynamique via inline style
+    bubbleWrapper: {
         alignItems: 'center',
-        width: BUBBLE_SIZE + 10,
-        marginBottom: spacing.md,
+        paddingVertical: spacing.xs,
     },
+    bubbleDimmed: {
+        opacity: 0.4,
+    },
+    // bubble: width/height dynamiques via inline style
     bubble: {
-        width: BUBBLE_SIZE,
-        height: BUBBLE_SIZE,
-        borderRadius: BUBBLE_SIZE / 2,
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'hidden',
+        // Ombre subtile style Apple
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 8,
-        position: 'relative',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        elevation: 4,
     },
     bubbleSelected: {
-        borderWidth: 3,
-        borderColor: colors.primary,
-        transform: [{ scale: 1.05 }],
-    },
-    checkBadge: {
-        position: 'absolute',
-        top: 0,
-        right: 0,
-        backgroundColor: colors.primary,
-        borderRadius: 10,
-        width: 24,
-        height: 24,
-        justifyContent: 'center',
-        alignItems: 'center',
         borderWidth: 2,
-        borderColor: colors.background,
+        borderColor: colors.primary,
+        // Ring glow effect
+        shadowColor: colors.primary,
+        shadowOpacity: 0.5,
+        shadowRadius: 8,
     },
     bubbleImage: {
         width: '100%',
         height: '100%',
     },
-    bubbleText: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: colors.text,
+    bubbleInitial: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: 'white',
+        textShadowColor: 'rgba(0,0,0,0.2)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 2,
     },
+    // bubbleName: maxWidth dynamique via inline style
     bubbleName: {
-        ...typography.bodySmall,
-        marginTop: spacing.sm,
+        fontSize: 11,
+        color: colors.textSecondary,
+        marginTop: 4,
         textAlign: 'center',
-        fontWeight: '600',
+        fontWeight: '500',
     },
     bubbleNameSelected: {
         color: colors.primary,
-        fontWeight: 'bold',
+        fontWeight: '700',
     },
+    checkBadge: {
+        position: 'absolute',
+        top: -2,
+        right: -2,
+        backgroundColor: colors.primary,
+        borderRadius: 10,
+        width: 18,
+        height: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: colors.background,
+    },
+
+    // Special bubbles
     addBubble: {
         backgroundColor: colors.backgroundCard,
-        borderWidth: 2,
+        borderWidth: 1.5,
         borderColor: colors.border,
         borderStyle: 'dashed',
     },
-    addIcon: {
-        fontSize: 36,
-        color: colors.textMuted,
-    },
     blurryBubble: {
         backgroundColor: colors.backgroundLight,
-        borderWidth: 2,
+        borderWidth: 1.5,
         borderColor: colors.textMuted,
     },
-    blurryIcon: {
-        fontSize: 36,
-        color: colors.textMuted,
-        fontWeight: 'bold',
-    },
+
+    // FAB
     fabContainer: {
         position: 'absolute',
-        bottom: spacing.xxl,
+        bottom: 70,
         left: 0,
         right: 0,
         alignItems: 'center',
@@ -579,33 +787,39 @@ const styles = StyleSheet.create({
     fabButton: {
         flexDirection: 'row',
         backgroundColor: colors.primary,
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.lg,
         borderRadius: borderRadius.full,
         alignItems: 'center',
         shadowColor: colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.4,
-        shadowRadius: 10,
+        shadowRadius: 8,
         elevation: 8,
     },
     fabText: {
         color: 'white',
         fontWeight: 'bold',
-        fontSize: 16,
-        marginRight: spacing.sm,
+        fontSize: 14,
+        marginRight: spacing.xs,
     },
+
+    // Footer
     footerActions: {
-        padding: spacing.md,
+        padding: spacing.sm,
         alignItems: 'center',
     },
     footerButton: {
-        padding: spacing.sm,
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: spacing.xs,
+        gap: 4,
     },
     footerButtonText: {
         ...typography.caption,
         color: colors.textSecondary,
     },
+
     /* Modal Styles */
     modalOverlay: {
         flex: 1,
@@ -632,32 +846,34 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     avatarPreview: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
+        width: 80,
+        height: 80,
+        borderRadius: 40,
     },
     avatarPlaceholder: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
+        width: 80,
+        height: 80,
+        borderRadius: 40,
         justifyContent: 'center',
         alignItems: 'center',
     },
     avatarPlaceholderText: {
-        fontSize: 40,
+        fontSize: 32,
         fontWeight: 'bold',
-        color: colors.text,
+        color: 'white',
     },
     cameraIcon: {
         position: 'absolute',
         bottom: 0,
         right: 0,
         backgroundColor: colors.primary,
-        width: 32,
-        height: 32,
-        borderRadius: 16,
+        width: 28,
+        height: 28,
+        borderRadius: 14,
         justifyContent: 'center',
         alignItems: 'center',
+        borderWidth: 2,
+        borderColor: colors.backgroundCard,
     },
     inputContainer: {
         marginBottom: spacing.md,
@@ -686,10 +902,10 @@ const styles = StyleSheet.create({
         gap: spacing.sm,
     },
     colorOption: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        borderWidth: 3,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        borderWidth: 2,
         borderColor: 'transparent',
     },
     colorOptionSelected: {
@@ -722,7 +938,7 @@ const styles = StyleSheet.create({
         opacity: 0.6,
     },
     createButtonText: {
-        color: colors.text,
+        color: 'white',
         fontWeight: 'bold',
     },
 });

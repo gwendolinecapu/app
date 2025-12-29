@@ -28,7 +28,6 @@ export default function RootLayout() {
                             }}
                         >
                             <Stack.Screen name="index" options={{ headerShown: false }} />
-                            <Stack.Screen name="home" options={{ headerShown: false }} />
                             <Stack.Screen name="alter-space" options={{ headerShown: false }} />
                             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
                             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -37,12 +36,14 @@ export default function RootLayout() {
                                 options={{
                                     title: 'Profil Alter',
                                     presentation: 'modal',
+                                    headerShown: false,
                                 }}
                             />
                             <Stack.Screen
                                 name="conversation/[id]"
                                 options={{
                                     title: 'Conversation',
+                                    headerShown: false,
                                 }}
                             />
                             <Stack.Screen
@@ -50,21 +51,40 @@ export default function RootLayout() {
                                 options={{
                                     title: 'Nouvelle Publication',
                                     presentation: 'modal',
-                                }}
-                            />
-                            <Stack.Screen
-                                name="settings"
-                                options={{
-                                    title: 'Paramètres',
                                     headerShown: false,
                                 }}
                             />
-                            <Stack.Screen
-                                name="stats"
-                                options={{
-                                    title: 'Statistiques',
-                                }}
-                            />
+                            {/* Settings et sous-écrans */}
+                            <Stack.Screen name="settings/index" options={{ headerShown: false }} />
+                            <Stack.Screen name="settings/import" options={{ headerShown: false }} />
+                            <Stack.Screen name="settings/notifications" options={{ headerShown: false }} />
+
+                            {/* Roles */}
+                            <Stack.Screen name="roles/index" options={{ headerShown: false }} />
+                            <Stack.Screen name="roles/create" options={{ headerShown: false }} />
+
+                            {/* Help/Demandes d'aide */}
+                            <Stack.Screen name="help/index" options={{ headerShown: false }} />
+                            <Stack.Screen name="help/create" options={{ headerShown: false }} />
+
+                            {/* Journal */}
+                            <Stack.Screen name="journal/[id]" options={{ headerShown: false }} />
+                            <Stack.Screen name="journal/create" options={{ headerShown: false }} />
+
+                            {/* Tasks */}
+                            <Stack.Screen name="tasks/index" options={{ headerShown: false }} />
+                            <Stack.Screen name="tasks/create" options={{ headerShown: false }} />
+
+                            {/* Groups */}
+                            <Stack.Screen name="groups/[id]" options={{ headerShown: false }} />
+                            <Stack.Screen name="groups/create" options={{ headerShown: false }} />
+
+                            {/* Autres écrans */}
+                            <Stack.Screen name="crisis/index" options={{ headerShown: false }} />
+                            <Stack.Screen name="crisis/guide" options={{ headerShown: false }} />
+                            <Stack.Screen name="emotions/history" options={{ headerShown: false }} />
+                            <Stack.Screen name="fronting/history" options={{ headerShown: false }} />
+                            <Stack.Screen name="stats" options={{ headerShown: false }} />
                         </Stack>
                     </View>
                 </ThemeProvider>

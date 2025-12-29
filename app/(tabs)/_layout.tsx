@@ -138,6 +138,7 @@ export default function TabLayout() {
                             href: null,
                         }}
                     />
+                </Tabs>
             </View>
         </View>
     );

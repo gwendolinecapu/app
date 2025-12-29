@@ -163,9 +163,16 @@ export const GroupService = {
 
     /**
      * Envoie un message dans un groupe
+     * @param groupId - ID du groupe
+     * @param senderId - ID de l'utilisateur authentifié (system_id) - REQUIS par les règles Firestore
+     * @param senderAlterId - ID de l'alter qui envoie
+     * @param content - Contenu du message
+     * @param type - Type de message
+     * @param extraData - Données optionnelles (poll, note)
      */
     sendGroupMessage: async (
         groupId: string,
+        senderId: string, // NOUVEAU: requis par les règles Firestore
         senderAlterId: string,
         content: string,
         type: 'text' | 'image' | 'poll' | 'note' = 'text',
@@ -175,8 +182,10 @@ export const GroupService = {
         }
     ) => {
         try {
-            const messageData: Omit<Message, 'id'> = {
+            // IMPORTANT: Les règles Firestore exigent senderId == request.auth.uid
+            const messageData: Omit<Message, 'id'> & { senderId: string } = {
                 group_id: groupId,
+                senderId: senderId, // Requis par firestore.rules L139
                 sender_alter_id: senderAlterId,
                 content: content,
                 type: type,

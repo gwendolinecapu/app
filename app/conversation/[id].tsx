@@ -73,6 +73,7 @@ export default function ConversationScreen() {
             await addDoc(collection(db, 'messages'), {
                 sender_alter_id: currentAlter.id,
                 receiver_alter_id: id,
+                systemId: user?.uid, // Add systemId for permissions
                 conversation_id: conversationId,
                 content: newMessage.trim(),
                 is_internal: internal === 'true',

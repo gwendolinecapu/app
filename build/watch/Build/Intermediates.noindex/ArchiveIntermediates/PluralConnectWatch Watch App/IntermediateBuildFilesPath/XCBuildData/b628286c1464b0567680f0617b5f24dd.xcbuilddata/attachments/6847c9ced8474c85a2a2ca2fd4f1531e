@@ -1,0 +1,41 @@
+{
+  "" : {
+    "const-values" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/PluralConnectWatch-primary.swiftconstvalues",
+    "dependencies" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/PluralConnectWatch-primary.d",
+    "diagnostics" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/PluralConnectWatch-primary.dia",
+    "emit-module-dependencies" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/PluralConnectWatch-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/PluralConnectWatch-primary-emit-module.dia",
+    "pch" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/PluralConnectWatch-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/PluralConnectWatch-primary.swiftdeps"
+  },
+  "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "index-unit-output-path" : "/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/GeneratedAssetSymbols.o"
+  },
+  "/Users/leo/Sans titre/ios/PluralConnectWatch/PluralConnectWatchApp.swift" : {
+    "index-unit-output-path" : "/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/PluralConnectWatchApp.o",
+    "llvm-bc" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/PluralConnectWatchApp.bc",
+    "object" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/PluralConnectWatchApp.o"
+  },
+  "/Users/leo/Sans titre/ios/PluralConnectWatch/Views/AlterSelectionView.swift" : {
+    "index-unit-output-path" : "/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/AlterSelectionView.o",
+    "llvm-bc" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/AlterSelectionView.bc",
+    "object" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/AlterSelectionView.o"
+  },
+  "/Users/leo/Sans titre/ios/PluralConnectWatch/Views/ContentView.swift" : {
+    "index-unit-output-path" : "/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/ContentView.o",
+    "llvm-bc" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/ContentView.bc",
+    "object" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/ContentView.o"
+  },
+  "/Users/leo/Sans titre/ios/PluralConnectWatch/Views/MoodSelectionView.swift" : {
+    "index-unit-output-path" : "/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/MoodSelectionView.o",
+    "llvm-bc" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/MoodSelectionView.bc",
+    "object" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/MoodSelectionView.o"
+  },
+  "/Users/leo/Sans titre/ios/PluralConnectWatch/WatchConnectivityManager.swift" : {
+    "index-unit-output-path" : "/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/WatchConnectivityManager.o",
+    "llvm-bc" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/WatchConnectivityManager.bc",
+    "object" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath/PluralConnect.build/Release-iphonesimulator/PluralConnectWatch.build/Objects-normal/arm64/WatchConnectivityManager.o"
+  }
+}

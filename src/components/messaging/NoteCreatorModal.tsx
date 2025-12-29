@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { useDrafts } from '../../hooks/useDrafts';
 
 interface NoteCreatorModalProps {
     visible: boolean;
@@ -21,7 +22,7 @@ interface NoteCreatorModalProps {
 
 export const NoteCreatorModal: React.FC<NoteCreatorModalProps> = ({ visible, onClose, onSend }) => {
     const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
+    const { draft: content, setDraft: setContent, clearDraft } = useDrafts('sticky_note_draft');
 
     const handleSendNote = () => {
         if (!title.trim() || !content.trim()) {
@@ -35,7 +36,7 @@ export const NoteCreatorModal: React.FC<NoteCreatorModalProps> = ({ visible, onC
 
     const resetForm = () => {
         setTitle('');
-        setContent('');
+        await clearDraft();
         onClose();
     };
 

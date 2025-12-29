@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { useDrafts } from '../../src/hooks/useDrafts';
 import { db } from '../../src/lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
@@ -31,7 +32,7 @@ const MOODS: EmotionType[] = [
 export default function CreateJournalEntryScreen() {
     const { currentAlter, system } = useAuth();
     const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
+    const { draft: content, setDraft: setContent, clearDraft, isLoaded } = useDrafts('journal_entry_draft');
     const [selectedMood, setSelectedMood] = useState<EmotionType | null>(null);
     const [isLocked, setIsLocked] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -68,6 +69,8 @@ export default function CreateJournalEntryScreen() {
             };
 
             await addDoc(collection(db, 'journal_entries'), newEntry);
+
+            await clearDraft();
 
             Alert.alert('✨', 'Entrée enregistrée !', [
                 { text: 'OK', onPress: () => router.back() }

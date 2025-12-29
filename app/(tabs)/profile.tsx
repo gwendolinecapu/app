@@ -16,6 +16,7 @@ import { db } from '../../src/lib/firebase';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { Post } from '../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
+import { FollowService } from '../../src/services/follows';
 
 const { width } = Dimensions.get('window');
 const GRID_SIZE = (width - 4) / 3;
@@ -29,6 +30,7 @@ export default function ProfileScreen() {
     useEffect(() => {
         if (currentAlter && user) {
             fetchPosts();
+            fetchFollowStats();
         }
     }, [currentAlter, user]);
 
@@ -54,6 +56,30 @@ export default function ProfileScreen() {
             setStats(prev => ({ ...prev, posts: data.length }));
         } catch (error) {
             console.error('Error fetching profile posts:', error);
+        }
+    };
+
+    // Charger les compteurs followers/following depuis le profil public
+    const fetchFollowStats = async () => {
+        if (!user) return;
+
+        try {
+            const profile = await FollowService.getPublicProfile(user.uid);
+            if (profile) {
+                setStats(prev => ({
+                    ...prev,
+                    followers: profile.follower_count,
+                    following: profile.following_count,
+                }));
+            } else {
+                // Si pas de profil public, créer un profil par défaut
+                await FollowService.createOrUpdatePublicProfile(user.uid, {
+                    display_name: system?.username || 'Système',
+                    is_public: false, // Privé par défaut
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching follow stats:', error);
         }
     };
 

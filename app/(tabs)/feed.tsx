@@ -231,9 +231,16 @@ export default function FeedScreen() {
         <View style={styles.header}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md }}>
                 <Text style={[styles.title, { marginBottom: 0 }]}>Newsfeed</Text>
-                <TouchableOpacity onPress={() => router.push('/crisis/index' as any)}>
-                    <Ionicons name="warning-outline" size={28} color={colors.error || '#FF4444'} />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'center' }}>
+                    {/* Bouton Découvrir d'autres systèmes */}
+                    <TouchableOpacity onPress={() => router.push('/discover/index' as any)}>
+                        <Ionicons name="search" size={26} color={colors.text} />
+                    </TouchableOpacity>
+                    {/* Bouton Crisis */}
+                    <TouchableOpacity onPress={() => router.push('/crisis/index' as any)}>
+                        <Ionicons name="warning-outline" size={28} color={colors.error || '#FF4444'} />
+                    </TouchableOpacity>
+                </View>
             </View>
             <TouchableOpacity
                 style={styles.currentAlterBadge}

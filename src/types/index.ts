@@ -77,6 +77,7 @@ export interface Message {
     is_internal: boolean;
     is_read: boolean;
     created_at: string;
+    system_tag?: string; // Tag optionnel (ex: "[Leo]")
 
     // Enrichissements
     poll_options?: { label: string; id: string }[];

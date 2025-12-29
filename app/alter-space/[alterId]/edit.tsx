@@ -20,15 +20,19 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../../src/lib/firebase';
 import { Alter } from '../../../src/types';
-import { colors, spacing, borderRadius, typography, freeAlterColors, premiumAlterColors } from '../../../src/lib/theme';
+import { alterColors, freeAlterColors, premiumAlterColors, colors, spacing, borderRadius, typography } from '../../../src/lib/theme';
+import PremiumService from '../../../src/services/PremiumService';
 
 // TODO: Replace with actual premium check from user context
-const isPremium = false; // Simulated - change to true to test all colors
+// const isPremium = false; // Simulated - change to true to test all colors
 
 export default function EditAlterProfileScreen() {
     const { alterId } = useLocalSearchParams<{ alterId: string }>();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+
+    // Check premium status
+    const [isPremium, setIsPremium] = useState(PremiumService.isPremium());
 
     // Form State
     const [name, setName] = useState('');

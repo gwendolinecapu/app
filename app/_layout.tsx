@@ -79,6 +79,16 @@ export default function RootLayout() {
                             <Stack.Screen name="groups/[id]" options={{ headerShown: false }} />
                             <Stack.Screen name="groups/create" options={{ headerShown: false }} />
 
+                            {/* Découverte et profils externes (Social) */}
+                            <Stack.Screen name="discover/index" options={{ headerShown: false }} />
+                            <Stack.Screen
+                                name="profile/[systemId]"
+                                options={{
+                                    headerShown: false,
+                                    presentation: 'modal',
+                                }}
+                            />
+
                             {/* Autres écrans */}
                             <Stack.Screen name="crisis/index" options={{ headerShown: false }} />
                             <Stack.Screen name="crisis/guide" options={{ headerShown: false }} />

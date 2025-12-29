@@ -1,5 +1,26 @@
 # Changelog
 
+## [2025-12-29] Système de Follow Entre Systèmes (Social)
+
+### Nouvelles Collections Firestore
+- **`follows`** : Relations de suivi entre systèmes (follower_id, following_id)
+- **`public_profiles`** : Profils publics avec bio, avatar, compteurs followers/following
+
+### Nouveaux Services
+- **`src/services/follows.ts`** : Fonctions followUser, unfollowUser, isFollowing, getFollowers, getFollowing, searchUsers, getPublicPosts
+
+### Nouveaux Écrans
+- **`app/discover/index.tsx`** : Page de recherche et découverte d'autres systèmes
+- **`app/profile/[systemId].tsx`** : Vue du profil d'un autre système avec posts publics
+
+### Modifications
+- **`firestore.rules`** : Nouvelles règles pour follows et public_profiles, posts publics lisibles par tous
+- **`app/(tabs)/feed.tsx`** : Bouton recherche ajouté dans le header
+- **`app/(tabs)/profile.tsx`** : Compteurs followers/following fonctionnels
+- **`app/_layout.tsx`** : Routes discover et profile externe ajoutées
+
+---
+
 ## [2025-12-29] Correction Problèmes Illogiques (15+ fixes)
 
 ### Bugs Critiques

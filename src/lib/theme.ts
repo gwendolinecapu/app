@@ -3,7 +3,7 @@
  * Contient toutes les couleurs, espacements, typographies et rayons de bordure
  */
 
-// Palette de couleurs principales de l'application
+// Palette de couleurs principales de l'application - Style Canva (Bleu foncé)
 export const colors = {
     // Couleurs de base
     primary: '#8B5CF6',       // Violet principal - utilisé pour les actions et accents
@@ -13,17 +13,17 @@ export const colors = {
 
     // Couleurs de texte
     text: '#FFFFFF',          // Texte principal sur fond sombre
-    textSecondary: '#A1A1AA', // Texte secondaire/labels
-    textMuted: '#71717A',     // Texte très atténué (placeholders)
+    textSecondary: '#94A3B8', // Texte secondaire/labels (slate-400)
+    textMuted: '#64748B',     // Texte très atténué (placeholders) (slate-500)
 
-    // Couleurs de fond
-    background: '#0F0F0F',           // Fond principal de l'app (très sombre)
-    backgroundCard: '#1A1A1A',       // Fond des cartes et modales
-    backgroundLight: '#262626',      // Fond des inputs et éléments surélevés
+    // Couleurs de fond - NOUVEAU THÈME BLEU FONCÉ (style Canva)
+    background: '#0A1628',           // Fond principal de l'app (bleu très foncé)
+    backgroundCard: '#122240',       // Fond des cartes et modales (bleu foncé)
+    backgroundLight: '#1A3050',      // Fond des inputs et éléments surélevés
 
     // Bordures et séparateurs
-    border: '#333333',               // Bordure par défaut
-    borderLight: '#404040',          // Bordure plus visible
+    border: '#1E3A5F',               // Bordure par défaut (bleu)
+    borderLight: '#2A4A70',          // Bordure plus visible
 
     // États et feedback
     success: '#22C55E',       // Vert - succès, validation

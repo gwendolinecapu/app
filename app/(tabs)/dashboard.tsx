@@ -144,7 +144,8 @@ export default function DashboardScreen() {
         const alter = alters.find(a => a.id === alterId);
         if (alter) {
             await setFronting([alter], 'single');
-            router.push('/(tabs)/feed');
+            // Ouvrir l'Alter Space isolé (profil Instagram-style)
+            router.push(`/alter-space/${alterId}`);
         }
     };
 
@@ -179,8 +180,8 @@ export default function DashboardScreen() {
     };
 
     const handleOpenAlterSpace = (alter: Alter) => {
-        // Navigation vers la page de détail de l'alter (route existante)
-        router.push(`/alter/${alter.id}` as any);
+        // Navigation vers l'Alter Space isolé (profil Instagram-style)
+        router.push(`/alter-space/${alter.id}`);
     };
 
     const pickImage = async () => {

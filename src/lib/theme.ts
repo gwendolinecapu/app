@@ -13,17 +13,17 @@ export const colors = {
 
     // Couleurs de texte
     text: '#FFFFFF',          // Texte principal sur fond sombre
-    textSecondary: '#94A3B8', // Texte secondaire/labels (slate-400)
-    textMuted: '#64748B',     // Texte très atténué (placeholders) (slate-500)
+    textSecondary: '#A3BFDB', // Texte secondaire/labels
+    textMuted: '#6B8DB5',     // Texte très atténué (placeholders)
 
-    // Couleurs de fond - NOUVEAU THÈME BLEU FONCÉ (style Canva)
-    background: '#0A1628',           // Fond principal de l'app (bleu très foncé)
-    backgroundCard: '#122240',       // Fond des cartes et modales (bleu foncé)
-    backgroundLight: '#1A3050',      // Fond des inputs et éléments surélevés
+    // Couleurs de fond - THÈME BLEU FONCÉ CANVA
+    background: '#0F2847',           // Fond principal - bleu foncé Canva
+    backgroundCard: '#163560',       // Fond des cartes - bleu moyen
+    backgroundLight: '#1E4275',      // Fond des inputs - bleu clair
 
     // Bordures et séparateurs
-    border: '#1E3A5F',               // Bordure par défaut (bleu)
-    borderLight: '#2A4A70',          // Bordure plus visible
+    border: '#2A5A8F',               // Bordure par défaut (bleu)
+    borderLight: '#3A6AA0',          // Bordure plus visible
 
     // États et feedback
     success: '#22C55E',       // Vert - succès, validation

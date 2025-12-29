@@ -97,19 +97,11 @@ export default function TabLayout() {
                             ),
                         }}
                     />
-                    {/* Onglet 5: Messages - Communication */}
+                    {/* Messages - Masqué car chaque alter a sa messagerie dans son espace */}
                     <Tabs.Screen
                         name="messages"
                         options={{
-                            title: 'Discut.',
-                            tabBarIcon: ({ focused, color }) => (
-                                <Ionicons
-                                    name={focused ? "chatbubbles" : "chatbubbles-outline"}
-                                    size={24}
-                                    color={color}
-                                    accessibilityLabel="Messages"
-                                />
-                            ),
+                            href: null, // Masqué - accessible via Alter Space
                         }}
                     />
 

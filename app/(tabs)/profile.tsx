@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { db } from '../../src/lib/firebase';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
@@ -22,7 +23,8 @@ const GRID_SIZE = (width - 4) / 3;
 export default function ProfileScreen() {
     const { currentAlter, system, alters, user } = useAuth();
     const [posts, setPosts] = useState<Post[]>([]);
-    const [stats, setStats] = useState({ posts: 0, friends: 0 });
+    const [stats, setStats] = useState({ posts: 0, followers: 0, following: 0 });
+    const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
 
     useEffect(() => {
         if (currentAlter && user) {
@@ -57,65 +59,74 @@ export default function ProfileScreen() {
 
     if (!currentAlter) {
         return (
-            <View style={styles.container}>
+            <SafeAreaView style={styles.container} edges={['top']}>
                 <View style={styles.emptyState}>
-                    <Text style={styles.emptyEmoji}>👤</Text>
+                    <Ionicons name="person-outline" size={64} color={colors.textMuted} />
                     <Text style={styles.emptyTitle}>Aucun alter sélectionné</Text>
                     <TouchableOpacity
                         style={styles.button}
-                        onPress={() => router.push('/(tabs)/alters')}
+                        onPress={() => router.push('/(tabs)/dashboard')}
                     >
                         <Text style={styles.buttonText}>Voir les alters</Text>
                     </TouchableOpacity>
                 </View>
-            </View>
+            </SafeAreaView>
         );
     }
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            <ScrollView style={styles.scrollView}>
-                {/* Header */}
+            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+                {/* Header - Instagram Style */}
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.push('/(tabs)/alters')}>
-                        <Text style={styles.backIcon}>←</Text>
+                    <TouchableOpacity onPress={() => router.back()}>
+                        <Ionicons name="arrow-back" size={24} color={colors.text} />
                     </TouchableOpacity>
-                    <Text style={styles.username}>@{currentAlter.name.toLowerCase()}</Text>
+                    <Text style={styles.username}>@{currentAlter.name.toLowerCase().replace(/\s/g, '_')}</Text>
                     <View style={{ flexDirection: 'row', gap: 16 }}>
                         <TouchableOpacity onPress={() => router.push('/settings/index' as any)}>
-                            <Text style={styles.menuIcon}>⚙️</Text>
+                            <Ionicons name="settings-outline" size={24} color={colors.text} />
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => router.push(`/alter/${currentAlter.id}`)}>
-                            <Text style={styles.menuIcon}>⋯</Text>
+                            <Ionicons name="ellipsis-horizontal" size={24} color={colors.text} />
                         </TouchableOpacity>
                     </View>
                 </View>
 
-                {/* Profile Info */}
+                {/* Profile Section - Design Canva #4 */}
                 <View style={styles.profileSection}>
+                    {/* Avatar */}
                     <View style={[styles.avatar, { backgroundColor: currentAlter.color }]}>
-                        <Text style={styles.avatarText}>
-                            {currentAlter.name.charAt(0).toUpperCase()}
-                        </Text>
+                        {currentAlter.avatar_url ? (
+                            <Image
+                                source={{ uri: currentAlter.avatar_url }}
+                                style={styles.avatarImage}
+                            />
+                        ) : (
+                            <Text style={styles.avatarText}>
+                                {currentAlter.name.charAt(0).toUpperCase()}
+                            </Text>
+                        )}
                     </View>
 
+                    {/* Stats Row - Instagram style: Posts, Followers, Following */}
                     <View style={styles.statsRow}>
                         <View style={styles.statItem}>
                             <Text style={styles.statNumber}>{stats.posts}</Text>
                             <Text style={styles.statLabel}>Posts</Text>
                         </View>
                         <View style={styles.statItem}>
-                            <Text style={styles.statNumber}>{stats.friends}</Text>
-                            <Text style={styles.statLabel}>Friends</Text>
+                            <Text style={styles.statNumber}>{stats.followers}</Text>
+                            <Text style={styles.statLabel}>Followers</Text>
                         </View>
                         <View style={styles.statItem}>
-                            <Text style={styles.statNumber}>{alters.length}</Text>
-                            <Text style={styles.statLabel}>Alters</Text>
+                            <Text style={styles.statNumber}>{stats.following}</Text>
+                            <Text style={styles.statLabel}>Following</Text>
                         </View>
                     </View>
                 </View>
 
-                {/* Bio */}
+                {/* Bio Section */}
                 <View style={styles.bioSection}>
                     <Text style={styles.name}>{currentAlter.name}</Text>
                     {currentAlter.pronouns && (
@@ -132,20 +143,46 @@ export default function ProfileScreen() {
                         style={styles.editButton}
                         onPress={() => router.push(`/alter/${currentAlter.id}`)}
                     >
+                        <Ionicons name="pencil" size={16} color={colors.text} style={{ marginRight: 6 }} />
                         <Text style={styles.editButtonText}>Modifier le profil</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.statsButton}
                         onPress={() => router.push('/stats')}
                     >
-                        <Text style={styles.statsButtonText}>📊</Text>
+                        <Ionicons name="bar-chart-outline" size={20} color={colors.text} />
                     </TouchableOpacity>
                 </View>
 
-                {/* Posts Grid */}
+                {/* Tabs: Grid / List */}
+                <View style={styles.tabsRow}>
+                    <TouchableOpacity
+                        style={[styles.tabButton, activeTab === 'grid' && styles.tabButtonActive]}
+                        onPress={() => setActiveTab('grid')}
+                    >
+                        <Ionicons
+                            name="grid-outline"
+                            size={22}
+                            color={activeTab === 'grid' ? colors.text : colors.textMuted}
+                        />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.tabButton, activeTab === 'list' && styles.tabButtonActive]}
+                        onPress={() => setActiveTab('list')}
+                    >
+                        <Ionicons
+                            name="list-outline"
+                            size={22}
+                            color={activeTab === 'list' ? colors.text : colors.textMuted}
+                        />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Posts Grid - Instagram Style */}
                 <View style={styles.postsGrid}>
                     {posts.length === 0 ? (
                         <View style={styles.noPostsContainer}>
+                            <Ionicons name="camera-outline" size={48} color={colors.textMuted} />
                             <Text style={styles.noPosts}>Aucune publication</Text>
                             <TouchableOpacity
                                 style={styles.createPostButton}
@@ -157,11 +194,18 @@ export default function ProfileScreen() {
                     ) : (
                         posts.map((post) => (
                             <TouchableOpacity key={post.id} style={styles.gridItem}>
-                                <View style={styles.gridItemContent}>
-                                    <Text style={styles.gridItemText} numberOfLines={3}>
-                                        {post.content}
-                                    </Text>
-                                </View>
+                                {post.media_url ? (
+                                    <Image
+                                        source={{ uri: post.media_url }}
+                                        style={styles.gridImage}
+                                    />
+                                ) : (
+                                    <View style={styles.gridItemContent}>
+                                        <Text style={styles.gridItemText} numberOfLines={3}>
+                                            {post.content}
+                                        </Text>
+                                    </View>
+                                )}
                             </TouchableOpacity>
                         ))
                     )}
@@ -184,24 +228,16 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: spacing.md,
-        paddingTop: spacing.xl,
-    },
-    backIcon: {
-        fontSize: 24,
-        color: colors.text,
     },
     username: {
         ...typography.body,
         fontWeight: 'bold',
-    },
-    menuIcon: {
-        fontSize: 24,
         color: colors.text,
     },
     profileSection: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: spacing.md,
+        padding: spacing.lg,
         gap: spacing.lg,
     },
     avatar: {
@@ -210,11 +246,16 @@ const styles = StyleSheet.create({
         borderRadius: 45,
         justifyContent: 'center',
         alignItems: 'center',
+        overflow: 'hidden',
+    },
+    avatarImage: {
+        width: '100%',
+        height: '100%',
     },
     avatarText: {
         fontSize: 36,
         fontWeight: 'bold',
-        color: colors.text,
+        color: 'white',
     },
     statsRow: {
         flex: 1,
@@ -227,51 +268,75 @@ const styles = StyleSheet.create({
     statNumber: {
         ...typography.h3,
         color: colors.text,
+        fontWeight: 'bold',
     },
     statLabel: {
         ...typography.caption,
         color: colors.textSecondary,
+        marginTop: 2,
     },
     bioSection: {
-        padding: spacing.md,
-        paddingTop: 0,
+        paddingHorizontal: spacing.lg,
+        paddingBottom: spacing.md,
     },
     name: {
         ...typography.body,
         fontWeight: 'bold',
+        color: colors.text,
     },
     pronouns: {
         ...typography.bodySmall,
         color: colors.textSecondary,
+        marginTop: 2,
     },
     bio: {
         ...typography.body,
+        color: colors.text,
         marginTop: spacing.xs,
+        lineHeight: 20,
     },
     actionButtons: {
         flexDirection: 'row',
-        padding: spacing.md,
+        paddingHorizontal: spacing.lg,
         gap: spacing.sm,
+        marginBottom: spacing.md,
     },
     editButton: {
         flex: 1,
+        flexDirection: 'row',
         backgroundColor: colors.backgroundCard,
         padding: spacing.sm,
         borderRadius: borderRadius.md,
         alignItems: 'center',
+        justifyContent: 'center',
     },
     editButtonText: {
         ...typography.bodySmall,
         fontWeight: '600',
+        color: colors.text,
     },
     statsButton: {
         backgroundColor: colors.backgroundCard,
         padding: spacing.sm,
-        borderRadius: borderRadius.md,
         paddingHorizontal: spacing.md,
+        borderRadius: borderRadius.md,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    statsButtonText: {
-        fontSize: 20,
+    tabsRow: {
+        flexDirection: 'row',
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+    },
+    tabButton: {
+        flex: 1,
+        paddingVertical: spacing.md,
+        alignItems: 'center',
+        borderBottomWidth: 2,
+        borderBottomColor: 'transparent',
+    },
+    tabButtonActive: {
+        borderBottomColor: colors.text,
     },
     postsGrid: {
         flexDirection: 'row',
@@ -283,6 +348,10 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: colors.background,
     },
+    gridImage: {
+        width: '100%',
+        height: '100%',
+    },
     gridItemContent: {
         flex: 1,
         backgroundColor: colors.backgroundCard,
@@ -292,6 +361,7 @@ const styles = StyleSheet.create({
     },
     gridItemText: {
         ...typography.caption,
+        color: colors.text,
         textAlign: 'center',
     },
     noPostsContainer: {
@@ -302,6 +372,7 @@ const styles = StyleSheet.create({
     noPosts: {
         ...typography.bodySmall,
         color: colors.textMuted,
+        marginTop: spacing.md,
         marginBottom: spacing.md,
     },
     createPostButton: {
@@ -311,7 +382,7 @@ const styles = StyleSheet.create({
         borderRadius: borderRadius.md,
     },
     createPostText: {
-        color: colors.text,
+        color: 'white',
         fontWeight: '600',
     },
     emptyState: {
@@ -320,13 +391,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: spacing.xxl,
     },
-    emptyEmoji: {
-        fontSize: 64,
-        marginBottom: spacing.md,
-    },
     emptyTitle: {
         ...typography.h3,
-        marginBottom: spacing.md,
+        color: colors.text,
+        marginTop: spacing.md,
+        marginBottom: spacing.lg,
     },
     button: {
         backgroundColor: colors.primary,
@@ -335,7 +404,7 @@ const styles = StyleSheet.create({
         borderRadius: borderRadius.md,
     },
     buttonText: {
-        color: colors.text,
+        color: 'white',
         fontWeight: '600',
     },
 });

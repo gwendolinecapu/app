@@ -1,5 +1,45 @@
 # Changelog
 
+## [2025-12-29] Système de Monétisation Complet 💰
+
+### Publicités (Médiation Multi-Régie)
+- **AdMediationService** : Intégration SDK `react-native-google-mobile-ads`
+- **BannerAd** : Composant bannière fonctionnel avec `AdMobBanner`
+- **RewardedAd** : Chargement et affichage via `RewardedAd` API
+- **App.json** : Configuration des SKAdNetworks et App IDs
+
+### Premium & Trial
+- Trial 14 jours automatique à l'inscription
+- 30 jours offerts (1x après trial)
+- 3 vidéos reward = 7 jours sans pub
+- 15 vidéos reward = 7 jours premium
+
+### Économie de Crédits
+- Connexion quotidienne : +10 (free) / +25 (premium)
+- Reward ad : +50 crédits
+- Streak 7j: +100 bonus, 30j: +500 bonus
+- Achats : sans pub, premium temporaire, décorations
+
+### Boutique & Décorations
+- Contours d'alter (4 raretés : common/rare/epic/legendary)
+- Badges de profil, frames
+- Packs de crédits IAP
+
+### Fichiers Créés
+- `src/services/MonetizationTypes.ts`
+- `src/services/AdMediationService.ts`
+- `src/services/PremiumService.ts`
+- `src/services/CreditService.ts`
+- `src/services/DecorationService.ts`
+- `src/contexts/MonetizationContext.tsx`
+- `src/components/ads/NativeAdCard.tsx`
+- `src/components/ads/BannerAd.tsx`
+- `src/components/ads/RewardedAdButton.tsx`
+- `src/components/CreditBalance.tsx`
+- `app/shop/index.tsx`
+
+---
+
 ## [2025-12-29] Système de Notifications Complet 🔔
 
 ### Types de Notifications

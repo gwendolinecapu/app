@@ -13,24 +13,26 @@ interface BannerAdProps {
     placement: BannerPlacement;
 }
 
+import { BannerAd as AdMobBanner, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+
 export function BannerAd({ placement }: BannerAdProps) {
     const { isAdFree } = useMonetization();
+    const adUnitId = __DEV__ ? TestIds.BANNER : 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY';
 
     // Ne pas afficher si premium/ad-free
     if (isAdFree) {
         return null;
     }
 
-    // Placeholder - À remplacer par le vrai SDK
-    // Exemple avec AppLovin MAX:
-    // import { MaxAdView, AdFormat } from 'react-native-applovin-max';
-    // return <MaxAdView adUnitId={adUnitId} adFormat={AdFormat.BANNER} />;
-
     return (
         <View style={styles.container}>
-            <View style={styles.placeholder}>
-                <Text style={styles.placeholderText}>Espace Publicitaire</Text>
-            </View>
+            <AdMobBanner
+                unitId={adUnitId}
+                size={BannerAdSize.BANNER}
+                requestOptions={{
+                    requestNonPersonalizedAdsOnly: true,
+                }}
+            />
         </View>
     );
 }

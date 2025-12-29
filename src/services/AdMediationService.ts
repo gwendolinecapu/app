@@ -16,6 +16,12 @@ import {
     BannerPlacement,
     AD_CONFIG,
 } from './MonetizationTypes';
+import mobileAds, {
+    RewardedAd,
+    TestIds,
+    RewardedAdEventType,
+    AdEventType,
+} from 'react-native-google-mobile-ads';
 
 // Configuration des App IDs (à remplacer par les vraies valeurs)
 const AD_CONFIG_KEYS = {
@@ -62,6 +68,9 @@ class AdMediationService {
     private preloadedRewarded: { network: AdNetwork; loaded: boolean }[] = [];
     private preloadedNative: NativeAdData | null = null;
 
+    private rewardedAd: RewardedAd | null = null;
+    private nativeAd: any = null; // Placeholder pour native
+
     private constructor() { }
 
     static getInstance(): AdMediationService {
@@ -83,14 +92,16 @@ class AdMediationService {
             await this.loadState();
             this.checkDailyReset();
 
-            // Initialiser chaque réseau en parallèle
+            // Initialiser Google Mobile Ads
+            await mobileAds().initialize();
+
+            // Initialiser les autres réseaux (placeholders pour l'instant)
             await Promise.all([
-                this.initAdMob(),
                 this.initUnityAds(),
                 this.initAppLovin(),
             ]);
 
-            // Précharger les pubs reward
+            // Précharger les pubs reward AdMob
             this.preloadRewardedAds();
 
             this.initialized = true;
@@ -100,61 +111,53 @@ class AdMediationService {
         }
     }
 
-    private async initAdMob(): Promise<void> {
-        // Note: Nécessite react-native-google-mobile-ads
-        // import mobileAds from 'react-native-google-mobile-ads';
-        // await mobileAds().initialize();
-        console.log('[AdMediation] AdMob initialized (stub)');
-    }
-
     private async initUnityAds(): Promise<void> {
-        // Note: Nécessite react-native-unity-ads
-        // import UnityAds from 'react-native-unity-ads';
-        // await UnityAds.initialize(UNITY_GAME_ID, true);
+        // Placeholder Unity Ads
         console.log('[AdMediation] Unity Ads initialized (stub)');
     }
 
     private async initAppLovin(): Promise<void> {
-        // Note: Nécessite react-native-applovin-max
-        // import AppLovinMAX from 'react-native-applovin-max';
-        // await AppLovinMAX.initialize(APPLOVIN_SDK_KEY);
+        // Placeholder AppLovin
         console.log('[AdMediation] AppLovin MAX initialized (stub)');
     }
 
     // ==================== REWARDED ADS ====================
 
     /**
-     * Précharge les pubs reward de chaque réseau (waterfall)
+     * Précharge les pubs reward
      */
     private async preloadRewardedAds(): Promise<void> {
-        // Ordre de priorité: AppLovin > Unity > AdMob
-        this.preloadedRewarded = [
-            { network: 'applovin', loaded: false },
-            { network: 'unity', loaded: false },
-            { network: 'admob', loaded: false },
-        ];
+        // Créer l'instance AdMob
+        const adUnitId = __DEV__
+            ? TestIds.REWARDED
+            : (Platform.OS === 'ios' ? AD_CONFIG_KEYS.ADMOB_REWARDED_ID : AD_CONFIG_KEYS.ADMOB_REWARDED_ID);
 
-        // Charger en parallèle
-        await Promise.all([
-            this.loadRewardedAd('applovin'),
-            this.loadRewardedAd('unity'),
-            this.loadRewardedAd('admob'),
-        ]);
+        this.rewardedAd = RewardedAd.createForAdRequest(adUnitId, {
+            requestNonPersonalizedAdsOnly: true,
+        });
+
+        // Écouter les événements
+        this.rewardedAd.addAdEventListener(RewardedAdEventType.LOADED, () => {
+            const index = this.preloadedRewarded.findIndex(r => r.network === 'admob');
+            if (index === -1) {
+                this.preloadedRewarded.push({ network: 'admob', loaded: true });
+            } else {
+                this.preloadedRewarded[index].loaded = true;
+            }
+            console.log('[AdMediation] AdMob Rewarded Loaded');
+        });
+
+        this.rewardedAd.addAdEventListener(RewardedAdEventType.EARNED_REWARD, (reward) => {
+            console.log('[AdMediation] User earned reward:', reward);
+        });
+
+        // Charger
+        this.rewardedAd.load();
     }
 
     private async loadRewardedAd(network: AdNetwork): Promise<void> {
-        try {
-            // Simuler le chargement (à remplacer par les vrais SDKs)
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            const index = this.preloadedRewarded.findIndex(r => r.network === network);
-            if (index !== -1) {
-                this.preloadedRewarded[index].loaded = true;
-            }
-
-            console.log(`[AdMediation] Rewarded ad loaded from ${network}`);
-        } catch (error) {
-            console.error(`[AdMediation] Failed to load rewarded from ${network}:`, error);
+        if (network === 'admob' && this.rewardedAd) {
+            this.rewardedAd.load();
         }
     }
 
@@ -240,10 +243,41 @@ class AdMediationService {
     }
 
     private async displayRewardedAd(network: AdNetwork): Promise<boolean> {
-        // Placeholder - à remplacer par les vrais SDKs
         console.log(`[AdMediation] Displaying rewarded ad from ${network}`);
 
-        // Simuler le visionnage complet
+        if (network === 'admob' && this.rewardedAd && this.rewardedAd.loaded) {
+            return new Promise((resolve) => {
+                let earned = false;
+
+                // On doit réattacher les listeners pour cette instance d'affichage spécifique
+                const unsubscribeEarned = this.rewardedAd!.addAdEventListener(
+                    RewardedAdEventType.EARNED_REWARD,
+                    () => {
+                        earned = true;
+                    }
+                );
+
+                const unsubscribeClosed = this.rewardedAd!.addAdEventListener(
+                    AdEventType.CLOSED,
+                    () => {
+                        unsubscribeEarned();
+                        unsubscribeClosed();
+                        resolve(earned);
+                    }
+                );
+
+                try {
+                    this.rewardedAd!.show();
+                } catch (e) {
+                    console.error('[AdMediation] Show failed:', e);
+                    unsubscribeEarned();
+                    unsubscribeClosed();
+                    resolve(false);
+                }
+            });
+        }
+
+        // Pour les autres réseaux (placeholders)
         await new Promise(resolve => setTimeout(resolve, 1000));
         return true;
     }

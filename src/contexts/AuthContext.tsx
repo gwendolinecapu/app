@@ -20,6 +20,7 @@ import {
 } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { Alter, System } from '../types';
+import { FrontingService } from '../services/fronting';
 
 interface AuthContextType {
     user: User | null;
@@ -174,6 +175,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    // ... (dans switchAlter)
+
     const switchAlter = async (alter: Alter) => {
         if (!currentAlter || !user) return;
 
@@ -182,16 +185,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setCurrentAlter(alter);
 
         try {
-            // Mettre à jour is_active dans Firestore (batch write serait mieux mais on fait simple)
-            // Désactiver l'ancien
+            // 1. Mettre à jour is_active dans Firestore
             if (previousAlter) {
                 const prevRef = doc(db, 'alters', previousAlter.id);
                 await updateDoc(prevRef, { is_active: false });
             }
 
-            // Activer le nouveau
             const newRef = doc(db, 'alters', alter.id);
             await updateDoc(newRef, { is_active: true });
+
+            // 2. Enregistrer le changement dans l'historique de fronting
+            // On ne bloque pas l'UI si l'historique échoue
+            FrontingService.switchAlter(user.uid, alter.id).catch((err: any) => {
+                console.error("Failed to log fronting history:", err);
+            });
+
         } catch (error) {
             console.error('Error switching alter:', error);
             // Rollback UI if needed

@@ -161,6 +161,13 @@ export default function HomeScreen() {
             >
                 <Text style={styles.subtitle}>Choisissez un profil</Text>
 
+                <TouchableOpacity
+                    style={styles.historyButton}
+                    onPress={() => router.push('/fronting/history')}
+                >
+                    <Text style={styles.historyButtonText}>🕒 Voir l'historique de front</Text>
+                </TouchableOpacity>
+
                 <View style={styles.bubblesGrid}>
                     {/* Add Button */}
                     <TouchableOpacity
@@ -317,7 +324,22 @@ const styles = StyleSheet.create({
         ...typography.h3,
         color: colors.textSecondary,
         textAlign: 'center',
+        marginBottom: spacing.md,
+    },
+    historyButton: {
+        alignSelf: 'center',
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
+        backgroundColor: colors.backgroundCard,
+        borderRadius: borderRadius.full,
         marginBottom: spacing.xl,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    historyButtonText: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        fontWeight: '600',
     },
     bubblesGrid: {
         flexDirection: 'row',

@@ -9,8 +9,27 @@ import { View, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '../src/components/ErrorBoundary'; // Assuming path for ErrorBoundary
 import { ToastProvider } from '../src/components/ui/Toast';
+import { AppState, AppStateStatus } from 'react-native'; // Import AppState
+import React, { useState, useEffect } from 'react'; // React hooks
+import { BlurView } from 'expo-blur'; // Privacy Blur
 
 export default function RootLayout() {
+    const [isPrivacyActive, setIsPrivacyActive] = useState(false);
+
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', (nextAppState) => {
+            if (nextAppState === 'active') {
+                setIsPrivacyActive(false);
+            } else if (nextAppState === 'inactive' || nextAppState === 'background') {
+                setIsPrivacyActive(true);
+            }
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, []);
+
     return (
         <SafeAreaProvider>
 
@@ -108,6 +127,15 @@ export default function RootLayout() {
                                         <Stack.Screen name="shop/index" options={{ headerShown: false }} />
                                     </Stack>
                                     <StatusBar style="auto" />
+                                    {isPrivacyActive && (
+                                        <BlurView
+                                            intensity={40}
+                                            style={styles.privacyBlur}
+                                            tint="light" // or "dark" based on theme
+                                        >
+                                            {/* Optional: Add Logo or Icon here */}
+                                        </BlurView>
+                                    )}
                                 </View>
                                 {/* </MonetizationProvider> */}
                             </NotificationProvider>
@@ -123,5 +151,12 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,
+    },
+    privacyBlur: {
+        ...StyleSheet.absoluteFillObject,
+        zIndex: 99999,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.5)', // Fallback if blur fails or android
     },
 });

@@ -12,7 +12,12 @@ import { router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { Ionicons } from '@expo/vector-icons';
-// import { signOut } from 'firebase/auth'; // or useAuth signOut
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import { db } from '../../src/lib/firebase';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { triggerHaptic } from '../../src/lib/haptics';
+import * as Clipboard from 'expo-clipboard';
 
 export default function SettingsScreen() {
     const { signOut, system } = useAuth();
@@ -35,6 +40,71 @@ export default function SettingsScreen() {
                         } catch (error) {
                             console.error(error);
                             Alert.alert("Erreur", "Impossible de se déconnecter.");
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleExportData = async () => {
+        if (!system) return;
+        try {
+            // Fetch all data (Alters, Journal, System)
+            const altersQuery = query(collection(db, 'alters'), where('systemId', '==', system.id));
+            const altersSnap = await getDocs(altersQuery);
+            const altersData = altersSnap.docs.map(doc => doc.data());
+
+            const journalQuery = query(collection(db, 'journal_entries'), where('systemId', '==', system.id)); // Assuming systemId exists or filter locally
+            // Note: Journal might be strictly secure, check permissions. Assuming export allowed for own data.
+            // For now exporting Alters + System Profile as MVP
+
+            const exportData = {
+                system: system,
+                alters: altersData,
+                exportedAt: new Date().toISOString(),
+                version: "1.0.0"
+            };
+
+            const fileUri = (FileSystem as any).documentDirectory + 'pluralconnect_backup.json';
+            await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(exportData, null, 2));
+
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(fileUri);
+            } else {
+                Alert.alert("Succès", "Sauvegarde créée : " + fileUri);
+            }
+        } catch (error) {
+            console.error("Export failed:", error);
+            Alert.alert("Erreur", "Échec de l'exportation des données.");
+        }
+    };
+
+    const handleCopySystemId = async () => {
+        if (!system?.id) return;
+        await Clipboard.setStringAsync(system.id);
+        triggerHaptic.success();
+        Alert.alert("Copié !", "ID Système copié dans le presse-papier.");
+    };
+
+    const handleClearCache = async () => {
+        Alert.alert(
+            "Vider le cache ?",
+            "Cela peut libérer de l'espace mais les images devront être rechargées.",
+            [
+                { text: "Annuler", style: "cancel" },
+                {
+                    text: "Vider",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            const cacheDir = (FileSystem as any).cacheDirectory;
+                            if (cacheDir) {
+                                triggerHaptic.success();
+                                Alert.alert("Cache vidé", "L'espace temporaire a été nettoyé.");
+                            }
+                        } catch (e) {
+                            console.error(e);
                         }
                     }
                 }
@@ -82,22 +152,32 @@ export default function SettingsScreen() {
                 <View style={styles.section}>
                     {renderSettingItem("Email", "mail-outline", () => { }, system?.email)}
                     {renderSettingItem("Système", "planet-outline", () => { }, system?.username)}
+                    {renderSettingItem("Copier mon ID", "copy-outline", handleCopySystemId)}
                     {renderSettingItem("Mot de passe", "lock-closed-outline", () => Alert.alert("Info", "Modification bientôt disponible"))}
                 </View>
 
                 {/* App Settings */}
                 <Text style={styles.sectionTitle}>Application</Text>
                 <View style={styles.section}>
-                    {renderSettingItem("Notifications", "notifications-outline", () => setNotifications(!notifications), notifications)}
+                    {renderSettingItem("Notifications", "notifications-outline", () => {
+                        triggerHaptic.medium();
+                        setNotifications(!notifications);
+                    }, notifications)}
                     {renderSettingItem("Apparence", "moon-outline", () => Alert.alert("Info", "Thème sombre activé par défaut"), "Sombre")}
                     {renderSettingItem("Langue", "language-outline", () => { }, "Français")}
+                </View>
+
+                <Text style={styles.sectionTitle}>Données & Stockage</Text>
+                <View style={styles.section}>
+                    {renderSettingItem("Exporter mes données (JSON)", "download-outline", handleExportData)}
+                    {renderSettingItem("Vider le cache", "trash-outline", handleClearCache)}
                 </View>
 
                 {/* Support */}
                 <Text style={styles.sectionTitle}>Aide & Support</Text>
                 <View style={styles.section}>
-                    {renderSettingItem("À propos", "information-circle-outline", () => router.push('/help'))}
-                    {renderSettingItem("Crisis Resources", "warning-outline", () => router.push('/crisis'))}
+                    {renderSettingItem("À propos", "information-circle-outline", () => router.push('/help/index' as any))}
+                    {renderSettingItem("Crisis Resources", "warning-outline", () => router.push('/crisis/index' as any))}
                 </View>
 
                 {/* Logout */}

@@ -27,6 +27,7 @@ import { colors, spacing, borderRadius, typography, alterColors } from '../../sr
 import { Ionicons } from '@expo/vector-icons';
 import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SystemWeather } from '../../src/components/SystemWeather';
+import { useScrollToTop } from '@react-navigation/native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -85,6 +86,10 @@ export default function DashboardScreen() {
     const [selectedColor, setSelectedColor] = useState<string>(alterColors[0]);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+
+    // Scroll-to-top ref
+    const scrollRef = React.useRef(null);
+    useScrollToTop(scrollRef);
 
     useEffect(() => {
         // Pre-select currently active alters
@@ -436,6 +441,7 @@ export default function DashboardScreen() {
                 ===================================================== */}
             <View style={styles.gridContainer}>
                 <FlatList
+                    ref={scrollRef}
                     key={`grid-${NUM_COLUMNS}`}  // IMPORTANT: permet changement dynamique de numColumns
                     data={authLoading ? [] : gridData}
                     renderItem={renderBubble}

@@ -45,12 +45,15 @@ service cloud.firestore {
     
     // ============================================
     // Posts Collection
-    // Les posts publics sont lisibles par tous, les autres par le propriétaire
+    // Lecture par tous les utilisateurs authentifiés (pour permettre les queries)
+    // Écriture uniquement par le propriétaire
     // ============================================
     match /posts/{postId} {
-      // Lecture: propriétaire OU post public
-      allow read: if isOwner(resource) || resource.data.visibility == 'public';
+      // Lecture: tout utilisateur authentifié peut lire les posts
+      allow read: if isAuthenticated();
+      // Création: propriétaire uniquement
       allow create: if isOwnerCreate();
+      // Modification/Suppression: propriétaire uniquement
       allow update, delete: if isOwner(resource);
     }
     

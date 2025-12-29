@@ -11,6 +11,7 @@ import {
     Dimensions,
     ActivityIndicator,
     Alert,
+    TextInput,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -156,6 +157,19 @@ export default function AlterSpaceScreen() {
                         <Text style={styles.statNumber}>0</Text>
                         <Text style={styles.statLabel}>Amis</Text>
                     </View>
+                </View>
+
+                {/* Profile Actions */}
+                <View style={styles.profileActions}>
+                    <TouchableOpacity
+                        style={styles.editProfileButton}
+                        onPress={() => router.push(`/alter-space/${alter.id}/edit`)}
+                    >
+                        <Text style={styles.editProfileText}>Modifier le profil</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.followButton}>
+                        <Text style={styles.followButtonText}>S'abonner</Text>
+                    </TouchableOpacity>
                 </View>
             </View>
         );
@@ -320,12 +334,6 @@ export default function AlterSpaceScreen() {
                     Les entrées du journal de {alter.name} apparaîtront ici.
                     Ce journal est privé et indépendant des autres alters.
                 </Text>
-                <TouchableOpacity
-                    style={styles.startChatButton}
-                    onPress={() => router.push('/(tabs)/journal')}
-                >
-                    <Text style={styles.startChatText}>Nouvelle entrée</Text>
-                </TouchableOpacity>
             </View>
         </ScrollView>
     );
@@ -354,16 +362,86 @@ export default function AlterSpaceScreen() {
         <View style={styles.tabContent}>
             <View style={styles.searchContainer}>
                 <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
-                <View style={styles.searchInputPlaceholder}>
-                    <Text style={{ color: colors.textSecondary }}>Rechercher...</Text>
+                <TextInput
+                    style={{ flex: 1, color: colors.text, height: 40 }}
+                    placeholder="Rechercher des amis..."
+                    placeholderTextColor={colors.textSecondary}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                />
+            </View>
+            {searchQuery.length > 0 ? (
+                <View style={{ padding: spacing.md }}>
+                    <Text style={{ ...typography.body, color: colors.textSecondary, textAlign: 'center' }}>
+                        Recherche de "{searchQuery}"...
+                    </Text>
+                    {/* Search Results */}
+                    <View style={{ marginTop: 20 }}>
+                        {alters.filter(a =>
+                            a.id !== alter.id && // Don't show self
+                            (a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                (a.role_ids && a.role_ids.some((r: string) => r.toLowerCase().includes(searchQuery.toLowerCase()))) ||
+                                (a.custom_fields && a.custom_fields.some((f: any) => f.value.toLowerCase().includes(searchQuery.toLowerCase()))))
+                        ).length > 0 ? (
+                            alters.filter(a =>
+                                a.id !== alter.id &&
+                                (a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                    (a.role_ids && a.role_ids.some((r: string) => r.toLowerCase().includes(searchQuery.toLowerCase()))) ||
+                                    (a.custom_fields && a.custom_fields.some((f: any) => f.value.toLowerCase().includes(searchQuery.toLowerCase()))))
+                            ).map((result, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        padding: spacing.sm,
+                                        backgroundColor: colors.backgroundCard,
+                                        marginBottom: spacing.xs,
+                                        borderRadius: borderRadius.md
+                                    }}
+                                    onPress={() => {
+                                        // Navigate to that alter's profile (view as guest logic needed eventually)
+                                        // For now, switch to their space? Or show profile modal?
+                                        router.push(`/alter-space/${result.id}`);
+                                    }}
+                                >
+                                    <View style={{
+                                        width: 40, height: 40, borderRadius: 20,
+                                        backgroundColor: result.color || colors.primary,
+                                        justifyContent: 'center', alignItems: 'center', marginRight: spacing.sm
+                                    }}>
+                                        {result.avatar_url ? (
+                                            <Image source={{ uri: result.avatar_url }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+                                        ) : (
+                                            <Text style={{ color: 'white', fontWeight: 'bold' }}>{result.name.charAt(0)}</Text>
+                                        )}
+                                    </View>
+                                    <View>
+                                        <Text style={{ ...typography.body, fontWeight: 'bold' }}>{result.name}</Text>
+                                        <Text style={{ ...typography.caption, color: colors.textSecondary }}>
+                                            {result.custom_fields?.find((f: any) => f.label === 'Role')?.value || 'Membre du système'}
+                                        </Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} style={{ marginLeft: 'auto' }} />
+                                </TouchableOpacity>
+                            ))
+                        ) : (
+                            <View style={{ alignItems: 'center' }}>
+                                <Text style={{ ...typography.caption, color: colors.textMuted }}>
+                                    Aucun résultat trouvé pour "{searchQuery}".
+                                </Text>
+                            </View>
+                        )}
+                    </View>
                 </View>
-            </View>
-            <View style={styles.emptyState}>
-                <Text style={styles.emptyTitle}>Recherche</Text>
-                <Text style={styles.emptySubtitle}>
-                    Rechercher dans les publications et amis de {alter.name}
-                </Text>
-            </View>
+            ) : (
+                <View style={styles.emptyState}>
+                    <Text style={styles.emptyTitle}>Recherche</Text>
+                    <Text style={styles.emptySubtitle}>
+                        Taper pour rechercher des amis ou du contenu.
+                    </Text>
+                </View>
+            )}
         </View>
     );
 
@@ -446,16 +524,27 @@ export default function AlterSpaceScreen() {
                     <Ionicons name="chevron-back" size={28} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{alter.name}</Text>
-                <TouchableOpacity
-                    style={styles.messageButton}
-                    onPress={() => {
-                        // For now, go to global messages.
-                        // Ideal: Open specific conversation with this alter.
-                        router.push('/(tabs)/messages');
-                    }}
-                >
-                    <Ionicons name="chatbubble-ellipses-outline" size={26} color={colors.text} />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <TouchableOpacity
+                        style={styles.messageButton}
+                        onPress={() => {
+                            // For now, go to global messages.
+                            router.push('/(tabs)/messages');
+                        }}
+                    >
+                        <Ionicons name="chatbubble-ellipses-outline" size={26} color={colors.text} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.messageButton}
+                        onPress={() => {
+                            // Settings for this alter
+                            // Assuming we have a settings page or just general settings
+                            router.push('/settings');
+                        }}
+                    >
+                        <Ionicons name="settings-outline" size={26} color={colors.text} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Content Area */}
@@ -614,6 +703,40 @@ const styles = StyleSheet.create({
     statLabel: {
         ...typography.caption,
         color: colors.textSecondary,
+        fontSize: 14,
+    },
+    profileActions: {
+        flexDirection: 'row',
+        gap: 10,
+        marginTop: spacing.md,
+        width: '100%',
+        paddingHorizontal: spacing.xl,
+        justifyContent: 'center',
+    },
+    editProfileButton: {
+        backgroundColor: colors.backgroundLight,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        flex: 1,
+        alignItems: 'center',
+    },
+    editProfileText: {
+        color: colors.text,
+        fontWeight: '600',
+        fontSize: 14,
+    },
+    followButton: {
+        backgroundColor: colors.primary,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        flex: 1,
+        alignItems: 'center',
+    },
+    followButtonText: {
+        color: 'white',
+        fontWeight: '600',
         fontSize: 14,
     },
     bottomTabs: {

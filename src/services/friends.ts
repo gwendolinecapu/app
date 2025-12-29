@@ -55,22 +55,31 @@ export const FriendService = {
 
         if (!reqSnap.exists()) throw new Error('Request not found');
         const data = reqSnap.data() as any;
-        // Actually access data safely
-        const { senderId, receiverId } = data as { senderId: string, receiverId: string };
+        const { senderId, receiverId, systemId: senderSystemId } = data as { senderId: string, receiverId: string, systemId: string };
+        const currentSystemId = auth.currentUser?.uid;
+
+        if (!currentSystemId) throw new Error('Not authenticated');
 
         // 1. Update request status
         await updateDoc(reqRef, { status: 'accepted' });
 
         // 2. Create bilateral friendship
-        // We can store as two docs or one. Two docs allows easier querying "my friends"
+        // Doc for Receiver (US) - linked to logic: "My friend X"
         await addDoc(collection(db, 'friendships'), {
-            alterId: senderId,
-            friendId: receiverId,
+            systemId: currentSystemId, // Owned by us
+            alterId: receiverId, // Me (receiver)
+            friendId: senderId, // Them (sender)
+            friendSystemId: senderSystemId, // Their system
             createdAt: serverTimestamp()
         });
+
+        // Doc for Sender (THEM) - linked to logic: "Your friend Y"
+        // We create it on their behalf (allowed by relaxed rules)
         await addDoc(collection(db, 'friendships'), {
-            alterId: receiverId,
-            friendId: senderId,
+            systemId: senderSystemId, // Owned by them
+            alterId: senderId, // Them (sender)
+            friendId: receiverId, // Me (receiver)
+            friendSystemId: currentSystemId, // My system
             createdAt: serverTimestamp()
         });
     },

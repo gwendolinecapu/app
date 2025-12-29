@@ -1,0 +1,81 @@
+{
+  "buildCommand" : {
+    "command" : "build",
+    "skipDependencies" : false,
+    "style" : "buildOnly"
+  },
+  "configuredTargets" : [
+    {
+      "guid" : "d52d1424ee86d170dc007708b3376e0c03cc926ba8d7760dea42bae58806d589"
+    },
+    {
+      "guid" : "d52d1424ee86d170dc007708b3376e0ce1ae1d628854a8c648d06e157f15ad8b"
+    }
+  ],
+  "containerPath" : "/Users/leo/Sans titre/ios/PluralConnect.xcworkspace",
+  "continueBuildingAfterErrors" : false,
+  "dependencyScope" : "workspace",
+  "enableIndexBuildArena" : false,
+  "hideShellScriptEnvironment" : false,
+  "parameters" : {
+    "action" : "install",
+    "activeArchitecture" : "arm64",
+    "activeRunDestination" : {
+      "disableOnlyActiveArch" : false,
+      "platform" : "watchsimulator",
+      "sdk" : "watchsimulator26.2",
+      "sdkVariant" : "watchsimulator",
+      "supportedArchitectures" : [
+        "arm64"
+      ],
+      "targetArchitecture" : "arm64"
+    },
+    "arenaInfo" : {
+      "buildIntermediatesPath" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex",
+      "buildProductsPath" : "/Users/leo/Sans titre/build/watch/Build/Products",
+      "derivedDataPath" : "/Users/leo/Sans titre/build/watch",
+      "indexDataStoreFolderPath" : "/Users/leo/Sans titre/build/watch/Index.noindex/DataStore",
+      "indexEnableDataStore" : true,
+      "indexPCHPath" : "/Users/leo/Sans titre/build/watch/Index.noindex/PrecompiledHeaders",
+      "pchPath" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/PrecompiledHeaders"
+    },
+    "configurationName" : "Release",
+    "overrides" : {
+      "commandLine" : {
+        "table" : {
+
+        }
+      },
+      "synthesized" : {
+        "table" : {
+          "ACTION" : "install",
+          "ASSET_PACK_FOLDER_PATH" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/InstallationBuildProductsLocation/OnDemandResources",
+          "ASSETCATALOG_COMPILER_FLATTENED_APP_ICON_PATH" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/BuildProductsPath/ProductIcon.png",
+          "DEPLOYMENT_LOCATION" : "YES",
+          "DEPLOYMENT_POSTPROCESSING" : "YES",
+          "DSTROOT" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/InstallationBuildProductsLocation",
+          "EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE" : "NO",
+          "ENABLE_PREVIEWS" : "NO",
+          "ENABLE_SIGNATURE_AGGREGATION" : "YES",
+          "ENABLE_XOJIT_PREVIEWS" : "YES",
+          "INDEX_ENABLE_DATA_STORE" : "NO",
+          "MESSAGES_APPLICATION_EXTENSION_SUPPORT_FOLDER_PATH" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/BuildProductsPath/MessagesApplicationExtensionSupport",
+          "MESSAGES_APPLICATION_SUPPORT_FOLDER_PATH" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/BuildProductsPath/MessagesApplicationSupport",
+          "OBJROOT" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/IntermediateBuildFilesPath",
+          "ONLY_ACTIVE_ARCH" : "YES",
+          "SHARED_PRECOMPS_DIR" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/PrecompiledHeaders",
+          "SIGNATURE_METADATA_FOLDER_PATH" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/BuildProductsPath/Signatures",
+          "SWIFT_STDLIB_TOOL_UNSIGNED_DESTINATION_DIR" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/BuildProductsPath/SwiftSupport",
+          "SYMROOT" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/BuildProductsPath",
+          "WATCHKIT_2_SUPPORT_FOLDER_PATH" : "/Users/leo/Sans titre/build/watch/Build/Intermediates.noindex/ArchiveIntermediates/PluralConnectWatch Watch App/BuildProductsPath/WatchKitSupport2"
+        }
+      }
+    }
+  },
+  "schemeCommand" : "archive",
+  "showNonLoggedProgress" : true,
+  "useDryRun" : false,
+  "useImplicitDependencies" : true,
+  "useLegacyBuildLocations" : false,
+  "useParallelTargets" : true
+}

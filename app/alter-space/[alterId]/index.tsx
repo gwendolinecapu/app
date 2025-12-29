@@ -824,7 +824,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: spacing.md,
-        paddingTop: 60, // Adjusted for safe area roughly
+        paddingTop: 60,
         paddingBottom: spacing.sm,
         backgroundColor: colors.background,
         zIndex: 10,
@@ -832,6 +832,14 @@ const styles = StyleSheet.create({
     backButton: {
         padding: spacing.xs,
     },
+    messageButton: {
+        padding: spacing.xs,
+    },
+    headerTitle: {
+        ...typography.h3,
+        fontWeight: 'bold',
+    },
+    // New Profile Styles
     profileSectionWrapper: {
         overflow: 'hidden',
         borderBottomLeftRadius: 30,
@@ -848,7 +856,7 @@ const styles = StyleSheet.create({
     profileSection: {
         alignItems: 'center',
         padding: spacing.xl,
-        paddingTop: 80, // Space for status bar/header
+        paddingTop: 80,
     },
     avatarContainer: {
         width: 100,
@@ -856,7 +864,7 @@ const styles = StyleSheet.create({
         marginBottom: spacing.md,
         borderRadius: 50,
         borderWidth: 3,
-        padding: 3, // Ring effect
+        padding: 3,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
@@ -921,13 +929,14 @@ const styles = StyleSheet.create({
         color: colors.textSecondary,
         fontSize: 14,
     },
-    messageButton: {
-        padding: spacing.xs,
+    // End New Profile Styles
+    // Compatibility Styles (aliases for old names if needed)
+    avatar: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
     },
-    headerTitle: {
-        ...typography.h3,
-        fontWeight: 'bold',
-    },
+
     name: {
         ...typography.h2,
         marginBottom: spacing.xs,
@@ -960,332 +969,798 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.xl,
         marginBottom: spacing.md,
     },
+    profileActions: {
+        flexDirection: 'row',
+        gap: 10,
+        marginTop: spacing.md,
+        width: '100%',
+        paddingHorizontal: spacing.xl,
+        justifyContent: 'center',
+    },
+    editProfileButton: {
+        backgroundColor: colors.backgroundLight,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        flex: 1,
+        alignItems: 'center',
+    },
+    editProfileText: {
+        color: colors.text,
+        fontWeight: '600',
+        fontSize: 14,
+    },
+    followButton: {
+        backgroundColor: colors.primary,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        flex: 1,
+        alignItems: 'center',
+    },
+    followButtonText: {
+        color: 'white',
+        fontWeight: '600',
+        fontSize: 14,
+    },
+    bottomTabs: {
+        flexDirection: 'row',
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+        backgroundColor: colors.backgroundCard,
+        paddingBottom: spacing.lg,
+        paddingTop: spacing.sm,
+        height: 85,
+        alignItems: 'center',
+        justifyContent: 'space-around',
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+    },
+    tab: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: spacing.xs,
+        minWidth: 50,
+    },
+    tabActive: {
+        // No border, just color change handled in JSX
+    },
+    contentArea: {
+        flex: 1,
+        paddingBottom: 85, // Space for bottom tabs
+    },
+    galleryContainer: {
+        flex: 1,
+        padding: 1,
+    },
+    galleryItem: {
+        width: GALLERY_ITEM_SIZE,
+        height: GALLERY_ITEM_SIZE,
+        margin: 1,
+        backgroundColor: colors.backgroundCard,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    galleryImage: {
+        width: '100%',
+        height: '100%',
+    },
+    textPostPreview: {
+        padding: spacing.xs,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '100%',
+        height: '100%',
+    },
+    textPostContent: {
+        ...typography.caption,
+        color: colors.text,
+        textAlign: 'center',
+        fontSize: 10,
+    },
+    tabContent: {
+        flex: 1,
+        padding: spacing.md,
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.backgroundLight,
+        borderRadius: borderRadius.lg,
+        padding: spacing.sm,
+        marginBottom: spacing.lg,
+    },
+    searchIcon: {
+        marginRight: spacing.sm,
+    },
+    searchInputPlaceholder: {
+        flex: 1,
+    },
+    settingsContainer: {
+        flex: 1,
+    },
+    settingSection: {
+        marginBottom: spacing.xl,
+    },
+    settingSectionTitle: {
+        ...typography.h3,
+        fontSize: 18,
+        marginBottom: spacing.md,
+        paddingHorizontal: spacing.md,
+    },
+    settingItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.md,
+        backgroundColor: colors.backgroundCard,
+        marginBottom: 1,
+    },
+    settingText: {
+        ...typography.body,
+        flex: 1,
+        marginLeft: spacing.md,
+    },
+    emptyState: {
+        alignItems: 'center',
+        padding: spacing.xxl,
+        marginTop: spacing.xl,
+    },
+    emptyEmoji: {
+        fontSize: 64,
+        marginBottom: spacing.md,
+    },
+    emptyTitle: {
+        ...typography.h3,
+        marginBottom: spacing.xs,
+        fontSize: 20,
+    },
+    emptySubtitle: {
+        ...typography.bodySmall,
+        color: colors.textSecondary,
+        textAlign: 'center',
+    },
+    sectionTitle: {
+        ...typography.h3,
+        marginBottom: spacing.md,
+        color: colors.text,
+    },
+    startChatButton: {
+        backgroundColor: colors.primary,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.lg,
+        borderRadius: borderRadius.full,
+        marginTop: spacing.lg,
+    },
+    startChatText: {
+        color: 'white',
+        fontWeight: '600',
+    },
+    fab: {
+        position: 'absolute',
+        bottom: 100, // Adjusted to clear bottom tab bar
+        alignSelf: 'center', // Center horizontally
+        // right: 30, // Removed right alignment
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: colors.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+        elevation: 8,
+        zIndex: 20, // Ensure it's above everything
+    },
+    postCard: {
+        backgroundColor: colors.backgroundCard,
+        marginBottom: spacing.md,
+        borderRadius: borderRadius.lg,
+        padding: spacing.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    postHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.sm,
+    },
+    postAuthorInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    postAvatar: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: colors.secondary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: spacing.sm,
+        overflow: 'hidden',
+    },
+    postAvatarImage: {
+        width: '100%',
+        height: '100%',
+    },
+    postAvatarText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 18,
+    },
+    postAuthorName: {
+        ...typography.body,
+        fontWeight: 'bold',
+    },
+    postTime: {
+        ...typography.caption,
+        color: colors.textSecondary,
+    },
+    postContent: {
+        ...typography.body,
+        marginBottom: spacing.md,
+        lineHeight: 22,
+    },
+    postImage: {
+        width: '100%',
+        height: 200,
+        borderRadius: borderRadius.md,
+        marginBottom: spacing.md,
+    },
+    postActions: {
+        flexDirection: 'row',
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+        paddingTop: spacing.sm,
+    },
+    postAction: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginRight: spacing.xl,
+    },
+    postActionText: {
+        ...typography.caption,
+        marginLeft: spacing.xs,
+        color: colors.textSecondary,
+    },
+    tipCard: {
+        backgroundColor: colors.backgroundCard,
+        marginBottom: spacing.md,
+        borderRadius: borderRadius.lg,
+        padding: spacing.md,
+        borderWidth: 1,
+        borderColor: colors.primary + '40',
+    },
+    tipHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: spacing.xs,
+    },
+    tipTitle: {
+        ...typography.h3,
+        fontSize: 16,
+        marginLeft: spacing.xs,
+        color: colors.primary,
+    },
+    tipContent: {
+        ...typography.body,
+        fontSize: 14,
+        color: colors.text,
+        marginBottom: spacing.sm,
+    },
+    tipAction: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    tipActionText: {
+        ...typography.caption,
+        fontWeight: 'bold',
+        color: colors.primary,
+        marginRight: spacing.xs,
+    },
+    emotionGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.sm,
+        padding: spacing.md,
+        justifyContent: 'center',
+    },
+    emotionButton: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: colors.backgroundCard,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    emotionEmoji: {
+        fontSize: 30,
+    },
+    mediaContainer: {
+        marginTop: spacing.sm,
+        marginBottom: spacing.sm,
+        borderRadius: borderRadius.md,
+        overflow: 'hidden',
+    },
+}); notFound: {
+        ...typography.body,
+        textAlign: 'center',
+            marginTop: spacing.xxl,
+    },
+header: {
+    flexDirection: 'row',
+        justifyContent: 'space-between',
+            alignItems: 'center',
+                paddingHorizontal: spacing.md,
+                    paddingTop: 60, // Adjusted for safe area roughly
+                        paddingBottom: spacing.sm,
+                            backgroundColor: colors.background,
+                                zIndex: 10,
+    },
+backButton: {
+    padding: spacing.xs,
+    },
+profileSectionWrapper: {
+    overflow: 'hidden',
+        borderBottomLeftRadius: 30,
+            borderBottomRightRadius: 30,
+                marginBottom: spacing.md,
+    },
+profileGradientBackground: {
+    position: 'absolute',
+        top: 0,
+            left: 0,
+                right: 0,
+                    bottom: 0,
+    },
+profileSection: {
+    alignItems: 'center',
+        padding: spacing.xl,
+            paddingTop: 80, // Space for status bar/header
+    },
+avatarContainer: {
+    width: 100,
+        height: 100,
+            marginBottom: spacing.md,
+                borderRadius: 50,
+                    borderWidth: 3,
+                        padding: 3, // Ring effect
+                            shadowColor: "#000",
+                                shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+        shadowRadius: 5,
+            elevation: 8,
+    },
+avatarImage: {
+    width: '100%',
+        height: '100%',
+            borderRadius: 50,
+    },
+avatarPlaceholder: {
+    width: '100%',
+        height: '100%',
+            borderRadius: 50,
+                justifyContent: 'center',
+                    alignItems: 'center',
+    },
+avatarText: {
+    fontSize: 36,
+        fontWeight: 'bold',
+            color: colors.text,
+    },
+glassCard: {
+    width: '100%',
+        borderRadius: borderRadius.lg,
+            padding: spacing.md,
+                marginTop: spacing.sm,
+                    marginBottom: spacing.lg,
+                        overflow: 'hidden',
+                            borderWidth: 1,
+                                borderColor: 'rgba(255,255,255,0.1)',
+                                    alignItems: 'center',
+    },
+statsDivider: {
+    width: '80%',
+        height: 1,
+            backgroundColor: 'rgba(255,255,255,0.1)',
+                marginVertical: spacing.md,
+    },
+statsRow: {
+    flexDirection: 'row',
+        alignItems: 'center',
+            justifyContent: 'center',
+                width: '100%',
+    },
+statItem: {
+    alignItems: 'center',
+        paddingHorizontal: spacing.xl,
+    },
+statSeparator: {
+    width: 1,
+        height: 24,
+            backgroundColor: 'rgba(255,255,255,0.2)',
+    },
+statNumber: {
+        ...typography.h3,
+        fontWeight: 'bold',
+    },
+statLabel: {
+        ...typography.caption,
+        color: colors.textSecondary,
+            fontSize: 14,
+    },
+messageButton: {
+    padding: spacing.xs,
+    },
+headerTitle: {
+        ...typography.h3,
+        fontWeight: 'bold',
+    },
+name: {
+        ...typography.h2,
+        marginBottom: spacing.xs,
+            fontSize: 24,
+    },
+pronouns: {
+        ...typography.caption,
+        color: colors.textSecondary,
+            marginBottom: spacing.xs,
+    },
+roleTag: {
+    flexDirection: 'row',
+        alignItems: 'center',
+            backgroundColor: `${colors.primary}20`,
+                paddingHorizontal: spacing.sm,
+                    paddingVertical: spacing.xs,
+                        borderRadius: borderRadius.full,
+                            marginBottom: spacing.sm,
+                                gap: 4,
+    },
+roleText: {
+        ...typography.caption,
+        color: colors.primary,
+            fontWeight: '600',
+    },
+bio: {
+        ...typography.body,
+        color: colors.textSecondary,
+            textAlign: 'center',
+                paddingHorizontal: spacing.xl,
+                    marginBottom: spacing.md,
+    },
     ...typography.h3,
     fontWeight: 'bold',
 },
-    statLabel: {
+statLabel: {
     ...typography.caption,
-    color: colors.textSecondary,
-    fontSize: 14,
+        color: colors.textSecondary,
+            fontSize: 14,
 },
-    profileActions: {
+profileActions: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: spacing.md,
-    width: '100%',
-    paddingHorizontal: spacing.xl,
-    justifyContent: 'center',
+        gap: 10,
+            marginTop: spacing.md,
+                width: '100%',
+                    paddingHorizontal: spacing.xl,
+                        justifyContent: 'center',
 },
-    editProfileButton: {
+editProfileButton: {
     backgroundColor: colors.backgroundLight,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    flex: 1,
-    alignItems: 'center',
+        paddingVertical: 8,
+            paddingHorizontal: 16,
+                borderRadius: 8,
+                    flex: 1,
+                        alignItems: 'center',
 },
-    editProfileText: {
+editProfileText: {
     color: colors.text,
-    fontWeight: '600',
-    fontSize: 14,
+        fontWeight: '600',
+            fontSize: 14,
 },
-    followButton: {
+followButton: {
     backgroundColor: colors.primary,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    flex: 1,
-    alignItems: 'center',
+        paddingVertical: 8,
+            paddingHorizontal: 16,
+                borderRadius: 8,
+                    flex: 1,
+                        alignItems: 'center',
 },
-    followButtonText: {
+followButtonText: {
     color: 'white',
-    fontWeight: '600',
-    fontSize: 14,
+        fontWeight: '600',
+            fontSize: 14,
 },
-    bottomTabs: {
+bottomTabs: {
     flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.backgroundCard,
-    paddingBottom: spacing.lg,
-    paddingTop: spacing.sm,
-    height: 85,
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+        borderTopWidth: 1,
+            borderTopColor: colors.border,
+                backgroundColor: colors.backgroundCard,
+                    paddingBottom: spacing.lg,
+                        paddingTop: spacing.sm,
+                            height: 85,
+                                alignItems: 'center',
+                                    justifyContent: 'space-around',
+                                        position: 'absolute',
+                                            bottom: 0,
+                                                left: 0,
+                                                    right: 0,
 },
-    tab: {
+tab: {
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xs,
-    minWidth: 50,
+        justifyContent: 'center',
+            padding: spacing.xs,
+                minWidth: 50,
 },
-    tabActive: {
+tabActive: {
     // No border, just color change handled in JSX
 },
-    contentArea: {
+contentArea: {
     flex: 1,
-    paddingBottom: 85, // Space for bottom tabs
+        paddingBottom: 85, // Space for bottom tabs
 },
-    galleryContainer: {
+galleryContainer: {
     flex: 1,
-    padding: 1,
+        padding: 1,
 },
-    galleryItem: {
+galleryItem: {
     width: GALLERY_ITEM_SIZE,
-    height: GALLERY_ITEM_SIZE,
-    margin: 1,
-    backgroundColor: colors.backgroundCard,
-    justifyContent: 'center',
-    alignItems: 'center',
+        height: GALLERY_ITEM_SIZE,
+            margin: 1,
+                backgroundColor: colors.backgroundCard,
+                    justifyContent: 'center',
+                        alignItems: 'center',
 },
-    galleryImage: {
+galleryImage: {
     width: '100%',
-    height: '100%',
+        height: '100%',
 },
-    textPostPreview: {
+textPostPreview: {
     padding: spacing.xs,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-    height: '100%',
+        justifyContent: 'center',
+            alignItems: 'center',
+                width: '100%',
+                    height: '100%',
 },
-    textPostContent: {
+textPostContent: {
     ...typography.caption,
-    color: colors.text,
-    textAlign: 'center',
-    fontSize: 10,
+        color: colors.text,
+            textAlign: 'center',
+                fontSize: 10,
 },
-    tabContent: {
+tabContent: {
     flex: 1,
-    padding: spacing.md,
+        padding: spacing.md,
 },
-    searchContainer: {
+searchContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.backgroundLight,
-    borderRadius: borderRadius.lg,
-    padding: spacing.sm,
-    marginBottom: spacing.lg,
+        alignItems: 'center',
+            backgroundColor: colors.backgroundLight,
+                borderRadius: borderRadius.lg,
+                    padding: spacing.sm,
+                        marginBottom: spacing.lg,
 },
-    searchIcon: {
+searchIcon: {
     marginRight: spacing.sm,
 },
-    searchInputPlaceholder: {
+searchInputPlaceholder: {
     flex: 1,
 },
-    settingsContainer: {
+settingsContainer: {
     flex: 1,
 },
-    settingSection: {
+settingSection: {
     marginBottom: spacing.xl,
 },
-    settingSectionTitle: {
+settingSectionTitle: {
     ...typography.h3,
-    fontSize: 18,
-    marginBottom: spacing.md,
-    paddingHorizontal: spacing.md,
+        fontSize: 18,
+            marginBottom: spacing.md,
+                paddingHorizontal: spacing.md,
 },
-    settingItem: {
+settingItem: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.backgroundCard,
-    marginBottom: 1,
+        alignItems: 'center',
+            paddingVertical: spacing.md,
+                paddingHorizontal: spacing.md,
+                    backgroundColor: colors.backgroundCard,
+                        marginBottom: 1,
 },
-    settingText: {
+settingText: {
     ...typography.body,
-    flex: 1,
-    marginLeft: spacing.md,
+        flex: 1,
+            marginLeft: spacing.md,
 },
-    emptyState: {
+emptyState: {
     alignItems: 'center',
-    padding: spacing.xxl,
-    marginTop: spacing.xl,
+        padding: spacing.xxl,
+            marginTop: spacing.xl,
 },
-    emptyEmoji: {
+emptyEmoji: {
     fontSize: 64,
-    marginBottom: spacing.md,
+        marginBottom: spacing.md,
 },
-    emptyTitle: {
+emptyTitle: {
     ...typography.h3,
-    marginBottom: spacing.xs,
-    fontSize: 20,
+        marginBottom: spacing.xs,
+            fontSize: 20,
 },
-    emptySubtitle: {
+emptySubtitle: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
-    textAlign: 'center',
+        color: colors.textSecondary,
+            textAlign: 'center',
 },
-    sectionTitle: {
+sectionTitle: {
     ...typography.h3,
-    marginBottom: spacing.md,
-    color: colors.text,
+        marginBottom: spacing.md,
+            color: colors.text,
 },
-    startChatButton: {
+startChatButton: {
     backgroundColor: colors.primary,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.full,
-    marginTop: spacing.lg,
+        paddingVertical: spacing.sm,
+            paddingHorizontal: spacing.lg,
+                borderRadius: borderRadius.full,
+                    marginTop: spacing.lg,
 },
-    startChatText: {
+startChatText: {
     color: 'white',
-    fontWeight: '600' as const,
+        fontWeight: '600' as const,
 },
-    fab: {
+fab: {
     position: 'absolute',
-    bottom: 100, // Adjusted to clear bottom tab bar
-    alignSelf: 'center', // Center horizontally
-    // right: 30, // Removed right alignment
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
+        bottom: 100, // Adjusted to clear bottom tab bar
+            alignSelf: 'center', // Center horizontally
+                // right: 30, // Removed right alignment
+                width: 60,
+                    height: 60,
+                        borderRadius: 30,
+                            backgroundColor: colors.primary,
+                                justifyContent: 'center',
+                                    alignItems: 'center',
+                                        shadowColor: colors.primary,
+                                            shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
-    zIndex: 20, // Ensure it's above everything
+        shadowRadius: 8,
+            elevation: 8,
+                zIndex: 20, // Ensure it's above everything
 },
-    postCard: {
+postCard: {
     backgroundColor: colors.backgroundCard,
-    marginBottom: spacing.md,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+        marginBottom: spacing.md,
+            borderRadius: borderRadius.lg,
+                padding: spacing.md,
+                    borderWidth: 1,
+                        borderColor: colors.border,
 },
-    postHeader: {
+postHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
+        justifyContent: 'space-between',
+            alignItems: 'center',
+                marginBottom: spacing.sm,
 },
-    postAuthorInfo: {
+postAuthorInfo: {
     flexDirection: 'row',
-    alignItems: 'center',
+        alignItems: 'center',
 },
-    postAvatar: {
+postAvatar: {
     width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.secondary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.sm,
-    overflow: 'hidden',
+        height: 40,
+            borderRadius: 20,
+                backgroundColor: colors.secondary,
+                    justifyContent: 'center',
+                        alignItems: 'center',
+                            marginRight: spacing.sm,
+                                overflow: 'hidden',
 },
-    postAvatarImage: {
+postAvatarImage: {
     width: '100%',
-    height: '100%',
+        height: '100%',
 },
-    postAvatarText: {
+postAvatarText: {
     color: 'white',
-    fontWeight: 'bold',
-    fontSize: 18,
+        fontWeight: 'bold',
+            fontSize: 18,
 },
-    postAuthorName: {
+postAuthorName: {
     ...typography.body,
-    fontWeight: 'bold',
+        fontWeight: 'bold',
 },
-    postTime: {
+postTime: {
     ...typography.caption,
-    color: colors.textSecondary,
+        color: colors.textSecondary,
 },
-    postContent: {
+postContent: {
     ...typography.body,
-    marginBottom: spacing.md,
-    lineHeight: 22,
+        marginBottom: spacing.md,
+            lineHeight: 22,
 },
-    postImage: {
+postImage: {
     width: '100%',
-    height: 200,
-    borderRadius: borderRadius.md,
-    marginBottom: spacing.md,
+        height: 200,
+            borderRadius: borderRadius.md,
+                marginBottom: spacing.md,
 },
-    postActions: {
+postActions: {
     flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: spacing.sm,
+        borderTopWidth: 1,
+            borderTopColor: colors.border,
+                paddingTop: spacing.sm,
 },
-    postAction: {
+postAction: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: spacing.xl,
+        alignItems: 'center',
+            marginRight: spacing.xl,
 },
-    postActionText: {
+postActionText: {
     ...typography.caption,
-    marginLeft: spacing.xs,
-    color: colors.textSecondary,
+        marginLeft: spacing.xs,
+            color: colors.textSecondary,
 },
-    tipCard: {
+tipCard: {
     backgroundColor: colors.backgroundCard, // Or a slightly different color for tips
-    marginBottom: spacing.md,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.primary + '40', // slightly colored border
+        marginBottom: spacing.md,
+            borderRadius: borderRadius.lg,
+                padding: spacing.md,
+                    borderWidth: 1,
+                        borderColor: colors.primary + '40', // slightly colored border
 },
-    tipHeader: {
+tipHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.xs,
+        alignItems: 'center',
+            marginBottom: spacing.xs,
 },
-    tipTitle: {
+tipTitle: {
     ...typography.h3,
-    fontSize: 16,
-    marginLeft: spacing.xs,
-    color: colors.primary,
+        fontSize: 16,
+            marginLeft: spacing.xs,
+                color: colors.primary,
 },
-    tipContent: {
+tipContent: {
     ...typography.body,
-    fontSize: 14,
-    color: colors.text,
-    marginBottom: spacing.sm,
+        fontSize: 14,
+            color: colors.text,
+                marginBottom: spacing.sm,
 },
-    tipAction: {
+tipAction: {
     flexDirection: 'row',
-    alignItems: 'center',
+        alignItems: 'center',
 },
-    tipActionText: {
+tipActionText: {
     ...typography.caption,
-    fontWeight: 'bold',
-    color: colors.primary,
-    marginRight: spacing.xs,
+        fontWeight: 'bold',
+            color: colors.primary,
+                marginRight: spacing.xs,
 },
-    emotionGrid: {
+emotionGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    padding: spacing.md,
-    justifyContent: 'center',
+        flexWrap: 'wrap',
+            gap: spacing.sm,
+                padding: spacing.md,
+                    justifyContent: 'center',
 },
-    emotionButton: {
+emotionButton: {
     width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.backgroundCard,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
+        height: 60,
+            borderRadius: 30,
+                backgroundColor: colors.backgroundCard,
+                    justifyContent: 'center',
+                        alignItems: 'center',
+                            borderWidth: 1,
+                                borderColor: colors.border,
 },
-    emotionEmoji: {
+emotionEmoji: {
     fontSize: 30,
 },
-    mediaContainer: {
+mediaContainer: {
     marginTop: spacing.sm,
-    marginBottom: spacing.sm,
-    borderRadius: borderRadius.md,
-    overflow: 'hidden',
+        marginBottom: spacing.sm,
+            borderRadius: borderRadius.md,
+                overflow: 'hidden',
 },
 });

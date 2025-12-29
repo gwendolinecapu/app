@@ -36,7 +36,7 @@ export const NoteCreatorModal: React.FC<NoteCreatorModalProps> = ({ visible, onC
 
     const resetForm = () => {
         setTitle('');
-        await clearDraft();
+        clearDraft(); // Fire and forget
         onClose();
     };
 

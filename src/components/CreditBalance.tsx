@@ -12,8 +12,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, borderRadius } from '../../lib/theme';
-import { useMonetization } from '../../contexts/MonetizationContext';
+import { colors, spacing, borderRadius } from '../lib/theme';
+import { useMonetization } from '../contexts/MonetizationContext';
 
 interface CreditBalanceProps {
     /** Style compact (badge) */

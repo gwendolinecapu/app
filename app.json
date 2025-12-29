@@ -77,15 +77,17 @@
       [
         "react-native-google-mobile-ads",
         {
-          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+          "iosAppId": "ca-app-pub-7014088517639318~1112284921",
+          "androidAppId": "ca-app-pub-7014088517639318~7514041741"
         }
       ]
     ],
-    "react-native-google-mobile-ads": {
-      "ios_app_id": "ca-app-pub-3940256099942544~1458002511"
-    },
     "experiments": {
       "typedRoutes": true
     }
+  },
+  "react-native-google-mobile-ads": {
+    "ios_app_id": "ca-app-pub-7014088517639318~1112284921",
+    "android_app_id": "ca-app-pub-7014088517639318~7514041741"
   }
 }

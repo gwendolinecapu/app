@@ -15,60 +15,6 @@ import {
     FlatList,
     RefreshControl,
 } from 'react-native';
-// ... imports
-import { Skeleton } from '../../src/components/ui/Skeleton';
-import { SystemWeather } from '../../src/components/SystemWeather';
-
-// ... inside component
-const { alters, user, refreshAlters, setFronting, activeFront, loading: authLoading } = useAuth();
-const [refreshing, setRefreshing] = useState(false);
-
-const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-        await refreshAlters();
-    } finally {
-        setRefreshing(false);
-    }
-}, [refreshAlters]);
-
-// ... inside FlatList
-<FlatList
-    key={`grid-${NUM_COLUMNS}`}  // IMPORTANT: permet changement dynamique de numColumns
-    data={authLoading ? [] : gridData}
-    renderItem={renderBubble}
-    keyExtractor={keyExtractor}
-    numColumns={NUM_COLUMNS}
-    contentContainerStyle={styles.gridContent}
-    showsVerticalScrollIndicator={false}
-    refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-    }
-    ListEmptyComponent={
-        authLoading ? (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: BUBBLE_SPACING }}>
-                {[...Array(12)].map((_, i) => (
-                    <View key={i} style={{ alignItems: 'center', marginBottom: 10 }}>
-                        <Skeleton width={BUBBLE_SIZE} height={BUBBLE_SIZE} borderRadius={BUBBLE_SIZE / 2} />
-                        <View style={{ marginTop: 8 }}>
-                            <Skeleton width={60} height={12} borderRadius={4} />
-                        </View>
-                    </View>
-                ))}
-            </View>
-        ) : null
-    }
-    // Optimisations pour très grandes listes (2000+ items)
-    removeClippedSubviews={true}
-    maxToRenderPerBatch={20}
-    windowSize={10}
-    initialNumToRender={30}
-    getItemLayout={(data, index) => ({
-        length: BUBBLE_SIZE + 24,
-        offset: (BUBBLE_SIZE + 24) * Math.floor(index / NUM_COLUMNS),
-        index,
-    })}
-/>
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -79,6 +25,8 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Alter } from '../../src/types';
 import { colors, spacing, borderRadius, typography, alterColors } from '../../src/lib/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { Skeleton } from '../../src/components/ui/Skeleton';
+import { SystemWeather } from '../../src/components/SystemWeather';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -86,7 +34,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 // APPLE WATCH STYLE BUBBLE CONFIGURATION
 // Taille DYNAMIQUE basée sur le nombre d'alters :
 // - Peu d'alters (< 6) : grandes bulles (80px)
-// - Moyen (6-20) : bulles moyennes (64px)  
+// - Moyen (6-20) : bulles moyennes (64px)
 // - Beaucoup (> 20) : petites bulles (48px)
 // Support pour 2000+ alters avec FlatList optimisée
 // =====================================================
@@ -123,12 +71,12 @@ type GridItem =
     | { type: 'alter'; data: Alter };
 
 export default function DashboardScreen() {
-    const { alters, user, refreshAlters, setFronting, activeFront } = useAuth();
+    const { alters, user, refreshAlters, setFronting, activeFront, loading: authLoading } = useAuth();
     const [modalVisible, setModalVisible] = useState(false);
     const [selectionMode, setSelectionMode] = useState<'single' | 'multi'>('single');
     const [selectedAlters, setSelectedAlters] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
-
+    const [refreshing, setRefreshing] = useState(false);
 
     // Create new alter state
     const [newAlterName, setNewAlterName] = useState('');
@@ -147,6 +95,15 @@ export default function DashboardScreen() {
             }
         }
     }, [activeFront]);
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        try {
+            await refreshAlters();
+        } finally {
+            setRefreshing(false);
+        }
+    }, [refreshAlters]);
 
     // =====================================================
     // CONFIG DYNAMIQUE DES BULLES
@@ -200,7 +157,7 @@ export default function DashboardScreen() {
         if (alter) {
             await setFronting([alter], 'single');
             // Ouvrir l'Alter Space isolé (profil Instagram-style)
-            router.push(`/alter-space/${alterId}`);
+            router.push(`/alter-space/${alterId}` as any);
         }
     };
 
@@ -236,7 +193,7 @@ export default function DashboardScreen() {
 
     const handleOpenAlterSpace = (alter: Alter) => {
         // Navigation vers l'Alter Space isolé (profil Instagram-style)
-        router.push(`/alter-space/${alter.id}`);
+        router.push(`/alter-space/${alter.id}` as any);
     };
 
     const pickImage = async () => {
@@ -480,12 +437,29 @@ export default function DashboardScreen() {
             <View style={styles.gridContainer}>
                 <FlatList
                     key={`grid-${NUM_COLUMNS}`}  // IMPORTANT: permet changement dynamique de numColumns
-                    data={gridData}
+                    data={authLoading ? [] : gridData}
                     renderItem={renderBubble}
                     keyExtractor={keyExtractor}
                     numColumns={NUM_COLUMNS}
                     contentContainerStyle={styles.gridContent}
                     showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+                    }
+                    ListEmptyComponent={
+                        authLoading ? (
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: BUBBLE_SPACING }}>
+                                {[...Array(12)].map((_, i) => (
+                                    <View key={i} style={{ alignItems: 'center', marginBottom: 10 }}>
+                                        <Skeleton width={BUBBLE_SIZE} height={BUBBLE_SIZE} borderRadius={BUBBLE_SIZE / 2} />
+                                        <View style={{ marginTop: 8 }}>
+                                            <Skeleton width={60} height={12} borderRadius={4} />
+                                        </View>
+                                    </View>
+                                ))}
+                            </View>
+                        ) : null
+                    }
                     // Optimisations pour très grandes listes (2000+ items)
                     removeClippedSubviews={true}
                     maxToRenderPerBatch={20}
@@ -515,7 +489,7 @@ export default function DashboardScreen() {
             <View style={styles.footerActions}>
                 <TouchableOpacity
                     style={styles.footerButton}
-                    onPress={() => router.push('/fronting/history')}
+                    onPress={() => router.push('/fronting/history' as any)}
                 >
                     <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
                     <Text style={styles.footerButtonText}>Historique</Text>
@@ -868,20 +842,21 @@ const styles = StyleSheet.create({
     /* Modal Styles */
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
         justifyContent: 'flex-end',
     },
     modalContent: {
         backgroundColor: colors.backgroundCard,
-        borderTopLeftRadius: borderRadius.xl,
-        borderTopRightRadius: borderRadius.xl,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
         padding: spacing.lg,
-        maxHeight: '85%',
+        maxHeight: '90%',
     },
     modalTitle: {
         ...typography.h2,
+        color: colors.text,
+        marginBottom: spacing.lg,
         textAlign: 'center',
-        marginBottom: spacing.md,
     },
     avatarPickerContainer: {
         alignItems: 'center',
@@ -891,19 +866,19 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     avatarPreview: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
+        width: 100,
+        height: 100,
+        borderRadius: 50,
     },
     avatarPlaceholder: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
+        width: 100,
+        height: 100,
+        borderRadius: 50,
         justifyContent: 'center',
         alignItems: 'center',
     },
     avatarPlaceholderText: {
-        fontSize: 32,
+        fontSize: 40,
         fontWeight: 'bold',
         color: 'white',
     },
@@ -912,30 +887,28 @@ const styles = StyleSheet.create({
         bottom: 0,
         right: 0,
         backgroundColor: colors.primary,
-        width: 28,
-        height: 28,
-        borderRadius: 14,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 2,
-        borderColor: colors.backgroundCard,
+        borderColor: colors.background,
     },
     inputContainer: {
         marginBottom: spacing.md,
     },
     label: {
-        ...typography.bodySmall,
-        color: colors.textSecondary,
+        ...typography.label,
+        color: colors.text,
         marginBottom: spacing.xs,
     },
     input: {
-        backgroundColor: colors.backgroundLight,
+        backgroundColor: colors.background,
         borderRadius: borderRadius.md,
         padding: spacing.md,
         color: colors.text,
-        fontSize: 16,
-        borderWidth: 1,
-        borderColor: colors.border,
+        ...typography.body,
     },
     inputMultiline: {
         height: 80,
@@ -945,11 +918,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: spacing.sm,
+        marginTop: spacing.xs,
     },
     colorOption: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         borderWidth: 2,
         borderColor: 'transparent',
     },
@@ -959,31 +933,34 @@ const styles = StyleSheet.create({
     modalActions: {
         flexDirection: 'row',
         gap: spacing.md,
-        marginTop: spacing.lg,
+        marginTop: spacing.xl,
+        marginBottom: Platform.OS === 'ios' ? 20 : 0,
     },
     cancelButton: {
         flex: 1,
         padding: spacing.md,
-        alignItems: 'center',
-        backgroundColor: colors.backgroundLight,
         borderRadius: borderRadius.md,
+        backgroundColor: colors.background,
+        alignItems: 'center',
     },
     cancelButtonText: {
+        ...typography.body,
+        fontWeight: '600',
         color: colors.textSecondary,
-        fontWeight: 'bold',
     },
     createButton: {
         flex: 1,
         padding: spacing.md,
-        alignItems: 'center',
-        backgroundColor: colors.primary,
         borderRadius: borderRadius.md,
+        backgroundColor: colors.primary,
+        alignItems: 'center',
     },
     createButtonDisabled: {
-        opacity: 0.6,
+        opacity: 0.7,
     },
     createButtonText: {
+        ...typography.body,
+        fontWeight: '600',
         color: 'white',
-        fontWeight: 'bold',
     },
 });

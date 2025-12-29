@@ -20,6 +20,8 @@ import {
     writeBatch
 } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
+import { triggerHaptic } from '../lib/haptics';
+import { useToast } from '../components/ui/Toast';
 import { Alter, System } from '../types';
 import { FrontingService } from '../services/fronting';
 
@@ -50,7 +52,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
-    const [system, setSystem] = useState<System | null>(null);
+    const [systemData, setSystemData] = useState<System | null>(null);
+    const { showToast } = useToast();
     const [activeFront, setActiveFront] = useState<FrontStatus>({ type: 'single', alters: [] });
     const [alters, setAlters] = useState<Alter[]>([]);
     const [loading, setLoading] = useState(true);
@@ -210,16 +213,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await batch.commit();
 
             // 2. Log history using FrontingService
-            // For now, FrontingService only supports single switch.
             // Future improvement: Support batch logging
             if (type !== 'blurry' && frontAlters.length > 0) {
                 await FrontingService.switchAlter(user.uid, frontAlters[0].id);
             }
 
+            triggerHaptic.success();
+            showToast('Fronting updated successfully', 'success');
+
         } catch (error) {
             console.error('Error switching front:', error);
+            triggerHaptic.error();
+            showToast('Failed to update active front', 'error');
             setActiveFront(previousFront); // Revert optimistic update
-            // TODO: Add toast notification for error
         }
     };
 

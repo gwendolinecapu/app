@@ -147,3 +147,32 @@ export interface JournalEntry {
     // Relations
     alter?: Alter;
 }
+
+// ============================================
+// Sprint 3: Fronting & Tâches
+// ============================================
+
+export interface FrontingEntry {
+    id: string;
+    system_id: string;
+    alter_id: string;
+    start_time: string; // ISO string 
+    end_time: string | null; // ISO string or null if ongoing
+    duration?: number; // In seconds
+    alter?: Alter; // Joined data
+}
+
+export interface Task {
+    id: string;
+    system_id: string;
+    title: string;
+    description?: string;
+    assigned_to: string | null; // alter_id or null for "System"
+    created_by: string; // alter_id
+    is_completed: boolean;
+    completed_at?: string; // ISO string
+    created_at: string;
+    due_date?: string;
+    assigned_alter?: Alter; // Joined data
+    creator_alter?: Alter; // Joined data
+}

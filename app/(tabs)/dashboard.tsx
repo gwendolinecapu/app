@@ -899,7 +899,8 @@ const styles = StyleSheet.create({
         marginBottom: spacing.md,
     },
     label: {
-        ...typography.label,
+        ...typography.bodySmall,
+        fontWeight: 'bold',
         color: colors.text,
         marginBottom: spacing.xs,
     },
@@ -907,8 +908,8 @@ const styles = StyleSheet.create({
         backgroundColor: colors.background,
         borderRadius: borderRadius.md,
         padding: spacing.md,
-        color: colors.text,
         ...typography.body,
+        color: colors.text,
     },
     inputMultiline: {
         height: 80,

@@ -26,7 +26,7 @@ const { width } = Dimensions.get('window');
 const MAX_WIDTH = 430;
 const GALLERY_ITEM_SIZE = (Math.min(width, MAX_WIDTH) - spacing.md * 4) / 3;
 
-type TabType = 'feed' | 'gallery' | 'journal' | 'search' | 'emotions' | 'settings';
+type TabType = 'feed' | 'profile' | 'journal' | 'search' | 'emotions' | 'settings';
 type FeedItem = Post | SystemTip;
 
 export default function AlterSpaceScreen() {
@@ -131,26 +131,57 @@ export default function AlterSpaceScreen() {
         );
     }
 
-    const renderGallery = () => {
-        // In "Gallery" mode, we show all posts in a grid
+    const renderProfile = () => {
+        const ProfileHeader = () => (
+            <View style={styles.profileSection}>
+                <View style={[styles.avatar, { backgroundColor: alter.color }]}>
+                    {alter.avatar_url ? (
+                        <Image source={{ uri: alter.avatar_url }} style={styles.avatarImage} />
+                    ) : (
+                        <Text style={styles.avatarText}>
+                            {alter.name.charAt(0).toUpperCase()}
+                        </Text>
+                    )}
+                </View>
+                <Text style={styles.name}>{alter.name}</Text>
+                <Text style={styles.bio}>
+                    {alter.bio || "Aucune biographie"}
+                </Text>
+                <View style={styles.statsRow}>
+                    <View style={styles.statItem}>
+                        <Text style={styles.statNumber}>{posts.length}</Text>
+                        <Text style={styles.statLabel}>Posts</Text>
+                    </View>
+                    <View style={styles.statItem}>
+                        <Text style={styles.statNumber}>0</Text>
+                        <Text style={styles.statLabel}>Amis</Text>
+                    </View>
+                </View>
+            </View>
+        );
+        // In "Profile" mode, we show all posts in a grid
         return (
             <View style={styles.galleryContainer}>
                 {posts.length === 0 ? (
-                    <View style={styles.emptyState}>
-                        <Image
-                            source={require('../../../assets/icon.png')} // Fallback until we have a specific illustration
-                            style={{ width: 64, height: 64, marginBottom: 16, opacity: 0.5 }}
-                        />
-                        <Text style={styles.emptyTitle}>Aucune publication</Text>
-                        <Text style={styles.emptySubtitle}>
-                            {alter.name} n'a pas encore publié
-                        </Text>
-                    </View>
+                    <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+                        <ProfileHeader />
+                        <View style={styles.emptyState}>
+                            <Image
+                                source={require('../../../assets/icon.png')} // Fallback until we have a specific illustration
+                                style={{ width: 64, height: 64, marginBottom: 16, opacity: 0.5, alignSelf: 'center' }}
+                            />
+                            <Text style={styles.emptyTitle}>Aucune publication</Text>
+                            <Text style={styles.emptySubtitle}>
+                                {alter.name} n'a pas encore publié
+                            </Text>
+                        </View>
+                    </ScrollView>
                 ) : (
                     <FlatList
                         data={posts}
                         numColumns={3}
                         keyExtractor={(item) => item.id}
+                        ListHeaderComponent={ProfileHeader}
                         refreshControl={
                             <RefreshControl
                                 refreshing={refreshing}
@@ -427,56 +458,26 @@ export default function AlterSpaceScreen() {
                 </TouchableOpacity>
             </View>
 
-            {/* Profile Section */}
-            <View style={styles.profileSection}>
-                <View style={[styles.avatar, { backgroundColor: alter.color }]}>
-                    {alter.avatar_url ? (
-                        <Image source={{ uri: alter.avatar_url }} style={styles.avatarImage} />
-                    ) : (
-                        <Text style={styles.avatarText}>
-                            {alter.name.charAt(0).toUpperCase()}
-                        </Text>
-                    )}
-                </View>
-                <Text style={styles.name}>{alter.name}</Text>
-                {/* Fallback bio if empty */}
-                <Text style={styles.bio}>
-                    {alter.bio || "Aucune biographie"}
-                </Text>
-
-                {/* Stats */}
-                <View style={styles.statsRow}>
-                    <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>{posts.length}</Text>
-                        <Text style={styles.statLabel}>Posts</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>0</Text>
-                        <Text style={styles.statLabel}>Amis</Text>
-                    </View>
-                </View>
+            {/* Content Area */}
+            <View style={styles.contentArea}>
+                {activeTab === 'feed' && renderFeed()}
+                {activeTab === 'profile' && renderProfile()}
+                {activeTab === 'journal' && renderJournal()}
+                {activeTab === 'search' && renderSearch()}
+                {activeTab === 'emotions' && renderEmotions()}
+                {activeTab === 'settings' && renderSettings()}
             </View>
 
-            {/* Tab Navigation - 5 icônes (messages en haut à droite) */}
-            <View style={styles.tabs}>
+            {/* Bottom Tab Navigation */}
+            <View style={styles.bottomTabs}>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'gallery' && styles.tabActive]}
-                    onPress={() => setActiveTab('gallery')}
+                    style={[styles.tab, activeTab === 'feed' && styles.tabActive]}
+                    onPress={() => setActiveTab('feed')}
                 >
                     <Ionicons
-                        name={activeTab === 'gallery' ? 'grid' : 'grid-outline'}
-                        size={22}
-                        color={activeTab === 'gallery' ? colors.primary : colors.textMuted}
-                    />
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.tab, activeTab === 'journal' && styles.tabActive]}
-                    onPress={() => setActiveTab('journal')}
-                >
-                    <Ionicons
-                        name={activeTab === 'journal' ? 'book' : 'book-outline'}
-                        size={22}
-                        color={activeTab === 'journal' ? colors.primary : colors.textMuted}
+                        name={activeTab === 'feed' ? 'home' : 'home-outline'}
+                        size={24}
+                        color={activeTab === 'feed' ? colors.primary : colors.textMuted}
                     />
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -485,8 +486,18 @@ export default function AlterSpaceScreen() {
                 >
                     <Ionicons
                         name={activeTab === 'search' ? 'search' : 'search-outline'}
-                        size={22}
+                        size={24}
                         color={activeTab === 'search' ? colors.primary : colors.textMuted}
+                    />
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'journal' && styles.tabActive]}
+                    onPress={() => setActiveTab('journal')}
+                >
+                    <Ionicons
+                        name={activeTab === 'journal' ? 'book' : 'book-outline'}
+                        size={24}
+                        color={activeTab === 'journal' ? colors.primary : colors.textMuted}
                     />
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -494,35 +505,25 @@ export default function AlterSpaceScreen() {
                     onPress={() => setActiveTab('emotions')}
                 >
                     <Ionicons
-                        name={activeTab === 'emotions' ? 'heart' : 'heart-outline'}
+                        name={activeTab === 'emotions' ? 'happy' : 'happy-outline'}
                         size={24}
                         color={activeTab === 'emotions' ? colors.primary : colors.textMuted}
                     />
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'settings' && styles.tabActive]}
-                    onPress={() => setActiveTab('settings')}
+                    style={[styles.tab, activeTab === 'profile' && styles.tabActive]}
+                    onPress={() => setActiveTab('profile')}
                 >
                     <Ionicons
-                        name={activeTab === 'settings' ? 'settings' : 'settings-outline'}
+                        name={activeTab === 'profile' ? 'person-circle' : 'person-circle-outline'}
                         size={24}
-                        color={activeTab === 'settings' ? colors.primary : colors.textMuted}
+                        color={activeTab === 'profile' ? colors.primary : colors.textMuted}
                     />
                 </TouchableOpacity>
             </View>
 
-            {/* Content Area */}
-            <View style={styles.contentArea}>
-                {activeTab === 'feed' && renderFeed()}
-                {activeTab === 'gallery' && renderGallery()}
-                {activeTab === 'journal' && renderJournal()}
-                {activeTab === 'search' && renderSearch()}
-                {activeTab === 'emotions' && renderEmotions()}
-                {activeTab === 'settings' && renderSettings()}
-            </View>
-
             {/* Floating Action Button (Only on Gallery or Journal) */}
-            {(activeTab === 'gallery' || activeTab === 'journal') && (
+            {(activeTab === 'profile' || activeTab === 'journal') && (
                 <TouchableOpacity
                     style={styles.fab}
                     onPress={() => router.push('/post/create')}
@@ -615,24 +616,33 @@ const styles = StyleSheet.create({
         color: colors.textSecondary,
         fontSize: 14,
     },
-    tabs: {
+    bottomTabs: {
         flexDirection: 'row',
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
-        marginTop: spacing.md,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+        backgroundColor: colors.backgroundCard,
+        paddingBottom: spacing.lg,
+        paddingTop: spacing.sm,
+        height: 85,
+        alignItems: 'center',
+        justifyContent: 'space-around',
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
     },
     tab: {
-        flex: 1,
         alignItems: 'center',
-        paddingVertical: spacing.md,
-        borderBottomWidth: 2,
-        borderBottomColor: 'transparent',
+        justifyContent: 'center',
+        padding: spacing.xs,
+        minWidth: 50,
     },
     tabActive: {
-        borderBottomColor: colors.primary,
+        // No border, just color change handled in JSX
     },
     contentArea: {
         flex: 1,
+        paddingBottom: 85, // Space for bottom tabs
     },
     galleryContainer: {
         flex: 1,
@@ -743,8 +753,9 @@ const styles = StyleSheet.create({
     },
     fab: {
         position: 'absolute',
-        bottom: 30,
-        right: 30,
+        bottom: 100, // Adjusted to clear bottom tab bar
+        alignSelf: 'center', // Center horizontally
+        // right: 30, // Removed right alignment
         width: 60,
         height: 60,
         borderRadius: 30,
@@ -756,6 +767,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.4,
         shadowRadius: 8,
         elevation: 8,
+        zIndex: 20, // Ensure it's above everything
     },
     postCard: {
         backgroundColor: colors.backgroundCard,

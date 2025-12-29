@@ -125,7 +125,7 @@ export default function ConversationScreen() {
         const senderAlter = alters.find((a) => a.id === item.sender_alter_id);
         const likedByMe = item.reactions?.some(r => r.user_id === currentAlter?.id && r.emoji === '❤️');
 
-        // Simple double tap simulation using timestamp for now to avoid gesture handler complexity if not set up
+        // Simple double tap simulation
         let lastTap = 0;
         const handleDoubleTap = () => {
             const now = Date.now();
@@ -142,140 +142,136 @@ export default function ConversationScreen() {
             <TouchableOpacity
                 activeOpacity={1}
                 onPress={handleDoubleTap}
+                style={[
+                    styles.messageContainer,
+                    isMine ? styles.messageContainerMine : styles.messageContainerOther,
+                ]}
             >
+                {!isMine && (
+                    <View
+                        style={[
+                            styles.messageAvatar,
+                            { backgroundColor: senderAlter?.color || colors.primary },
+                        ]}
+                    >
+                        <Text style={styles.messageAvatarText}>
+                            {senderAlter?.name?.charAt(0).toUpperCase() || '?'}
+                        </Text>
+                    </View>
+                )}
                 <View
                     style={[
-                        styles.messageContainer,
-                        isMine ? styles.messageContainerMine : styles.messageContainerOther,
+                        styles.messageBubble,
+                        isMine ? styles.messageBubbleMine : styles.messageBubbleOther,
                     ]}
                 >
                     {!isMine && (
-                        <View
-                            style={[
-                                styles.messageAvatar,
-                                { backgroundColor: senderAlter?.color || colors.primary },
-                            ]}
-                        >
-                            <Text style={styles.messageAvatarText}>
-                                {senderAlter?.name?.charAt(0).toUpperCase() || '?'}
-                            </Text>
+                        <Text style={styles.senderName}>
+                            {senderAlter?.name} {item.system_tag && <Text style={styles.systemTag}>• {item.system_tag}</Text>}
+                        </Text>
+                    )}
+                    <Text style={styles.messageText}>{item.content}</Text>
+
+                    {item.reactions && item.reactions.length > 0 && (
+                        <View style={styles.reactionsContainer}>
+                            <Text style={styles.reactionText}>❤️ {item.reactions.length}</Text>
                         </View>
                     )}
-                    <View
-                        style={[
-                            styles.messageBubble,
-                            isMine ? styles.messageBubbleMine : styles.messageBubbleOther,
-                        ]}
-                    >
-                        {!isMine && (
-                            <Text style={styles.senderName}>
-                                {senderAlter?.name} {item.system_tag && <Text style={styles.systemTag}>• {item.system_tag}</Text>}
+
+                    <View style={styles.messageFooter}>
+                        <Text style={styles.messageTime}>
+                            {new Date(item.created_at).toLocaleTimeString('fr-FR', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                            })}
+                        </Text>
+                        {isMine && (
+                            <Text style={styles.readStatus}>
+                                {item.is_read ? ' ✓✓' : ' ✓'}
                             </Text>
                         )}
-                        <Text style={styles.messageText}>{item.content}</Text>
-
-                        {item.reactions && item.reactions.length > 0 && (
-                            <View style={styles.reactionsContainer}>
-                                <Text style={styles.reactionText}>❤️ {item.reactions.length}</Text>
-                            </View>
-                        )}
-
-                        <View style={styles.messageFooter}>
-                            <Text style={styles.messageTime}>
-                                {new Date(item.created_at).toLocaleTimeString('fr-FR', {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                })}
-                            </Text>
-                            {isMine && (
-                                <Text style={styles.readStatus}>
-                                    {item.is_read ? ' ✓✓' : ' ✓'}
-                                </Text>
-                            )}
-                            )}
-                        </View>
                     </View>
+                </View>
             </TouchableOpacity>
-            </View >
         );
-};
+    };
 
-const renderEmptyState = () => (
-    <View style={styles.emptyState}>
-        <Text style={styles.emptyEmoji}>💬</Text>
-        <Text style={styles.emptyText}>
-            Commencez la conversation avec {otherAlter?.name || 'cet alter'}
-        </Text>
-    </View>
-);
-
-return (
-    <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
-        keyboardVerticalOffset={100}
-    >
-        <View style={styles.header}>
-            <View
-                style={[
-                    styles.avatar,
-                    { backgroundColor: otherAlter?.color || colors.primary },
-                ]}
-            >
-                <Text style={styles.avatarText}>
-                    {otherAlter?.name?.charAt(0).toUpperCase() || '?'}
-                </Text>
-            </View>
-            <View style={styles.headerInfo}>
-                <Text style={styles.headerName}>{otherAlter?.name || 'Conversation'}</Text>
-                <Text style={styles.headerSubtitle}>
-                    {internal === 'true' ? '💜 Discussion interne' : '🌐 Discussion externe'}
-                </Text>
-            </View>
-            <TouchableOpacity
-                style={[styles.tagButton, useSystemTag && styles.tagButtonActive]}
-                onPress={() => {
-                    const { triggerHaptic } = require('../../src/lib/haptics');
-                    triggerHaptic.selection();
-                    setUseSystemTag(!useSystemTag);
-                }}
-            >
-                <Text style={[styles.tagButtonText, useSystemTag && styles.tagButtonTextActive]}># Tag</Text>
-            </TouchableOpacity>
+    const renderEmptyState = () => (
+        <View style={styles.emptyState}>
+            <Text style={styles.emptyEmoji}>💬</Text>
+            <Text style={styles.emptyText}>
+                Commencez la conversation avec {otherAlter?.name || 'cet alter'}
+            </Text>
         </View>
+    );
 
-        <FlatList
-            data={messages}
-            renderItem={renderMessage}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.messagesList}
-            ListEmptyComponent={renderEmptyState}
-            inverted={false}
-        />
+    return (
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.container}
+            keyboardVerticalOffset={100}
+        >
+            <View style={styles.header}>
+                <View
+                    style={[
+                        styles.avatar,
+                        { backgroundColor: otherAlter?.color || colors.primary },
+                    ]}
+                >
+                    <Text style={styles.avatarText}>
+                        {otherAlter?.name?.charAt(0).toUpperCase() || '?'}
+                    </Text>
+                </View>
+                <View style={styles.headerInfo}>
+                    <Text style={styles.headerName}>{otherAlter?.name || 'Conversation'}</Text>
+                    <Text style={styles.headerSubtitle}>
+                        {internal === 'true' ? '💜 Discussion interne' : '🌐 Discussion externe'}
+                    </Text>
+                </View>
+                <TouchableOpacity
+                    style={[styles.tagButton, useSystemTag && styles.tagButtonActive]}
+                    onPress={() => {
+                        const { triggerHaptic } = require('../../src/lib/haptics');
+                        triggerHaptic.selection();
+                        setUseSystemTag(!useSystemTag);
+                    }}
+                >
+                    <Text style={[styles.tagButtonText, useSystemTag && styles.tagButtonTextActive]}># Tag</Text>
+                </TouchableOpacity>
+            </View>
 
-        <View style={styles.inputContainer}>
-            <TextInput
-                style={styles.input}
-                placeholder="Écrire un message..."
-                placeholderTextColor={colors.textMuted}
-                value={newMessage}
-                onChangeText={setNewMessage}
-                multiline
-                maxLength={1000}
+            <FlatList
+                data={messages}
+                renderItem={renderMessage}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.messagesList}
+                ListEmptyComponent={renderEmptyState}
+                inverted={false}
             />
-            <TouchableOpacity
-                style={[
-                    styles.sendButton,
-                    !newMessage.trim() && styles.sendButtonDisabled,
-                ]}
-                onPress={sendMessage}
-                disabled={loading || !newMessage.trim()}
-            >
-                <Text style={styles.sendButtonText}>→</Text>
-            </TouchableOpacity>
-        </View>
-    </KeyboardAvoidingView>
-);
+
+            <View style={styles.inputContainer}>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Écrire un message..."
+                    placeholderTextColor={colors.textMuted}
+                    value={newMessage}
+                    onChangeText={setNewMessage}
+                    multiline
+                    maxLength={1000}
+                />
+                <TouchableOpacity
+                    style={[
+                        styles.sendButton,
+                        !newMessage.trim() && styles.sendButtonDisabled,
+                    ]}
+                    onPress={sendMessage}
+                    disabled={loading || !newMessage.trim()}
+                >
+                    <Text style={styles.sendButtonText}>→</Text>
+                </TouchableOpacity>
+            </View>
+        </KeyboardAvoidingView>
+    );
 }
 
 const styles = StyleSheet.create({

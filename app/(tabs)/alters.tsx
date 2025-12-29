@@ -26,6 +26,9 @@ import { AlterBubble } from '../../src/components/AlterBubble';
 
 import { Badge } from '../../src/components/ui/Badge';
 import { SearchBar } from '../../src/components/ui/SearchBar';
+import { EmotionService } from '../../src/services/emotions';
+import { Emotion, EMOTION_LABELS, EMOTION_EMOJIS } from '../../src/types';
+import { formatTimeSince } from '../../src/lib/date';
 
 const { width } = Dimensions.get('window');
 const MAX_WIDTH = 430;
@@ -42,6 +45,34 @@ export default function AltersScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState<SortOption>('name');
     const [showArchived, setShowArchived] = useState(false);
+
+    // Emotion State
+    const [systemEmotions, setSystemEmotions] = useState<Record<string, Emotion>>({});
+
+    // Subscribe to emotions
+    React.useEffect(() => {
+        if (!user?.uid) return;
+        const unsubscribe = EmotionService.subscribeToSystemEmotions(user.uid, (emotions) => {
+            setSystemEmotions(emotions);
+        });
+        return () => unsubscribe();
+    }, [user?.uid]);
+
+    // Derived latest emotion
+    const latestSystemEmotion = React.useMemo(() => {
+        const emotions = Object.values(systemEmotions);
+        if (emotions.length === 0) return null;
+
+        // Sort by created_at descending
+        // Handle checking typings safely
+        return emotions.sort((a, b) => {
+            const timeA = (a.created_at as any)?.seconds || new Date(a.created_at).getTime() / 1000;
+            const timeB = (b.created_at as any)?.seconds || new Date(b.created_at).getTime() / 1000;
+            return timeB - timeA;
+        })[0];
+    }, [systemEmotions]);
+
+    const getAlterName = (id: string) => alters.find(a => a.id === id)?.name || 'Alter inconnu';
 
     // Form State
     const [newAlterName, setNewAlterName] = useState('');
@@ -232,6 +263,15 @@ export default function AltersScreen() {
                     </TouchableOpacity>
                 </View>
             </View>
+
+            {/* Status Banner */}
+            {latestSystemEmotion && (
+                <View style={styles.statusBanner}>
+                    <Text style={styles.statusText}>
+                        <Text style={{ fontWeight: 'bold' }}>{getAlterName(latestSystemEmotion.alter_id)}</Text> est {EMOTION_LABELS[latestSystemEmotion.emotion]?.toLowerCase() || '...'} {EMOTION_EMOJIS[latestSystemEmotion.emotion]} {formatTimeSince(latestSystemEmotion.created_at)}
+                    </Text>
+                </View>
+            )}
 
             {/* Search & Filter Bar */}
             <View style={styles.filterContainer}>
@@ -659,4 +699,20 @@ const styles = StyleSheet.create({
         color: colors.text,
         fontWeight: 'bold',
     },
+    statusBanner: {
+        backgroundColor: colors.backgroundCard,
+        marginHorizontal: spacing.md,
+        padding: spacing.sm,
+        borderRadius: borderRadius.lg,
+        alignItems: 'center',
+        marginBottom: spacing.sm,
+        borderWidth: 1,
+        borderColor: colors.primary, // or a soft color
+        flexDirection: 'row',
+        justifyContent: 'center'
+    },
+    statusText: {
+        ...typography.body,
+        color: colors.text,
+    }
 });

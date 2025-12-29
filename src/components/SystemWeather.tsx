@@ -1,44 +1,51 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { colors, borderRadius, spacing, typography } from '../lib/theme';
-
-const WEATHER_OPTIONS = [
-    { id: 'sunny', label: 'Ensoleillé', icon: 'sunny', color: '#FFD700' },
-    { id: 'partly_sunny', label: 'Eclaircies', icon: 'partly-sunny', color: '#FFB347' },
-    { id: 'cloudy', label: 'Nuageux', icon: 'cloudy', color: '#B0C4DE' },
-    { id: 'rainy', label: 'Pluvieux', icon: 'rainy', color: '#4682B4' },
-    { id: 'stormy', label: 'Orageux', icon: 'thunderstorm', color: '#483D8B' },
-    { id: 'snowy', label: 'Neigeux', icon: 'snow', color: '#E0FFFF' },
-    { id: 'night', label: 'Nuit', icon: 'moon', color: '#191970' },
-    { id: 'foggy', label: 'Brouillard', icon: 'cloud', color: '#778899' }, // Fallback icon
-];
+import { EmotionService } from '../services/emotions';
+import { Emotion, EmotionType, EMOTION_EMOJIS, EMOTION_LABELS } from '../types';
+import { formatTimeSince } from '../lib/date';
 
 export function SystemWeather() {
-    const { system, updateHeadspace } = useAuth();
+    const { system, alters } = useAuth();
     const [modalVisible, setModalVisible] = useState(false);
+    const [alterEmotions, setAlterEmotions] = useState<Record<string, Emotion>>({});
 
-    const currentMood = WEATHER_OPTIONS.find(opt => opt.id === system?.headspace) || WEATHER_OPTIONS[0];
+    useEffect(() => {
+        if (!system?.id) return;
+        const unsubscribe = EmotionService.subscribeToSystemEmotions(system.id, (emotions) => {
+            setAlterEmotions(emotions);
+        });
+        return () => unsubscribe();
+    }, [system?.id]);
 
-    const handleSelectMood = async (moodId: string) => {
-        await updateHeadspace(moodId);
-        setModalVisible(false);
+    const getAlterName = (alterId: string) => {
+        return alters.find(a => a.id === alterId)?.name || 'Inconnu';
     };
 
     return (
         <>
             <TouchableOpacity
-                style={[styles.container, { borderColor: currentMood.color }]}
+                style={[styles.container, { borderColor: colors.primary }]}
                 onPress={() => setModalVisible(true)}
                 activeOpacity={0.7}
             >
-                <View style={[styles.iconContainer, { backgroundColor: `${currentMood.color}20` }]}>
-                    <Ionicons name={currentMood.icon as any} size={24} color={currentMood.color} />
+                <View style={[styles.iconContainer, { backgroundColor: `${colors.primary}20` }]}>
+                    <Ionicons name="people" size={24} color={colors.primary} />
                 </View>
                 <View style={styles.textContainer}>
-                    <Text style={styles.label}>Météo Système</Text>
-                    <Text style={styles.value}>{currentMood.label}</Text>
+                    <Text style={styles.label}>Météo du Système</Text>
+                    <Text style={styles.value}>Aperçu des émotions</Text>
+
+                    {/* Mini preview of alter emotions (limit to 3) */}
+                    <View style={styles.miniEmotions}>
+                        {Object.entries(alterEmotions).slice(0, 3).map(([alterId, emotion]) => (
+                            <Text key={alterId} style={styles.miniEmotionText}>
+                                {getAlterName(alterId)}: {EMOTION_EMOJIS[emotion.emotion] || ''}
+                            </Text>
+                        ))}
+                    </View>
                 </View>
                 <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
             </TouchableOpacity>
@@ -55,22 +62,33 @@ export function SystemWeather() {
                     onPress={() => setModalVisible(false)}
                 >
                     <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Météo du Système</Text>
-                        <View style={styles.grid}>
-                            {WEATHER_OPTIONS.map((option) => (
-                                <TouchableOpacity
-                                    key={option.id}
-                                    style={[
-                                        styles.option,
-                                        system?.headspace === option.id && styles.optionSelected
-                                    ]}
-                                    onPress={() => handleSelectMood(option.id)}
-                                >
-                                    <Ionicons name={option.icon as any} size={32} color={option.color} />
-                                    <Text style={styles.optionLabel}>{option.label}</Text>
-                                </TouchableOpacity>
-                            ))}
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg }}>
+                            <Text style={styles.modalTitle}>Météo des Alters</Text>
+                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                                <Ionicons name="close" size={24} color={colors.text} />
+                            </TouchableOpacity>
                         </View>
+
+                        <ScrollView style={{ maxHeight: 400 }}>
+                            {Object.keys(alterEmotions).length === 0 ? (
+                                <Text style={styles.emptyText}>Aucune émotion enregistrée récemment.</Text>
+                            ) : (
+                                Object.entries(alterEmotions).map(([alterId, emotion]) => (
+                                    <View key={alterId} style={styles.alterEmotionRow}>
+                                        <View>
+                                            <Text style={styles.alterName}>{getAlterName(alterId)}</Text>
+                                            <Text style={styles.timestamp}>
+                                                {formatTimeSince(emotion.created_at)}
+                                            </Text>
+                                        </View>
+                                        <View style={styles.emotionBadge}>
+                                            <Text style={styles.emoji}>{EMOTION_EMOJIS[emotion.emotion]}</Text>
+                                            <Text style={styles.emotionLabel}>{EMOTION_LABELS[emotion.emotion]}</Text>
+                                        </View>
+                                    </View>
+                                ))
+                            )}
+                        </ScrollView>
                     </View>
                 </TouchableOpacity>
             </Modal>
@@ -109,6 +127,16 @@ const styles = StyleSheet.create({
         color: colors.text,
         fontWeight: '600',
     },
+    miniEmotions: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.xs,
+        marginTop: 2,
+    },
+    miniEmotionText: {
+        fontSize: 10,
+        color: colors.textMuted,
+    },
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',
@@ -121,11 +149,17 @@ const styles = StyleSheet.create({
         backgroundColor: colors.backgroundCard,
         borderRadius: borderRadius.xl,
         padding: spacing.lg,
+        maxHeight: '80%',
     },
     modalTitle: {
         ...typography.h3,
         textAlign: 'center',
         marginBottom: spacing.lg,
+    },
+    sectionTitle: {
+        ...typography.h3,
+        marginTop: spacing.md,
+        marginBottom: spacing.sm,
     },
     grid: {
         flexDirection: 'row',
@@ -153,4 +187,49 @@ const styles = StyleSheet.create({
         marginTop: spacing.xs,
         color: colors.text,
     },
+    divider: {
+        height: 1,
+        backgroundColor: colors.border,
+        marginVertical: spacing.md,
+    },
+    alterEmotionRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: spacing.sm,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+    },
+    alterName: {
+        ...typography.body,
+        fontWeight: '600',
+    },
+    emotionBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.backgroundLight,
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        borderRadius: borderRadius.full,
+    },
+    emoji: {
+        fontSize: 16,
+        marginRight: 4,
+    },
+    emotionLabel: {
+        ...typography.caption,
+        color: colors.text,
+    },
+    emptyText: {
+        ...typography.caption,
+        color: colors.textMuted,
+        fontStyle: 'italic',
+        textAlign: 'center',
+        padding: spacing.md,
+    },
+    timestamp: {
+        fontSize: 12,
+        color: colors.textSecondary,
+        marginTop: 2,
+    }
 });

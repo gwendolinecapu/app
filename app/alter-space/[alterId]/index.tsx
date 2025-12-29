@@ -232,6 +232,17 @@ export default function AlterSpaceScreen() {
                     )}
                 </View>
                 <Text style={styles.name}>{alter.name}</Text>
+                {alter.pronouns ? (
+                    <Text style={styles.pronouns}>{alter.pronouns}</Text>
+                ) : null}
+                {alter.custom_fields?.find(f => f.label === 'Role')?.value ? (
+                    <View style={styles.roleTag}>
+                        <Ionicons name="shield" size={12} color={colors.primary} />
+                        <Text style={styles.roleText}>
+                            {alter.custom_fields.find(f => f.label === 'Role')?.value}
+                        </Text>
+                    </View>
+                ) : null}
                 <Text style={styles.bio}>
                     {alter.bio || "Aucune biographie"}
                 </Text>

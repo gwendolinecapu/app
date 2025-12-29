@@ -13,6 +13,7 @@ import {
     Alert,
     TextInput,
 } from 'react-native';
+import { Video, ResizeMode, Audio } from 'expo-av';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../src/contexts/AuthContext';
@@ -31,6 +32,15 @@ const GALLERY_ITEM_SIZE = (Math.min(width, MAX_WIDTH) - spacing.md * 4) / 3;
 type TabType = 'feed' | 'profile' | 'journal' | 'search' | 'emotions' | 'settings';
 type FeedItem = Post | SystemTip;
 
+// Helper for media type
+const getMediaType = (url: string) => {
+    if (!url) return 'none';
+    const ext = url.split('.').pop()?.toLowerCase();
+    if (['mp4', 'mov', 'avi', 'mkv'].includes(ext || '')) return 'video';
+    if (['mp3', 'wav', 'm4a', 'aac', 'ogg'].includes(ext || '')) return 'audio';
+    return 'image';
+};
+
 export default function AlterSpaceScreen() {
     const { alterId } = useLocalSearchParams<{ alterId: string }>();
     const { alters, system } = useAuth();
@@ -40,6 +50,8 @@ export default function AlterSpaceScreen() {
     const [feedItems, setFeedItems] = useState<FeedItem[]>([]); // Global feed items
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(true);
+
+    const isOwner = alter ? alters.some(a => a.id === alter.id) : false;
 
     // Filter states for search
     const [searchQuery, setSearchQuery] = useState('');
@@ -215,35 +227,37 @@ export default function AlterSpaceScreen() {
 
                 {/* Profile Actions */}
                 <View style={styles.profileActions}>
-                    <TouchableOpacity
-                        style={styles.editProfileButton}
-                        onPress={() => router.push(`/alter-space/${alter.id}/edit`)}
-                    >
-                        <Text style={styles.editProfileText}>Modifier le profil</Text>
-                    </TouchableOpacity>
-                    {/* Only show Add Friend button if viewing ANOTHER alter (future proofing) */}
-                    {/* Currently we are viewing OUR OWN space, so maybe "Add Friend" launches search? */}
-                    {/* User asked for "S'abonner button state", implying viewing SOMEONE ELSE */}
-                    {/* But this page is /alter-space/[id], which is usually OUR space. */}
-                    {/* If we view another system's alter, we need to know we are not owner. */}
-                    {/* Currently auth.user owns all alters in 'alters' list. */}
-                    {/* So this button "S'abonner" on OUR own profile makes no sense? */}
-                    {/* Audit item #2 says: "S'abonner vs Friends". */}
-                    {/* Wait, if I am "Mo" and I view "Z" (another alter in my system), do I Follow/Friend them? */}
-                    {/* Yes, user said "Friend request... she can accept". */}
-                    {/* So logic: checking if I am viewing myself? */}
-                    {/* Active Front is 'currentAlter'. 'alter' is the one page we are on. */}
-                    {/* If currentAlter.id !== alter.id, show button. */}
-                    <TouchableOpacity style={styles.followButton} onPress={() => {
-                        // Launch friend search or if this was a foreign profile, add them.
-                        // Since this is OUR profile space management, maybe this button should be "Inviter des amis"?
-                        // Or if we implemented "View As Guest" mode.
-                        // For now, let's just make it "Ajouter des amis" which focuses search.
-                        // Or if we are simulating "View as Guest":
-                        Alert.alert("Info", "Pour ajouter des amis, utilisez la barre de recherche ci-dessous.");
-                    }}>
-                        <Text style={styles.followButtonText}>Ajouter des amis</Text>
-                    </TouchableOpacity>
+                    {isOwner ? (
+                        <TouchableOpacity
+                            style={styles.editProfileButton}
+                            onPress={() => router.push(`/alter-space/${alter.id}/edit`)}
+                        >
+                            <Text style={styles.editProfileText}>Modifier le profil</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity
+                            style={styles.editProfileButton} // Reusing style for primary action
+                            onPress={() => router.push({ pathname: '/conversation/[id]', params: { id: alter.id } })}
+                        >
+                            <Text style={styles.editProfileText}>Message</Text>
+                        </TouchableOpacity>
+                    )}
+
+                    {isOwner ? (
+                        <TouchableOpacity style={styles.followButton} onPress={() => {
+                            Alert.alert("Info", "Pour ajouter des amis, utilisez la barre de recherche ci-dessous.");
+                        }}>
+                            <Text style={styles.followButtonText}>Ajouter des amis</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        // Logic for Friend Status button (already in search, adding here for Profile view)
+                        <TouchableOpacity style={styles.followButton} onPress={() => handleFriendAction(alter.id)}>
+                            <Text style={styles.followButtonText}>
+                                {friendStatuses[alter.id] === 'friends' ? 'Amis' :
+                                    friendStatuses[alter.id] === 'pending' ? 'Demande envoyée' : 'Ajouter'}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
             </View>
         );
@@ -351,7 +365,34 @@ export default function AlterSpaceScreen() {
                 <Text style={styles.postContent}>{post.content}</Text>
 
                 {post.media_url && (
-                    <Image source={{ uri: post.media_url }} style={styles.postImage} resizeMode="cover" />
+                    <View style={styles.mediaContainer}>
+                        {getMediaType(post.media_url) === 'image' && (
+                            <Image source={{ uri: post.media_url }} style={styles.postImage} resizeMode="cover" />
+                        )}
+                        {getMediaType(post.media_url) === 'video' && (
+                            <Video
+                                style={{ width: '100%', height: 300, borderRadius: borderRadius.md, backgroundColor: '#000' }}
+                                source={{ uri: post.media_url }}
+                                useNativeControls
+                                resizeMode={ResizeMode.CONTAIN}
+                                isLooping
+                            />
+                        )}
+                        {getMediaType(post.media_url) === 'audio' && (
+                            <View style={{
+                                backgroundColor: colors.backgroundLight,
+                                padding: spacing.md,
+                                borderRadius: borderRadius.md,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: spacing.sm,
+                                marginTop: spacing.sm
+                            }}>
+                                <Ionicons name="musical-note" size={24} color={colors.primary} />
+                                <Text style={{ color: colors.text }}>Fichier Audio (Lecture bientôt disponible)</Text>
+                            </View>
+                        )}
+                    </View>
                 )}
 
                 <View style={styles.postActions}>
@@ -561,6 +602,11 @@ export default function AlterSpaceScreen() {
                     <Text style={styles.settingText}>Notifications</Text>
                     <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
+                <TouchableOpacity style={styles.settingItem} onPress={() => router.push('/settings')}>
+                    <Ionicons name="settings-outline" size={24} color={colors.text} />
+                    <Text style={styles.settingText}>Paramètres de l'application</Text>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
             </View>
 
             <View style={styles.settingSection}>
@@ -644,36 +690,6 @@ export default function AlterSpaceScreen() {
                     />
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'search' && styles.tabActive]}
-                    onPress={() => setActiveTab('search')}
-                >
-                    <Ionicons
-                        name={activeTab === 'search' ? 'search' : 'search-outline'}
-                        size={24}
-                        color={activeTab === 'search' ? colors.primary : colors.textMuted}
-                    />
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.tab, activeTab === 'journal' && styles.tabActive]}
-                    onPress={() => setActiveTab('journal')}
-                >
-                    <Ionicons
-                        name={activeTab === 'journal' ? 'book' : 'book-outline'}
-                        size={24}
-                        color={activeTab === 'journal' ? colors.primary : colors.textMuted}
-                    />
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.tab, activeTab === 'emotions' && styles.tabActive]}
-                    onPress={() => setActiveTab('emotions')}
-                >
-                    <Ionicons
-                        name={activeTab === 'emotions' ? 'happy' : 'happy-outline'}
-                        size={24}
-                        color={activeTab === 'emotions' ? colors.primary : colors.textMuted}
-                    />
-                </TouchableOpacity>
-                <TouchableOpacity
                     style={[styles.tab, activeTab === 'profile' && styles.tabActive]}
                     onPress={() => setActiveTab('profile')}
                 >
@@ -683,6 +699,51 @@ export default function AlterSpaceScreen() {
                         color={activeTab === 'profile' ? colors.primary : colors.textMuted}
                     />
                 </TouchableOpacity>
+
+                {isOwner && (
+                    <>
+                        <TouchableOpacity
+                            style={[styles.tab, activeTab === 'search' && styles.tabActive]}
+                            onPress={() => setActiveTab('search')}
+                        >
+                            <Ionicons
+                                name={activeTab === 'search' ? 'search' : 'search-outline'}
+                                size={24}
+                                color={activeTab === 'search' ? colors.primary : colors.textMuted}
+                            />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.tab, activeTab === 'journal' && styles.tabActive]}
+                            onPress={() => setActiveTab('journal')}
+                        >
+                            <Ionicons
+                                name={activeTab === 'journal' ? 'book' : 'book-outline'}
+                                size={24}
+                                color={activeTab === 'journal' ? colors.primary : colors.textMuted}
+                            />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.tab, activeTab === 'emotions' && styles.tabActive]}
+                            onPress={() => setActiveTab('emotions')}
+                        >
+                            <Ionicons
+                                name={activeTab === 'emotions' ? 'happy' : 'happy-outline'}
+                                size={24}
+                                color={activeTab === 'emotions' ? colors.primary : colors.textMuted}
+                            />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.tab, activeTab === 'settings' && styles.tabActive]}
+                            onPress={() => setActiveTab('settings')}
+                        >
+                            <Ionicons
+                                name={activeTab === 'settings' ? 'settings' : 'settings-outline'}
+                                size={24}
+                                color={activeTab === 'settings' ? colors.primary : colors.textMuted}
+                            />
+                        </TouchableOpacity>
+                    </>
+                )}
             </View>
 
             {/* Floating Action Button (Only on Gallery or Journal) */}
@@ -1092,5 +1153,11 @@ const styles = StyleSheet.create({
     },
     emotionEmoji: {
         fontSize: 30,
+    },
+    mediaContainer: {
+        marginTop: spacing.sm,
+        marginBottom: spacing.sm,
+        borderRadius: borderRadius.md,
+        overflow: 'hidden',
     },
 });

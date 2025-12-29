@@ -12,7 +12,7 @@ import {
     getDoc,
     setDoc
 } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, auth } from '../lib/firebase';
 import { Alter } from '../types';
 
 export type FriendRequestStatus = 'pending' | 'accepted' | 'rejected';
@@ -36,9 +36,11 @@ export const FriendService = {
             throw new Error(`Status is already ${existing}`);
         }
 
+        if (!auth.currentUser) throw new Error("Not authenticated");
         await addDoc(collection(db, 'friend_requests'), {
             senderId,
             receiverId,
+            systemId: auth.currentUser.uid, // Add systemId for security rules
             status: 'pending',
             createdAt: serverTimestamp()
         });

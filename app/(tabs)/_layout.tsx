@@ -58,6 +58,12 @@ export default function TabLayout() {
                             ),
                             tabBarLabel: () => null, // Hide label for center button
                         }}
+                        listeners={{
+                            tabPress: () => {
+                                const { triggerHaptic } = require('../../src/lib/haptics');
+                                triggerHaptic.selection();
+                            },
+                        }}
                     />
                     {/* Émotions - Masqué car déplacé dans chaque profil d'alter */}
                     <Tabs.Screen

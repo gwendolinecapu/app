@@ -1,0 +1,289 @@
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Message, Alter } from '../../types';
+import { colors, spacing, borderRadius, typography } from '../../lib/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { GroupService } from '../../services/groups';
+
+interface MessageBubbleProps {
+    message: Message;
+    isMine: boolean;
+    senderAlter?: Alter;
+    currentUserId?: string; // system ID or alter ID depending on logic. Here assumes systemId for voting
+}
+
+export const MessageBubble: React.FC<MessageBubbleProps> = ({
+    message,
+    isMine,
+    senderAlter,
+    currentUserId
+}) => {
+    const senderName = senderAlter ? senderAlter.name : "Membre inconnu";
+    const senderColor = senderAlter ? senderAlter.color : colors.textSecondary;
+
+    // --- Renderers for types ---
+
+    const renderText = () => (
+        <Text style={[styles.messageText, isMine && styles.messageTextMine]}>
+            {message.content}
+        </Text>
+    );
+
+    const renderNote = () => {
+        const parts = message.content.split('|||');
+        const title = parts.length > 1 ? parts[0] : 'Note';
+        const body = parts.length > 1 ? parts[1] : message.content;
+
+        return (
+            <View style={styles.noteContainer}>
+                <View style={styles.noteHeader}>
+                    <Ionicons name="document-text" size={20} color={colors.text} />
+                    <Text style={styles.noteTitle}>{title}</Text>
+                </View>
+                <View style={styles.noteDivider} />
+                <Text style={styles.noteBody}>{body}</Text>
+            </View>
+        );
+    };
+
+    const renderPoll = () => {
+        const options = message.poll_options || [];
+        const votes = message.poll_votes || [];
+        const totalVotes = votes.length;
+
+        // Check if I voted
+        const myVote = votes.find(v => v.user_id === currentUserId);
+
+        const handleVote = (optionId: string) => {
+            if (!currentUserId) return;
+            GroupService.votePoll(message.id, optionId, currentUserId);
+        };
+
+        return (
+            <View style={styles.pollContainer}>
+                <Text style={styles.pollQuestion}>{message.content}</Text>
+                {options.map((opt) => {
+                    const optVotes = votes.filter(v => v.option_id === opt.id).length;
+                    const percent = totalVotes > 0 ? (optVotes / totalVotes) * 100 : 0;
+                    const isSelected = myVote?.option_id === opt.id;
+
+                    return (
+                        <TouchableOpacity
+                            key={opt.id}
+                            style={[
+                                styles.pollOption,
+                                isSelected && styles.pollOptionSelected
+                            ]}
+                            onPress={() => handleVote(opt.id)}
+                        >
+                            <View style={[styles.pollProgress, { width: `${percent}%` }]} />
+                            <View style={styles.pollContent}>
+                                <Text style={[styles.pollLabel, isSelected && styles.pollLabelSelected]}>
+                                    {opt.label}
+                                </Text>
+                                <Text style={styles.pollCount}>{optVotes}</Text>
+                            </View>
+                        </TouchableOpacity>
+                    );
+                })}
+                <Text style={styles.pollTotal}>{totalVotes} vote{totalVotes > 1 ? 's' : ''}</Text>
+            </View>
+        );
+    };
+
+    const renderContent = () => {
+        switch (message.type) {
+            case 'poll': return renderPoll();
+            case 'note': return renderNote();
+            case 'image': return <Text>Image (TODO)</Text>;
+            default: return renderText();
+        }
+    };
+
+    return (
+        <View style={[
+            styles.container,
+            isMine ? styles.containerMine : styles.containerOther
+        ]}>
+            {!isMine && (
+                <View style={[styles.avatar, { backgroundColor: senderColor }]}>
+                    <Text style={styles.avatarText}>
+                        {senderName.charAt(0).toUpperCase()}
+                    </Text>
+                </View>
+            )}
+
+            <View style={[
+                styles.bubble,
+                isMine ? styles.bubbleMine : styles.bubbleOther,
+                message.type !== 'text' && styles.bubbleRich
+            ]}>
+                {!isMine && <Text style={styles.senderName}>{senderName}</Text>}
+
+                {renderContent()}
+
+                <Text style={[styles.time, isMine ? styles.timeMine : styles.timeOther]}>
+                    {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+            </View>
+        </View>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: {
+        flexDirection: 'row',
+        marginBottom: spacing.md,
+        maxWidth: '85%', // Slightly wider for polls
+    },
+    containerMine: {
+        alignSelf: 'flex-end',
+        justifyContent: 'flex-end',
+    },
+    containerOther: {
+        alignSelf: 'flex-start',
+    },
+    avatar: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: spacing.sm,
+        marginTop: 4,
+    },
+    avatarText: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: 'white',
+    },
+    bubble: {
+        padding: spacing.md,
+        borderRadius: borderRadius.lg,
+        minWidth: 100,
+    },
+    bubbleMine: {
+        backgroundColor: colors.primary,
+        borderBottomRightRadius: 4,
+    },
+    bubbleOther: {
+        backgroundColor: colors.backgroundCard,
+        borderBottomLeftRadius: 4,
+    },
+    bubbleRich: {
+        width: 250, // Fixed width for rich content like polls
+        padding: spacing.sm,
+    },
+    senderName: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: colors.textSecondary,
+        marginBottom: 4,
+    },
+    messageText: {
+        ...typography.body,
+        color: colors.text,
+    },
+    messageTextMine: {
+        color: colors.text,//OnPrimary if primary is dark
+    },
+    time: {
+        fontSize: 10,
+        color: colors.textMuted,
+        alignSelf: 'flex-end',
+        marginTop: 4,
+    },
+    timeMine: {
+        color: 'rgba(0,0,0,0.6)',
+    },
+    timeOther: {
+        color: colors.textMuted,
+    },
+
+    // Note Styles
+    noteContainer: {
+        backgroundColor: '#FFF9C4',
+        borderRadius: borderRadius.md,
+        padding: spacing.md,
+    },
+    noteHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: spacing.xs,
+    },
+    noteTitle: {
+        fontWeight: 'bold',
+        fontSize: 16,
+        marginLeft: spacing.xs,
+        color: '#000',
+    },
+    noteDivider: {
+        height: 1,
+        backgroundColor: 'rgba(0,0,0,0.1)',
+        marginBottom: spacing.xs,
+    },
+    noteBody: {
+        color: '#333',
+        fontSize: 14,
+    },
+
+    // Poll Styles
+    pollContainer: {
+        backgroundColor: 'white',
+        borderRadius: borderRadius.md,
+        padding: spacing.sm,
+    },
+    pollQuestion: {
+        fontWeight: 'bold',
+        fontSize: 16,
+        marginBottom: spacing.sm,
+        color: colors.text,
+    },
+    pollOption: {
+        flexDirection: 'row', // Overlay progress
+        marginBottom: spacing.xs,
+        height: 40,
+        backgroundColor: colors.backgroundLight,
+        borderRadius: borderRadius.md,
+        overflow: 'hidden',
+        position: 'relative',
+        borderWidth: 1,
+        borderColor: 'transparent',
+    },
+    pollOptionSelected: {
+        borderColor: colors.primary,
+    },
+    pollProgress: {
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(98, 0, 238, 0.1)', // Primary customized opacity
+    },
+    pollContent: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: spacing.md,
+        zIndex: 1,
+    },
+    pollLabel: {
+        fontSize: 14,
+        color: colors.text,
+    },
+    pollLabelSelected: {
+        fontWeight: 'bold',
+        color: colors.primary,
+    },
+    pollCount: {
+        fontSize: 12,
+        color: colors.textMuted,
+    },
+    pollTotal: {
+        fontSize: 10,
+        color: colors.textMuted,
+        textAlign: 'center',
+        marginTop: spacing.xs,
+    }
+});

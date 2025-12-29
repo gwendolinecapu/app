@@ -164,14 +164,21 @@ export const GroupService = {
     /**
      * Envoie un message dans un groupe
      */
+    /**
+     * Envoie un message dans un groupe
+     */
     sendGroupMessage: async (
         groupId: string,
         senderAlterId: string,
         content: string,
-        type: 'text' | 'image' | 'poll' | 'note' = 'text'
+        type: 'text' | 'image' | 'poll' | 'note' = 'text',
+        extraData?: {
+            pollOptions?: string[];
+            noteTitle?: string;
+        }
     ) => {
         try {
-            await addDoc(collection(db, 'messages'), {
+            const messageData: any = {
                 group_id: groupId,
                 sender_alter_id: senderAlterId,
                 content: content,
@@ -179,9 +186,50 @@ export const GroupService = {
                 is_internal: false,
                 is_read: false,
                 created_at: new Date().toISOString()
-            });
+            };
+
+            // Ajouter les données spécifiques
+            if (type === 'poll' && extraData?.pollOptions) {
+                messageData.poll_options = extraData.pollOptions.map(opt => ({
+                    id: Math.random().toString(36).substr(2, 9),
+                    label: opt
+                }));
+                messageData.poll_votes = [];
+            } else if (type === 'note' && extraData?.noteTitle) {
+                messageData.content = `${extraData.noteTitle}|||${content}`;
+            }
+
+            await addDoc(collection(db, 'messages'), messageData);
         } catch (error) {
             console.error("Erreur envoi message groupe:", error);
+            throw error;
+        }
+    },
+
+    /**
+     * Vote pour un sondage
+     */
+    votePoll: async (messageId: string, optionId: string, userId: string) => {
+        try {
+            const messageRef = doc(db, 'messages', messageId);
+            const messageSnap = await getDoc(messageRef);
+
+            if (!messageSnap.exists()) return;
+
+            const message = messageSnap.data();
+            let votes = message.poll_votes || [];
+
+            // Retirer l'ancien vote de cet utilisateur s'il existe (vote unique)
+            votes = votes.filter((v: any) => v.user_id !== userId);
+
+            // Ajouter le nouveau vote
+            votes.push({ option_id: optionId, user_id: userId });
+
+            await updateDoc(messageRef, {
+                poll_votes: votes
+            });
+        } catch (error) {
+            console.error("Erreur vote sondage:", error);
             throw error;
         }
     }

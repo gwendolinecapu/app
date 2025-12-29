@@ -56,7 +56,7 @@ class DynamicIslandService {
 
         try {
             // Appel au module natif Swift
-            this.activityId = await LiveActivityModule.startLiveActivity({
+            this.activityId = await LiveActivityModule!.startLiveActivity({
                 alterName: data.currentAlterName,
                 alterColor: data.currentAlterColor,
                 alterInitial: data.currentAlterInitial,
@@ -85,7 +85,7 @@ class DynamicIslandService {
         if (!this.isSupported()) return false;
 
         try {
-            await LiveActivityModule.updateLiveActivity(this.activityId, {
+            await LiveActivityModule!.updateLiveActivity(this.activityId, {
                 alterName: data.currentAlterName,
                 alterColor: data.currentAlterColor,
                 alterInitial: data.currentAlterInitial,
@@ -112,7 +112,7 @@ class DynamicIslandService {
         if (!this.isSupported()) return false;
 
         try {
-            await LiveActivityModule.endLiveActivity(this.activityId);
+            await LiveActivityModule!.endLiveActivity(this.activityId);
             this.isActive = false;
             this.activityId = null;
             console.log('[DynamicIsland] Stopped');

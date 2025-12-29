@@ -9,7 +9,14 @@ import { useNotifications } from './useNotifications';
 import PersistentNotificationService from '../services/PersistentNotificationService';
 import DynamicIslandService from '../services/DynamicIslandService';
 import NotificationService from '../services/NotificationService';
-import { Alter, Front } from '../types';
+import { Alter } from '../types';
+
+// Interface pour le front actuel
+interface Front {
+    type: 'single' | 'co-front' | 'none';
+    alterIds: string[];
+    timestamp: number;
+}
 
 interface UseFrontNotificationsProps {
     currentFront: Front | null;

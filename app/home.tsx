@@ -161,12 +161,20 @@ export default function HomeScreen() {
             >
                 <Text style={styles.subtitle}>Choisissez un profil</Text>
 
-                <TouchableOpacity
-                    style={styles.historyButton}
-                    onPress={() => router.push('/fronting/history')}
-                >
-                    <Text style={styles.historyButtonText}>🕒 Voir l'historique de front</Text>
-                </TouchableOpacity>
+                <View style={styles.actionButtons}>
+                    <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => router.push('/fronting/history')}
+                    >
+                        <Text style={styles.actionButtonText}>🕒 Historique</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => router.push('/tasks')}
+                    >
+                        <Text style={styles.actionButtonText}>✅ Tâches</Text>
+                    </TouchableOpacity>
+                </View>
 
                 <View style={styles.bubblesGrid}>
                     {/* Add Button */}
@@ -326,17 +334,23 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: spacing.md,
     },
-    historyButton: {
-        alignSelf: 'center',
+    actionButtons: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: spacing.md,
+        marginBottom: spacing.xl,
+    },
+    actionButton: {
         paddingVertical: spacing.sm,
         paddingHorizontal: spacing.md,
         backgroundColor: colors.backgroundCard,
         borderRadius: borderRadius.full,
-        marginBottom: spacing.xl,
         borderWidth: 1,
         borderColor: colors.border,
+        minWidth: 120,
+        alignItems: 'center',
     },
-    historyButtonText: {
+    actionButtonText: {
         ...typography.caption,
         color: colors.textSecondary,
         fontWeight: '600',

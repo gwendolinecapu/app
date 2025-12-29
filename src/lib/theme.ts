@@ -9,6 +9,7 @@ export const colors = {
     primary: '#8B5CF6',       // Violet principal - utilisé pour les actions et accents
     primaryDark: '#7C3AED',   // Violet foncé - pour les états hover/pressed
     primaryLight: '#A78BFA',  // Violet clair - pour les backgrounds subtils
+    textOnPrimary: '#FFFFFF', // Texte sur fond primary
 
     // Couleurs de texte
     text: '#FFFFFF',          // Texte principal sur fond sombre

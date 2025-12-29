@@ -127,7 +127,16 @@ export default function CrisisModeScreen() {
                     </View>
                 )}
 
-                {/* 4. Emergency Button */}
+                {/* 4. Internal Help Request */}
+                <TouchableOpacity
+                    style={styles.internalHelpButton}
+                    onPress={() => router.push('/help/create')}
+                >
+                    <Ionicons name="hand-left-outline" size={24} color="white" />
+                    <Text style={styles.internalHelpText}>DEMANDER DE L'AIDE AU SYSTÈME</Text>
+                </TouchableOpacity>
+
+                {/* 5. Emergency Button */}
                 <TouchableOpacity style={styles.emergencyButton} onPress={handleEmergencyCall}>
                     <Ionicons name="warning" size={32} color="white" />
                     <Text style={styles.emergencyText}>APPELER URGENCES (112)</Text>
@@ -312,5 +321,25 @@ const styles = StyleSheet.create({
     guideButtonText: {
         color: colors.primary,
         fontWeight: '600',
+    },
+    internalHelpButton: {
+        backgroundColor: '#3B82F6',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: spacing.lg,
+        borderRadius: borderRadius.lg,
+        marginBottom: spacing.md,
+        gap: spacing.md,
+        shadowColor: "#3B82F6",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 4,
+    },
+    internalHelpText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
 });

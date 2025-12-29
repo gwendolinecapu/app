@@ -384,6 +384,7 @@ export default function AlterSpaceScreen() {
 
             {/* Content Area */}
             <View style={styles.contentArea}>
+                {activeTab === 'feed' && renderFeed()}
                 {activeTab === 'gallery' && renderGallery()}
                 {activeTab === 'journal' && renderJournal()}
                 {activeTab === 'search' && renderSearch()}

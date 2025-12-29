@@ -12,7 +12,7 @@ import {
 import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { db } from '../../src/lib/firebase';
-import { collection, addDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { Message, Alter } from '../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 
@@ -23,43 +23,72 @@ export default function ConversationScreen() {
     const [newMessage, setNewMessage] = useState('');
     const [otherAlter, setOtherAlter] = useState<Alter | null>(null);
     const [loading, setLoading] = useState(false);
+    const [useSystemTag, setUseSystemTag] = useState(false); // Toggle for System Tag
 
     const getConversationId = (id1: string, id2: string) => {
         return [id1, id2].sort().join('_');
     };
 
     useEffect(() => {
-        // Trouver l'autre participant
+        // Find other participant
         const alter = alters.find((a) => a.id === id);
         setOtherAlter(alter || null);
+    }, [id, alters]);
 
-        if (currentAlter && id) {
-            fetchMessages();
-        }
-    }, [id, alters, currentAlter]);
-
-    const fetchMessages = async () => {
+    useEffect(() => {
         if (!currentAlter || !id) return;
 
-        try {
-            const conversationId = getConversationId(currentAlter.id, id);
-            const q = query(
-                collection(db, 'messages'),
-                where('conversation_id', '==', conversationId),
-                orderBy('created_at', 'asc')
-            );
+        const conversationId = getConversationId(currentAlter.id, id);
+        const q = query(
+            collection(db, 'messages'),
+            where('conversation_id', '==', conversationId),
+            orderBy('created_at', 'asc')
+        );
 
-            // Note: onSnapshot pourrait être utilisé ici pour le temps réel
-            const querySnapshot = await getDocs(q);
+        const unsubscribe = onSnapshot(q, (snapshot) => {
             const data: Message[] = [];
+            snapshot.docs.forEach((docSnap) => {
+                const msg = { id: docSnap.id, ...docSnap.data() } as Message;
+                data.push(msg);
 
-            querySnapshot.forEach((doc) => {
-                data.push({ id: doc.id, ...doc.data() } as Message);
+                // Mark as read if not mine
+                if (msg.receiver_alter_id === currentAlter.id && !msg.is_read) {
+                    markMessageAsRead(docSnap.id);
+                }
             });
-
             setMessages(data);
+        });
+
+        return () => unsubscribe();
+    }, [currentAlter, id]);
+
+    const markMessageAsRead = async (messageId: string) => {
+        try {
+            await updateDoc(doc(db, 'messages', messageId), {
+                is_read: true
+            });
         } catch (error) {
-            console.error('Error fetching messages:', error);
+            console.error("Error marking read:", error);
+        }
+    };
+
+    const toggleLike = async (message: Message) => {
+        if (!currentAlter) return;
+        const messageRef = doc(db, 'messages', message.id);
+        const existingReaction = message.reactions?.find(r => r.user_id === currentAlter.id && r.emoji === '❤️');
+
+        try {
+            if (existingReaction) {
+                await updateDoc(messageRef, {
+                    reactions: arrayRemove(existingReaction)
+                });
+            } else {
+                await updateDoc(messageRef, {
+                    reactions: arrayUnion({ emoji: '❤️', user_id: currentAlter.id })
+                });
+            }
+        } catch (error) {
+            console.error("Error toggling like:", error);
         }
     };
 
@@ -79,10 +108,11 @@ export default function ConversationScreen() {
                 is_internal: internal === 'true',
                 is_read: false,
                 created_at: new Date().toISOString(),
+                system_tag: useSystemTag ? (currentAlter.name) : undefined,
             });
 
             setNewMessage('');
-            fetchMessages();
+            // No need to fetchMessages() if using onSnapshot
         } catch (error) {
             console.error('Error sending message:', error);
         } finally {
@@ -93,9 +123,25 @@ export default function ConversationScreen() {
     const renderMessage = ({ item }: { item: Message }) => {
         const isMine = item.sender_alter_id === currentAlter?.id;
         const senderAlter = alters.find((a) => a.id === item.sender_alter_id);
+        const likedByMe = item.reactions?.some(r => r.user_id === currentAlter?.id && r.emoji === '❤️');
+
+        // Simple double tap simulation
+        let lastTap = 0;
+        const handleDoubleTap = () => {
+            const now = Date.now();
+            const DOUBLE_PRESS_DELAY = 300;
+            if (now - lastTap < DOUBLE_PRESS_DELAY) {
+                const { triggerHaptic } = require('../../src/lib/haptics');
+                triggerHaptic.selection();
+                toggleLike(item);
+            }
+            lastTap = now;
+        };
 
         return (
-            <View
+            <TouchableOpacity
+                activeOpacity={1}
+                onPress={handleDoubleTap}
                 style={[
                     styles.messageContainer,
                     isMine ? styles.messageContainerMine : styles.messageContainerOther,
@@ -120,17 +166,33 @@ export default function ConversationScreen() {
                     ]}
                 >
                     {!isMine && (
-                        <Text style={styles.senderName}>{senderAlter?.name}</Text>
+                        <Text style={styles.senderName}>
+                            {senderAlter?.name} {item.system_tag && <Text style={styles.systemTag}>• {item.system_tag}</Text>}
+                        </Text>
                     )}
                     <Text style={styles.messageText}>{item.content}</Text>
-                    <Text style={styles.messageTime}>
-                        {new Date(item.created_at).toLocaleTimeString('fr-FR', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                        })}
-                    </Text>
+
+                    {item.reactions && item.reactions.length > 0 && (
+                        <View style={styles.reactionsContainer}>
+                            <Text style={styles.reactionText}>❤️ {item.reactions.length}</Text>
+                        </View>
+                    )}
+
+                    <View style={styles.messageFooter}>
+                        <Text style={styles.messageTime}>
+                            {new Date(item.created_at).toLocaleTimeString('fr-FR', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                            })}
+                        </Text>
+                        {isMine && (
+                            <Text style={styles.readStatus}>
+                                {item.is_read ? ' ✓✓' : ' ✓'}
+                            </Text>
+                        )}
+                    </View>
                 </View>
-            </View>
+            </TouchableOpacity>
         );
     };
 
@@ -166,6 +228,16 @@ export default function ConversationScreen() {
                         {internal === 'true' ? '💜 Discussion interne' : '🌐 Discussion externe'}
                     </Text>
                 </View>
+                <TouchableOpacity
+                    style={[styles.tagButton, useSystemTag && styles.tagButtonActive]}
+                    onPress={() => {
+                        const { triggerHaptic } = require('../../src/lib/haptics');
+                        triggerHaptic.selection();
+                        setUseSystemTag(!useSystemTag);
+                    }}
+                >
+                    <Text style={[styles.tagButtonText, useSystemTag && styles.tagButtonTextActive]}># Tag</Text>
+                </TouchableOpacity>
             </View>
 
             <FlatList
@@ -237,6 +309,27 @@ const styles = StyleSheet.create({
     headerSubtitle: {
         ...typography.caption,
         marginTop: 2,
+    },
+    tagButton: {
+        marginLeft: 'auto',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        backgroundColor: colors.background,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    tagButtonActive: {
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
+    },
+    tagButtonText: {
+        ...typography.caption,
+        fontWeight: 'bold',
+        color: colors.textSecondary,
+    },
+    tagButtonTextActive: {
+        color: colors.text,
     },
     messagesList: {
         padding: spacing.md,
@@ -339,4 +432,37 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
     },
+    systemTag: {
+        fontWeight: 'normal',
+        fontStyle: 'italic',
+        opacity: 0.8
+    },
+    messageFooter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        marginTop: 4,
+    },
+    readStatus: {
+        fontSize: 10,
+        color: 'rgba(255,255,255,0.7)',
+        marginLeft: 4,
+    },
+    reactionsContainer: {
+        position: 'absolute',
+        bottom: -10,
+        left: 10,
+        backgroundColor: colors.backgroundCard,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 10,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 1.41,
+        elevation: 2,
+    },
+    reactionText: {
+        fontSize: 10,
+    }
 });

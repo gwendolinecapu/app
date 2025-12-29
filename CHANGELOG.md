@@ -1,5 +1,36 @@
 # Changelog
 
+## [2025-12-29] Apple Watch App - Alter Selection ⌚
+
+### Nouveaux Fichiers iOS (Swift)
+- **`ios/PluralConnect/WatchSessionManager.swift`** : Module natif WatchConnectivity
+- **`ios/PluralConnect/WatchSessionManager.m`** : Bridge Objective-C pour React Native
+
+### Nouveaux Fichiers watchOS (SwiftUI)
+- **`ios/PluralConnectWatch/PluralConnectWatchApp.swift`** : Entry point
+- **`ios/PluralConnectWatch/WatchConnectivityManager.swift`** : Gestionnaire de communication
+- **`ios/PluralConnectWatch/Views/ContentView.swift`** : Vue principale
+- **`ios/PluralConnectWatch/Views/AlterSelectionView.swift`** : Grille de sélection d'alter
+- **`ios/PluralConnectWatch/Views/MoodSelectionView.swift`** : Sélection d'humeur
+
+### Nouveaux Fichiers React Native
+- **`src/native/WatchBridge.ts`** : Interface TypeScript pour le module natif
+- **`src/hooks/useWatchSync.ts`** : Hook pour synchroniser les données avec la montre
+
+### Fonctionnalités
+- Sélection d'alter en front (tap simple)
+- Mode co-front (sélection multiple)
+- Mode blurry/flou
+- Sélection d'humeur avec intensité
+- Synchronisation bidirectionnelle iOS ↔ watchOS
+
+### ⚠️ Configuration Requise
+- Exécuter `npx expo prebuild` (fait)
+- Ajouter target watchOS manuellement dans Xcode
+- Voir `ios/PluralConnectWatch/watch-config.json` pour les instructions
+
+---
+
 ## [2025-12-29] Système de Follow Entre Systèmes (Social)
 
 ### Nouvelles Collections Firestore

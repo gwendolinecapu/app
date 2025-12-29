@@ -82,19 +82,11 @@ export default function TabLayout() {
                             tabBarLabel: () => null, // Hide label for center button
                         }}
                     />
-                    {/* Onglet 4: Émotions - Suivi émotionnel */}
+                    {/* Émotions - Masqué car déplacé dans chaque profil d'alter */}
                     <Tabs.Screen
                         name="emotions"
                         options={{
-                            title: 'Émotions',
-                            tabBarIcon: ({ focused, color }) => (
-                                <Ionicons
-                                    name={focused ? "heart" : "heart-outline"}
-                                    size={24}
-                                    color={color}
-                                    accessibilityLabel="Émotions"
-                                />
-                            ),
+                            href: null, // Masqué - accessible via Alter Space
                         }}
                     />
                     {/* Messages - Masqué car chaque alter a sa messagerie dans son espace */}

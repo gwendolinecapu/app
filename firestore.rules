@@ -36,9 +36,12 @@ service cloud.firestore {
 
     // ============================================
     // Alters Collection
+    // Read: All authenticated users (for social features, search, profiles)
+    // Write: Only the owner
     // ============================================
     match /alters/{alterId} {
-      allow read: if isOwner(resource);
+      // Read: any authenticated user can read alters (needed for social/search)
+      allow read: if isAuthenticated();
       allow create: if isOwnerCreate();
       allow update, delete: if isOwner(resource);
     }

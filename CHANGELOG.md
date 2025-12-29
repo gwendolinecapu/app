@@ -1,5 +1,63 @@
 # Changelog
 
+## [2025-12-29] 7 Widgets Android (AppWidgetProvider) 🤖
+
+### Widgets Créés
+1. **CurrentFrontWidgetProvider** : Alter en front + durée
+2. **QuickSwitchWidgetProvider** : Grille 9 alters favoris
+3. **MoodWidgetProvider** : Emoji + intensité colorée
+4. **DailyStatsWidgetProvider** : Switches, top alter, streak
+5. **QuickJournalWidgetProvider** : Bouton journal rapide
+6. **CoFrontWidgetProvider** : Avatars empilés
+7. **WellnessWidgetProvider** : Message positif
+
+### Fichiers Kotlin
+- **`SharedModels.kt`** : Types partagés
+- **`WidgetDataManager.kt`** : Gestionnaire SharedPreferences
+- **`WidgetModule.kt`** : Module React Native
+- **`WidgetPackage.kt`** : Package RN
+
+### Layouts XML
+- 7 layouts widget + 1 composant slot alter
+- 4 drawables (backgrounds, icônes)
+- 7 configs appwidget-provider
+
+### ⚠️ Configuration AndroidManifest Requise
+Ajouter les 7 receivers dans AndroidManifest.xml
+
+---
+
+## [2025-12-29] 7 Widgets iOS (WidgetKit) 📱
+
+### Extension WidgetKit
+- **`ios/PluralConnectWidgets/PluralConnectWidgetsBundle.swift`** : Bundle regroupant les 7 widgets
+
+### Widgets Créés
+1. **CurrentFrontWidget** (S/M) : Alter en front + durée depuis le switch
+2. **QuickSwitchWidget** (M/L) : Grille d'alters favoris pour changement rapide
+3. **MoodWidget** (S) : Emoji humeur + intensité colorée
+4. **DailyStatsWidget** (M) : Switches, alter top, streak journal
+5. **QuickJournalWidget** (S) : Bouton rapide pour écrire
+6. **CoFrontWidget** (M) : Avatars empilés pour co-front
+7. **WellnessWidget** (S) : Message positif du jour
+
+### Fichiers Shared
+- **`SharedModels.swift`** : Types partagés (WidgetAlter, WidgetFront, etc.)
+- **`AppGroupManager.swift`** : Gestionnaire App Groups pour lecture/écriture
+
+### Bridge React Native
+- **`src/native/WidgetBridge.ts`** : Interface TypeScript
+- **`ios/PluralConnect/WidgetModule.swift`** : Module natif Swift
+- **`ios/PluralConnect/WidgetModule.m`** : Bridge Objective-C
+- **`src/hooks/useWidgetSync.ts`** : Hook auto-sync
+
+### ⚠️ Configuration Xcode Requise
+1. Ajouter target "Widget Extension" dans Xcode
+2. Configurer App Group `group.com.pluralconnect.shared`
+3. Ajouter les fichiers Swift au target
+
+---
+
 ## [2025-12-29] Apple Watch App - Alter Selection ⌚
 
 ### Nouveaux Fichiers iOS (Swift)

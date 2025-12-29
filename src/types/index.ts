@@ -239,3 +239,35 @@ export interface HelpRequest {
     created_at: number;
     resolved_at?: number;
 }
+
+// ============================================
+// Système de Follow (Social)
+// ============================================
+
+/**
+ * Follow - Relation de suivi entre deux systèmes
+ * Un système peut suivre un autre système pour voir ses posts publics
+ */
+export interface Follow {
+    id: string;
+    follower_id: string;     // system_id qui suit
+    following_id: string;    // system_id suivi
+    created_at: string;
+}
+
+/**
+ * PublicProfile - Profil public d'un système
+ * Permet de contrôler ce qui est visible par les autres utilisateurs
+ */
+export interface PublicProfile {
+    system_id: string;       // Référence vers systems
+    display_name: string;    // Nom public du système
+    bio?: string;
+    avatar_url?: string;
+    is_public: boolean;      // Profil visible dans découverte (false par défaut)
+    follower_count: number;  // Dénormalisé pour performance
+    following_count: number;
+    created_at: string;
+    updated_at: string;
+}
+

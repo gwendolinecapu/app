@@ -20,7 +20,10 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../../src/lib/firebase';
 import { Alter } from '../../../src/types';
-import { colors, spacing, borderRadius, typography, alterColors } from '../../../src/lib/theme';
+import { colors, spacing, borderRadius, typography, freeAlterColors, premiumAlterColors } from '../../../src/lib/theme';
+
+// TODO: Replace with actual premium check from user context
+const isPremium = false; // Simulated - change to true to test all colors
 
 export default function EditAlterProfileScreen() {
     const { alterId } = useLocalSearchParams<{ alterId: string }>();
@@ -32,7 +35,7 @@ export default function EditAlterProfileScreen() {
     const [pronouns, setPronouns] = useState('');
     const [bio, setBio] = useState('');
     const [role, setRole] = useState(''); // We'll store this in custom_fields for now if dynamic
-    const [color, setColor] = useState(alterColors[0]);
+    const [color, setColor] = useState(freeAlterColors[0]);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [initialAlter, setInitialAlter] = useState<Alter | null>(null);
 
@@ -52,7 +55,7 @@ export default function EditAlterProfileScreen() {
                 setName(data.name);
                 setPronouns(data.pronouns || '');
                 setBio(data.bio || '');
-                setColor(data.color || alterColors[0]);
+                setColor(data.color || freeAlterColors[0]);
                 setAvatarUrl(data.avatar_url || null);
 
                 // Try to find role in custom_fields
@@ -232,17 +235,55 @@ export default function EditAlterProfileScreen() {
 
                 <View style={styles.formGroup}>
                     <Text style={styles.label}>Couleur du système</Text>
+                    <Text style={styles.colorSubLabel}>Couleurs gratuites</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colorRow}>
-                        {alterColors.map((c) => (
+                        {freeAlterColors.map((c) => (
+                            <TouchableOpacity
+                                key={c}
+                                style={[
+                                    styles.colorOption,
+                                    { backgroundColor: c, borderWidth: c === '#FFFFFF' ? 1 : 0, borderColor: colors.border },
+                                    color === c && styles.colorOptionSelected
+                                ]}
+                                onPress={() => setColor(c)}
+                            />
+                        ))}
+                    </ScrollView>
+
+                    <Text style={[styles.colorSubLabel, { marginTop: spacing.md }]}>
+                        Couleurs Premium ✨ {!isPremium && '🔒'}
+                    </Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colorRow}>
+                        {premiumAlterColors.map((c) => (
                             <TouchableOpacity
                                 key={c}
                                 style={[
                                     styles.colorOption,
                                     { backgroundColor: c },
-                                    color === c && styles.colorOptionSelected
+                                    color === c && styles.colorOptionSelected,
+                                    !isPremium && styles.colorOptionLocked
                                 ]}
-                                onPress={() => setColor(c)}
-                            />
+                                onPress={() => {
+                                    if (isPremium) {
+                                        setColor(c);
+                                    } else {
+                                        Alert.alert(
+                                            'Premium requis ✨',
+                                            'Cette couleur est réservée aux membres Premium. Passez à Premium pour débloquer toutes les couleurs !',
+                                            [
+                                                { text: 'Plus tard', style: 'cancel' },
+                                                { text: 'Voir Premium', onPress: () => router.push('/shop') }
+                                            ]
+                                        );
+                                    }
+                                }}
+                            >
+                                {!isPremium && (
+                                    <View style={styles.lockIcon}>
+                                        <Ionicons name="lock-closed" size={12} color="white" />
+                                    </View>
+                                )}
+                            </TouchableOpacity>
                         ))}
                     </ScrollView>
                 </View>
@@ -367,5 +408,24 @@ const styles = StyleSheet.create({
     colorOptionSelected: {
         borderColor: colors.text,
         transform: [{ scale: 1.1 }],
+    },
+    colorSubLabel: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        marginBottom: spacing.xs,
+        marginLeft: spacing.xs,
+    },
+    colorOptionLocked: {
+        opacity: 0.6,
+    },
+    lockIcon: {
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        marginTop: -8,
+        marginLeft: -8,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        borderRadius: 10,
+        padding: 4,
     },
 });

@@ -43,20 +43,36 @@ export type ThemeColors = typeof colors;
 
 // Couleurs disponibles pour les profils (alters)
 // Ces couleurs sont proposées lors de la création/édition d'un alter
-export const alterColors = [
-    '#FF6B6B',  // Rouge corail
-    '#4ECDC4',  // Turquoise
-    '#45B7D1',  // Bleu ciel
-    '#96CEB4',  // Vert menthe
-    '#FFEAA7',  // Jaune pâle
-    '#DDA0DD',  // Violet plum
-    '#98D8C8',  // Vert d'eau
-    '#F7DC6F',  // Jaune doré
-    '#BB8FCE',  // Lavande
-    '#85C1E9',  // Bleu pastel
-    '#F8B500',  // Orange
-    '#E74C3C',  // Rouge vif
+
+// Couleurs GRATUITES - basiques (blanc, noir, bleu)
+export const freeAlterColors = [
+    '#FFFFFF',  // Blanc
+    '#1A1A2E',  // Noir/Bleu très foncé
+    '#3B82F6',  // Bleu vif
+    '#6366F1',  // Indigo
+    '#0EA5E9',  // Bleu ciel
 ];
+
+// Couleurs PREMIUM - toutes les autres couleurs
+export const premiumAlterColors = [
+    '#EC4899',  // Rose vif ⭐
+    '#F472B6',  // Rose clair ⭐
+    '#8B5CF6',  // Violet ⭐
+    '#A855F7',  // Violet clair ⭐
+    '#FF6B6B',  // Rouge corail
+    '#EF4444',  // Rouge vif
+    '#F97316',  // Orange
+    '#F59E0B',  // Jaune doré
+    '#FBBF24',  // Jaune
+    '#22C55E',  // Vert émeraude
+    '#10B981',  // Vert menthe
+    '#14B8A6',  // Turquoise
+    '#4ECDC4',  // Turquoise clair
+    '#06B6D4',  // Cyan
+];
+
+// Toutes les couleurs combinées (pour affichage)
+export const alterColors = [...freeAlterColors, ...premiumAlterColors];
 
 // Système d'espacement cohérent (basé sur 4px)
 export const spacing = {

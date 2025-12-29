@@ -12,7 +12,7 @@ import {
     arrayUnion
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Group, GroupMember } from '../types';
+import { Group, GroupMember, Message } from '../types';
 
 export const GroupService = {
     /**
@@ -142,7 +142,7 @@ export const GroupService = {
     /**
      * Récupère les messages d'un groupe
      */
-    getGroupMessages: async (groupId: string): Promise<any[]> => {
+    getGroupMessages: async (groupId: string): Promise<Message[]> => {
         try {
             const q = query(
                 collection(db, 'messages'),
@@ -154,16 +154,13 @@ export const GroupService = {
             return querySnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
-            }));
+            } as Message));
         } catch (error) {
             console.error("Erreur récupérant messages groupe:", error);
             return [];
         }
     },
 
-    /**
-     * Envoie un message dans un groupe
-     */
     /**
      * Envoie un message dans un groupe
      */
@@ -178,21 +175,23 @@ export const GroupService = {
         }
     ) => {
         try {
-            const messageData: any = {
+            const messageData: Omit<Message, 'id'> = {
                 group_id: groupId,
                 sender_alter_id: senderAlterId,
                 content: content,
                 type: type,
                 is_internal: false,
                 is_read: false,
-                created_at: new Date().toISOString()
+                created_at: new Date().toISOString(),
+                reactions: []
             };
 
             // Ajouter les données spécifiques
             if (type === 'poll' && extraData?.pollOptions) {
                 messageData.poll_options = extraData.pollOptions.map(opt => ({
                     id: Math.random().toString(36).substr(2, 9),
-                    label: opt
+                    label: opt,
+                    votes: []
                 }));
                 messageData.poll_votes = [];
             } else if (type === 'note' && extraData?.noteTitle) {

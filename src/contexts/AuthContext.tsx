@@ -15,24 +15,34 @@ import {
     where,
     getDocs,
     orderBy,
-    limit,
-    updateDoc
+    updateDoc,
+    deleteDoc
 } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { Alter, System } from '../types';
 import { FrontingService } from '../services/fronting';
 
+// New interface for Active Front
+export type FrontStatus = {
+    type: 'single' | 'co-front' | 'blurry';
+    alters: Alter[]; // Empty if blurry
+    customStatus?: string; // Optional custom status for blurry mode
+};
+
 interface AuthContextType {
     user: User | null;
     system: System | null;
-    currentAlter: Alter | null;
+    activeFront: FrontStatus; // Replaces currentAlter
     alters: Alter[];
     loading: boolean;
     signUp: (email: string, password: string, username: string) => Promise<{ error: any }>;
     signIn: (email: string, password: string) => Promise<{ error: any }>;
     signOut: () => Promise<void>;
-    switchAlter: (alter: Alter) => void;
+    deleteAccount: () => Promise<void>;
+    setFronting: (alters: Alter[], type: 'single' | 'co-front' | 'blurry', customStatus?: string) => Promise<void>;
     refreshAlters: () => Promise<void>;
+    // Helpers for compatibility
+    currentAlter: Alter | null; // Derived from activeFront (first alter or null)
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,12 +50,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [system, setSystem] = useState<System | null>(null);
-    const [currentAlter, setCurrentAlter] = useState<Alter | null>(null);
+    const [activeFront, setActiveFront] = useState<FrontStatus>({ type: 'single', alters: [] });
     const [alters, setAlters] = useState<Alter[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Écouter les changements d'auth Firebase
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             setUser(firebaseUser);
             if (firebaseUser) {
@@ -53,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             } else {
                 setSystem(null);
                 setAlters([]);
-                setCurrentAlter(null);
+                setActiveFront({ type: 'single', alters: [] });
                 setLoading(false);
             }
         });
@@ -63,24 +72,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const fetchSystemData = async (userId: string) => {
         try {
-            // Récupérer le système depuis Firestore
             const systemRef = doc(db, 'systems', userId);
             const systemSnap = await getDoc(systemRef);
-
             let systemData = systemSnap.exists() ? (systemSnap.data() as System) : null;
 
-            // Si le système n'existe pas, le créer (cas rare ou premier login après migration)
             if (!systemData && auth.currentUser) {
                 const email = auth.currentUser.email || '';
                 const username = email.split('@')[0] || 'user';
-
                 const newSystem: System = {
                     id: userId,
                     email: email,
                     username: username,
                     created_at: new Date().toISOString(),
                 };
-
                 await setDoc(systemRef, newSystem);
                 systemData = newSystem;
             }
@@ -88,7 +92,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (systemData) {
                 setSystem(systemData);
 
-                // Récupérer les alters
                 const altersq = query(
                     collection(db, 'alters'),
                     where('system_id', '==', userId),
@@ -103,11 +106,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                 setAlters(altersData);
 
-                // Sélectionner l'alter actif ou le host par défaut
-                const activeAlter = altersData.find(a => a.is_active) ||
-                    altersData.find(a => a.is_host) ||
-                    altersData[0];
-                setCurrentAlter(activeAlter || null);
+                // Initialiser activeFront basé sur is_active
+                const activeAlters = altersData.filter(a => a.is_active);
+                if (activeAlters.length === 1) {
+                    setActiveFront({ type: 'single', alters: activeAlters });
+                } else if (activeAlters.length > 1) {
+                    setActiveFront({ type: 'co-front', alters: activeAlters });
+                } else {
+                    // Fallback to host or empty
+                    const host = altersData.find(a => a.is_host) || altersData[0];
+                    setActiveFront({ type: 'single', alters: host ? [host] : [] });
+                }
             }
         } catch (error) {
             console.error('Error fetching system data:', error);
@@ -118,20 +127,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const refreshAlters = async () => {
         if (!user) return;
-
         try {
             const altersq = query(
                 collection(db, 'alters'),
                 where('system_id', '==', user.uid),
                 orderBy('created_at', 'asc')
             );
-
             const querySnapshot = await getDocs(altersq);
             const altersData: Alter[] = [];
             querySnapshot.forEach((doc) => {
                 altersData.push({ id: doc.id, ...doc.data() } as Alter);
             });
-
             setAlters(altersData);
         } catch (error) {
             console.error('Error refreshing alters:', error);
@@ -142,15 +148,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const newUser = userCredential.user;
-
-            // Créer le document système dans Firestore
             await setDoc(doc(db, 'systems', newUser.uid), {
                 id: newUser.uid,
                 email,
                 username,
                 created_at: new Date().toISOString(),
             });
-
             return { error: null };
         } catch (error: any) {
             return { error };
@@ -169,57 +172,92 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const signOut = async () => {
         try {
             await firebaseSignOut(auth);
-            // State cleanup handled by onAuthStateChanged
         } catch (error) {
             console.error('Error signing out:', error);
         }
     };
 
-    // ... (dans switchAlter)
-
-    const switchAlter = async (alter: Alter) => {
-        if (!currentAlter || !user) return;
+    const setFronting = async (frontAlters: Alter[], type: 'single' | 'co-front' | 'blurry', customStatus?: string) => {
+        if (!user) return;
 
         // Optimistic UI update
-        const previousAlter = currentAlter;
-        setCurrentAlter(alter);
+        const previousFront = activeFront;
+        const newFront: FrontStatus = { type, alters: frontAlters, customStatus };
+        setActiveFront(newFront);
 
         try {
-            // 1. Mettre à jour is_active dans Firestore
-            if (previousAlter) {
-                const prevRef = doc(db, 'alters', previousAlter.id);
-                await updateDoc(prevRef, { is_active: false });
+            // 1. Reset all active alters first (to handle transitions cleanly)
+            // Note: This might be expensive if many alters, but simpler for consistency.
+            // Ideally we only update changed ones.
+            const currentActiveIds = alters.filter(a => a.is_active).map(a => a.id);
+            const newActiveIds = frontAlters.map(a => a.id);
+
+            // Deactivate old ones that are no longer active
+            const toDeactivate = currentActiveIds.filter(id => !newActiveIds.includes(id));
+            const toActivate = newActiveIds.filter(id => !currentActiveIds.includes(id));
+
+            await Promise.all([
+                ...toDeactivate.map(id => updateDoc(doc(db, 'alters', id), { is_active: false })),
+                ...toActivate.map(id => updateDoc(doc(db, 'alters', id), { is_active: true }))
+            ]);
+
+            // 2. Log history using FrontingService
+            // For now, FrontingService only supports single switch.
+            // We need to update FrontingService or handle multiple entries.
+            // For MVP: Log the primary confronter or "Blurry" entry.
+            // This is a simplified implementation. Ideally FrontingService needs an upgrade too.
+            if (type !== 'blurry' && frontAlters.length > 0) {
+                // Log for the first one for now as 'switch'
+                // FUTURE: Support batch log or co-front log in FrontingService
+                await FrontingService.switchAlter(user.uid, frontAlters[0].id);
             }
 
-            const newRef = doc(db, 'alters', alter.id);
-            await updateDoc(newRef, { is_active: true });
+        } catch (error) {
+            console.error('Error switching front:', error);
+            setActiveFront(previousFront);
+        }
+    };
 
-            // 2. Enregistrer le changement dans l'historique de fronting
-            // On ne bloque pas l'UI si l'historique échoue
-            FrontingService.switchAlter(user.uid, alter.id).catch((err: any) => {
-                console.error("Failed to log fronting history:", err);
-            });
+    const deleteAccount = async () => {
+        if (!user) return;
+        try {
+            // 1. Delete Firestore Data
+            // Note: In a real production app, use Cloud Functions for recursive delete.
+            // Here we try to clean up best effort.
+
+            // Delete Alters
+            const altersq = query(collection(db, 'alters'), where('system_id', '==', user.uid));
+            const snapshot = await getDocs(altersq);
+            const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+            await Promise.all(deletePromises);
+
+            // Delete System
+            await deleteDoc(doc(db, 'systems', user.uid));
+
+            // 2. Delete Auth User
+            await user.delete();
 
         } catch (error) {
-            console.error('Error switching alter:', error);
-            // Rollback UI if needed
-            setCurrentAlter(previousAlter);
+            console.error('Error deleting account:', error);
+            throw error;
         }
     };
 
     return (
         <AuthContext.Provider
             value={{
-                user, // Firebase User object
+                user,
                 system,
-                currentAlter,
+                activeFront,
                 alters,
                 loading,
                 signUp,
                 signIn,
                 signOut,
-                switchAlter,
+                deleteAccount,
+                setFronting,
                 refreshAlters,
+                currentAlter: activeFront.alters.length > 0 ? activeFront.alters[0] : null,
             }}
         >
             {children}

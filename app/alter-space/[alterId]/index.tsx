@@ -218,7 +218,7 @@ export default function AlterSpaceScreen() {
             <View style={styles.header}>
                 <TouchableOpacity
                     style={styles.backButton}
-                    onPress={() => router.push('/home')}
+                    onPress={() => router.push('/(tabs)/dashboard')}
                 >
                     <Ionicons name="chevron-back" size={28} color={colors.text} />
                 </TouchableOpacity>

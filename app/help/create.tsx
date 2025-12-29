@@ -195,13 +195,13 @@ const styles = StyleSheet.create({
         marginBottom: spacing.sm,
     },
     input: {
+        ...typography.body,
         backgroundColor: colors.backgroundCard,
         color: colors.text,
         borderRadius: borderRadius.md,
         padding: spacing.md,
         height: 150,
         marginBottom: spacing.lg,
-        ...typography.body,
     },
     submitButton: {
         backgroundColor: colors.primary,

@@ -4,7 +4,7 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { colors } from '../src/lib/theme';
 
 export default function Index() {
-    const { session, loading } = useAuth();
+    const { user, loading } = useAuth();
 
     if (loading) {
         return (
@@ -14,8 +14,8 @@ export default function Index() {
         );
     }
 
-    if (session) {
-        return <Redirect href="/home" />;
+    if (user) {
+        return <Redirect href="/(tabs)/dashboard" />;
     }
 
     return <Redirect href="/(auth)/login" />;

@@ -16,15 +16,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { db, storage } from '../../src/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { PostService } from '../../src/services/posts';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 
 type PostType = 'text' | 'photo' | 'video';
 
 export default function CreatePostScreen() {
-    const { currentAlter, system } = useAuth();
+    const { activeFront, system, currentAlter } = useAuth();
     const [postType, setPostType] = useState<PostType>('text');
     const [content, setContent] = useState('');
     const [mediaUri, setMediaUri] = useState<string | null>(null);
@@ -64,47 +62,48 @@ export default function CreatePostScreen() {
             return;
         }
 
-        if (!system || !currentAlter) {
-            Alert.alert('Erreur', 'Sélectionnez un alter avant de poster');
+        if (!system) {
+            Alert.alert('Erreur', 'Système non identifié');
             return;
         }
 
+        // Validation check for active front, though it should be set
+        if (!activeFront) {
+            Alert.alert('Erreur', 'Aucun alter actif détecté');
+            return;
+        }
+
+
         setLoading(true);
         try {
-            let mediaUrl = null;
+            let mediaUrl = undefined;
 
             if (mediaUri) {
-                try {
-                    const response = await fetch(mediaUri);
-                    const blob = await response.blob();
-                    // Extension based on type usually, simplified here
-                    const extension = postType === 'video' ? 'mp4' : 'jpg';
-                    const fileName = `posts/${system.id}/${Date.now()}.${extension}`;
-                    const storageRef = ref(storage, fileName);
-
-                    await uploadBytes(storageRef, blob);
-                    mediaUrl = await getDownloadURL(storageRef);
-                } catch (uploadErr) {
-                    console.log('Media upload failed:', uploadErr);
-                    // On continue ou on arrête ? Pour un post avec media seul, c'est bloquant.
-                    if (!content.trim()) {
-                        throw new Error("Impossible d'uploader le média");
-                    }
-                }
+                // Use PostService for upload if implementing fully, or keep raw logic here but usually better to separate
+                // For now, let's keep using the service
+                mediaUrl = await PostService.uploadImage(mediaUri, system.id);
             }
 
-            const postData = {
+            // Construct post data based on activeFront
+            const postData: any = {
                 system_id: system.id,
-                alter_id: currentAlter.id,
                 content: content.trim(),
                 media_url: mediaUrl,
-                visibility: 'public',
-                created_at: new Date().toISOString(),
-                likes: 0,
-                comments_count: 0
+                visibility: 'public', // Could be selectable
+                author_type: activeFront.type,
             };
 
-            await addDoc(collection(db, 'posts'), postData);
+            if (activeFront.type === 'single' && activeFront.alters.length > 0) {
+                postData.alter_id = activeFront.alters[0].id;
+            } else if (activeFront.type === 'co-front') {
+                postData.co_front_alter_ids = activeFront.alters.map(a => a.id);
+                // Optionally set primary alter_id as the first one for indexing/display fallback
+                if (activeFront.alters.length > 0) postData.alter_id = activeFront.alters[0].id;
+            } else if (activeFront.type === 'blurry') {
+                // No specific alter_id
+            }
+
+            await PostService.createPost(postData);
 
             router.back();
         } catch (error: any) {
@@ -177,22 +176,30 @@ export default function CreatePostScreen() {
                     <View
                         style={[
                             styles.avatar,
-                            { backgroundColor: currentAlter?.color || colors.primary },
+                            { backgroundColor: activeFront?.type === 'blurry' ? colors.textMuted : (activeFront?.alters[0]?.color || colors.primary) },
                         ]}
                     >
-                        {currentAlter?.avatar_url ? (
-                            <Image source={{ uri: currentAlter.avatar_url }} style={{ width: '100%', height: '100%' }} />
+                        {activeFront?.type === 'blurry' ? (
+                            <Ionicons name="eye-off-outline" size={24} color="#FFF" />
+                        ) : activeFront?.alters[0]?.avatar_url ? (
+                            <Image source={{ uri: activeFront.alters[0].avatar_url }} style={{ width: '100%', height: '100%' }} />
                         ) : (
                             <Text style={styles.avatarText}>
-                                {currentAlter?.name?.charAt(0).toUpperCase() || '?'}
+                                {activeFront?.alters[0]?.name?.charAt(0).toUpperCase() || '?'}
                             </Text>
                         )}
                     </View>
                     <View>
                         <Text style={styles.alterName}>
-                            {currentAlter?.name || 'Sélectionnez un alter'}
+                            {activeFront?.type === 'blurry'
+                                ? 'Mode Flou / Système'
+                                : activeFront?.type === 'co-front'
+                                    ? activeFront.alters.map(a => a.name).join(' & ')
+                                    : activeFront?.alters[0]?.name || 'Anonyme'}
                         </Text>
-                        <Text style={styles.visibility}>🔒 Public</Text>
+                        <Text style={styles.visibility}>
+                            {activeFront?.type === 'co-front' ? '👥 Co-Front' : activeFront?.type === 'blurry' ? '🌫️ Blurry' : '👤 Single'} • 🔒 Public
+                        </Text>
                     </View>
                 </View>
 

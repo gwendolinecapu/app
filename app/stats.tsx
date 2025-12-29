@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
     View,
     Text,
@@ -6,115 +6,188 @@ import {
     ScrollView,
     Dimensions,
     TouchableOpacity,
+    ActivityIndicator,
+    RefreshControl
 } from 'react-native';
 import { router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { BarChart } from 'react-native-chart-kit';
 import { useAuth } from '../src/contexts/AuthContext';
+import { FrontingService } from '../src/services/fronting';
 import { colors, spacing, borderRadius, typography } from '../src/lib/theme';
+import { FrontingEntry } from '../src/types';
 
 const { width } = Dimensions.get('window');
 
 export default function StatsScreen() {
-    const { alters, currentAlter } = useAuth();
+    const { system, alters } = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
-    // Mock data for demonstration
-    const frontTimeData = useMemo(() => alters.map(alter => ({
-        id: alter.id,
-        name: alter.name,
-        color: alter.color,
-        hours: Math.floor(Math.random() * 24),
-        percentage: Math.floor(Math.random() * 100),
-    })), [alters]);
+    // Data states
+    const [weeklyBreakdown, setWeeklyBreakdown] = useState<{ label: string, value: number }[]>([]);
+    const [alterStats, setAlterStats] = useState<Record<string, number>>({});
+    const [switchCount, setSwitchCount] = useState(0);
+    const [totalHours, setTotalHours] = useState(0);
 
-    const totalHours = frontTimeData.reduce((sum, alter) => sum + alter.hours, 0);
+    useEffect(() => {
+        if (system) {
+            loadData();
+        }
+    }, [system]);
+
+    const loadData = async () => {
+        if (!system) return;
+        try {
+            const [breakdownData, statsData, historyData] = await Promise.all([
+                FrontingService.getWeeklyBreakdown(system.id),
+                FrontingService.getWeeklyStats(system.id),
+                FrontingService.getHistory(system.id, 100) // Pour compter les switchs
+            ]);
+
+            setWeeklyBreakdown(breakdownData);
+            setAlterStats(statsData);
+
+            // Calculer total heures
+            const totalSeconds = Object.values(statsData).reduce((a, b) => a + b, 0);
+            setTotalHours(parseFloat((totalSeconds / 3600).toFixed(1)));
+
+            // Compter switchs cette semaine
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            const recentSwitches = historyData.filter(h => new Date(h.start_time) >= sevenDaysAgo);
+            setSwitchCount(recentSwitches.length);
+
+        } catch (error) {
+            console.error("Erreur chargement stats:", error);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        loadData();
+    };
+
+    // Préparer données BarChart
+    const barChartData = {
+        labels: weeklyBreakdown.map(d => d.label),
+        datasets: [{
+            data: weeklyBreakdown.map(d => d.value)
+        }]
+    };
+
+    // Préparer liste détaillée
+    const detailedStats = useMemo(() => {
+        return Object.entries(alterStats)
+            .map(([alterId, seconds]) => {
+                const alter = alters.find(a => a.id === alterId);
+                return {
+                    id: alterId,
+                    name: alter?.name || 'Inconnu',
+                    color: alter?.color || colors.text,
+                    hours: parseFloat((seconds / 3600).toFixed(1)),
+                    percentage: totalHours > 0 ? Math.round((parseFloat((seconds / 3600).toFixed(1)) / totalHours) * 100) : 0
+                };
+            })
+            .sort((a, b) => b.hours - a.hours);
+    }, [alterStats, alters, totalHours]);
+
+    if (loading) {
+        return (
+            <View style={[styles.container, styles.loadingContainer]}>
+                <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+        );
+    }
 
     return (
-        <ScrollView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Text style={styles.backIcon}>←</Text>
                 </TouchableOpacity>
-                <Text style={styles.title}>Statistiques</Text>
-                <View style={{ width: 24 }} />
+                <Text style={styles.title}>Analyses</Text>
+                <View style={{ width: 40 }} />
             </View>
 
-            {/* Summary Card */}
-            <View style={styles.summaryCard}>
-                <Text style={styles.summaryTitle}>Cette semaine</Text>
-                <View style={styles.summaryStats}>
-                    <View style={styles.summaryItem}>
-                        <Text style={styles.summaryNumber}>{totalHours}h</Text>
-                        <Text style={styles.summaryLabel}>Temps total</Text>
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+            >
+                {/* Summary Cards */}
+                <View style={styles.cardsRow}>
+                    <View style={styles.summaryCard}>
+                        <Text style={styles.cardValue}>{totalHours}h</Text>
+                        <Text style={styles.cardLabel}>Front (7j)</Text>
                     </View>
-                    <View style={styles.summaryDivider} />
-                    <View style={styles.summaryItem}>
-                        <Text style={styles.summaryNumber}>{alters.length}</Text>
-                        <Text style={styles.summaryLabel}>Alters actifs</Text>
+                    <View style={styles.summaryCard}>
+                        <Text style={styles.cardValue}>{switchCount}</Text>
+                        <Text style={styles.cardLabel}>Switchs (7j)</Text>
                     </View>
                 </View>
-            </View>
 
-            {/* Chart */}
-            <View style={styles.chartCard}>
-                <Text style={styles.chartTitle}>Temps de front</Text>
+                {/* Activity Chart */}
+                <View style={styles.chartSection}>
+                    <Text style={styles.sectionTitle}>Activité Hebdomadaire (Heures)</Text>
+                    <BarChart
+                        data={barChartData}
+                        width={width - spacing.lg * 2}
+                        height={220}
+                        yAxisLabel=""
+                        yAxisSuffix="h"
+                        chartConfig={{
+                            backgroundColor: colors.backgroundCard,
+                            backgroundGradientFrom: colors.backgroundCard,
+                            backgroundGradientTo: colors.backgroundCard,
+                            decimalPlaces: 1,
+                            color: (opacity = 1) => colors.primary, // Utilise la couleur primaire
+                            labelColor: (opacity = 1) => colors.textSecondary,
+                            barPercentage: 0.7,
+                            propsForBackgroundLines: {
+                                strokeDasharray: "", // solid lines
+                                stroke: colors.border
+                            }
+                        }}
+                        style={styles.chart}
+                        showValuesOnTopOfBars
+                        fromZero
+                    />
+                </View>
 
-                <View style={styles.barChart}>
-                    {frontTimeData.map((alter, index) => (
-                        <View key={alter.id} style={styles.barContainer}>
-                            <View style={styles.barWrapper}>
-                                <View
-                                    style={[
-                                        styles.bar,
-                                        {
-                                            height: `${alter.percentage}%`,
-                                            backgroundColor: alter.color,
-                                        }
-                                    ]}
-                                />
+                {/* Detailed Breakdown */}
+                <View style={styles.detailsSection}>
+                    <Text style={styles.sectionTitle}>Répartition par Alter</Text>
+                    {detailedStats.map((stat) => (
+                        <View key={stat.id} style={styles.statRow}>
+                            <View style={[styles.avatarDot, { backgroundColor: stat.color }]}>
+                                <Text style={styles.avatarInitial}>{stat.name[0]}</Text>
                             </View>
-                            <Text style={styles.barLabel}>{alter.name.substring(0, 3)}</Text>
+                            <View style={styles.statInfo}>
+                                <View style={styles.statHeader}>
+                                    <Text style={styles.statName}>{stat.name}</Text>
+                                    <Text style={styles.statPercentage}>{stat.percentage}%</Text>
+                                </View>
+                                <View style={styles.progressBarBg}>
+                                    <View
+                                        style={[
+                                            styles.progressBarFill,
+                                            { width: `${stat.percentage}%`, backgroundColor: stat.color }
+                                        ]}
+                                    />
+                                </View>
+                                <Text style={styles.statHours}>{stat.hours} heures</Text>
+                            </View>
                         </View>
                     ))}
+                    {detailedStats.length === 0 && (
+                        <Text style={styles.emptyText}>Aucune donnée sur cette période.</Text>
+                    )}
                 </View>
-            </View>
-
-            {/* Details */}
-            <View style={styles.detailsCard}>
-                <Text style={styles.detailsTitle}>Détails par alter</Text>
-
-                {frontTimeData.map((alter) => (
-                    <View key={alter.id} style={styles.detailItem}>
-                        <View style={[styles.detailAvatar, { backgroundColor: alter.color }]}>
-                            <Text style={styles.detailAvatarText}>
-                                {alter.name.charAt(0).toUpperCase()}
-                            </Text>
-                        </View>
-                        <View style={styles.detailInfo}>
-                            <Text style={styles.detailName}>{alter.name}</Text>
-                            <View style={styles.progressBar}>
-                                <View
-                                    style={[
-                                        styles.progressFill,
-                                        {
-                                            width: `${alter.percentage}%`,
-                                            backgroundColor: alter.color,
-                                        }
-                                    ]}
-                                />
-                            </View>
-                        </View>
-                        <Text style={styles.detailTime}>{alter.hours}h</Text>
-                    </View>
-                ))}
-            </View>
-
-            {/* Time Tracking Info */}
-            <View style={styles.infoCard}>
-                <Text style={styles.infoIcon}>ℹ️</Text>
-                <Text style={styles.infoText}>
-                    Le temps de front est calculé automatiquement quand vous changez d'alter en front.
-                </Text>
-            </View>
-        </ScrollView>
+            </ScrollView>
+        </SafeAreaView>
     );
 }
 
@@ -123,12 +196,19 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
     },
-    header: {
-        padding: spacing.lg,
-        paddingTop: spacing.xl,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+    loadingContainer: {
+        justifyContent: 'center',
         alignItems: 'center',
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.md,
+    },
+    backButton: {
+        padding: spacing.sm,
     },
     backIcon: {
         fontSize: 24,
@@ -136,144 +216,114 @@ const styles = StyleSheet.create({
     },
     title: {
         ...typography.h2,
+        fontSize: 20,
     },
-    summaryCard: {
-        backgroundColor: colors.backgroundCard,
-        marginHorizontal: spacing.md,
-        borderRadius: borderRadius.lg,
-        padding: spacing.lg,
-        marginBottom: spacing.md,
+    scrollContent: {
+        padding: spacing.md,
+        paddingBottom: spacing.xxl,
     },
-    summaryTitle: {
-        ...typography.bodySmall,
-        color: colors.textSecondary,
-        marginBottom: spacing.md,
-    },
-    summaryStats: {
+    cardsRow: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
-    },
-    summaryItem: {
-        alignItems: 'center',
-    },
-    summaryNumber: {
-        ...typography.h1,
-        color: colors.primary,
-    },
-    summaryLabel: {
-        ...typography.caption,
-        color: colors.textSecondary,
-    },
-    summaryDivider: {
-        width: 1,
-        backgroundColor: colors.border,
-    },
-    chartCard: {
-        backgroundColor: colors.backgroundCard,
-        marginHorizontal: spacing.md,
-        borderRadius: borderRadius.lg,
-        padding: spacing.lg,
-        marginBottom: spacing.md,
-    },
-    chartTitle: {
-        ...typography.body,
-        fontWeight: 'bold',
+        gap: spacing.md,
         marginBottom: spacing.lg,
     },
-    barChart: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        alignItems: 'flex-end',
-        height: 150,
-    },
-    barContainer: {
-        alignItems: 'center',
+    summaryCard: {
         flex: 1,
-    },
-    barWrapper: {
-        width: 30,
-        height: 120,
-        backgroundColor: colors.backgroundLight,
-        borderRadius: borderRadius.sm,
-        justifyContent: 'flex-end',
-        overflow: 'hidden',
-    },
-    bar: {
-        width: '100%',
-        borderRadius: borderRadius.sm,
-    },
-    barLabel: {
-        ...typography.caption,
-        marginTop: spacing.xs,
-    },
-    detailsCard: {
         backgroundColor: colors.backgroundCard,
-        marginHorizontal: spacing.md,
-        borderRadius: borderRadius.lg,
         padding: spacing.lg,
-        marginBottom: spacing.md,
-    },
-    detailsTitle: {
-        ...typography.body,
-        fontWeight: 'bold',
-        marginBottom: spacing.md,
-    },
-    detailItem: {
-        flexDirection: 'row',
+        borderRadius: borderRadius.lg,
         alignItems: 'center',
-        marginBottom: spacing.md,
+
     },
-    detailAvatar: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+    cardValue: {
+        ...typography.h1,
+        fontSize: 32,
+        color: colors.primary,
+        marginBottom: spacing.xs,
+    },
+    cardLabel: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    chartSection: {
+        marginBottom: spacing.xl,
+        backgroundColor: colors.backgroundCard,
+        padding: spacing.md,
+        borderRadius: borderRadius.lg,
+        alignItems: 'center',
+    },
+    sectionTitle: {
+        ...typography.h3,
+        alignSelf: 'flex-start',
+        marginBottom: spacing.lg,
+        color: colors.text,
+    },
+    chart: {
+        borderRadius: borderRadius.lg,
+        marginTop: spacing.sm,
+    },
+    detailsSection: {
+        backgroundColor: colors.backgroundCard,
+        padding: spacing.lg,
+        borderRadius: borderRadius.lg,
+    },
+    statRow: {
+        flexDirection: 'row',
+        marginBottom: spacing.lg,
+        alignItems: 'flex-start',
+    },
+    avatarDot: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    detailAvatarText: {
-        color: colors.text,
-        fontWeight: 'bold',
-    },
-    detailInfo: {
-        flex: 1,
-        marginHorizontal: spacing.md,
-    },
-    detailName: {
-        ...typography.bodySmall,
-        fontWeight: '600',
-        marginBottom: 4,
-    },
-    progressBar: {
-        height: 6,
-        backgroundColor: colors.backgroundLight,
-        borderRadius: 3,
-        overflow: 'hidden',
-    },
-    progressFill: {
-        height: '100%',
-        borderRadius: 3,
-    },
-    detailTime: {
-        ...typography.bodySmall,
-        color: colors.textSecondary,
-        fontWeight: '600',
-    },
-    infoCard: {
-        backgroundColor: colors.backgroundCard,
-        marginHorizontal: spacing.md,
-        borderRadius: borderRadius.lg,
-        padding: spacing.md,
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: spacing.xxl,
-    },
-    infoIcon: {
-        fontSize: 20,
         marginRight: spacing.md,
     },
-    infoText: {
-        ...typography.caption,
+    avatarInitial: {
+        color: '#FFF', // Assuming dark text on light bg or vice versa, white usually safe on colors
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    statInfo: {
         flex: 1,
+    },
+    statHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 6,
+        alignItems: 'center',
+    },
+    statName: {
+        ...typography.body,
+        fontWeight: '600',
+    },
+    statPercentage: {
+        ...typography.bodySmall,
+        fontWeight: 'bold',
+        color: colors.text,
+    },
+    progressBarBg: {
+        height: 8,
+        backgroundColor: colors.background,
+        borderRadius: 4,
+        marginBottom: 6,
+        overflow: 'hidden',
+    },
+    progressBarFill: {
+        height: '100%',
+        borderRadius: 4,
+    },
+    statHours: {
+        ...typography.caption,
         color: colors.textSecondary,
     },
+    emptyText: {
+        ...typography.body,
+        color: colors.textSecondary,
+        textAlign: 'center',
+        fontStyle: 'italic',
+    }
 });

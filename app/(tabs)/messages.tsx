@@ -136,11 +136,16 @@ export default function MessagesScreen() {
             <View style={styles.header}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={styles.title}>Messages</Text>
-                    {activeTab === 'groups' && (
-                        <TouchableOpacity onPress={() => router.push('/groups/create' as any)}>
-                            <Ionicons name="add-circle" size={32} color={colors.primary} />
+                    <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
+                        <TouchableOpacity onPress={() => router.push('/crisis' as any)}>
+                            <Ionicons name="warning-outline" size={28} color={colors.error || '#FF4444'} />
                         </TouchableOpacity>
-                    )}
+                        {activeTab === 'groups' && (
+                            <TouchableOpacity onPress={() => router.push('/groups/create' as any)}>
+                                <Ionicons name="add-circle" size={32} color={colors.primary} />
+                            </TouchableOpacity>
+                        )}
+                    </View>
                 </View>
 
                 {/* Avatar Row - Visible only on internal tab for quick access */}

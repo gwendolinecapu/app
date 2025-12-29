@@ -16,6 +16,8 @@ export default function FrontingHistoryScreen() {
     const [stats, setStats] = useState<Record<string, number>>({});
     const [loading, setLoading] = useState(true);
 
+    const [error, setError] = useState<string | null>(null);
+
     useEffect(() => {
         if (system) {
             loadData();
@@ -24,6 +26,8 @@ export default function FrontingHistoryScreen() {
 
     const loadData = async () => {
         if (!system) return;
+        setLoading(true);
+        setError(null);
         try {
             const [historyData, statsData] = await Promise.all([
                 FrontingService.getHistory(system.id),
@@ -38,8 +42,9 @@ export default function FrontingHistoryScreen() {
 
             setHistory(enrichedHistory);
             setStats(statsData);
-        } catch (error) {
-            console.error("Error loading fronting data:", error);
+        } catch (err) {
+            console.error("Error loading fronting data:", err);
+            setError("Impossible de charger l'historique due à une erreur réseau ou de permissions.");
         } finally {
             setLoading(false);
         }
@@ -139,6 +144,14 @@ export default function FrontingHistoryScreen() {
                         </View>
                     </>
                 )}
+                {error && (
+                    <View style={styles.errorContainer}>
+                        <Text style={styles.errorText}>{error}</Text>
+                        <TouchableOpacity style={styles.retryButton} onPress={loadData}>
+                            <Text style={styles.retryButtonText}>Réessayer</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
             </ScrollView>
         </SafeAreaView>
     );
@@ -230,5 +243,28 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontStyle: 'italic',
         marginTop: spacing.md,
+    },
+    errorContainer: {
+        padding: spacing.lg,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: spacing.xl,
+    },
+    errorText: {
+        ...typography.body,
+        color: colors.error || '#EF4444',
+        textAlign: 'center',
+        marginBottom: spacing.md,
+    },
+    retryButton: {
+        backgroundColor: colors.primary,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.md,
+    },
+    retryButtonText: {
+        ...typography.body,
+        color: 'white',
+        fontWeight: 'bold',
     },
 });

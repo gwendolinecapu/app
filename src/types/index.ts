@@ -23,6 +23,7 @@ export interface Alter {
     pronouns?: string;
     bio?: string;
     avatar?: string;
+    avatar_url?: string; // Alias for avatar (backward compatibility)
     color?: string; // Couleur préférée de l'alter (pour l'UI)
     role_ids?: string[]; // IDs des rôles attribués
     createdAt: any; // Timestamp Firestore
@@ -35,19 +36,30 @@ export interface Alter {
     fronting_help?: string;
     safety_notes?: string;
     crisis_contact?: string;
+
+    // Customization
+    likes?: string[];
+    dislikes?: string[];
+    custom_fields?: { label: string; value: string }[];
 }
 
 export interface Post {
     id: string;
     system_id: string;
-    alter_id: string;
+    alter_id?: string; // Optional if blurry or fully co-front (but usually we keep one as checking/primary)
+    author_type: 'single' | 'co-front' | 'blurry';
+    co_front_alter_ids?: string[]; // For co-front mode
     content: string;
     media_url?: string;
     visibility: 'private' | 'system' | 'friends' | 'public';
     created_at: string;
     updated_at: string;
+    // Metrics
+    likes: string[]; // Array of user/system IDs
+    comments_count: number;
     // Relations
     alter?: Alter;
+    co_front_alters?: Alter[]; // Joined data for display
 }
 
 export interface Message {

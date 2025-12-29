@@ -836,6 +836,26 @@ const styles = StyleSheet.create({
         marginBottom: spacing.xs,
         fontSize: 24,
     },
+    pronouns: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        marginBottom: spacing.xs,
+    },
+    roleTag: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: `${colors.primary}20`,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs,
+        borderRadius: borderRadius.full,
+        marginBottom: spacing.sm,
+        gap: 4,
+    },
+    roleText: {
+        ...typography.caption,
+        color: colors.primary,
+        fontWeight: '600',
+    },
     bio: {
         ...typography.body,
         color: colors.textSecondary,

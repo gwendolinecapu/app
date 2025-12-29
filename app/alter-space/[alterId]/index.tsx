@@ -13,7 +13,7 @@ import {
     Alert,
     TextInput,
 } from 'react-native';
-import { Video, ResizeMode, Audio } from 'expo-av';
+// import { Video, ResizeMode, Audio } from 'expo-av'; // TODO: Fix expo-av installation
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../src/contexts/AuthContext';
@@ -370,13 +370,17 @@ export default function AlterSpaceScreen() {
                             <Image source={{ uri: post.media_url }} style={styles.postImage} resizeMode="cover" />
                         )}
                         {getMediaType(post.media_url) === 'video' && (
-                            <Video
-                                style={{ width: '100%', height: 300, borderRadius: borderRadius.md, backgroundColor: '#000' }}
-                                source={{ uri: post.media_url }}
-                                useNativeControls
-                                resizeMode={ResizeMode.CONTAIN}
-                                isLooping
-                            />
+                            <View style={{
+                                width: '100%',
+                                height: 200,
+                                borderRadius: borderRadius.md,
+                                backgroundColor: colors.backgroundLight,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                            }}>
+                                <Ionicons name="videocam" size={40} color={colors.primary} />
+                                <Text style={{ color: colors.textSecondary, marginTop: spacing.sm }}>Vidéo (lecteur bientôt disponible)</Text>
+                            </View>
                         )}
                         {getMediaType(post.media_url) === 'audio' && (
                             <View style={{

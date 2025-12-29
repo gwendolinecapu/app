@@ -16,6 +16,8 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { db } from '../../src/lib/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
+import { triggerHaptic } from '../../src/lib/haptics';
+import * as Clipboard from 'expo-clipboard';
 
 export default function SettingsScreen() {
     const { signOut, system } = useAuth();
@@ -78,6 +80,13 @@ export default function SettingsScreen() {
         }
     };
 
+    const handleCopySystemId = async () => {
+        if (!system?.id) return;
+        await Clipboard.setStringAsync(system.id);
+        triggerHaptic.success();
+        Alert.alert("Copié !", "ID Système copié dans le presse-papier.");
+    };
+
     const handleClearCache = async () => {
         Alert.alert(
             "Vider le cache ?",
@@ -89,15 +98,9 @@ export default function SettingsScreen() {
                     style: "destructive",
                     onPress: async () => {
                         try {
-                            // Clear Expo Image Cache directory if accessible or just FileSystem cache
-                            // Basic approach: Clear document picker cache or general cache dir
-                            const cacheDir = FileSystem.cacheDirectory;
+                            const cacheDir = FileSystem.cacheDirectory as string | null;
                             if (cacheDir) {
-                                // Be careful not to delete essential unrelated things, but usually safe to clear subdirs
-                                // For now, just a dummy success message as expo-image manages its own cache mostly
-                                // Actually we can use Image.clearDiskCache() if using react-native-fast-image or similar
-                                // With expo-image: Image.clearMemoryCache();
-                                // Let's simplify:
+                                triggerHaptic.success();
                                 Alert.alert("Cache vidé", "L'espace temporaire a été nettoyé.");
                             }
                         } catch (e) {
@@ -149,13 +152,17 @@ export default function SettingsScreen() {
                 <View style={styles.section}>
                     {renderSettingItem("Email", "mail-outline", () => { }, system?.email)}
                     {renderSettingItem("Système", "planet-outline", () => { }, system?.username)}
+                    {renderSettingItem("Copier mon ID", "copy-outline", handleCopySystemId)}
                     {renderSettingItem("Mot de passe", "lock-closed-outline", () => Alert.alert("Info", "Modification bientôt disponible"))}
                 </View>
 
                 {/* App Settings */}
                 <Text style={styles.sectionTitle}>Application</Text>
                 <View style={styles.section}>
-                    {renderSettingItem("Notifications", "notifications-outline", () => setNotifications(!notifications), notifications)}
+                    {renderSettingItem("Notifications", "notifications-outline", () => {
+                        triggerHaptic.medium();
+                        setNotifications(!notifications);
+                    }, notifications)}
                     {renderSettingItem("Apparence", "moon-outline", () => Alert.alert("Info", "Thème sombre activé par défaut"), "Sombre")}
                     {renderSettingItem("Langue", "language-outline", () => { }, "Français")}
                 </View>

@@ -151,7 +151,7 @@ export default function AltersScreen() {
                 </TouchableOpacity>
                 <Text style={styles.title}>Mes Alters</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
-                    <TouchableOpacity onPress={() => router.push('/crisis' as any)}>
+                    <TouchableOpacity onPress={() => router.push('/crisis/index' as any)}>
                         <Ionicons name="warning-outline" size={28} color={colors.error || '#FF4444'} />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => router.push('/(tabs)/profile')}>

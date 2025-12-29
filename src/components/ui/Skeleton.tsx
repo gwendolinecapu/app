@@ -1,13 +1,5 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
-import Animated, {
-    useSharedValue,
-    useAnimatedStyle,
-    withRepeat,
-    withTiming,
-    withSequence,
-    Easing
-} from 'react-native-reanimated';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, ViewStyle, Animated, Easing } from 'react-native';
 import { colors } from '../../lib/theme';
 
 interface SkeletonProps {
@@ -18,22 +10,29 @@ interface SkeletonProps {
 }
 
 export function Skeleton({ width = '100%', height = 20, borderRadius = 4, style }: SkeletonProps) {
-    const opacity = useSharedValue(0.3);
+    const opacityAnim = useRef(new Animated.Value(0.3)).current;
 
     useEffect(() => {
-        opacity.value = withRepeat(
-            withSequence(
-                withTiming(0.7, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
-                withTiming(0.3, { duration: 1000, easing: Easing.inOut(Easing.ease) })
-            ),
-            -1, // Infinite loop
-            true // Reverse
+        const animation = Animated.loop(
+            Animated.sequence([
+                Animated.timing(opacityAnim, {
+                    toValue: 0.7,
+                    duration: 1000,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(opacityAnim, {
+                    toValue: 0.3,
+                    duration: 1000,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: true,
+                }),
+            ])
         );
-    }, []);
+        animation.start();
 
-    const animatedStyle = useAnimatedStyle(() => ({
-        opacity: opacity.value,
-    }));
+        return () => animation.stop();
+    }, [opacityAnim]);
 
     return (
         <Animated.View
@@ -43,8 +42,8 @@ export function Skeleton({ width = '100%', height = 20, borderRadius = 4, style 
                     width: width as any,
                     height: height as any,
                     borderRadius,
+                    opacity: opacityAnim,
                 },
-                animatedStyle,
                 style,
             ]}
         />

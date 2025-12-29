@@ -42,9 +42,7 @@ export default function CreatePostScreen() {
 
     const pickMedia = async (type: 'photo' | 'video') => {
         let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: type === 'photo'
-                ? ImagePicker.MediaTypeOptions.Images
-                : ImagePicker.MediaTypeOptions.Videos,
+            mediaTypes: type === 'photo' ? ['images'] : ['videos'],
             allowsEditing: true,
             aspect: type === 'photo' ? [4, 5] : undefined, // Portrait ratio for instagram feel
             quality: 0.8,

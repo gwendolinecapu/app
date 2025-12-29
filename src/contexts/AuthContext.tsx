@@ -16,7 +16,8 @@ import {
     getDocs,
     orderBy,
     updateDoc,
-    deleteDoc
+    deleteDoc,
+    writeBatch
 } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { Alter, System } from '../types';
@@ -186,35 +187,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setActiveFront(newFront);
 
         try {
-            // 1. Reset all active alters first (to handle transitions cleanly)
-            // Note: This might be expensive if many alters, but simpler for consistency.
-            // Ideally we only update changed ones.
+            const batch = writeBatch(db);
+
+            // 1. Reset currently active alters
             const currentActiveIds = alters.filter(a => a.is_active).map(a => a.id);
             const newActiveIds = frontAlters.map(a => a.id);
 
             // Deactivate old ones that are no longer active
-            const toDeactivate = currentActiveIds.filter(id => !newActiveIds.includes(id));
-            const toActivate = newActiveIds.filter(id => !currentActiveIds.includes(id));
+            currentActiveIds.forEach(id => {
+                if (!newActiveIds.includes(id)) {
+                    batch.update(doc(db, 'alters', id), { is_active: false });
+                }
+            });
 
-            await Promise.all([
-                ...toDeactivate.map(id => updateDoc(doc(db, 'alters', id), { is_active: false })),
-                ...toActivate.map(id => updateDoc(doc(db, 'alters', id), { is_active: true }))
-            ]);
+            // Activate new ones
+            newActiveIds.forEach(id => {
+                if (!currentActiveIds.includes(id)) {
+                    batch.update(doc(db, 'alters', id), { is_active: true });
+                }
+            });
+
+            await batch.commit();
 
             // 2. Log history using FrontingService
             // For now, FrontingService only supports single switch.
-            // We need to update FrontingService or handle multiple entries.
-            // For MVP: Log the primary confronter or "Blurry" entry.
-            // This is a simplified implementation. Ideally FrontingService needs an upgrade too.
+            // Future improvement: Support batch logging
             if (type !== 'blurry' && frontAlters.length > 0) {
-                // Log for the first one for now as 'switch'
-                // FUTURE: Support batch log or co-front log in FrontingService
                 await FrontingService.switchAlter(user.uid, frontAlters[0].id);
             }
 
         } catch (error) {
             console.error('Error switching front:', error);
-            setActiveFront(previousFront);
+            setActiveFront(previousFront); // Revert optimistic update
+            // TODO: Add toast notification for error
         }
     };
 

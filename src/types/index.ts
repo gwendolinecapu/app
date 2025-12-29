@@ -7,17 +7,29 @@ export interface System {
     created_at: string;
 }
 
-export interface Alter {
+// Rôle d'un alter dans le système (ex: Protecteur, Gatekeeper)
+export interface Role {
     id: string;
     system_id: string;
     name: string;
-    avatar_url?: string;
-    bio?: string;
+    color: string; // Hex color code for badge
+    description?: string;
+    createdAt: number;
+}
+
+export interface Alter {
+    id: string;
+    name: string;
     pronouns?: string;
-    color?: string;
-    is_host: boolean;
-    is_active: boolean;
-    created_at: string;
+    bio?: string;
+    avatar?: string;
+    color?: string; // Couleur préférée de l'alter (pour l'UI)
+    role_ids?: string[]; // IDs des rôles attribués
+    createdAt: any; // Timestamp Firestore
+    userId: string; // ID de l'utilisateur principal (système)
+    is_host?: boolean; // Si l'alter est l'hôte principal
+    is_active: boolean; // Si l'alter est actuellement au front
+    // ... autres champs potentiels (âge, pronoms, description, etc.)
     // Champs de sécurité / crise
     triggers?: string[];
     fronting_help?: string;
@@ -41,15 +53,41 @@ export interface Post {
 export interface Message {
     id: string;
     sender_alter_id: string;
-    receiver_alter_id: string;
-    conversation_id: string;
+    receiver_alter_id?: string; // Optionnel si c'est un message de groupe
+    group_id?: string; // ID du groupe si c'est un message de groupe
+    conversation_id?: string; // ID conversation privée
     content: string;
-    is_internal: boolean; // true = entre alters du même système
+    type: 'text' | 'image' | 'poll' | 'note';
+    is_internal: boolean;
     is_read: boolean;
     created_at: string;
+
+    // Enrichissements
+    poll_options?: { label: string; id: string }[];
+    poll_votes?: { option_id: string; user_id: string }[]; // votes
+    reactions?: { emoji: string; user_id: string }[];
+
     // Relations
     sender?: Alter;
-    receiver?: Alter;
+}
+
+export interface Group {
+    id: string;
+    name: string;
+    description?: string;
+    avatar_url?: string;
+    created_by: string; // system_id
+    created_at: number;
+    type: 'private' | 'public';
+    members?: string[]; // IDs des systèmes membres (dénormalisation pour requêtes simples)
+}
+
+export interface GroupMember {
+    id: string;
+    group_id: string;
+    system_id: string;
+    role: 'admin' | 'member';
+    joined_at: number;
 }
 
 export interface Conversation {
@@ -175,4 +213,17 @@ export interface Task {
     due_date?: string;
     assigned_alter?: Alter; // Joined data
     creator_alter?: Alter; // Joined data
+}
+
+export interface HelpRequest {
+    id: string;
+    system_id: string;
+    requester_alter_id: string; // ID de l'alter qui demande de l'aide
+    requester_name?: string; // Nom de l'alter (dénormalisé pour affichage facile)
+    type: 'emergency' | 'support' | 'talk';
+    status: 'pending' | 'resolved';
+    description: string;
+    is_anonymous?: boolean;
+    created_at: number;
+    resolved_at?: number;
 }

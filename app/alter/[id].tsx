@@ -14,12 +14,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { db } from '../../src/lib/firebase';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { Alter } from '../../src/types';
+import { Alter, Role } from '../../src/types';
+import { RoleService } from '../../src/services/roles';
 import { colors, spacing, borderRadius, typography, alterColors } from '../../src/lib/theme';
 
 export default function AlterProfileScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
-    const { alters, refreshAlters } = useAuth();
+    const { user, alters, refreshAlters } = useAuth();
     const [alter, setAlter] = useState<Alter | null>(null);
     const [editing, setEditing] = useState(false);
 
@@ -28,6 +29,10 @@ export default function AlterProfileScreen() {
     const [pronouns, setPronouns] = useState('');
     const [bio, setBio] = useState('');
     const [selectedColor, setSelectedColor] = useState('');
+
+    // Roles
+    const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
+    const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
 
     // Safety info
     const [triggers, setTriggers] = useState('');
@@ -38,6 +43,21 @@ export default function AlterProfileScreen() {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
+        loadRoles();
+    }, [user?.uid]);
+
+    const loadRoles = async () => {
+        if (user?.uid) {
+            try {
+                const roles = await RoleService.getRoles(user.uid);
+                setAvailableRoles(roles);
+            } catch (e) {
+                console.error("Failed to load roles", e);
+            }
+        }
+    };
+
+    useEffect(() => {
         const foundAlter = alters.find((a) => a.id === id);
         if (foundAlter) {
             setAlter(foundAlter);
@@ -45,6 +65,7 @@ export default function AlterProfileScreen() {
             setPronouns(foundAlter.pronouns || '');
             setBio(foundAlter.bio || '');
             setSelectedColor(foundAlter.color || '#000000'); // Default color if undefined
+            setSelectedRoleIds(foundAlter.role_ids || []);
             // Safety Init
             setTriggers(foundAlter.triggers?.join(', ') || '');
             setFrontingHelp(foundAlter.fronting_help || '');
@@ -52,6 +73,14 @@ export default function AlterProfileScreen() {
             setCrisisContact(foundAlter.crisis_contact || '');
         }
     }, [id, alters]);
+
+    const toggleRole = (roleId: string) => {
+        if (selectedRoleIds.includes(roleId)) {
+            setSelectedRoleIds(selectedRoleIds.filter(id => id !== roleId));
+        } else {
+            setSelectedRoleIds([...selectedRoleIds, roleId]);
+        }
+    };
 
     const handleSave = async () => {
         if (!name.trim()) {
@@ -74,6 +103,7 @@ export default function AlterProfileScreen() {
                 pronouns: pronouns.trim() || null,
                 bio: bio.trim() || null,
                 color: selectedColor,
+                role_ids: selectedRoleIds,
                 triggers: triggersArray,
                 fronting_help: frontingHelp.trim() || null,
                 safety_notes: safetyNotes.trim() || null,
@@ -123,6 +153,9 @@ export default function AlterProfileScreen() {
 
     if (!alter) return null; // Loading state
 
+    // Helper to get role details
+    const getRoleDetails = (roleId: string) => availableRoles.find(r => r.id === roleId);
+
     return (
         <ScrollView style={styles.container}>
             <View style={styles.header}>
@@ -134,6 +167,21 @@ export default function AlterProfileScreen() {
                 {alter.is_host && (
                     <View style={styles.hostBadge}>
                         <Text style={styles.hostBadgeText}>👑 Host</Text>
+                    </View>
+                )}
+
+                {/* Roles Display (View Mode) */}
+                {!editing && alter.role_ids && alter.role_ids.length > 0 && (
+                    <View style={styles.roleBadgesContainer}>
+                        {alter.role_ids.map(roleId => {
+                            const role = getRoleDetails(roleId);
+                            if (!role) return null;
+                            return (
+                                <View key={roleId} style={[styles.roleBadge, { backgroundColor: role.color }]}>
+                                    <Text style={styles.roleBadgeText}>{role.name}</Text>
+                                </View>
+                            );
+                        })}
                     </View>
                 )}
             </View>
@@ -192,6 +240,36 @@ export default function AlterProfileScreen() {
                                 />
                             ))}
                         </View>
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Rôles</Text>
+                        {availableRoles.length === 0 ? (
+                            <Text style={styles.noRolesText}>
+                                Aucun rôle défini. Créez-en dans les paramètres du système.
+                            </Text>
+                        ) : (
+                            <View style={styles.rolesSelector}>
+                                {availableRoles.map(role => (
+                                    <TouchableOpacity
+                                        key={role.id}
+                                        style={[
+                                            styles.roleChip,
+                                            { borderColor: role.color },
+                                            selectedRoleIds.includes(role.id) && { backgroundColor: role.color }
+                                        ]}
+                                        onPress={() => toggleRole(role.id)}
+                                    >
+                                        <Text style={[
+                                            styles.roleChipText,
+                                            selectedRoleIds.includes(role.id) ? { color: '#FFF' } : { color: role.color }
+                                        ]}>
+                                            {role.name}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        )}
                     </View>
 
                     <Text style={[styles.sectionTitle, { marginTop: spacing.xl }]}>Sécurité & Bien-être</Text>
@@ -367,10 +445,28 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.xs,
         borderRadius: borderRadius.full,
+        marginBottom: spacing.sm,
     },
     hostBadgeText: {
         color: colors.text,
         fontWeight: 'bold',
+    },
+    roleBadgesContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.xs,
+        justifyContent: 'center',
+        marginTop: spacing.xs,
+    },
+    roleBadge: {
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 2,
+        borderRadius: borderRadius.sm,
+    },
+    roleBadgeText: {
+        color: '#FFF',
+        fontSize: 12,
+        fontWeight: '600',
     },
     profile: {
         padding: spacing.lg,
@@ -400,6 +496,7 @@ const styles = StyleSheet.create({
     editButtonText: {
         ...typography.body,
         fontWeight: '600',
+        color: colors.text
     },
     deleteButton: {
         backgroundColor: colors.error + '20',
@@ -540,4 +637,24 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 18,
     },
+    noRolesText: {
+        ...typography.caption,
+        fontStyle: 'italic',
+        marginTop: spacing.xs,
+    },
+    rolesSelector: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.sm,
+    },
+    roleChip: {
+        borderWidth: 1,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+        borderRadius: borderRadius.full,
+    },
+    roleChipText: {
+        fontWeight: '600',
+        fontSize: 14,
+    }
 });

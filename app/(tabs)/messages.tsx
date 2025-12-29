@@ -11,6 +11,9 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { Alter } from '../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 
+import { GroupService } from '../../src/services/groups';
+import { Ionicons } from '@expo/vector-icons';
+
 interface ConversationItem {
     id: string;
     alter: Alter;
@@ -20,8 +23,30 @@ interface ConversationItem {
 }
 
 export default function MessagesScreen() {
-    const { alters, currentAlter } = useAuth();
-    const [activeTab, setActiveTab] = useState<'internal' | 'external'>('internal');
+    const { alters, currentAlter, system } = useAuth();
+    const [activeTab, setActiveTab] = useState<'internal' | 'groups'>('internal');
+    const [groups, setGroups] = useState<any[]>([]);
+    const [loadingGroups, setLoadingGroups] = useState(false);
+
+    // Fetch groups when tab changes
+    React.useEffect(() => {
+        if (activeTab === 'groups' && system) {
+            loadGroups();
+        }
+    }, [activeTab, system]);
+
+    const loadGroups = async () => {
+        if (!system) return;
+        setLoadingGroups(true);
+        try {
+            const userGroups = await GroupService.getUserGroups(system.id);
+            setGroups(userGroups);
+        } catch (error) {
+            console.error("Failed to load groups", error);
+        } finally {
+            setLoadingGroups(false);
+        }
+    };
 
     // Create mock conversations from alters
     const internalConversations: ConversationItem[] = alters
@@ -61,15 +86,47 @@ export default function MessagesScreen() {
         </TouchableOpacity>
     );
 
+    const renderGroup = ({ item }: { item: any }) => (
+        <TouchableOpacity
+            style={styles.conversationItem}
+            onPress={() => router.push(`/groups/${item.id}` as any)}
+        >
+            <View style={[styles.avatar, { backgroundColor: colors.secondary }]}>
+                <Text style={styles.avatarText}>
+                    {item.name.charAt(0).toUpperCase()}
+                </Text>
+            </View>
+            <View style={styles.conversationContent}>
+                <View style={styles.conversationHeader}>
+                    <Text style={styles.conversationName}>{item.name}</Text>
+                    {/* Time placeholder if needed */}
+                </View>
+                <Text style={styles.lastMessage} numberOfLines={1}>
+                    {item.description || "Aucune description"}
+                </Text>
+            </View>
+        </TouchableOpacity>
+    );
+
     const renderEmptyState = () => (
         <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>💬</Text>
-            <Text style={styles.emptyTitle}>Aucune conversation</Text>
+            <Text style={styles.emptyTitle}>
+                {activeTab === 'internal' ? 'Aucune conversation' : 'Aucun groupe'}
+            </Text>
             <Text style={styles.emptySubtitle}>
                 {activeTab === 'internal'
                     ? 'Ajoutez des alters pour discuter entre vous'
-                    : 'Ajoutez des amis pour commencer à discuter'}
+                    : 'Créez un groupe pour discuter à plusieurs'}
             </Text>
+            {activeTab === 'groups' && (
+                <TouchableOpacity
+                    style={styles.createGroupButton}
+                    onPress={() => router.push('/groups/create' as any)}
+                >
+                    <Text style={styles.createGroupButtonText}>Créer un groupe</Text>
+                </TouchableOpacity>
+            )}
         </View>
     );
 
@@ -77,34 +134,43 @@ export default function MessagesScreen() {
         <View style={styles.container}>
             {/* Header with current alter */}
             <View style={styles.header}>
-                <Text style={styles.title}>Messages</Text>
-
-                {/* Avatar Row */}
-                <View style={styles.avatarRow}>
-                    {alters.slice(0, 6).map((alter) => (
-                        <TouchableOpacity
-                            key={alter.id}
-                            onPress={() => router.push(`/conversation/${alter.id}?internal=true`)}
-                        >
-                            <View
-                                style={[
-                                    styles.rowAvatar,
-                                    { backgroundColor: alter.color },
-                                    currentAlter?.id === alter.id && styles.rowAvatarActive,
-                                ]}
-                            >
-                                <Text style={styles.rowAvatarText}>
-                                    {alter.name.charAt(0).toUpperCase()}
-                                </Text>
-                            </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={styles.title}>Messages</Text>
+                    {activeTab === 'groups' && (
+                        <TouchableOpacity onPress={() => router.push('/groups/create' as any)}>
+                            <Ionicons name="add-circle" size={32} color={colors.primary} />
                         </TouchableOpacity>
-                    ))}
-                    {alters.length > 6 && (
-                        <View style={[styles.rowAvatar, styles.moreAvatar]}>
-                            <Text style={styles.moreText}>+{alters.length - 6}</Text>
-                        </View>
                     )}
                 </View>
+
+                {/* Avatar Row - Visible only on internal tab for quick access */}
+                {activeTab === 'internal' && (
+                    <View style={styles.avatarRow}>
+                        {alters.slice(0, 6).map((alter) => (
+                            <TouchableOpacity
+                                key={alter.id}
+                                onPress={() => router.push(`/conversation/${alter.id}?internal=true`)}
+                            >
+                                <View
+                                    style={[
+                                        styles.rowAvatar,
+                                        { backgroundColor: alter.color },
+                                        currentAlter?.id === alter.id && styles.rowAvatarActive,
+                                    ]}
+                                >
+                                    <Text style={styles.rowAvatarText}>
+                                        {alter.name.charAt(0).toUpperCase()}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+                        {alters.length > 6 && (
+                            <View style={[styles.rowAvatar, styles.moreAvatar]}>
+                                <Text style={styles.moreText}>+{alters.length - 6}</Text>
+                            </View>
+                        )}
+                    </View>
+                )}
             </View>
 
             {/* Tabs */}
@@ -118,22 +184,24 @@ export default function MessagesScreen() {
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'external' && styles.tabActive]}
-                    onPress={() => setActiveTab('external')}
+                    style={[styles.tab, activeTab === 'groups' && styles.tabActive]}
+                    onPress={() => setActiveTab('groups')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'external' && styles.tabTextActive]}>
-                        🌐 Amis
+                    <Text style={[styles.tabText, activeTab === 'groups' && styles.tabTextActive]}>
+                        👥 Groupes
                     </Text>
                 </TouchableOpacity>
             </View>
 
             {/* Conversations List */}
             <FlatList
-                data={activeTab === 'internal' ? internalConversations : []}
-                renderItem={renderConversation}
+                data={activeTab === 'internal' ? internalConversations : groups}
+                renderItem={activeTab === 'internal' ? renderConversation : renderGroup}
                 keyExtractor={(item) => item.id}
                 ListEmptyComponent={renderEmptyState}
                 contentContainerStyle={styles.listContent}
+                refreshing={loadingGroups}
+                onRefresh={activeTab === 'groups' ? loadGroups : undefined}
             />
         </View>
     );
@@ -281,5 +349,16 @@ const styles = StyleSheet.create({
         ...typography.bodySmall,
         color: colors.textSecondary,
         textAlign: 'center',
+    },
+    createGroupButton: {
+        marginTop: spacing.md,
+        backgroundColor: colors.primary,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.full,
+    },
+    createGroupButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
     },
 });

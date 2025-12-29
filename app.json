@@ -73,14 +73,7 @@
         }
       ],
       "expo-secure-store",
-      "@react-native-community/datetimepicker",
-      [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY",
-          "iosAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~ZZZZZZZZZZ"
-        }
-      ]
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true

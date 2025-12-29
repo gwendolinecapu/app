@@ -12,6 +12,7 @@ import {
 import { Link, router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
+import { DismissKeyboard } from '../../src/components/ui/DismissKeyboard';
 
 export default function LoginScreen() {
     const [email, setEmail] = useState('');
@@ -43,65 +44,67 @@ export default function LoginScreen() {
     };
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.container}
-        >
-            <View style={styles.header}>
-                <Text style={styles.logo}>💜</Text>
-                <Text style={styles.title}>PluralConnect</Text>
-                <Text style={styles.subtitle}>Un espace safe pour votre système</Text>
-            </View>
-
-            <View style={styles.form}>
-                <View style={styles.inputContainer}>
-                    <Text style={styles.label}>Email</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="votre@email.com"
-                        placeholderTextColor={colors.textMuted}
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        autoComplete="email"
-                    />
+        <DismissKeyboard>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={styles.container}
+            >
+                <View style={styles.header}>
+                    <Text style={styles.logo}>💜</Text>
+                    <Text style={styles.title}>PluralConnect</Text>
+                    <Text style={styles.subtitle}>Un espace safe pour votre système</Text>
                 </View>
 
-                <View style={styles.inputContainer}>
-                    <Text style={styles.label}>Mot de passe</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="••••••••"
-                        placeholderTextColor={colors.textMuted}
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                        autoComplete="password"
-                    />
-                </View>
+                <View style={styles.form}>
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Email</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="votre@email.com"
+                            placeholderTextColor={colors.textMuted}
+                            value={email}
+                            onChangeText={setEmail}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            autoComplete="email"
+                        />
+                    </View>
 
-                <TouchableOpacity
-                    style={[styles.buttonContainer, styles.button]}
-                    onPress={handleLogin}
-                    disabled={loading}
-                    activeOpacity={0.8}
-                >
-                    <Text style={styles.buttonText}>
-                        {loading ? 'Connexion...' : 'Se connecter'}
-                    </Text>
-                </TouchableOpacity>
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Mot de passe</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="••••••••"
+                            placeholderTextColor={colors.textMuted}
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry
+                            autoComplete="password"
+                        />
+                    </View>
 
-                <View style={styles.footer}>
-                    <Text style={styles.footerText}>Pas encore de compte ?</Text>
-                    <Link href="/(auth)/register" asChild>
-                        <TouchableOpacity>
-                            <Text style={styles.link}>S'inscrire</Text>
-                        </TouchableOpacity>
-                    </Link>
+                    <TouchableOpacity
+                        style={[styles.buttonContainer, styles.button]}
+                        onPress={handleLogin}
+                        disabled={loading}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={styles.buttonText}>
+                            {loading ? 'Connexion...' : 'Se connecter'}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.footer}>
+                        <Text style={styles.footerText}>Pas encore de compte ?</Text>
+                        <Link href="/(auth)/register" asChild>
+                            <TouchableOpacity>
+                                <Text style={styles.link}>S'inscrire</Text>
+                            </TouchableOpacity>
+                        </Link>
+                    </View>
                 </View>
-            </View>
-        </KeyboardAvoidingView>
+            </KeyboardAvoidingView>
+        </DismissKeyboard>
     );
 }
 

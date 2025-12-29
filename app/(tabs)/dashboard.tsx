@@ -13,7 +13,61 @@ import {
     ScrollView,
     Dimensions,
     FlatList,
+    RefreshControl,
 } from 'react-native';
+// ... imports
+import { Skeleton } from '../../src/components/ui/Skeleton';
+
+// ... inside component
+const { alters, user, refreshAlters, setFronting, activeFront, loading: authLoading } = useAuth();
+const [refreshing, setRefreshing] = useState(false);
+
+const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+        await refreshAlters();
+    } finally {
+        setRefreshing(false);
+    }
+}, [refreshAlters]);
+
+// ... inside FlatList
+<FlatList
+    key={`grid-${NUM_COLUMNS}`}  // IMPORTANT: permet changement dynamique de numColumns
+    data={authLoading ? [] : gridData}
+    renderItem={renderBubble}
+    keyExtractor={keyExtractor}
+    numColumns={NUM_COLUMNS}
+    contentContainerStyle={styles.gridContent}
+    showsVerticalScrollIndicator={false}
+    refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+    }
+    ListEmptyComponent={
+        authLoading ? (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: BUBBLE_SPACING }}>
+                {[...Array(12)].map((_, i) => (
+                    <View key={i} style={{ alignItems: 'center', marginBottom: 10 }}>
+                        <Skeleton width={BUBBLE_SIZE} height={BUBBLE_SIZE} borderRadius={BUBBLE_SIZE / 2} />
+                        <View style={{ marginTop: 8 }}>
+                            <Skeleton width={60} height={12} borderRadius={4} />
+                        </View>
+                    </View>
+                ))}
+            </View>
+        ) : null
+    }
+    // Optimisations pour très grandes listes (2000+ items)
+    removeClippedSubviews={true}
+    maxToRenderPerBatch={20}
+    windowSize={10}
+    initialNumToRender={30}
+    getItemLayout={(data, index) => ({
+        length: BUBBLE_SIZE + 24,
+        offset: (BUBBLE_SIZE + 24) * Math.floor(index / NUM_COLUMNS),
+        index,
+    })}
+/>
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';

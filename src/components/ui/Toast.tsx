@@ -34,7 +34,7 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
 export function ToastProvider({ children }: { children: React.ReactNode }) {
     const [activeToast, setActiveToast] = useState<Toast | null>(null);
     const insets = useSafeAreaInsets();
-    const timeoutRef = useRef<NodeJS.Timeout>();
+    const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
     const showToast = useCallback((message: string, type: ToastType = 'info', duration: number = 3000) => {
         // Clear existing timeout if any

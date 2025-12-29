@@ -167,6 +167,8 @@ export default function AltersScreen() {
                 keyExtractor={(item) => item.id}
                 numColumns={3}
                 contentContainerStyle={styles.gridContent}
+                refreshing={loading} // Use loading state for refresh
+                onRefresh={refreshAlters} // refreshAlters is async, need compatibility
                 ListHeaderComponent={() => (
                     <View style={styles.gridItem}>
                         <TouchableOpacity

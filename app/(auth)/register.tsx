@@ -13,6 +13,7 @@ import {
 import { Link, router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
+import { DismissKeyboard } from '../../src/components/ui/DismissKeyboard';
 
 export default function RegisterScreen() {
     const [email, setEmail] = useState('');
@@ -74,90 +75,92 @@ export default function RegisterScreen() {
     };
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.container}
-        >
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={styles.header}>
-                    <Text style={styles.logo}>💜</Text>
-                    <Text style={styles.title}>Créer un compte</Text>
-                    <Text style={styles.subtitle}>Rejoignez la communauté PluralConnect</Text>
-                </View>
-
-                <View style={styles.form}>
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Nom d'utilisateur</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="MonSystème"
-                            placeholderTextColor={colors.textMuted}
-                            value={username}
-                            onChangeText={setUsername}
-                            autoCapitalize="none"
-                        />
+        <DismissKeyboard>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={styles.container}
+            >
+                <ScrollView contentContainerStyle={styles.scrollContent}>
+                    <View style={styles.header}>
+                        <Text style={styles.logo}>💜</Text>
+                        <Text style={styles.title}>Créer un compte</Text>
+                        <Text style={styles.subtitle}>Rejoignez la communauté PluralConnect</Text>
                     </View>
 
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Email</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="votre@email.com"
-                            placeholderTextColor={colors.textMuted}
-                            value={email}
-                            onChangeText={setEmail}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            autoComplete="email"
-                        />
-                    </View>
+                    <View style={styles.form}>
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Nom d'utilisateur</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="MonSystème"
+                                placeholderTextColor={colors.textMuted}
+                                value={username}
+                                onChangeText={setUsername}
+                                autoCapitalize="none"
+                            />
+                        </View>
 
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Mot de passe</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="••••••••"
-                            placeholderTextColor={colors.textMuted}
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry
-                        />
-                    </View>
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Email</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="votre@email.com"
+                                placeholderTextColor={colors.textMuted}
+                                value={email}
+                                onChangeText={setEmail}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                autoComplete="email"
+                            />
+                        </View>
 
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Confirmer le mot de passe</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="••••••••"
-                            placeholderTextColor={colors.textMuted}
-                            value={confirmPassword}
-                            onChangeText={setConfirmPassword}
-                            secureTextEntry
-                        />
-                    </View>
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Mot de passe</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="••••••••"
+                                placeholderTextColor={colors.textMuted}
+                                value={password}
+                                onChangeText={setPassword}
+                                secureTextEntry
+                            />
+                        </View>
 
-                    <TouchableOpacity
-                        style={[styles.buttonContainer, styles.button]}
-                        onPress={handleRegister}
-                        disabled={loading}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={styles.buttonText}>
-                            {loading ? 'Création...' : "S'inscrire"}
-                        </Text>
-                    </TouchableOpacity>
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Confirmer le mot de passe</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="••••••••"
+                                placeholderTextColor={colors.textMuted}
+                                value={confirmPassword}
+                                onChangeText={setConfirmPassword}
+                                secureTextEntry
+                            />
+                        </View>
 
-                    <View style={styles.footer}>
-                        <Text style={styles.footerText}>Déjà un compte ?</Text>
-                        <Link href="/(auth)/login" asChild>
-                            <TouchableOpacity>
-                                <Text style={styles.link}>Se connecter</Text>
-                            </TouchableOpacity>
-                        </Link>
+                        <TouchableOpacity
+                            style={[styles.buttonContainer, styles.button]}
+                            onPress={handleRegister}
+                            disabled={loading}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={styles.buttonText}>
+                                {loading ? 'Création...' : "S'inscrire"}
+                            </Text>
+                        </TouchableOpacity>
+
+                        <View style={styles.footer}>
+                            <Text style={styles.footerText}>Déjà un compte ?</Text>
+                            <Link href="/(auth)/login" asChild>
+                                <TouchableOpacity>
+                                    <Text style={styles.link}>Se connecter</Text>
+                                </TouchableOpacity>
+                            </Link>
+                        </View>
                     </View>
-                </View>
-            </ScrollView>
-        </KeyboardAvoidingView>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </DismissKeyboard>
     );
 }
 

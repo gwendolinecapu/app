@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (firebaseUser) {
                 await fetchSystemData(firebaseUser.uid);
             } else {
-                setSystem(null);
+                setSystemData(null);
                 setAlters([]);
                 setActiveFront({ type: 'single', alters: [] });
                 setLoading(false);
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
 
             if (systemData) {
-                setSystem(systemData);
+                setSystemData(systemData);
 
                 const altersq = query(
                     collection(db, 'alters'),
@@ -258,7 +258,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         <AuthContext.Provider
             value={{
                 user,
-                system,
+                system: systemData,
                 activeFront,
                 alters,
                 loading,

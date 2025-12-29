@@ -61,7 +61,7 @@ export default function AlterSpaceScreen() {
             const globalPosts = await PostService.fetchGlobalFeed();
 
             // Integrer les tips systeme
-            const items: FeedItem[] = [...globalPosts];
+            const items: FeedItem[] = globalPosts.posts ? [...globalPosts.posts] : [];
 
             // Ajouter un tip tous les 5 posts
             SYSTEM_TIPS.forEach((tip, index) => {
@@ -179,6 +179,105 @@ export default function AlterSpaceScreen() {
             </View>
         );
     };
+
+    const renderFeedItem = ({ item }: { item: FeedItem }) => {
+        if ('type' in item && item.type === 'tip') {
+            let iconName = 'bulb-outline';
+            let title = 'Conseil Système';
+
+            if (item.category === 'management') {
+                iconName = 'list-outline';
+                title = 'Organisation';
+            } else if (item.category === 'wellness') {
+                iconName = 'leaf-outline';
+                title = 'Bien-être';
+            } else if (item.category === 'communication') {
+                iconName = 'chatbubbles-outline';
+                title = 'Communication';
+            }
+
+            return (
+                <View style={styles.tipCard}>
+                    <View style={styles.tipHeader}>
+                        <Ionicons name={iconName as any} size={24} color={colors.primary} />
+                        <Text style={styles.tipTitle}>{title}</Text>
+                    </View>
+                    <Text style={styles.tipContent}>{item.content}</Text>
+                </View>
+            );
+        }
+
+        const post = item as Post;
+        return (
+            <View style={styles.postCard}>
+                <View style={styles.postHeader}>
+                    <View style={styles.postAuthorInfo}>
+                        <View style={styles.postAvatar}>
+                            {alter?.avatar ? (
+                                <Image source={{ uri: alter.avatar }} style={styles.postAvatarImage} />
+                            ) : (
+                                <Text style={styles.postAvatarText}>{alter?.name?.charAt(0)}</Text>
+                            )}
+                        </View>
+                        <View>
+                            <Text style={styles.postAuthorName}>{alter?.name}</Text>
+                            <Text style={styles.postTime}>{formatTime(post.created_at)}</Text>
+                        </View>
+                    </View>
+                    <TouchableOpacity>
+                        <Ionicons name="ellipsis-horizontal" size={20} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                </View>
+
+                <Text style={styles.postContent}>{post.content}</Text>
+
+                {post.media_url && (
+                    <Image source={{ uri: post.media_url }} style={styles.postImage} resizeMode="cover" />
+                )}
+
+                <View style={styles.postActions}>
+                    <TouchableOpacity style={styles.postAction}>
+                        <Ionicons name="heart-outline" size={20} color={colors.textSecondary} />
+                        <Text style={styles.postActionText}>{post.likes || 0}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.postAction}>
+                        <Ionicons name="chatbubble-outline" size={20} color={colors.textSecondary} />
+                        <Text style={styles.postActionText}>{post.comments_count || 0}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.postAction}>
+                        <Ionicons name="share-social-outline" size={20} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    };
+
+    const renderFeed = () => (
+        <View style={styles.tabContent}>
+            <FlatList
+                data={feedItems}
+                renderItem={renderFeedItem}
+                keyExtractor={(item) => item.id}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor={colors.primary}
+                    />
+                }
+                ListEmptyComponent={
+                    <View style={styles.emptyState}>
+                        <Ionicons name="newspaper-outline" size={64} color={colors.textMuted} />
+                        <Text style={styles.emptyTitle}>Fil d'actualité</Text>
+                        <Text style={styles.emptySubtitle}>
+                            Aucune publication récente.
+                        </Text>
+                    </View>
+                }
+                contentContainerStyle={{ paddingBottom: 100 }}
+            />
+        </View>
+    );
 
     const renderJournal = () => (
         <ScrollView style={styles.tabContent}>
@@ -657,5 +756,132 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.4,
         shadowRadius: 8,
         elevation: 8,
+    },
+    postCard: {
+        backgroundColor: colors.backgroundCard,
+        marginBottom: spacing.md,
+        borderRadius: borderRadius.lg,
+        padding: spacing.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    postHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.sm,
+    },
+    postAuthorInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    postAvatar: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: colors.secondary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: spacing.sm,
+        overflow: 'hidden',
+    },
+    postAvatarImage: {
+        width: '100%',
+        height: '100%',
+    },
+    postAvatarText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 18,
+    },
+    postAuthorName: {
+        ...typography.body,
+        fontWeight: 'bold',
+    },
+    postTime: {
+        ...typography.caption,
+        color: colors.textSecondary,
+    },
+    postContent: {
+        ...typography.body,
+        marginBottom: spacing.md,
+        lineHeight: 22,
+    },
+    postImage: {
+        width: '100%',
+        height: 200,
+        borderRadius: borderRadius.md,
+        marginBottom: spacing.md,
+    },
+    postActions: {
+        flexDirection: 'row',
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+        paddingTop: spacing.sm,
+    },
+    postAction: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginRight: spacing.xl,
+    },
+    postActionText: {
+        ...typography.caption,
+        marginLeft: spacing.xs,
+        color: colors.textSecondary,
+    },
+    tipCard: {
+        backgroundColor: colors.backgroundCard, // Or a slightly different color for tips
+        marginBottom: spacing.md,
+        borderRadius: borderRadius.lg,
+        padding: spacing.md,
+        borderWidth: 1,
+        borderColor: colors.primary + '40', // slightly colored border
+    },
+    tipHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: spacing.xs,
+    },
+    tipTitle: {
+        ...typography.h3,
+        fontSize: 16,
+        marginLeft: spacing.xs,
+        color: colors.primary,
+    },
+    tipContent: {
+        ...typography.body,
+        fontSize: 14,
+        color: colors.text,
+        marginBottom: spacing.sm,
+    },
+    tipAction: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    tipActionText: {
+        ...typography.caption,
+        fontWeight: 'bold',
+        color: colors.primary,
+        marginRight: spacing.xs,
+    },
+    emotionGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.sm,
+        padding: spacing.md,
+        justifyContent: 'center',
+    },
+    emotionButton: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: colors.backgroundCard,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    emotionEmoji: {
+        fontSize: 30,
     },
 });

@@ -44,6 +44,9 @@ interface AuthContextType {
     deleteAccount: () => Promise<void>;
     setFronting: (alters: Alter[], type: 'single' | 'co-front' | 'blurry', customStatus?: string) => Promise<void>;
     refreshAlters: () => Promise<void>;
+    togglePin: (alterId: string) => Promise<void>;
+    toggleArchive: (alterId: string) => Promise<void>;
+    updateHeadspace: (mood: string) => Promise<void>;
     // Helpers for compatibility
     currentAlter: Alter | null; // Derived from activeFront (first alter or null)
 }
@@ -254,6 +257,83 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const togglePin = async (alterId: string) => {
+        if (!user) return;
+        const alter = alters.find(a => a.id === alterId);
+        if (!alter) return;
+
+        const newPinnedStatus = !alter.isPinned;
+
+        // Optimistic update
+        setAlters(prev => prev.map(a =>
+            a.id === alterId ? { ...a, isPinned: newPinnedStatus } : a
+        ));
+
+        try {
+            const alterRef = doc(db, 'alters', alterId);
+            await updateDoc(alterRef, { isPinned: newPinnedStatus });
+            if (newPinnedStatus) {
+                triggerHaptic.selection();
+            }
+        } catch (error) {
+            console.error('Error toggling pin:', error);
+            // Revert
+            setAlters(prev => prev.map(a =>
+                a.id === alterId ? { ...a, isPinned: !newPinnedStatus } : a
+            ));
+            showToast('Erreur lors de la modification', 'error');
+        }
+    };
+
+    const toggleArchive = async (alterId: string) => {
+        if (!user) return;
+        const alter = alters.find(a => a.id === alterId);
+        if (!alter) return;
+
+        const newArchivedStatus = !alter.isArchived;
+
+        // Optimistic update
+        setAlters(prev => prev.map(a =>
+            a.id === alterId ? { ...a, isArchived: newArchivedStatus } : a
+        ));
+
+        try {
+            const alterRef = doc(db, 'alters', alterId);
+            await updateDoc(alterRef, { isArchived: newArchivedStatus });
+            if (newArchivedStatus) {
+                triggerHaptic.success();
+                showToast('Alter archivé', 'success');
+            } else {
+                triggerHaptic.selection();
+                showToast('Alter désarchivé', 'success');
+            }
+        } catch (error) {
+            console.error('Error toggling archive:', error);
+            // Revert
+            setAlters(prev => prev.map(a =>
+                a.id === alterId ? { ...a, isArchived: !newArchivedStatus } : a
+            ));
+            showToast('Erreur lors de la modification', 'error');
+        }
+    };
+
+    const updateHeadspace = async (mood: string) => {
+        if (!user || !systemData) return;
+
+        // Optimistic update
+        setSystemData(prev => prev ? { ...prev, headspace: mood } : null);
+
+        try {
+            const systemRef = doc(db, 'systems', user.uid);
+            await updateDoc(systemRef, { headspace: mood });
+            triggerHaptic.light();
+        } catch (error) {
+            console.error('Error updating headspace:', error);
+            // Revert would go here implementation dependent
+            showToast('Erreur mise à jour météo', 'error');
+        }
+    };
+
     return (
         <AuthContext.Provider
             value={{
@@ -268,7 +348,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 deleteAccount,
                 setFronting,
                 refreshAlters,
-                currentAlter: activeFront.alters.length > 0 ? activeFront.alters[0] : null,
+                togglePin,
+                toggleArchive,
+                updateHeadspace,
+                currentAlter: activeFront.alters[0] || null
             }}
         >
             {children}

@@ -4,6 +4,8 @@ export interface System {
     id: string;
     email: string;
     username: string;
+    avatar_url?: string;
+    headspace?: string; // 'sunny', 'cloudy', 'rainy', 'stormy', 'night', etc.
     created_at: string;
 }
 
@@ -30,6 +32,8 @@ export interface Alter {
     userId: string; // ID de l'utilisateur principal (système)
     is_host?: boolean; // Si l'alter est l'hôte principal
     is_active: boolean; // Si l'alter est actuellement au front
+    isPinned?: boolean; // Épinglé en haut de liste
+    isArchived?: boolean; // Archivé (masqué par défaut)
     // ... autres champs potentiels (âge, pronoms, description, etc.)
     // Champs de sécurité / crise
     triggers?: string[];

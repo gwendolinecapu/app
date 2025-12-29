@@ -24,6 +24,11 @@ import { colors, spacing, borderRadius, typography } from '../../../src/lib/them
 import { PostService } from '../../../src/services/posts';
 import { FriendService } from '../../../src/services/friends';
 import { SYSTEM_TIPS, SystemTip } from '../../../src/data/tips';
+import { EmotionType } from '../../../src/types';
+import { EmotionService } from '../../../src/services/emotions';
+import { useToast } from '../../../src/components/ui/Toast';
+import { triggerHaptic } from '../../../src/lib/haptics';
+import { timeAgo } from '../../../src/lib/date';
 
 const { width } = Dimensions.get('window');
 const MAX_WIDTH = 430;
@@ -50,6 +55,25 @@ export default function AlterSpaceScreen() {
     const [feedItems, setFeedItems] = useState<FeedItem[]>([]); // Global feed items
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [latestEmotion, setLatestEmotion] = useState<Emotion | null>(null);
+
+    const toast = useToast();
+
+    // Fetch latest emotion on mount
+    useEffect(() => {
+        if (alterId) {
+            loadLatestEmotion();
+        }
+    }, [alterId]);
+
+    const loadLatestEmotion = async () => {
+        try {
+            const emotion = await EmotionService.getLatestEmotion(alterId as string);
+            setLatestEmotion(emotion);
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
     const isOwner = alter ? alters.some(a => a.id === alter.id) : false;
 
@@ -199,16 +223,8 @@ export default function AlterSpaceScreen() {
     };
 
     const formatTime = (dateString: string) => {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diff = now.getTime() - date.getTime();
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-
-        if (hours < 1) return "À l'instant";
-        if (hours < 24) return `Il y a ${hours}h`;
-        const days = Math.floor(hours / 24);
-        if (days < 7) return `Il y a ${days}j`;
-        return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+        const ago = timeAgo(dateString);
+        return ago ? `Il y a ${ago}` : '';
     };
 
     if (!alter) {
@@ -588,28 +604,74 @@ export default function AlterSpaceScreen() {
         </View>
     );
 
-    const renderEmotions = () => (
-        <ScrollView style={styles.tabContent}>
-            <Text style={styles.sectionTitle}>Comment te sens-tu, {alter.name} ?</Text>
+    const renderEmotions = () => {
+        const handleAddEmotion = async (emoji: string) => {
+            try {
+                // Map emoji to EmotionType
+                const moodMap: Record<string, EmotionType> = {
+                    '😊': 'happy',
+                    '😢': 'sad',
+                    '😰': 'anxious',
+                    '😡': 'angry',
+                    '😴': 'tired',
+                    '😌': 'calm',
+                    '😕': 'confused',
+                    '🤩': 'excited'
+                };
 
-            {/* Emotion Grid */}
-            <View style={styles.emotionGrid}>
-                {['😊', '😢', '😰', '😡', '😴', '😌', '😕', '🤩'].map((emoji, index) => (
-                    <TouchableOpacity key={index} style={styles.emotionButton}>
-                        <Text style={styles.emotionEmoji}>{emoji}</Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
+                const emotionType = moodMap[emoji];
+                if (!emotionType) return;
 
-            <View style={styles.emptyState}>
-                <Ionicons name="heart-outline" size={48} color={colors.textMuted} />
-                <Text style={styles.emptyTitle}>Suivi émotionnel</Text>
-                <Text style={styles.emptySubtitle}>
-                    Enregistrer les émotions de {alter.name} pour suivre son bien-être au fil du temps.
-                </Text>
-            </View>
-        </ScrollView>
-    );
+                triggerHaptic.selection();
+                triggerHaptic.selection();
+                await EmotionService.addEmotion(alterId as string, emotionType, 3);
+                toast.showToast(`Emotion enregistrée: ${emotionType}`, 'success');
+                loadLatestEmotion(); // Refresh display
+            } catch (error) {
+                console.error('Failed to add emotion:', error);
+                toast.showToast("Erreur lors de l'enregistrement", 'error');
+            }
+        };
+
+        return (
+            <ScrollView style={styles.tabContent}>
+                <Text style={styles.sectionTitle}>Comment te sens-tu, {alter.name} ?</Text>
+
+                {/* Emotion Grid */}
+                <View style={styles.emotionGrid}>
+                    {['😊', '😢', '😰', '😡', '😴', '😌', '😕', '🤩'].map((emoji, index) => (
+                        <TouchableOpacity
+                            key={index}
+                            style={styles.emotionButton}
+                            onPress={() => handleAddEmotion(emoji)}
+                        >
+                            <Text style={styles.emotionEmoji}>{emoji}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                {latestEmotion ? (
+                    <View style={styles.emotionStatusContainer}>
+                        <Text style={styles.emotionStatusEmoji}>{EMOTION_EMOJIS[latestEmotion.emotion]}</Text>
+                        <Text style={styles.emotionStatusText}>
+                            Actuellement <Text style={{ fontWeight: 'bold' }}>{EMOTION_LABELS[latestEmotion.emotion]}</Text>
+                        </Text>
+                        <Text style={styles.emotionStatusTime}>
+                            {timeAgo(latestEmotion.created_at) ? `Depuis ${timeAgo(latestEmotion.created_at)}` : "À l'instant"}
+                        </Text>
+                    </View>
+                ) : (
+                    <View style={styles.emptyState}>
+                        <Ionicons name="heart-outline" size={48} color={colors.textMuted} />
+                        <Text style={styles.emptyTitle}>Suivi émotionnel</Text>
+                        <Text style={styles.emptySubtitle}>
+                            Enregistrer les émotions de {alter.name} pour suivre son bien-être au fil du temps.
+                        </Text>
+                    </View>
+                )}
+            </ScrollView>
+        );
+    };
 
     const renderSettings = () => (
         <ScrollView style={styles.settingsContainer}>
@@ -1200,4 +1262,25 @@ const styles = StyleSheet.create({
         borderRadius: borderRadius.md,
         overflow: 'hidden',
     },
+    emotionStatusContainer: {
+        alignItems: 'center',
+        marginTop: spacing.xl,
+        padding: spacing.lg,
+        backgroundColor: colors.backgroundCard,
+        borderRadius: borderRadius.lg,
+        marginHorizontal: spacing.md,
+    },
+    emotionStatusEmoji: {
+        fontSize: 48,
+        marginBottom: spacing.sm,
+    },
+    emotionStatusText: {
+        ...typography.h3,
+        color: colors.text,
+        marginBottom: spacing.xs,
+    },
+    emotionStatusTime: {
+        ...typography.bodySmall,
+        color: colors.textSecondary,
+    }
 });

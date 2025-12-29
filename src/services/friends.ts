@@ -100,7 +100,8 @@ export const FriendService = {
         const qFriend = query(
             collection(db, 'friendships'),
             where('alterId', '==', alterId1),
-            where('friendId', '==', alterId2)
+            where('friendId', '==', alterId2),
+            where('systemId', '==', auth.currentUser?.uid) // Add systemId check
         );
         const friendSnap = await getDocs(qFriend);
         if (!friendSnap.empty) return 'friends';
@@ -145,9 +146,12 @@ export const FriendService = {
      * Get friends list
      */
     getFriends: async (alterId: string) => {
+        if (!auth.currentUser) return [];
+
         const q = query(
             collection(db, 'friendships'),
-            where('alterId', '==', alterId)
+            where('alterId', '==', alterId),
+            where('systemId', '==', auth.currentUser.uid) // Add systemId check
         );
         const snapshot = await getDocs(q);
         return snapshot.docs.map(d => d.data().friendId as string);

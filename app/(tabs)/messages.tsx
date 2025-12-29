@@ -12,6 +12,7 @@ import { Alter } from '../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 
 import { GroupService } from '../../src/services/groups';
+import { FriendService } from '../../src/services/friends';
 import { Ionicons } from '@expo/vector-icons';
 
 interface ConversationItem {
@@ -24,16 +25,40 @@ interface ConversationItem {
 
 export default function MessagesScreen() {
     const { alters, currentAlter, system } = useAuth();
-    const [activeTab, setActiveTab] = useState<'internal' | 'groups'>('internal');
+    const [activeTab, setActiveTab] = useState<'internal' | 'groups' | 'requests'>('internal');
     const [groups, setGroups] = useState<any[]>([]);
+    const [requests, setRequests] = useState<any[]>([]);
     const [loadingGroups, setLoadingGroups] = useState(false);
+    const [loadingRequests, setLoadingRequests] = useState(false);
 
-    // Fetch groups when tab changes
+
+    // Fetch data when tab changes
     React.useEffect(() => {
         if (activeTab === 'groups' && system) {
             loadGroups();
+        } else if (activeTab === 'requests' && currentAlter) {
+            loadRequests();
         }
-    }, [activeTab, system]);
+    }, [activeTab, system, currentAlter]);
+
+    const loadRequests = async () => {
+        if (!currentAlter) return;
+        setLoadingRequests(true);
+        try {
+            const pending = await FriendService.getPendingRequests(currentAlter.id);
+            // We need to fetch sender details. 
+            // In a real app we'd batch fetch profiles. For now assuming we can get name/avatar.
+            // Actually FriendService.getPendingRequests returns request object.
+            // We might need to fetch Alter details for senderId.
+            // Let's assume for now we list them simply or fetch details.
+            // The request object has senderId.
+            setRequests(pending);
+        } catch (error) {
+            console.error("Failed to load requests", error);
+        } finally {
+            setLoadingRequests(false);
+        }
+    };
 
     const loadGroups = async () => {
         if (!system) return;
@@ -86,6 +111,46 @@ export default function MessagesScreen() {
         </TouchableOpacity>
     );
 
+    const handleAcceptRequest = async (requestId: string) => {
+        try {
+            await FriendService.acceptRequest(requestId);
+            // Refresh list
+            loadRequests();
+            // Show success?
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const handleRejectRequest = async (requestId: string) => {
+        try {
+            await FriendService.rejectRequest(requestId);
+            loadRequests();
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const renderRequest = ({ item }: { item: any }) => (
+        <View style={styles.conversationItem}>
+            <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+                <Ionicons name="person-add" size={24} color="white" />
+            </View>
+            <View style={styles.conversationContent}>
+                <Text style={styles.conversationName}>Nouvelle demande</Text>
+                <Text style={styles.lastMessage}>De: {item.senderId}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+                <TouchableOpacity onPress={() => handleAcceptRequest(item.id)} style={{ padding: 5 }}>
+                    <Ionicons name="checkmark-circle" size={32} color={colors.success || '#4CAF50'} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleRejectRequest(item.id)} style={{ padding: 5 }}>
+                    <Ionicons name="close-circle" size={32} color={colors.error || '#F44336'} />
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
+
     const renderGroup = ({ item }: { item: any }) => (
         <TouchableOpacity
             style={styles.conversationItem}
@@ -112,12 +177,15 @@ export default function MessagesScreen() {
         <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>💬</Text>
             <Text style={styles.emptyTitle}>
-                {activeTab === 'internal' ? 'Aucune conversation' : 'Aucun groupe'}
+                {activeTab === 'internal' ? 'Aucune conversation' :
+                    activeTab === 'groups' ? 'Aucun groupe' : 'Aucune demande'}
             </Text>
             <Text style={styles.emptySubtitle}>
                 {activeTab === 'internal'
                     ? 'Ajoutez des alters pour discuter entre vous'
-                    : 'Créez un groupe pour discuter à plusieurs'}
+                    : activeTab === 'groups'
+                        ? 'Créez un groupe pour discuter à plusieurs'
+                        : 'Vous n\'avez pas de demande d\'ami en attente'}
             </Text>
             {activeTab === 'groups' && (
                 <TouchableOpacity
@@ -196,17 +264,28 @@ export default function MessagesScreen() {
                         👥 Groupes
                     </Text>
                 </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'requests' && styles.tabActive]}
+                    onPress={() => setActiveTab('requests')}
+                >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Text style={[styles.tabText, activeTab === 'requests' && styles.tabTextActive]}>
+                            🔔 Demandes
+                        </Text>
+                        {/* Start badge mock if needed */}
+                    </View>
+                </TouchableOpacity>
             </View>
 
             {/* Conversations List */}
             <FlatList
-                data={activeTab === 'internal' ? internalConversations : groups}
-                renderItem={activeTab === 'internal' ? renderConversation : renderGroup}
+                data={activeTab === 'internal' ? internalConversations : activeTab === 'groups' ? groups : requests}
+                renderItem={activeTab === 'internal' ? renderConversation : activeTab === 'groups' ? renderGroup : renderRequest}
                 keyExtractor={(item) => item.id}
                 ListEmptyComponent={renderEmptyState}
                 contentContainerStyle={styles.listContent}
-                refreshing={loadingGroups}
-                onRefresh={activeTab === 'groups' ? loadGroups : undefined}
+                refreshing={activeTab === 'groups' ? loadingGroups : activeTab === 'requests' ? loadingRequests : false}
+                onRefresh={activeTab === 'groups' ? loadGroups : activeTab === 'requests' ? loadRequests : undefined}
             />
         </View>
     );

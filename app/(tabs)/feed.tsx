@@ -151,7 +151,18 @@ export default function FeedScreen() {
             </View>
 
             {/* Post Content */}
-            <Text style={styles.postContent}>{item.content}</Text>
+            {item.content && (
+                <Text style={styles.postContent}>{item.content}</Text>
+            )}
+
+            {/* Post Image - Instagram Style (Design Canva #3) */}
+            {item.media_url && (
+                <Image
+                    source={{ uri: item.media_url }}
+                    style={styles.postImage}
+                    resizeMode="cover"
+                />
+            )}
 
             {/* Post Actions */}
             <View style={styles.postActions}>
@@ -391,6 +402,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.md,
         paddingBottom: spacing.md,
         lineHeight: 22,
+    },
+    postImage: {
+        width: '100%',
+        height: 300,
+        marginBottom: spacing.sm,
     },
     postActions: {
         flexDirection: 'row',

@@ -150,6 +150,26 @@ export default function AlterSpaceScreen() {
         );
     };
 
+    const renderMessages = () => (
+        <View style={styles.tabContent}>
+            <Text style={styles.sectionTitle}>Messages de {alter.name}</Text>
+            <View style={styles.emptyState}>
+                <Ionicons name="chatbubbles-outline" size={64} color={colors.textMuted} />
+                <Text style={styles.emptyTitle}>Messagerie privée</Text>
+                <Text style={styles.emptySubtitle}>
+                    Les conversations de {alter.name} apparaîtront ici.
+                    Cette messagerie est indépendante des autres alters.
+                </Text>
+                <TouchableOpacity
+                    style={styles.startChatButton}
+                    onPress={() => router.push('/(tabs)/messages')}
+                >
+                    <Text style={styles.startChatText}>Nouvelle conversation</Text>
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
+
     const renderSearch = () => (
         <View style={styles.tabContent}>
             <View style={styles.searchContainer}>
@@ -265,7 +285,7 @@ export default function AlterSpaceScreen() {
                 </View>
             </View>
 
-            {/* Tab Navigation */}
+            {/* Tab Navigation - 3 icônes (messages en haut à droite) */}
             <View style={styles.tabs}>
                 <TouchableOpacity
                     style={[styles.tab, activeTab === 'gallery' && styles.tabActive]}
@@ -509,6 +529,22 @@ const styles = StyleSheet.create({
         ...typography.bodySmall,
         color: colors.textSecondary,
         textAlign: 'center',
+    },
+    sectionTitle: {
+        ...typography.h3,
+        marginBottom: spacing.md,
+        color: colors.text,
+    },
+    startChatButton: {
+        backgroundColor: colors.primary,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.lg,
+        borderRadius: borderRadius.full,
+        marginTop: spacing.lg,
+    },
+    startChatText: {
+        color: 'white',
+        fontWeight: '600' as const,
     },
     fab: {
         position: 'absolute',

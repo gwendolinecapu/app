@@ -5,27 +5,29 @@ service firebase.storage {
     function isAuthenticated() {
       return request.auth != null;
     }
-    
-    // Helper to check ownership of folder
-    function isOwner(systemId) {
-      return isAuthenticated() && request.auth.uid == systemId;
-    }
 
-    // Default deny
-    match /{allPaths=**} {
-      allow read, write: if false;
-    }
-
-    // Avatars: Public read, owner write
-    match /avatars/{systemId}/{fileName} {
+    // Avatars: Public read, authenticated user write
+    match /avatars/{allPaths=**} {
       allow read: if true;
-      allow write: if isOwner(systemId);
+      allow write: if isAuthenticated();
     }
     
-    // Post images: Public read (for feed), owner write
-    match /posts/{systemId}/{fileName} {
+    // Post images: Public read, authenticated user write
+    match /posts/{allPaths=**} {
       allow read: if true;
-      allow write: if isOwner(systemId);
+      allow write: if isAuthenticated();
+    }
+    
+    // Profile images - in case they use a different path
+    match /profiles/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    
+    // Images folder - catch-all for any image uploads
+    match /images/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
   }
 }

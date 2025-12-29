@@ -235,28 +235,20 @@ export default function AlterSpaceScreen() {
                             <Text style={styles.editProfileText}>Modifier le profil</Text>
                         </TouchableOpacity>
                     ) : (
-                        <TouchableOpacity
-                            style={styles.editProfileButton} // Reusing style for primary action
-                            onPress={() => router.push({ pathname: '/conversation/[id]', params: { id: alter.id } })}
-                        >
-                            <Text style={styles.editProfileText}>Message</Text>
-                        </TouchableOpacity>
-                    )}
-
-                    {isOwner ? (
-                        <TouchableOpacity style={styles.followButton} onPress={() => {
-                            Alert.alert("Info", "Pour ajouter des amis, utilisez la barre de recherche ci-dessous.");
-                        }}>
-                            <Text style={styles.followButtonText}>Ajouter des amis</Text>
-                        </TouchableOpacity>
-                    ) : (
-                        // Logic for Friend Status button (already in search, adding here for Profile view)
-                        <TouchableOpacity style={styles.followButton} onPress={() => handleFriendAction(alter.id)}>
-                            <Text style={styles.followButtonText}>
-                                {friendStatuses[alter.id] === 'friends' ? 'Amis' :
-                                    friendStatuses[alter.id] === 'pending' ? 'Demande envoyée' : 'Ajouter'}
-                            </Text>
-                        </TouchableOpacity>
+                        <>
+                            <TouchableOpacity
+                                style={styles.editProfileButton}
+                                onPress={() => router.push({ pathname: '/conversation/[id]', params: { id: alter.id } })}
+                            >
+                                <Text style={styles.editProfileText}>Message</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.followButton} onPress={() => handleFriendAction(alter.id)}>
+                                <Text style={styles.followButtonText}>
+                                    {friendStatuses[alter.id] === 'friends' ? 'Amis' :
+                                        friendStatuses[alter.id] === 'pending' ? 'Demande envoyée' : 'Ajouter'}
+                                </Text>
+                            </TouchableOpacity>
+                        </>
                     )}
                 </View>
             </View>
@@ -693,16 +685,6 @@ export default function AlterSpaceScreen() {
                         color={activeTab === 'feed' ? colors.primary : colors.textMuted}
                     />
                 </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.tab, activeTab === 'profile' && styles.tabActive]}
-                    onPress={() => setActiveTab('profile')}
-                >
-                    <Ionicons
-                        name={activeTab === 'profile' ? 'person-circle' : 'person-circle-outline'}
-                        size={24}
-                        color={activeTab === 'profile' ? colors.primary : colors.textMuted}
-                    />
-                </TouchableOpacity>
 
                 {isOwner && (
                     <>
@@ -736,18 +718,20 @@ export default function AlterSpaceScreen() {
                                 color={activeTab === 'emotions' ? colors.primary : colors.textMuted}
                             />
                         </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.tab, activeTab === 'settings' && styles.tabActive]}
-                            onPress={() => setActiveTab('settings')}
-                        >
-                            <Ionicons
-                                name={activeTab === 'settings' ? 'settings' : 'settings-outline'}
-                                size={24}
-                                color={activeTab === 'settings' ? colors.primary : colors.textMuted}
-                            />
-                        </TouchableOpacity>
                     </>
                 )}
+
+                {/* Profile tab at the end (right side) */}
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'profile' && styles.tabActive]}
+                    onPress={() => setActiveTab('profile')}
+                >
+                    <Ionicons
+                        name={activeTab === 'profile' ? 'person-circle' : 'person-circle-outline'}
+                        size={24}
+                        color={activeTab === 'profile' ? colors.primary : colors.textMuted}
+                    />
+                </TouchableOpacity>
             </View>
 
             {/* Floating Action Button (Only on Gallery or Journal) */}

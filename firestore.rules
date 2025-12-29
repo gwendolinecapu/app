@@ -253,15 +253,24 @@ service cloud.firestore {
 
     // ============================================
     // Friendships Collection
+    // Fixed: check systemId instead of alterId since alterId is the alter's ID not the user's uid
     // ============================================
     match /friendships/{friendshipId} {
-      // Read my own friendships
-      allow read: if isAuthenticated() && resource.data.alterId == request.auth.uid;
-      // Creation by system (service makes 2 docs, usually server side but we do client side here)
-      // We allow creation if alterId is self.
-      allow create: if isAuthenticated() && request.resource.data.alterId == request.auth.uid;
-      // Can delete my own
-      allow delete: if isAuthenticated() && resource.data.alterId == request.auth.uid;
+      // Read: authenticated users can read friendships involving their system
+      allow read: if isAuthenticated() && (
+        resource.data.systemId == request.auth.uid ||
+        resource.data.system_id == request.auth.uid
+      );
+      // Create: authenticated users can create friendships for their own system
+      allow create: if isAuthenticated() && (
+        request.resource.data.systemId == request.auth.uid ||
+        request.resource.data.system_id == request.auth.uid
+      );
+      // Delete: can delete own friendships
+      allow delete: if isAuthenticated() && (
+        resource.data.systemId == request.auth.uid ||
+        resource.data.system_id == request.auth.uid
+      );
     }
   }
 }

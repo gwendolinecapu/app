@@ -1,0 +1,4 @@
+Target dependency graph (2 targets)
+Target 'PluralConnectWatch' in project 'PluralConnect'
+➜ Explicit dependency on target 'PluralConnectWatch Watch App' in project 'PluralConnect'
+Target 'PluralConnectWatch Watch App' in project 'PluralConnect' (no dependencies)

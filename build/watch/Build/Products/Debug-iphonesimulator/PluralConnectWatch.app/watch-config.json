@@ -1,0 +1,29 @@
+{
+    "app-config": {
+        "name": "PluralConnect",
+        "bundleId": "com.pluralconnect.app"
+    },
+    "watch-config": {
+        "name": "PluralConnectWatch",
+        "bundleId": "com.pluralconnect.app.watchkitapp",
+        "deploymentTarget": "9.0"
+    },
+    "setup-instructions": {
+        "step1": "Ouvrir ios/PluralConnect.xcworkspace dans Xcode",
+        "step2": "File > New > Target > watchOS > App",
+        "step3": "Nommer 'PluralConnectWatch'",
+        "step4": "Ajouter les fichiers Swift du dossier ios/PluralConnectWatch/",
+        "step5": "Configurer App Groups: group.com.pluralconnect.shared",
+        "step6": "Build et run sur simulateur watchOS"
+    },
+    "app-groups": {
+        "identifier": "group.com.pluralconnect.shared",
+        "usage": "Partage de données entre iOS et watchOS"
+    },
+    "entitlements": {
+        "watch-connectivity": true,
+        "app-groups": [
+            "group.com.pluralconnect.shared"
+        ]
+    }
+}

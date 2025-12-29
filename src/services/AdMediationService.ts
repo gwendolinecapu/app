@@ -23,22 +23,28 @@ import mobileAds, {
     AdEventType,
 } from 'react-native-google-mobile-ads';
 
-// Configuration des App IDs (à remplacer par les vraies valeurs)
+// Configuration des App IDs (Production AdMob)
 const AD_CONFIG_KEYS = {
-    // Google AdMob
-    ADMOB_APP_ID_IOS: 'ca-app-pub-XXXXX~YYYYY',
-    ADMOB_APP_ID_ANDROID: 'ca-app-pub-XXXXX~ZZZZZ',
-    ADMOB_BANNER_ID: 'ca-app-pub-XXXXX/banner',
-    ADMOB_NATIVE_ID: 'ca-app-pub-XXXXX/native',
-    ADMOB_REWARDED_ID: 'ca-app-pub-XXXXX/rewarded',
+    // Google AdMob - Production IDs (iOS)
+    ADMOB_APP_ID_IOS: 'ca-app-pub-7014088517639318~1112284921',
+    ADMOB_NATIVE_ID_IOS: 'ca-app-pub-7014088517639318/3546876579', // Natif iOS (entre posts)
 
-    // Unity Ads
+    // Google AdMob - Production IDs (Android)
+    ADMOB_APP_ID_ANDROID: 'ca-app-pub-7014088517639318~7514041741',
+    ADMOB_NATIVE_ID_ANDROID: 'ca-app-pub-7014088517639318/6321036117', // Natif Android
+
+    // Blocs d'annonces partagés iOS/Android
+    ADMOB_BANNER_ID_IOS: 'ca-app-pub-7014088517639318/7961420846', // Bannière iOS
+    ADMOB_BANNER_ID_ANDROID: 'ca-app-pub-7014088517639318/8064706081', // Bannière Android
+    ADMOB_REWARDED_ID: 'ca-app-pub-7014088517639318/6129464424', // Récompense 50 crédits
+
+    // Unity Ads (placeholder - à configurer si utilisé)
     UNITY_GAME_ID_IOS: '4XXXXX',
     UNITY_GAME_ID_ANDROID: '4YYYYY',
     UNITY_BANNER_PLACEMENT: 'Banner_iOS',
     UNITY_REWARDED_PLACEMENT: 'Rewarded_iOS',
 
-    // AppLovin MAX
+    // AppLovin MAX (placeholder - à configurer si utilisé)
     APPLOVIN_SDK_KEY: 'XXXXXXXXXXXXXXXX',
     APPLOVIN_BANNER_AD_UNIT: 'XXXXXXX',
     APPLOVIN_NATIVE_AD_UNIT: 'XXXXXXX',

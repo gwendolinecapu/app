@@ -34,21 +34,6 @@ export default function TabLayout() {
                     }}
                     initialRouteName="dashboard"
                 >
-                    {/* Onglet 1: Feed - Fil d'actualité */}
-                    <Tabs.Screen
-                        name="feed"
-                        options={{
-                            title: 'Feed',
-                            tabBarIcon: ({ focused, color }) => (
-                                <Ionicons
-                                    name={focused ? "newspaper" : "newspaper-outline"}
-                                    size={24}
-                                    color={color}
-                                    accessibilityLabel="Fil d'actualité"
-                                />
-                            ),
-                        }}
-                    />
                     {/* Journal - Masqué car déplacé dans chaque profil d'alter */}
                     <Tabs.Screen
                         name="journal"

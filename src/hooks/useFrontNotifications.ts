@@ -107,7 +107,7 @@ export function useFrontNotifications({
         // Noms des co-fronteurs
         const coFronters = frontAlterIds
             .slice(1)
-            .map(id => getAlter(id)?.name)
+            .map((id: string) => getAlter(id)?.name)
             .filter(Boolean) as string[];
 
         // Démarrer/mettre à jour le Dynamic Island

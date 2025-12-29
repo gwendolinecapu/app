@@ -26,15 +26,21 @@
 - Mise à jour en temps réel
 
 ### Fichiers Créés
-- `src/services/NotificationTypes.ts`
-- `src/services/NotificationService.ts`
-- `src/services/PersistentNotificationService.ts`
-- `src/services/DynamicIslandService.ts`
-- `src/hooks/useNotifications.ts`
-- `src/hooks/useFrontNotifications.ts`
-- `ios/PluralConnect/LiveActivityModule.swift`
-- `ios/PluralConnect/LiveActivityModule.m`
+- `src/services/NotificationTypes.ts` - Types et configs
+- `src/services/NotificationService.ts` - Service principal
+- `src/services/PersistentNotificationService.ts` - Notif fond d'écran
+- `src/services/DynamicIslandService.ts` - Live Activities iOS
+- `src/services/PushNotificationService.ts` - Firebase Push
+- `src/contexts/NotificationContext.tsx` - Context global
+- `src/hooks/useNotifications.ts` - Hook React
+- `src/hooks/useFrontNotifications.ts` - Sync front
+- `ios/PluralConnect/LiveActivityModule.swift` - Module natif
+- `ios/PluralConnect/LiveActivityModule.m` - Bridge ObjC
 - `app/settings/notifications.tsx` (amélioré)
+
+### Intégration
+- NotificationProvider ajouté dans `app/_layout.tsx`
+- Routing depuis notifications vers écrans appropriés
 
 ---
 

@@ -46,12 +46,6 @@ export default function MessagesScreen() {
         setLoadingRequests(true);
         try {
             const pending = await FriendService.getPendingRequests(currentAlter.id);
-            // We need to fetch sender details. 
-            // In a real app we'd batch fetch profiles. For now assuming we can get name/avatar.
-            // Actually FriendService.getPendingRequests returns request object.
-            // We might need to fetch Alter details for senderId.
-            // Let's assume for now we list them simply or fetch details.
-            // The request object has senderId.
             setRequests(pending);
         } catch (error) {
             console.error("Failed to load requests", error);
@@ -79,7 +73,7 @@ export default function MessagesScreen() {
         .map(alter => ({
             id: alter.id,
             alter,
-            lastMessage: 'Appuyez pour discuter...',
+            lastMessage: 'Démarrer une conversation',
             time: '',
             unread: 0,
         }));
@@ -203,16 +197,17 @@ export default function MessagesScreen() {
             {/* Header with current alter */}
             <View style={styles.header}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={styles.title}>Messages</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                        <TouchableOpacity onPress={() => router.back()} style={{ padding: spacing.xs }}>
+                            <Ionicons name="arrow-back" size={24} color={colors.text} />
+                        </TouchableOpacity>
+                        <Text style={styles.title}>Messages</Text>
+                    </View>
                     <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
                         <TouchableOpacity onPress={() => router.push('/crisis/index' as any)}>
                             <Ionicons name="warning-outline" size={28} color={colors.error || '#FF4444'} />
                         </TouchableOpacity>
-                        {activeTab === 'groups' && (
-                            <TouchableOpacity onPress={() => router.push('/groups/create' as any)}>
-                                <Ionicons name="add-circle" size={32} color={colors.primary} />
-                            </TouchableOpacity>
-                        )}
+
                     </View>
                 </View>
 
@@ -302,7 +297,8 @@ const styles = StyleSheet.create({
     },
     title: {
         ...typography.h2,
-        marginBottom: spacing.md,
+        // Remove bottom margin as it's handled by parent gap
+        marginBottom: 0,
     },
     avatarRow: {
         flexDirection: 'row',

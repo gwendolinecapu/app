@@ -89,7 +89,7 @@ export default function ProfileScreen() {
             // Gérer silencieusement les erreurs de permission en mode développement
             // Ces erreurs peuvent survenir si le profil n'existe pas encore
             if (error?.code === 'permission-denied' || error?.message?.includes('permission')) {
-                console.log('[Profile] Creating default public profile...');
+
                 try {
                     await FollowService.createOrUpdatePublicProfile(user.uid, {
                         display_name: system?.username || 'Système',
@@ -105,7 +105,7 @@ export default function ProfileScreen() {
                         }));
                     }
                 } catch (createError) {
-                    console.log('[Profile] Could not create profile:', createError);
+
                 }
             } else {
                 console.error('Error fetching follow stats:', error);

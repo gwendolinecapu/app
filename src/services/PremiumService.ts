@@ -265,7 +265,7 @@ class PremiumService {
         this.status.adFreeUntil = newEnd;
 
         await this.saveStatus();
-        console.log('[PremiumService] Ad-free granted for', days, 'days');
+
     }
 
     /**

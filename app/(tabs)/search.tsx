@@ -164,7 +164,7 @@ export default function SearchScreen() {
                 });
                 setSuggestions(sugg.slice(0, 5));
             } catch (e) {
-                console.log('[Search] No public alters found');
+
             }
         };
         loadSuggestions();
@@ -301,7 +301,12 @@ export default function SearchScreen() {
         <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header */}
             <View style={styles.header}>
-                <Text style={styles.title}>Recherche</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <TouchableOpacity onPress={() => router.back()}>
+                        <Ionicons name="arrow-back" size={24} color={colors.text} />
+                    </TouchableOpacity>
+                    <Text style={styles.title}>Recherche</Text>
+                </View>
             </View>
 
             {/* Search Input - Design Canva avec "Email ou pseudo" */}

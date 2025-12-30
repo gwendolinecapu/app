@@ -4,8 +4,9 @@ import { AuthProvider } from '../src/contexts/AuthContext';
 import { ThemeProvider } from '../src/contexts/ThemeContext';
 import { NotificationProvider } from '../src/contexts/NotificationContext';
 // import { MonetizationProvider } from '../src/contexts/MonetizationContext'; // Disabled - requires development build
-import { colors } from '../src/lib/theme';
-import { View, StyleSheet } from 'react-native';
+import { colors, typography } from '../src/lib/theme';
+import { View, StyleSheet, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '../src/components/ErrorBoundary'; // Assuming path for ErrorBoundary
 import { ToastProvider } from '../src/components/ui/Toast';
@@ -129,13 +130,15 @@ export default function RootLayout() {
                                         </Stack>
                                         <StatusBar style="auto" />
                                         {isPrivacyActive && (
-                                            <BlurView
-                                                intensity={40}
-                                                style={styles.privacyBlur}
-                                                tint="light" // or "dark" based on theme
-                                            >
-                                                {/* Optional: Add Logo or Icon here */}
-                                            </BlurView>
+                                            <View style={styles.privacyScreen}>
+                                                <View style={styles.privacyContent}>
+                                                    <Ionicons name="lock-closed" size={48} color={colors.primary} />
+                                                    <Text style={styles.privacyTitle}>App en pause</Text>
+                                                    <Text style={styles.privacySubtitle}>
+                                                        Touchez pour revenir
+                                                    </Text>
+                                                </View>
+                                            </View>
                                         )}
                                     </View>
                                     {/* </MonetizationProvider> */}
@@ -154,11 +157,25 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
     },
-    privacyBlur: {
+    privacyScreen: {
         ...StyleSheet.absoluteFillObject,
         zIndex: 99999,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.5)', // Fallback if blur fails or android
+        backgroundColor: colors.background,
+    },
+    privacyContent: {
+        alignItems: 'center',
+        padding: 32,
+    },
+    privacyTitle: {
+        ...typography.h2,
+        color: colors.text,
+        marginTop: 16,
+    },
+    privacySubtitle: {
+        ...typography.body,
+        color: colors.textSecondary,
+        marginTop: 8,
     },
 });

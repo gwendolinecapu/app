@@ -293,84 +293,111 @@ export default function AlterSpaceScreen() {
 
     const renderProfile = () => {
         const ProfileHeader = () => (
-            <View style={styles.profileSection}>
-                <View style={[styles.avatar, { backgroundColor: alter.color }]}>
-                    {alter.avatar_url ? (
-                        <Image source={{ uri: alter.avatar_url }} style={styles.avatarImage} />
-                    ) : (
-                        <Text style={styles.avatarText}>
-                            {alter.name.charAt(0).toUpperCase()}
-                        </Text>
-                    )}
-                </View>
-                <Text style={styles.name}>{alter.name}</Text>
-                {alter.pronouns ? (
-                    <Text style={styles.pronouns}>{alter.pronouns}</Text>
-                ) : null}
-                {alter.custom_fields?.find(f => f.label === 'Role')?.value ? (
-                    <View style={styles.roleTag}>
-                        <Ionicons name="shield" size={12} color={colors.primary} />
-                        <Text style={styles.roleText}>
-                            {alter.custom_fields.find(f => f.label === 'Role')?.value}
-                        </Text>
+            <View style={styles.profileContainer}>
+                {/* Top Section: Avatar + Stats */}
+                <View style={styles.topProfileSection}>
+                    <View style={[styles.avatarContainer, { borderColor: alter.color }]}>
+                        <View style={[styles.avatar, { backgroundColor: alter.color }]}>
+                            {alter.avatar_url ? (
+                                <Image source={{ uri: alter.avatar_url }} style={styles.avatarImage} />
+                            ) : (
+                                <Text style={styles.avatarText}>
+                                    {alter.name.charAt(0).toUpperCase()}
+                                </Text>
+                            )}
+                        </View>
                     </View>
-                ) : null}
-                <Text style={styles.bio}>
-                    {alter.bio || "Aucune biographie"}
-                </Text>
-                <View style={styles.statsRow}>
-                    <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>{posts.length}</Text>
-                        <Text style={styles.statLabel}>Posts</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>{friendCount}</Text>
-                        <Text style={styles.statLabel}>Amis</Text>
+
+                    <View style={styles.rightStatsContainer}>
+                        <View style={styles.statsRow}>
+                            <View style={styles.statItem}>
+                                <Text style={styles.statNumber}>{posts.length}</Text>
+                                <Text style={styles.statLabel}>Posts</Text>
+                            </View>
+                            <View style={styles.statItem}>
+                                <Text style={styles.statNumber}>{friendCount}</Text>
+                                <Text style={styles.statLabel}>Amis</Text>
+                            </View>
+                            {/* Placeholder for "System" count or other stat */}
+                            <View style={styles.statItem}>
+                                <Text style={styles.statNumber}>0</Text>
+                                <Text style={styles.statLabel}>Suivi(e)s</Text>
+                            </View>
+                        </View>
                     </View>
                 </View>
 
-                {/* Profile Actions */}
+                {/* Bio Section */}
+                <View style={styles.bioSection}>
+                    <Text style={styles.displayName}>{alter.name} {alter.pronouns ? `• ${alter.pronouns}` : ''}</Text>
+
+                    {alter.custom_fields?.find(f => f.label === 'Role')?.value && (
+                        <Text style={styles.roleText}>{alter.custom_fields.find(f => f.label === 'Role')?.value}</Text>
+                    )}
+
+                    {alter.bio ? (
+                        <Text style={styles.bioText}>{alter.bio}</Text>
+                    ) : null}
+                </View>
+
+                {/* Action Buttons */}
                 <View style={styles.profileActions}>
                     {isOwner ? (
-                        <TouchableOpacity
-                            style={styles.editProfileButton}
-                            onPress={() => router.push(`/alter-space/${alter.id}/edit`)}
-                        >
-                            <Text style={styles.editProfileText}>Modifier le profil</Text>
-                        </TouchableOpacity>
+                        <>
+                            <TouchableOpacity
+                                style={styles.actionButton}
+                                onPress={() => router.push(`/alter-space/${alter.id}/edit`)}
+                            >
+                                <Text style={styles.actionButtonText}>Modifier le profil</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.actionButton}
+                                onPress={() => router.push('/history')}
+                            >
+                                <Text style={styles.actionButtonText}>Statistiques</Text>
+                            </TouchableOpacity>
+                        </>
                     ) : (
                         <>
                             <TouchableOpacity
-                                style={styles.editProfileButton}
+                                style={[styles.actionButton, styles.primaryButton]}
+                                onPress={() => handleFriendAction(alter.id)}
+                            >
+                                <Text style={[styles.actionButtonText, styles.primaryButtonText]}>
+                                    {friendStatuses[alter.id] === 'friends' ? 'Amis' :
+                                        friendStatuses[alter.id] === 'pending' ? 'Demande envoyée' : 'Suivre'}
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.actionButton}
                                 onPress={() => router.push({ pathname: '/conversation/[id]', params: { id: alter.id } })}
                             >
-                                <Text style={styles.editProfileText}>Message</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.followButton} onPress={() => handleFriendAction(alter.id)}>
-                                <Text style={styles.followButtonText}>
-                                    {friendStatuses[alter.id] === 'friends' ? 'Amis' :
-                                        friendStatuses[alter.id] === 'pending' ? 'Demande envoyée' : 'Ajouter'}
-                                </Text>
+                                <Text style={styles.actionButtonText}>Message</Text>
                             </TouchableOpacity>
                         </>
                     )}
                 </View>
+
+                {/* Tab Switcher (Grid/List/Etc if needed) - Visual only for now */}
+                {/* <View style={styles.profileTabs}>
+                    <Ionicons name="grid" size={24} color={colors.text} />
+                </View> */}
             </View>
         );
-        // In "Profile" mode, we show all posts in a grid
+
+        // Grid View
         return (
             <View style={styles.galleryContainer}>
                 {posts.length === 0 ? (
                     <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                         <ProfileHeader />
                         <View style={styles.emptyState}>
-                            <Image
-                                source={require('../../../assets/icon.png')} // Fallback until we have a specific illustration
-                                style={{ width: 64, height: 64, marginBottom: 16, opacity: 0.5, alignSelf: 'center' }}
-                            />
+                            <View style={styles.emptyIconCircle}>
+                                <Ionicons name="camera-outline" size={32} color={colors.textMuted} />
+                            </View>
                             <Text style={styles.emptyTitle}>Aucune publication</Text>
                             <Text style={styles.emptySubtitle}>
-                                {alter.name} n'a pas encore publié
+                                Les photos et posts de {alter.name} apparaîtront ici.
                             </Text>
                         </View>
                     </ScrollView>
@@ -388,11 +415,16 @@ export default function AlterSpaceScreen() {
                             />
                         }
                         renderItem={({ item }) => (
-                            <TouchableOpacity style={styles.galleryItem}>
+                            <TouchableOpacity
+                                style={styles.gridItemContainer}
+                                onPress={() => {
+                                    // Handle post press -> maybe open modal
+                                }}
+                            >
                                 {item.media_url ? (
                                     <Image
                                         source={{ uri: item.media_url }}
-                                        style={styles.galleryImage}
+                                        style={styles.gridImage}
                                     />
                                 ) : (
                                     <View style={styles.textPostPreview}>
@@ -702,23 +734,23 @@ export default function AlterSpaceScreen() {
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{alter.name}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    {/* Profil - afficher le profil de l'alter dans l'alter space */}
+                    {/* Search */}
                     <TouchableOpacity
                         style={styles.messageButton}
                         onPress={() => {
-                            setActiveTab('profile');
+                            setActiveTab('search');
                         }}
                     >
-                        <Ionicons name="person-circle-outline" size={26} color={colors.text} />
+                        <Ionicons name="search" size={26} color={colors.text} />
                     </TouchableOpacity>
+                    {/* Notifications */}
                     <TouchableOpacity
                         style={styles.messageButton}
                         onPress={() => {
-                            // For now, go to global messages.
-                            router.push('/(tabs)/messages');
+                            router.push('/(tabs)/notifications');
                         }}
                     >
-                        <Ionicons name="chatbubble-ellipses-outline" size={26} color={colors.text} />
+                        <Ionicons name="heart-outline" size={26} color={colors.text} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -754,20 +786,20 @@ export default function AlterSpaceScreen() {
                     <Text style={[styles.tabLabel, activeTab === 'feed' && styles.tabLabelActive]}>Feed</Text>
                 </TouchableOpacity>
 
-                {/* 2. Search */}
+                {/* 2. Journal */}
                 <TouchableOpacity
                     style={styles.tab}
                     onPress={() => {
                         triggerHaptic.selection();
-                        setActiveTab('search');
+                        setActiveTab('journal');
                     }}
                 >
                     <Ionicons
-                        name={activeTab === 'search' ? 'search' : 'search-outline'}
+                        name={activeTab === 'journal' ? 'book' : 'book-outline'}
                         size={24}
-                        color={activeTab === 'search' ? colors.primary : colors.textMuted}
+                        color={activeTab === 'journal' ? colors.primary : colors.textMuted}
                     />
-                    <Text style={[styles.tabLabel, activeTab === 'search' && styles.tabLabelActive]}>Recherche</Text>
+                    <Text style={[styles.tabLabel, activeTab === 'journal' && styles.tabLabelActive]}>Journal</Text>
                 </TouchableOpacity>
 
                 {/* 3. + Create (Middle) */}
@@ -908,7 +940,7 @@ export default function AlterSpaceScreen() {
                         </View>
                         <Text style={[styles.menuItemText, { color: colors.primary, fontWeight: '600' }]}>Boutique</Text>
                         <View style={styles.menuBadge}>
-                            <Text style={styles.menuBadgeText}>✨</Text>
+                            <Ionicons name="sparkles" size={12} color="#FFF" />
                         </View>
                     </TouchableOpacity>
 

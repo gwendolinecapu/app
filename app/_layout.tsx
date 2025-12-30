@@ -98,6 +98,9 @@ export default function RootLayout() {
 
                                                 {/* Journal */}
                                                 <Stack.Screen name="journal/[id]" options={{ headerShown: false }} />
+
+                                                {/* Premium */}
+                                                <Stack.Screen name="premium/index" options={{ headerShown: false, presentation: 'modal' }} />
                                                 <Stack.Screen name="journal/create" options={{ headerShown: false }} />
 
                                                 {/* Tasks */}

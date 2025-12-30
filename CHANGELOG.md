@@ -40,10 +40,11 @@
 ### Navigation Alter Space (Refactoring) 🧭
 - **`app/alter-space/[alterId]/index.tsx`** : Nouvelle navigation simplifiée
   - 🏠 **Home** = Feed
+  - 📖 **Journal** = Accès direct (remplace Recherche)
   - ➕ **+** = Bouton gradient pour publier rapidement
-  - ☰ **Menu** = Drawer hamburger avec Journal, Galerie, Émotions, Boutique, Réglages
-  - Header: Bouton recherche remplacé par profil, bouton réglages supprimé
-  - Support du paramètre `?tab=profile` pour ouvrir un onglet spécifique
+  - 👤 **Profil** = Accès rapide au profil
+  - ☰ **Menu** = Drawer hamburger (Galerie, Historique, Boutique, Réglages)
+  - Header: Boutons 🔍 Recherche et ❤️ Notifications ajoutés en haut à droite
 
 ### Consolidation des Profils 🔄
 - **`app/(tabs)/profile.tsx`** : Redirige maintenant vers l'Alter Space

@@ -143,7 +143,8 @@ export interface ShopItem {
     featured?: boolean;         // Mis en avant
     discount?: number;          // % de réduction
     // Visuals
-    preview?: string;           // Hex color, emoji, or preview string
+    preview?: string;           // Hex color (pour thèmes)
+    icon?: string;              // Nom de l'icône Ionicons
     isPremium?: boolean;        // Inclus dans le premium
 }
 

@@ -16,6 +16,11 @@
 - **Components**: Added `ShopItemCard` and `PremiumBanner` as modular components.
 - **UX**: Improved visual feedback for equipping items and purchasing.
 
+### Fixed
+- **AdMediationService**: Fixed crash in Expo Go when `mobileAds` is null (now skips initialization gracefully).
+- **Shop Types**: Fixed TypeScript errors using `equipped_items` object instead of non-existent `avatar_frame`/`themeId`/`bubbleStyle` properties.
+- **Compilation**: Fixed critical JSX syntax errors in `app/(tabs)/alters.tsx` (unclosed `Modal` and `View` tags).
+
 
 ## [2025-12-30] Shop UI & Système d'Amis Corrigé 🛒🤝
 

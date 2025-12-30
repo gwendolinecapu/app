@@ -127,6 +127,9 @@ export default function RootLayout() {
 
                                                 {/* Boutique */}
                                                 <Stack.Screen name="shop/index" options={{ headerShown: false }} />
+
+                                                {/* Historique unifié */}
+                                                <Stack.Screen name="history/index" options={{ headerShown: false }} />
                                             </Stack>
                                             <StatusBar style="auto" />
                                             {isPrivacyActive && (

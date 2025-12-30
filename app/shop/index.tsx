@@ -1,6 +1,5 @@
 /**
- * Atelier - Personnalisation & Style
- * Boutique de cosmétiques (Thèmes, Cadres d'avatar, Bulles de chat)
+ * Atelier - Personnalisation & Style (Discord Style)
  */
 
 import React, { useState } from 'react';
@@ -11,101 +10,89 @@ import {
     TouchableOpacity,
     ScrollView,
     Image,
+    Alert,
+    Dimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { triggerHaptic } from '../../src/lib/haptics';
 import { useMonetization } from '../../src/contexts/MonetizationContext';
-import { PREMIUM_PACKS, CREDIT_PACKS } from '../../src/services/MonetizationTypes';
 import { ShopItem } from '../../src/services/MonetizationTypes';
+import { SHOP_ITEMS } from '../../src/services/ShopData';
 
 // Types for shop items
-type ShopCategory = 'premium' | 'options' | 'themes' | 'frames' | 'bubbles';
+type ShopCategory = 'themes' | 'frames' | 'bubbles';
 
-// Helper to fix type issues with hardcoded data
-const createItem = (data: any): ShopItem => data as ShopItem;
-
-// Sample data - would come from Firestore in production
-const THEMES: ShopItem[] = [
-    createItem({ id: 'theme_midnight', name: 'Minuit', priceCredits: 0, preview: '#1a1a2e', type: 'theme' }),
-    createItem({ id: 'theme_pastel', name: 'Pastel Dream', priceCredits: 150, preview: '#ffeef2', isPremium: true, type: 'theme' }),
-    createItem({ id: 'theme_neon', name: 'Néon City', priceCredits: 200, preview: '#0ff0fc', isPremium: true, type: 'theme' }),
-    createItem({ id: 'theme_forest', name: 'Forêt', priceCredits: 100, preview: '#2d5a27', type: 'theme' }),
-];
-
-const FRAMES: ShopItem[] = [
-    createItem({ id: 'frame_none', name: 'Classique', priceCredits: 0, preview: '⭕', type: 'frame' }),
-    createItem({ id: 'frame_rainbow', name: 'Arc-en-ciel', priceCredits: 100, preview: '🌈', type: 'frame' }),
-    createItem({ id: 'frame_stars', name: 'Étoiles', priceCredits: 150, preview: '✨', isPremium: true, type: 'frame' }),
-    createItem({ id: 'frame_hearts', name: 'Cœurs', priceCredits: 75, preview: '💕', type: 'frame' }),
-];
-
-const BUBBLES: ShopItem[] = [
-    createItem({ id: 'bubble_default', name: 'Standard', priceCredits: 0, preview: '💬', type: 'bubble' }),
-    createItem({ id: 'bubble_cloud', name: 'Nuage', priceCredits: 50, preview: '☁️', type: 'bubble' }),
-    createItem({ id: 'bubble_pixel', name: 'Pixel Art', priceCredits: 120, preview: '🎮', isPremium: true, type: 'bubble' }),
-    createItem({ id: 'bubble_glow', name: 'Lumineux', priceCredits: 180, preview: '💡', isPremium: true, type: 'bubble' }),
-];
+const { width } = Dimensions.get('window');
 
 export default function ShopScreen() {
     const router = useRouter();
     const {
         credits,
+        addCredits,
         isPremium,
-        purchaseIAP,
-        restorePurchases,
         purchaseItem,
         presentPaywall,
         loading
     } = useMonetization();
-    const [activeCategory, setActiveCategory] = useState<ShopCategory>('premium');
+    const [activeCategory, setActiveCategory] = useState<ShopCategory>('themes');
+    const [adLoading, setAdLoading] = useState(false);
 
-    const getCategoryItems = (): any[] => {
-        switch (activeCategory) {
-            case 'premium': return PREMIUM_PACKS;
-            case 'options': return CREDIT_PACKS;
-            case 'themes': return THEMES;
-            case 'frames': return FRAMES;
-            case 'bubbles': return BUBBLES;
-        }
+    const getCategoryItems = (): ShopItem[] => {
+        return SHOP_ITEMS[activeCategory] || [];
     };
 
     const handlePurchase = async (item: ShopItem) => {
         triggerHaptic.selection();
 
-        if (activeCategory === 'premium') {
-            await presentPaywall();
+        if (item.isPremium && !isPremium) {
+            Alert.alert(
+                "Réservé au Premium",
+                "Cet objet est exclusif aux membres Plural Connect Premium. Profitez-en pour passer au niveau supérieur !",
+                [
+                    { text: "Plus tard", style: "cancel" },
+                    { text: "Voir les offres", onPress: () => presentPaywall() }
+                ]
+            );
             return;
         }
 
-        if (activeCategory === 'options') {
-            // Handle IAP for Credits
-            const iapId = item.revenueCatPackageId || item.priceIAP;
-            if (iapId) {
-                const success = await purchaseIAP(iapId);
-                if (success) triggerHaptic.success();
-                else triggerHaptic.error();
-            }
+        if (item.isPremium && isPremium) {
+            // Already owned/unlocked by premium logic, but let's simulate 'equip' or 'purchase for 0' if needed
+            // For now, assume it's "Free with Premium" so we just confirm
+            Alert.alert("Premium", "Cet objet est inclus dans votre abonnement !");
+            // Logic to equip would go here
             return;
         }
 
-        // Handle Credit Purchase (Decorations)
+        // Credit Purchase
         const success = await purchaseItem(item);
         if (success) {
             triggerHaptic.success();
+            Alert.alert("Succès", `Vous avez obtenu : ${item.name}`);
         } else {
             triggerHaptic.error();
+            // Alert handled by context usually, but safety check
         }
     };
 
-    const handleRestore = async () => {
+    const handleWatchAd = async () => {
         triggerHaptic.selection();
-        await restorePurchases();
+        setAdLoading(true);
+        // Simulate Ad
+        setTimeout(() => {
+            setAdLoading(false);
+            addCredits(50);
+            triggerHaptic.success();
+            Alert.alert("Récompense", "Merci d'avoir regardé ! +50 crédits ajoutés.");
+        }, 2000);
     };
 
-    const renderCategoryTab = (category: ShopCategory, icon: string, label: string) => (
+    const renderCategoryTab = (category: ShopCategory, label: string) => (
         <TouchableOpacity
             style={[styles.categoryTab, activeCategory === category && styles.categoryTabActive]}
             onPress={() => {
@@ -113,11 +100,6 @@ export default function ShopScreen() {
                 setActiveCategory(category);
             }}
         >
-            <Ionicons
-                name={icon as any}
-                size={20}
-                color={activeCategory === category ? colors.primary : colors.textMuted}
-            />
             <Text style={[
                 styles.categoryTabText,
                 activeCategory === category && styles.categoryTabTextActive
@@ -127,301 +109,304 @@ export default function ShopScreen() {
         </TouchableOpacity>
     );
 
-    const renderItem = (item: any) => {
-        // Adapt display based on category
-        const isIAP = activeCategory === 'premium' || activeCategory === 'options';
-        const priceDisplay = isIAP ? `${item.priceFiat}€` : item.price === 0 ? 'Gratuit' : item.price;
-        const iconName = isIAP ? (activeCategory === 'premium' ? 'diamond' : 'star') : 'brush'; // naive
+    const renderItem = (item: ShopItem) => {
+        const isUnlocked = item.isPremium && isPremium;
 
         return (
             <TouchableOpacity
                 key={item.id}
-                style={[styles.itemCard, item.featured && styles.itemCardFeatured]}
-                onPress={() => handlePurchase(item as ShopItem)}
-                activeOpacity={0.8}
+                style={styles.itemCard}
+                onPress={() => handlePurchase(item)}
+                activeOpacity={0.9}
                 disabled={loading}
             >
-                {item.featured && <View style={styles.featuredBadge}><Text style={styles.featuredText}>Top</Text></View>}
-
-                <View style={[styles.itemPreview, { backgroundColor: item.preview?.startsWith('#') ? item.preview : colors.backgroundLight }]}>
-                    {/* Naive preview logic */}
-                    {activeCategory === 'premium' ?
-                        <Ionicons name="diamond" size={32} color={colors.primary} /> :
-                        activeCategory === 'options' ?
-                            <Ionicons name="star" size={32} color="#FFD700" /> :
-                            (!item.preview?.startsWith('#') && <Text style={styles.itemPreviewEmoji}>{item.preview}</Text>)
-                    }
+                <View style={[styles.itemPreview, { backgroundColor: item.preview?.startsWith('#') ? item.preview : '#333' }]}>
+                    {item.type === 'frame' && <Text style={{ fontSize: 40 }}>👤</Text>}
+                    {item.type === 'bubble' && <Text style={{ fontSize: 30 }}>💬</Text>}
+                    {/* Overlay Frame/Preview if needed */}
+                    {item.type === 'frame' && <Text style={{ position: 'absolute', fontSize: 60 }}>{item.preview}</Text>}
+                    {item.type === 'bubble' && <Text style={{ position: 'absolute', fontSize: 20 }}>{item.preview}</Text>}
                 </View>
 
-                <Text style={styles.itemName}>{item.name}</Text>
+                <View style={styles.itemContent}>
+                    <Text style={styles.itemName}>{item.name}</Text>
+                    <Text style={styles.itemDesc} numberOfLines={1}>{item.description}</Text>
 
-                <View style={styles.priceContainer}>
-                    {!isIAP && item.price > 0 && <Ionicons name="star" size={14} color={colors.primary} />}
-                    <Text style={[styles.priceText, isIAP && { fontSize: 14 }]}>
-                        {priceDisplay}
-                    </Text>
-                    {item.duration === 30 && <Text style={{ fontSize: 10, color: colors.textMuted }}>/mois</Text>}
+                    <View style={styles.priceRow}>
+                        {item.isPremium ? (
+                            <View style={[styles.badge, isUnlocked ? styles.badgeOwned : styles.badgePremium]}>
+                                <Ionicons name="diamond" size={10} color="white" />
+                                <Text style={styles.badgeText}>{isUnlocked ? "Inclus" : "Premium"}</Text>
+                            </View>
+                        ) : (
+                            <View style={styles.badge}>
+                                <Ionicons name="star" size={10} color={colors.primary} />
+                                <Text style={[styles.badgeText, { color: colors.primary }]}>{item.priceCredits}</Text>
+                            </View>
+                        )}
+                        {item.isPremium && !isPremium && (
+                            <Text style={styles.priceSub}>ou {item.priceCredits * 2}★</Text>
+                        )}
+                    </View>
                 </View>
             </TouchableOpacity>
         );
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={colors.text} />
-                </TouchableOpacity>
-                <Text style={styles.title}>Boutique</Text>
-                <View style={styles.headerButtons}>
-                    <TouchableOpacity onPress={handleRestore} style={styles.restoreButton}>
-                        <Text style={styles.restoreButtonText}>Restaurer</Text>
+        <View style={styles.container}>
+            <ScrollView style={styles.scrollContainer} contentContainerStyle={{ paddingBottom: 100 }}>
+
+                {/* Header */}
+                <SafeAreaView edges={['top']} style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <Ionicons name="arrow-back" size={24} color="#FFF" />
                     </TouchableOpacity>
-                    <View style={styles.creditsContainer}>
-                        <Ionicons name="star" size={16} color={colors.primary} />
+                    <View style={styles.creditsPill}>
+                        <Ionicons name="star" size={14} color="#FFD700" />
                         <Text style={styles.creditsText}>{credits}</Text>
                     </View>
-                </View>
-            </View>
+                </SafeAreaView>
 
-            {/* Daily Reward Banner */}
-            <TouchableOpacity style={styles.dailyRewardBanner} activeOpacity={0.9}>
-                <View style={styles.dailyRewardIcon}>
-                    <Ionicons name="gift" size={24} color="#fff" />
-                </View>
-                <View style={styles.dailyRewardContent}>
-                    <Text style={styles.dailyRewardTitle}>Récompense quotidienne</Text>
-                    <Text style={styles.dailyRewardSubtitle}>+25 crédits disponibles !</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.primary} />
-            </TouchableOpacity>
-
-            {/* Category Tabs */}
-            <View style={styles.categoryTabs}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.xs }}>
-                    {renderCategoryTab('premium', 'diamond', 'Premium')}
-                    {renderCategoryTab('options', 'add-circle', 'Crédits')}
-                    {renderCategoryTab('themes', 'color-palette-outline', 'Thèmes')}
-                    {renderCategoryTab('frames', 'image-outline', 'Cadres')}
-                    {renderCategoryTab('bubbles', 'chatbubble-outline', 'Bulles')}
-                </ScrollView>
-            </View>
-
-            {/* Items Grid */}
-            <ScrollView
-                style={styles.itemsContainer}
-                contentContainerStyle={styles.itemsGrid}
-                showsVerticalScrollIndicator={false}
-            >
-                {activeCategory === 'premium' ? (
-                    <TouchableOpacity
-                        style={[styles.itemCard, { width: '100%', aspectRatio: 1.5, backgroundColor: colors.primary }]}
-                        onPress={() => presentPaywall()}
-                        activeOpacity={0.9}
+                {/* Premium Banner (Nitro Style) */}
+                <TouchableOpacity onPress={() => presentPaywall()} activeOpacity={0.9}>
+                    <LinearGradient
+                        colors={['#5865F2', '#EB459E']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.premiumBanner}
                     >
-                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10 }}>
-                            <Ionicons name="diamond" size={48} color="white" />
-                            <Text style={[styles.itemName, { color: 'white', fontSize: 20 }]}>Plural Connect Premium</Text>
-                            <Text style={[styles.priceText, { color: 'rgba(255,255,255,0.8)', fontWeight: 'normal' }]}>
-                                Débloquez toutes les fonctionnalités
-                            </Text>
-                            <View style={{ backgroundColor: 'white', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginTop: 10 }}>
-                                <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Voir les offres</Text>
+                        <View style={styles.bannerContent}>
+                            <View>
+                                <Text style={styles.bannerTitle}>Plural Premium</Text>
+                                <Text style={styles.bannerSubtitle}>Débloquez tout. Exprimez-vous.</Text>
+                            </View>
+                            <View style={styles.bannerButton}>
+                                <Text style={styles.bannerButtonText}>Voir les offres</Text>
                             </View>
                         </View>
-                    </TouchableOpacity>
-                ) : (
-                    getCategoryItems().map(renderItem)
-                )}
+                        {/* Abstract Shapes (Circles) */}
+                        <View style={[styles.shape, { width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(255,255,255,0.1)', top: -20, right: -20 }]} />
+                        <View style={[styles.shape, { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.1)', bottom: 10, left: 20 }]} />
+                    </LinearGradient>
+                </TouchableOpacity>
+
+                {/* Categories */}
+                <View style={styles.tabsContainer}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.sm }}>
+                        {renderCategoryTab('themes', 'Thèmes')}
+                        {renderCategoryTab('frames', 'Cadres')}
+                        {renderCategoryTab('bubbles', 'Bulles')}
+                    </ScrollView>
+                </View>
+
+                {/* Items Grid */}
+                <View style={styles.grid}>
+                    {getCategoryItems().map(renderItem)}
+                </View>
+
+                {/* Rewarded Ad CTA */}
+                <TouchableOpacity style={styles.adCard} onPress={handleWatchAd} disabled={adLoading}>
+                    <LinearGradient
+                        colors={['#23272A', '#2C2F33']}
+                        style={styles.adGradient}
+                    >
+                        <View style={styles.adIcon}>
+                            <Ionicons name={adLoading ? "hourglass" : "videocam"} size={24} color={colors.textMuted} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.adTitle}>Besoin de crédits ?</Text>
+                            <Text style={styles.adSubtitle}>Regarder une pub pour +50★</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+                    </LinearGradient>
+                </TouchableOpacity>
+
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.background,
+        backgroundColor: '#202225', // Discord Dark
+    },
+    scrollContainer: {
+        flex: 1,
     },
     header: {
         flexDirection: 'row',
-        alignItems: 'center',
         justifyContent: 'space-between',
+        alignItems: 'center',
         paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
+        paddingBottom: spacing.sm,
     },
     backButton: {
-        padding: spacing.xs,
-    },
-    title: {
-        ...typography.h2,
-        color: colors.text,
-    },
-    creditsContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.backgroundLight,
-        paddingHorizontal: spacing.sm,
-        paddingVertical: spacing.xs,
-        borderRadius: borderRadius.full,
-        gap: 4,
-    },
-    creditsText: {
-        ...typography.body,
-        fontWeight: '600',
-        color: colors.text,
-    },
-    dailyRewardBanner: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.backgroundCard,
-        marginHorizontal: spacing.md,
-        marginVertical: spacing.sm,
-        padding: spacing.md,
-        borderRadius: borderRadius.lg,
-        borderWidth: 1,
-        borderColor: colors.primary + '40',
-    },
-    dailyRewardIcon: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: colors.primary,
+        width: 40,
+        height: 40,
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: spacing.sm,
     },
-    dailyRewardContent: {
-        flex: 1,
-    },
-    dailyRewardTitle: {
-        ...typography.body,
-        fontWeight: '600',
-        color: colors.text,
-    },
-    dailyRewardSubtitle: {
-        ...typography.caption,
-        color: colors.primary,
-    },
-    categoryTabs: {
-        flexDirection: 'row',
-        paddingHorizontal: spacing.md,
-        marginBottom: spacing.sm,
-        gap: spacing.xs,
-    },
-    categoryTab: {
-        flex: 1,
+    creditsPill: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: spacing.sm,
-        backgroundColor: colors.backgroundLight,
-        borderRadius: borderRadius.md,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
         gap: 6,
     },
+    creditsText: {
+        color: '#FFF',
+        fontWeight: 'bold',
+    },
+    premiumBanner: {
+        margin: spacing.md,
+        height: 140,
+        borderRadius: 16,
+        padding: spacing.lg,
+        justifyContent: 'center',
+        overflow: 'hidden',
+    },
+    bannerContent: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        zIndex: 10,
+    },
+    bannerTitle: {
+        fontSize: 24,
+        fontWeight: '900',
+        color: '#FFF',
+        marginBottom: 4,
+    },
+    bannerSubtitle: {
+        color: 'rgba(255,255,255,0.9)',
+        fontSize: 12,
+    },
+    bannerButton: {
+        backgroundColor: '#FFF',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 20,
+        elevation: 5,
+    },
+    bannerButtonText: {
+        color: '#5865F2',
+        fontWeight: 'bold',
+        fontSize: 12,
+    },
+    shape: {
+        position: 'absolute',
+    },
+    tabsContainer: {
+        marginBottom: spacing.md,
+    },
+    categoryTab: {
+        paddingHorizontal: 20,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: '#2F3136',
+    },
     categoryTabActive: {
-        backgroundColor: colors.primary + '20',
+        backgroundColor: '#5865F2',
     },
     categoryTabText: {
-        ...typography.caption,
-        color: colors.textMuted,
-        fontWeight: '500',
-    },
-    categoryTabTextActive: {
-        color: colors.primary,
+        color: '#B9BBBE',
         fontWeight: '600',
     },
-    itemsContainer: {
-        flex: 1,
+    categoryTabTextActive: {
+        color: '#FFF',
     },
-    itemsGrid: {
+    grid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         paddingHorizontal: spacing.md,
-        paddingBottom: spacing.xl,
-        gap: spacing.sm,
+        gap: spacing.md,
     },
     itemCard: {
-        width: '47%',
-        backgroundColor: colors.backgroundCard,
-        borderRadius: borderRadius.lg,
-        padding: spacing.sm,
-        alignItems: 'center',
+        width: (width - spacing.md * 3) / 2, // 2 columns
+        backgroundColor: '#2F3136',
+        borderRadius: 12,
+        overflow: 'hidden',
     },
     itemPreview: {
-        width: 80,
-        height: 80,
-        borderRadius: borderRadius.lg,
+        height: 100,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: spacing.xs,
     },
-    itemPreviewEmoji: {
-        fontSize: 36,
-    },
-    premiumBadge: {
-        position: 'absolute',
-        top: -4,
-        right: -4,
-        backgroundColor: colors.backgroundCard,
-        borderRadius: 10,
-        padding: 4,
+    itemContent: {
+        padding: spacing.sm,
     },
     itemName: {
-        ...typography.body,
-        fontWeight: '500',
-        color: colors.text,
-        marginBottom: 4,
+        color: '#FFF',
+        fontWeight: 'bold',
+        fontSize: 14,
+        marginBottom: 2,
     },
-    priceContainer: {
+    itemDesc: {
+        color: '#72767D',
+        fontSize: 10,
+        marginBottom: 8,
+    },
+    priceRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    badge: {
         flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.2)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
         gap: 4,
     },
-    freeText: {
-        ...typography.caption,
-        color: colors.success,
-        fontWeight: '600',
+    badgePremium: {
+        backgroundColor: '#EB459E',
     },
-    priceText: {
-        ...typography.caption,
-        fontWeight: '600',
-        color: colors.text,
+    badgeOwned: {
+        backgroundColor: '#3BA55C',
     },
-    headerButtons: {
+    badgeText: {
+        color: '#FFF',
+        fontWeight: 'bold',
+        fontSize: 10,
+    },
+    priceSub: {
+        color: '#72767D',
+        fontSize: 10,
+    },
+    adCard: {
+        margin: spacing.md,
+        borderRadius: 12,
+        overflow: 'hidden',
+        marginTop: spacing.xl,
+    },
+    adGradient: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: spacing.sm,
+        padding: spacing.md,
+        gap: spacing.md,
     },
-    restoreButton: {
-        paddingHorizontal: spacing.sm,
-        paddingVertical: 4,
+    adIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#202225',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    restoreButtonText: {
-        ...typography.caption,
-        color: colors.textMuted,
-        textDecorationLine: 'underline',
-    },
-    itemCardFeatured: {
-        borderColor: colors.primary,
-        borderWidth: 1.5,
-        backgroundColor: colors.backgroundCard,
-    },
-    featuredBadge: {
-        position: 'absolute',
-        top: -8,
-        backgroundColor: colors.primary,
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 10,
-        zIndex: 10,
-    },
-    featuredText: {
-        ...typography.caption,
-        color: '#FFFFFF',
-        fontSize: 10,
+    adTitle: {
+        color: '#FFF',
         fontWeight: 'bold',
+        fontSize: 14,
+    },
+    adSubtitle: {
+        color: '#B9BBBE',
+        fontSize: 12,
     },
 });
 

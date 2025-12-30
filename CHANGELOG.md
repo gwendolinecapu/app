@@ -16,13 +16,10 @@
 - **`app/alter-space/[alterId]/index.tsx`** : Nouvelle navigation simplifiée
   - 🏠 **Home** = Feed
   - ➕ **+** = Bouton gradient pour publier rapidement
-  - ☰ **Menu** = Drawer hamburger avec :
-    - Mon Profil
-    - Journal
-    - Galerie Privée  
-    - Comment je me sens
-    - 🛒 Boutique (toujours visible)
-    - ⚙️ Réglages
+  - ☰ **Menu** = Drawer hamburger avec Journal, Galerie, Émotions, Boutique, Réglages
+  - Header: Bouton recherche remplacé par profil, bouton réglages supprimé
+
+---
 
 ## [2025-12-30] Réorganisation Feed & Recherche 🔄
 

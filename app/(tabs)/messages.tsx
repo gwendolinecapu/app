@@ -6,6 +6,7 @@ import {
     TouchableOpacity,
     StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { Alter } from '../../src/types';
@@ -193,7 +194,7 @@ export default function MessagesScreen() {
     );
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header with current alter */}
             <View style={styles.header}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -282,7 +283,7 @@ export default function MessagesScreen() {
                 refreshing={activeTab === 'groups' ? loadingGroups : activeTab === 'requests' ? loadingRequests : false}
                 onRefresh={activeTab === 'groups' ? loadGroups : activeTab === 'requests' ? loadRequests : undefined}
             />
-        </View>
+        </SafeAreaView>
     );
 }
 
@@ -293,7 +294,7 @@ const styles = StyleSheet.create({
     },
     header: {
         padding: spacing.lg,
-        paddingTop: spacing.xl,
+        paddingTop: spacing.md,
     },
     title: {
         ...typography.h2,

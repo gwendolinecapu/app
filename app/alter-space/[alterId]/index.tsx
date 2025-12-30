@@ -681,14 +681,14 @@ export default function AlterSpaceScreen() {
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{alter.name}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    {/* Recherche - naviguer vers l'écran de recherche */}
+                    {/* Profil - afficher le profil de l'alter dans l'alter space */}
                     <TouchableOpacity
                         style={styles.messageButton}
                         onPress={() => {
-                            router.push('/(tabs)/search' as any);
+                            setActiveTab('profile');
                         }}
                     >
-                        <Ionicons name="search-outline" size={24} color={colors.text} />
+                        <Ionicons name="person-circle-outline" size={26} color={colors.text} />
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.messageButton}
@@ -698,16 +698,6 @@ export default function AlterSpaceScreen() {
                         }}
                     >
                         <Ionicons name="chatbubble-ellipses-outline" size={26} color={colors.text} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.messageButton}
-                        onPress={() => {
-                            // Settings for this alter
-                            // Assuming we have a settings page or just general settings
-                            router.push('/settings');
-                        }}
-                    >
-                        <Ionicons name="settings-outline" size={26} color={colors.text} />
                     </TouchableOpacity>
                 </View>
             </View>

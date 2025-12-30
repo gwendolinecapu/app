@@ -82,7 +82,39 @@ export default function AlterSpaceScreen() {
     const [friendStatuses, setFriendStatuses] = useState<Record<string, string>>({});
     const [friendCount, setFriendCount] = useState(0);
 
-    // Refresh alter data from Firestore when screen gains focus (after edit)
+    // État pour la galerie privée
+    const [galleryImages, setGalleryImages] = useState<Array<{ id: string, uri: string, createdAt: Date }>>([]);
+    const [isCloudEnabled, setIsCloudEnabled] = useState(false);
+    const [loadingGallery, setLoadingGallery] = useState(false);
+
+    // Charger la galerie depuis le stockage local (AsyncStorage)
+    useEffect(() => {
+        loadGalleryFromLocal();
+    }, [alterId]);
+
+    const loadGalleryFromLocal = async () => {
+        try {
+            setLoadingGallery(true);
+            // TODO: Implémenter le chargement depuis AsyncStorage
+            // const stored = await AsyncStorage.getItem(`gallery_${alterId}`);
+            // if (stored) setGalleryImages(JSON.parse(stored));
+        } catch (e) {
+            console.error('Erreur chargement galerie:', e);
+        } finally {
+            setLoadingGallery(false);
+        }
+    };
+
+    const handleAddPhoto = async () => {
+        try {
+            triggerHaptic.selection();
+            // TODO: Implémenter la sélection d'image avec expo-image-picker
+            toast.showToast('Sélection de photo à implémenter', 'info');
+        } catch (e) {
+            console.error('Erreur ajout photo:', e);
+        }
+    };
+
     const fetchAlterFromFirestore = useCallback(async () => {
         if (!alterId) return;
         try {
@@ -376,38 +408,7 @@ export default function AlterSpaceScreen() {
         </View>
     );
 
-    // État pour la galerie privée
-    const [galleryImages, setGalleryImages] = useState<Array<{ id: string, uri: string, createdAt: Date }>>([]);
-    const [isCloudEnabled, setIsCloudEnabled] = useState(false);
-    const [loadingGallery, setLoadingGallery] = useState(false);
 
-    // Charger la galerie depuis le stockage local (AsyncStorage)
-    useEffect(() => {
-        loadGalleryFromLocal();
-    }, [alterId]);
-
-    const loadGalleryFromLocal = async () => {
-        try {
-            setLoadingGallery(true);
-            // TODO: Implémenter le chargement depuis AsyncStorage
-            // const stored = await AsyncStorage.getItem(`gallery_${alterId}`);
-            // if (stored) setGalleryImages(JSON.parse(stored));
-        } catch (e) {
-            console.error('Erreur chargement galerie:', e);
-        } finally {
-            setLoadingGallery(false);
-        }
-    };
-
-    const handleAddPhoto = async () => {
-        try {
-            triggerHaptic.selection();
-            // TODO: Implémenter la sélection d'image avec expo-image-picker
-            toast.showToast('Sélection de photo à implémenter', 'info');
-        } catch (e) {
-            console.error('Erreur ajout photo:', e);
-        }
-    };
 
     const renderGallery = () => (
         <View style={styles.tabContent}>

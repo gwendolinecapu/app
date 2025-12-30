@@ -86,7 +86,7 @@ export default function ShopScreen() {
         // Simulate Ad
         setTimeout(() => {
             setAdLoading(false);
-            addCredits(50);
+            addCredits(50, 'reward_ad');
             triggerHaptic.success();
             Alert.alert("Récompense", "Merci d'avoir regardé ! +50 crédits ajoutés.");
         }, 2000);

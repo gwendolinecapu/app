@@ -14,6 +14,18 @@
 
 ---
 
+## [2025-12-30] Corrections Système d'Amis 🤝
+
+### Recherche & Ajout d'Amis
+- **`app/(tabs)/search.tsx`** :
+  - Connexion réelle au `FriendService`
+  - Boutons "Ajouter" fonctionnels
+  - Affichage du statut (Amis, En attente, etc.)
+  - Suggestions intelligentes basées sur les alters publics
+  - Corrections d'interface (badges de statut)
+
+---
+
 ## [2025-12-30] Onglet Notifications (Style Instagram) 🔔
 
 ### Nouvel Écran Notifications

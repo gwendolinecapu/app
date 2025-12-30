@@ -351,6 +351,8 @@ class NotificationService {
     // ==================== CATEGORIES & ACTIONS ====================
 
     private async setupNotificationCategories(): Promise<void> {
+        if (Platform.OS === 'web') return;
+
         await Notifications.setNotificationCategoryAsync('front', [
             {
                 identifier: 'switch_front',

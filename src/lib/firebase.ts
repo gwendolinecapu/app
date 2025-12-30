@@ -69,7 +69,6 @@ enableIndexedDbPersistence(db).catch((err) => {
     }
 });
 
-// Initialisation de Storage
-const storage = getStorage(app);
+
 
 export { auth, db, storage };

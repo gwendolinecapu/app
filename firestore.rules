@@ -256,19 +256,20 @@ service cloud.firestore {
 
     // ============================================
     // Friendships Collection
-    // Fixed: check systemId instead of alterId since alterId is the alter's ID not the user's uid
+    // Read: any authenticated user (needed for bilateral friend checks)
+    // Create: any authenticated user (for bilateral creation)
+    // Delete: only the owner of that side of the friendship
     // ============================================
     match /friendships/{friendshipId} {
-      // Read: authenticated users can read friendships involving their system
-      allow read: if isAuthenticated() && (
-        resource.data.systemId == request.auth.uid ||
-        resource.data.system_id == request.auth.uid
-      );
+      // Read: any authenticated user can read friendships 
+      // (needed for checkStatus to work across systems)
+      allow read: if isAuthenticated();
+      
       // Create: Allow any authenticated user to create a friendship doc
-      // Ideally should check systemId ownership but for bilateral creation we need flexibility
+      // (for bilateral creation during accept flow)
       allow create: if isAuthenticated();
       
-      // Delete: can delete own friendships
+      // Delete: can only delete your own friendships
       allow delete: if isAuthenticated() && (
         resource.data.systemId == request.auth.uid ||
         resource.data.system_id == request.auth.uid

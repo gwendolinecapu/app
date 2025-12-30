@@ -60,26 +60,56 @@ export default function ProfileScreen() {
     };
 
     // Charger les compteurs followers/following depuis le profil public
+    // Note: Si le profil n'existe pas encore, on le crée d'abord
     const fetchFollowStats = async () => {
         if (!user) return;
 
         try {
-            const profile = await FollowService.getPublicProfile(user.uid);
-            if (profile) {
-                setStats(prev => ({
-                    ...prev,
-                    followers: profile.follower_count,
-                    following: profile.following_count,
-                }));
-            } else {
-                // Si pas de profil public, créer un profil par défaut
+            // D'abord essayer de récupérer le profil
+            let profile = await FollowService.getPublicProfile(user.uid);
+
+            // Si pas de profil, créer un profil par défaut
+            if (!profile) {
                 await FollowService.createOrUpdatePublicProfile(user.uid, {
                     display_name: system?.username || 'Système',
                     is_public: false, // Privé par défaut
                 });
+                // Récupérer le profil nouvellement créé
+                profile = await FollowService.getPublicProfile(user.uid);
             }
-        } catch (error) {
-            console.error('Error fetching follow stats:', error);
+
+            if (profile) {
+                setStats(prev => ({
+                    ...prev,
+                    followers: profile!.follower_count || 0,
+                    following: profile!.following_count || 0,
+                }));
+            }
+        } catch (error: any) {
+            // Gérer silencieusement les erreurs de permission en mode développement
+            // Ces erreurs peuvent survenir si le profil n'existe pas encore
+            if (error?.code === 'permission-denied' || error?.message?.includes('permission')) {
+                console.log('[Profile] Creating default public profile...');
+                try {
+                    await FollowService.createOrUpdatePublicProfile(user.uid, {
+                        display_name: system?.username || 'Système',
+                        is_public: false,
+                    });
+                    // Réessayer
+                    const newProfile = await FollowService.getPublicProfile(user.uid);
+                    if (newProfile) {
+                        setStats(prev => ({
+                            ...prev,
+                            followers: newProfile.follower_count || 0,
+                            following: newProfile.following_count || 0,
+                        }));
+                    }
+                } catch (createError) {
+                    console.log('[Profile] Could not create profile:', createError);
+                }
+            } else {
+                console.error('Error fetching follow stats:', error);
+            }
         }
     };
 

@@ -108,7 +108,7 @@ export default function ConversationScreen() {
                 is_internal: internal === 'true',
                 is_read: false,
                 created_at: new Date().toISOString(),
-                system_tag: useSystemTag ? (currentAlter.name) : undefined,
+                system_tag: useSystemTag ? currentAlter.name : null,
             });
 
             setNewMessage('');

@@ -27,7 +27,9 @@ import { colors, spacing, borderRadius, typography, alterColors } from '../../sr
 import { Ionicons } from '@expo/vector-icons';
 import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SystemWeather } from '../../src/components/SystemWeather';
+import { Feed } from '../../src/components/Feed';
 import { useScrollToTop } from '@react-navigation/native';
+import { triggerHaptic } from '../../src/lib/haptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -78,6 +80,7 @@ export default function DashboardScreen() {
     const [selectedAlters, setSelectedAlters] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [refreshing, setRefreshing] = useState(false);
+    const [viewMode, setViewMode] = useState<'fronting' | 'feed'>('fronting');
 
     // Create new alter state
     const [newAlterName, setNewAlterName] = useState('');
@@ -388,119 +391,150 @@ export default function DashboardScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            {/* System Weather Widget */}
-            <View style={{ paddingHorizontal: 16, marginBottom: 8, marginTop: 16 }}>
-                <SystemWeather />
-            </View>
-
             {/* Header */}
             <View style={styles.header}>
                 <View>
                     <Text style={styles.greeting}>Bonjour,</Text>
-                    <Text style={styles.title}>Qui est là ?</Text>
+                    <Text style={styles.title}>{viewMode === 'fronting' ? 'Qui est là ?' : "Fil d'actualité"}</Text>
                 </View>
-                <TouchableOpacity
-                    style={styles.settingsButton}
-                    onPress={() => router.push('/settings/index' as any)}
-                >
-                    <Ionicons name="settings-outline" size={24} color={colors.textSecondary} />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {/* View Switcher Small */}
+                    <View style={styles.viewToggleWrapper}>
+                        <TouchableOpacity
+                            style={[styles.viewToggleBtn, viewMode === 'fronting' && styles.viewToggleBtnActive]}
+                            onPress={() => {
+                                triggerHaptic.selection();
+                                setViewMode('fronting');
+                            }}
+                        >
+                            <Ionicons name="people" size={16} color={viewMode === 'fronting' ? colors.text : colors.textMuted} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.viewToggleBtn, viewMode === 'feed' && styles.viewToggleBtnActive]}
+                            onPress={() => {
+                                triggerHaptic.selection();
+                                setViewMode('feed');
+                            }}
+                        >
+                            <Ionicons name="newspaper" size={16} color={viewMode === 'feed' ? colors.text : colors.textMuted} />
+                        </TouchableOpacity>
+                    </View>
+
+                    <TouchableOpacity
+                        style={styles.settingsButton}
+                        onPress={() => router.push('/settings/index' as any)}
+                    >
+                        <Ionicons name="settings-outline" size={24} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
-            {/* Mode Switcher */}
-            <View style={styles.modeSwitchContainer}>
-                <TouchableOpacity
-                    style={[styles.modeButton, selectionMode === 'single' && styles.modeButtonActive]}
-                    onPress={() => {
-                        setSelectionMode('single');
-                        setSelectedAlters([]);
-                    }}
-                >
-                    <Text style={[styles.modeButtonText, selectionMode === 'single' && styles.modeButtonTextActive]}>Solo</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.modeButton, selectionMode === 'multi' && styles.modeButtonActive]}
-                    onPress={() => setSelectionMode('multi')}
-                >
-                    <Text style={[styles.modeButtonText, selectionMode === 'multi' && styles.modeButtonTextActive]}>Co-Front</Text>
-                </TouchableOpacity>
-            </View>
+            {viewMode === 'feed' ? (
+                <Feed />
+            ) : (
+                <>
+                    {/* System Weather Widget */}
+                    <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+                        <SystemWeather />
+                    </View>
 
-            {/* Compteur d'alters */}
-            <View style={styles.alterCountContainer}>
-                <Text style={styles.alterCountText}>
-                    {filteredAlters.length} alter{filteredAlters.length !== 1 ? 's' : ''}
-                    {searchQuery && ` (sur ${alters.length})`}
-                </Text>
-            </View>
 
-            {/* =====================================================
+                    {/* Mode Switcher */}
+                    <View style={styles.modeSwitchContainer}>
+                        <TouchableOpacity
+                            style={[styles.modeButton, selectionMode === 'single' && styles.modeButtonActive]}
+                            onPress={() => {
+                                setSelectionMode('single');
+                                setSelectedAlters([]);
+                            }}
+                        >
+                            <Text style={[styles.modeButtonText, selectionMode === 'single' && styles.modeButtonTextActive]}>Solo</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.modeButton, selectionMode === 'multi' && styles.modeButtonActive]}
+                            onPress={() => setSelectionMode('multi')}
+                        >
+                            <Text style={[styles.modeButtonText, selectionMode === 'multi' && styles.modeButtonTextActive]}>Co-Front</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Compteur d'alters */}
+                    <View style={styles.alterCountContainer}>
+                        <Text style={styles.alterCountText}>
+                            {filteredAlters.length} alter{filteredAlters.length !== 1 ? 's' : ''}
+                            {searchQuery && ` (sur ${alters.length})`}
+                        </Text>
+                    </View>
+
+                    {/* =====================================================
                 APPLE WATCH STYLE GRID
                 FlatList optimisée pour performance avec 2000+ alters
                 key prop obligatoire pour permettre changement de numColumns
                 ===================================================== */}
-            <View style={styles.gridContainer}>
-                <FlatList
-                    ref={scrollRef}
-                    key={`grid-${NUM_COLUMNS}`}  // IMPORTANT: permet changement dynamique de numColumns
-                    data={authLoading ? [] : gridData}
-                    renderItem={renderBubble}
-                    keyExtractor={keyExtractor}
-                    numColumns={NUM_COLUMNS}
-                    contentContainerStyle={styles.gridContent}
-                    showsVerticalScrollIndicator={false}
-                    refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-                    }
-                    ListEmptyComponent={
-                        authLoading ? (
-                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: BUBBLE_SPACING }}>
-                                {[...Array(12)].map((_, i) => (
-                                    <View key={i} style={{ alignItems: 'center', marginBottom: 10 }}>
-                                        <Skeleton width={BUBBLE_SIZE} height={BUBBLE_SIZE} borderRadius={BUBBLE_SIZE / 2} />
-                                        <View style={{ marginTop: 8 }}>
-                                            <Skeleton width={60} height={12} borderRadius={4} />
-                                        </View>
+                    <View style={styles.gridContainer}>
+                        <FlatList
+                            ref={scrollRef}
+                            key={`grid-${NUM_COLUMNS}`}  // IMPORTANT: permet changement dynamique de numColumns
+                            data={authLoading ? [] : gridData}
+                            renderItem={renderBubble}
+                            keyExtractor={keyExtractor}
+                            numColumns={NUM_COLUMNS}
+                            contentContainerStyle={styles.gridContent}
+                            showsVerticalScrollIndicator={false}
+                            refreshControl={
+                                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+                            }
+                            ListEmptyComponent={
+                                authLoading ? (
+                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: BUBBLE_SPACING }}>
+                                        {[...Array(12)].map((_, i) => (
+                                            <View key={i} style={{ alignItems: 'center', marginBottom: 10 }}>
+                                                <Skeleton width={BUBBLE_SIZE} height={BUBBLE_SIZE} borderRadius={BUBBLE_SIZE / 2} />
+                                                <View style={{ marginTop: 8 }}>
+                                                    <Skeleton width={60} height={12} borderRadius={4} />
+                                                </View>
+                                            </View>
+                                        ))}
                                     </View>
-                                ))}
-                            </View>
-                        ) : null
-                    }
-                    // Optimisations pour très grandes listes (2000+ items)
-                    removeClippedSubviews={true}
-                    maxToRenderPerBatch={20}
-                    windowSize={10}
-                    initialNumToRender={30}
-                    getItemLayout={(data, index) => ({
-                        length: BUBBLE_SIZE + 24,
-                        offset: (BUBBLE_SIZE + 24) * Math.floor(index / NUM_COLUMNS),
-                        index,
-                    })}
-                />
-            </View>
+                                ) : null
+                            }
+                            // Optimisations pour très grandes listes (2000+ items)
+                            removeClippedSubviews={true}
+                            maxToRenderPerBatch={20}
+                            windowSize={10}
+                            initialNumToRender={30}
+                            getItemLayout={(data, index) => ({
+                                length: BUBBLE_SIZE + 24,
+                                offset: (BUBBLE_SIZE + 24) * Math.floor(index / NUM_COLUMNS),
+                                index,
+                            })}
+                        />
+                    </View>
 
-            {/* Co-Front Floating Action Button */}
-            {selectionMode === 'multi' && selectedAlters.length > 0 && (
-                <View style={styles.fabContainer}>
-                    <TouchableOpacity style={styles.fabButton} onPress={handleConfirmCoFront}>
-                        <Text style={styles.fabText}>
-                            Confirmer ({selectedAlters.length})
-                        </Text>
-                        <Ionicons name="arrow-forward" size={20} color="white" />
-                    </TouchableOpacity>
-                </View>
+                    {/* Co-Front Floating Action Button */}
+                    {selectionMode === 'multi' && selectedAlters.length > 0 && (
+                        <View style={styles.fabContainer}>
+                            <TouchableOpacity style={styles.fabButton} onPress={handleConfirmCoFront}>
+                                <Text style={styles.fabText}>
+                                    Confirmer ({selectedAlters.length})
+                                </Text>
+                                <Ionicons name="arrow-forward" size={20} color="white" />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                    {/* Footer Actions */}
+                    <View style={styles.footerActions}>
+                        <TouchableOpacity
+                            style={styles.footerButton}
+                            onPress={() => router.push('/fronting/history' as any)}
+                        >
+                            <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
+                            <Text style={styles.footerButtonText}>Historique</Text>
+                        </TouchableOpacity>
+                    </View>
+                </>
             )}
-
-            {/* Footer Actions */}
-            <View style={styles.footerActions}>
-                <TouchableOpacity
-                    style={styles.footerButton}
-                    onPress={() => router.push('/fronting/history' as any)}
-                >
-                    <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
-                    <Text style={styles.footerButtonText}>Historique</Text>
-                </TouchableOpacity>
-            </View>
 
             {/* Add Alter Modal */}
             <Modal
@@ -646,6 +680,27 @@ const styles = StyleSheet.create({
     settingsButton: {
         padding: spacing.sm,
     },
+    viewToggleWrapper: {
+        flexDirection: 'row',
+        backgroundColor: colors.backgroundLight,
+        borderRadius: borderRadius.lg,
+        padding: 4,
+        gap: 4,
+        alignItems: 'center',
+    },
+    viewToggleBtn: {
+        padding: 8,
+        borderRadius: borderRadius.md,
+    },
+    viewToggleBtnActive: {
+        backgroundColor: colors.backgroundCard,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 1,
+        elevation: 1,
+    },
+
 
     // Search bar
     searchContainer: {

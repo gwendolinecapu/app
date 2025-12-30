@@ -5,10 +5,10 @@ import {
     TouchableOpacity,
     StyleSheet,
     ScrollView,
-    Image,
     Dimensions,
     Modal,
     FlatList,
+    RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -36,6 +36,7 @@ export default function ProfileScreen() {
     const [stats, setStats] = useState({ posts: 0, followers: 0, following: 0 });
     const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
     // Feed View State
     const [selectedPostIndex, setSelectedPostIndex] = useState<number | null>(null);
@@ -56,6 +57,12 @@ export default function ProfileScreen() {
         await Promise.all([fetchPosts(), fetchFollowStats()]);
         setLoading(false);
     };
+
+    const onRefresh = React.useCallback(async () => {
+        setRefreshing(true);
+        await Promise.all([fetchPosts(), fetchFollowStats()]);
+        setRefreshing(false);
+    }, [currentAlter, user]);
 
     const fetchPosts = async () => {
         if (!currentAlter || !user) return;
@@ -191,7 +198,13 @@ export default function ProfileScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                style={styles.scrollView}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+                }
+            >
                 {/* Header - Instagram Style */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => router.back()}>

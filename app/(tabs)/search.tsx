@@ -20,6 +20,7 @@ import { FriendService } from '../../src/services/friends';
 import { FollowService } from '../../src/services/follows';
 import { useToast } from '../../src/components/ui/Toast';
 import { triggerHaptic } from '../../src/lib/haptics';
+import { ScaleButton } from '../../src/components/ui/ScaleButton';
 
 
 interface SearchResult {
@@ -236,7 +237,7 @@ export default function SearchScreen() {
         const isDisabled = status === 'friends' || status === 'pending' || status === 'loading' || status === 'following';
 
         return (
-            <TouchableOpacity
+            <ScaleButton
                 style={styles.resultItem}
                 onPress={() => {
                     if (item.type === 'system') {
@@ -265,7 +266,7 @@ export default function SearchScreen() {
                         {item.systemId === system?.id && ' (Votre système)'}
                     </Text>
                 </View>
-                <TouchableOpacity
+                <ScaleButton
                     style={buttonProps.style}
                     onPress={(e) => {
                         e.stopPropagation();
@@ -274,8 +275,8 @@ export default function SearchScreen() {
                     disabled={isDisabled || (item.id === currentAlter?.id)}
                 >
                     <Text style={styles.followButtonText}>{buttonProps.text}</Text>
-                </TouchableOpacity>
-            </TouchableOpacity>
+                </ScaleButton>
+            </ScaleButton>
         );
     };
 
@@ -287,7 +288,7 @@ export default function SearchScreen() {
                     suggestions.map((sugg) => {
                         const status = friendStatuses[sugg.id];
                         return (
-                            <TouchableOpacity
+                            <ScaleButton
                                 key={sugg.id}
                                 style={styles.suggestionBubble}
                                 onPress={() => handleFollow(sugg)}
@@ -310,7 +311,7 @@ export default function SearchScreen() {
                                     )}
                                 </View>
                                 <Text style={styles.bubbleName} numberOfLines={1}>{sugg.name}</Text>
-                            </TouchableOpacity>
+                            </ScaleButton>
                         );
                     })
                 ) : (
@@ -330,9 +331,9 @@ export default function SearchScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <TouchableOpacity onPress={() => router.back()}>
+                    <ScaleButton onPress={() => router.back()}>
                         <Ionicons name="arrow-back" size={24} color={colors.text} />
-                    </TouchableOpacity>
+                    </ScaleButton>
                     <Text style={styles.title}>Recherche</Text>
                 </View>
             </View>
@@ -350,9 +351,9 @@ export default function SearchScreen() {
                     autoCorrect={false}
                 />
                 {searchQuery.length > 0 && (
-                    <TouchableOpacity onPress={() => setSearchQuery('')}>
+                    <ScaleButton onPress={() => setSearchQuery('')}>
                         <Ionicons name="close-circle" size={20} color={colors.textMuted} />
-                    </TouchableOpacity>
+                    </ScaleButton>
                 )}
             </View>
 

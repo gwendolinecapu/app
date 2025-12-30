@@ -10,6 +10,7 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { colors, spacing, typography, borderRadius } from '../../src/lib/theme';
 import { Post, Comment } from '../../src/types';
 import { triggerHaptic } from '../../src/lib/haptics';
+import { timeAgo } from '../../src/lib/date';
 import { ScaleButton } from '../../src/components/ui/ScaleButton';
 
 export default function PostDetailScreen() {
@@ -137,7 +138,7 @@ export default function PostDetailScreen() {
                                 <View style={styles.commentHeader}>
                                     <Text style={styles.commentAuthor}>{comment.author_name || 'Anonyme'}</Text>
                                     <Text style={styles.commentDate}>
-                                        {new Date(comment.created_at).toLocaleDateString()}
+                                        {timeAgo(comment.created_at)}
                                     </Text>
                                 </View>
                                 <Text style={styles.commentContent}>{comment.content}</Text>

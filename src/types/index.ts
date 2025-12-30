@@ -51,6 +51,10 @@ export interface Alter {
     last_daily_reward?: string; // Date (YYYY-MM-DD) of last claim
     last_reward_ad?: number; // Timestamp of last ad watch
 
+    // Customize Identity
+    birthDate?: string; // YYYY-MM-DD
+    arrivalDate?: string; // YYYY-MM-DD
+
     // Equipped Cosmetics
     equipped_items?: {
         frame?: string;

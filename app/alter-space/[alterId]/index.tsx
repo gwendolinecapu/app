@@ -400,16 +400,16 @@ export default function AlterSpaceScreen() {
 
         // Grid View
         return (
-            <View style={styles.galleryContainer}>
+            <View style={styles.postGridContainer}>
                 {posts.length === 0 ? (
                     <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                         <ProfileHeader />
-                        <View style={styles.emptyState}>
+                        <View style={styles.emptyGridState}>
                             <View style={styles.emptyGridIcon}>
                                 <Ionicons name="camera-outline" size={32} color={colors.textMuted} />
                             </View>
-                            <Text style={styles.emptyTitle}>Aucune publication</Text>
-                            <Text style={styles.emptySubtitle}>
+                            <Text style={styles.emptyGridTitle}>Aucune publication</Text>
+                            <Text style={styles.emptyGridSubtitle}>
                                 Les photos et posts de {alter.name} apparaîtront ici.
                             </Text>
                         </View>
@@ -444,7 +444,7 @@ export default function AlterSpaceScreen() {
                             <TouchableOpacity
                                 style={styles.gridImageContainer}
                                 onPress={() => {
-                                    // Handle post press -> maybe open modal
+                                    router.push(`/post/${item.id}`);
                                 }}
                             >
                                 {item.media_url ? (
@@ -1779,6 +1779,10 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: colors.text,
     },
+    postGridContainer: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
     gridImageContainer: {
         width: width / 3,
         height: width / 3,
@@ -1819,6 +1823,14 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '600',
         color: colors.text,
+        marginBottom: 8,
+    },
+    emptyGridSubtitle: {
+        fontSize: 14,
+        color: colors.textSecondary,
+        textAlign: 'center',
+        paddingHorizontal: 32,
+        lineHeight: 20,
     },
     emotionLabel: {
         fontSize: 12,

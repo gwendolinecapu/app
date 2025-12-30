@@ -1,5 +1,16 @@
 # Changelog
 
+## [2025-12-30]
+- **Profile 2.0 Enhancements**:
+    - Redesigned the "Edit Profile" interface with "Identity" and "Appearance" sections.
+    - Added `birthDate` and `arrivalDate` fields to the Alter profile.
+    - Implemented visual "Cosmetic Cards" for equipped items (Theme, Frame, Bubble).
+    - Improved color selection UI with a visual grid.
+    - Implemented "Post Detail View" (`app/post/[id].tsx`) to view full post content, likes, and comments.
+    - Enabled navigation from the profile post grid to the detailed post view.
+    - Fixed style naming conflicts and linting errors in the profile component.
+    - Added `getPostById` to `PostService`.
+
 ## [Unreleased] - 2025-12-30
 
 ### Added
@@ -623,6 +634,25 @@ Ajouter les 7 receivers dans AndroidManifest.xml
 ### Intégration UX
 - **Alter Space** : Menu hamburger enrichi avec accès direct "Historique & Stats" (Badge "NOUVEAU").
 - **Visualisations** : Graphiques interactifs (LineChart, BarChart, PieChart) avec `react-native-chart-kit`.
+
+## [2025-12-30] Cosmétiques Animées & Boutique Premium 💎
+
+### Cosmétiques Animées
+- **Thèmes** : 
+  - `Aurore Boréale` (1000 crédits, Premium) : Thème dynamique avec changement de couleur fluide (Aurora effect).
+- **Cadres** :
+  - `Pulsion Néon` (800 crédits, Premium) : Cadre avec effet de lueur (glow) pulsatile.
+  - `Galaxie` (1200 crédits, Premium) : Double anneau rotatif aux couleurs cosmiques.
+- **Bulles** :
+  - `Magie` (600 crédits, Premium) : Particules étoilées animées et fond dégradé.
+  - `Lave` (750 crédits, Premium) : Effet de chaleur mouvant avec transition de couleurs rouge/orange.
+
+### Améliorations de la Boutique
+- **Premium Banner** : Ajout d'un effet de "reflet" (shine) animé qui balaye périodiquement la bannière pour un look luxueux.
+- **Expérience Visuelle** : 
+  - Renforcement de l'aspect **Glassmorphism** sur les cartes d'items (flou plus prononcé, bordures plus fines).
+  - Suppression de l'affichage des récompenses quotidiennes et streaks pour épurer l'interface, conformément à la demande.
+- **Animations** : Optimisation des animations avec `Animated.View` et interpolations avancées pour un rendu fluide sans impacter les performances.
 
 ## [2025-12-30] Refonte Visuelle de la Boutique 🎨
 

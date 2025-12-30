@@ -19,6 +19,8 @@ export const SHOP_ITEMS: { [key: string]: ShopItem[] } = {
         { id: 'theme_berry', name: 'Fruits Rouges', priceCredits: 100, preview: '#8b0000', type: 'theme', description: 'Gourmand.' },
         { id: 'theme_mint', name: 'Menthe', priceCredits: 100, preview: '#aaf0d1', type: 'theme', description: 'Fraîcheur.' },
         { id: 'theme_coffee', name: 'Café', priceCredits: 100, preview: '#6f4e37', type: 'theme', description: 'Énergisant.' },
+        // Animated Themes
+        { id: 'theme_anim_aurora', name: 'Aurore Boréale', priceCredits: 1000, preview: '#00ff9d', type: 'theme', isPremium: true, description: 'Lueurs nordiques vivantes.' },
     ],
     frames: [
         { id: 'frame_basic', name: 'Simple', priceCredits: 0, icon: 'scan-outline', type: 'frame', description: 'Un cadre discret.' },
@@ -38,6 +40,9 @@ export const SHOP_ITEMS: { [key: string]: ShopItem[] } = {
         { id: 'frame_water', name: 'Goutte', priceCredits: 100, icon: 'water-outline', type: 'frame', description: 'Fluide.' },
         { id: 'frame_ice', name: 'Glace', priceCredits: 150, icon: 'snow-outline', type: 'frame', description: 'Givré.' },
         { id: 'frame_gold_leaf', name: 'Feuille d\'Or', priceCredits: 350, icon: 'medal-outline', type: 'frame', isPremium: true, description: 'Richesse subtile.' },
+        // Animated Frames
+        { id: 'frame_anim_neon_pulse', name: 'Pulsion Néon', priceCredits: 800, icon: 'radio-button-on', type: 'frame', isPremium: true, description: 'Un cercle d\'énergie palpitante.' },
+        { id: 'frame_anim_galaxy_spin', name: 'Galaxie', priceCredits: 1200, icon: 'planet', type: 'frame', isPremium: true, description: 'Rotation cosmique infinie.' },
     ],
     bubbles: [
         { id: 'bubble_classic', name: 'Classique', priceCredits: 0, icon: 'chatbubble-outline', type: 'bubble', description: 'La bulle standard.' },
@@ -56,5 +61,8 @@ export const SHOP_ITEMS: { [key: string]: ShopItem[] } = {
         { id: 'bubble_heart', name: 'Cœur', priceCredits: 100, icon: 'heart-outline', type: 'bubble', description: 'Pour les romantiques.' },
         { id: 'bubble_star', name: 'Etoile', priceCredits: 100, icon: 'star-outline', type: 'bubble', description: 'Forme stellaire.' },
         { id: 'bubble_thought', name: 'Pensée', priceCredits: 50, icon: 'cloud-circle-outline', type: 'bubble', description: 'Hmm...' },
+        // Animated Bubbles
+        { id: 'bubble_anim_magic', name: 'Magie', priceCredits: 600, icon: 'sparkles-outline', type: 'bubble', isPremium: true, description: 'Particules magiques animées.' },
+        { id: 'bubble_anim_lava', name: 'Lave', priceCredits: 750, icon: 'flame', type: 'bubble', isPremium: true, description: 'Effet de chaleur mouvant.' },
     ]
 };

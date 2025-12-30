@@ -6,12 +6,12 @@ import {
     TouchableOpacity,
     StyleSheet,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { Alter } from '../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { GroupService } from '../../src/services/groups';
 import { FriendService } from '../../src/services/friends';
 import { Ionicons } from '@expo/vector-icons';
@@ -218,7 +218,7 @@ export default function MessagesScreen() {
                         {alters.slice(0, 6).map((alter) => (
                             <TouchableOpacity
                                 key={alter.id}
-                                onPress={() => router.push(`/conversation/${alter.id}?internal=true`)}
+                                onPress={() => router.push(`/alter/${alter.id}`)}
                             >
                                 <View
                                     style={[
@@ -283,7 +283,7 @@ export default function MessagesScreen() {
                 refreshing={activeTab === 'groups' ? loadingGroups : activeTab === 'requests' ? loadingRequests : false}
                 onRefresh={activeTab === 'groups' ? loadGroups : activeTab === 'requests' ? loadRequests : undefined}
             />
-        </SafeAreaView>
+        </SafeAreaView >
     );
 }
 
@@ -294,7 +294,6 @@ const styles = StyleSheet.create({
     },
     header: {
         padding: spacing.lg,
-        paddingTop: spacing.md,
     },
     title: {
         ...typography.h2,

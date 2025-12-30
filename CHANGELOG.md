@@ -1,5 +1,22 @@
 # Changelog
 
+## [Unreleased] - 2025-12-30
+
+### Added
+- **Premium Landing Page**: New `/premium` screen with attractive presentation before RevenueCat paywall
+  - Animated hero section with pulsing sparkles icon
+  - 6 feature cards with slide-in animations (Alters Illimités, Sync Cloud, Personnalisation, Stats, Sans Pub, Boutique Premium)
+  - 3 pricing options (Mensuel 3.49€, Annuel 24.99€ featured, À Vie 49.99€)
+  - Trust badges (Paiement sécurisé, Annulez à tout moment)
+  - Fixed CTA with gradient button and blur background
+  - RevenueCat integration for purchase flow
+- **Shop UI Overhaul**: Completely redesigned the shop with a premium dark theme, glassmorphism effects, and smoother animations.
+
+- **Performance**: Switched `ShopScreen` to use `FlatList` for better rendering of large item lists.
+- **Components**: Added `ShopItemCard` and `PremiumBanner` as modular components.
+- **UX**: Improved visual feedback for equipping items and purchasing.
+
+
 ## [2025-12-30] Shop UI & Système d'Amis Corrigé 🛒🤝
 
 ### Boutique (Shop)
@@ -16,13 +33,15 @@
 - **`app/alter-space/[alterId]/index.tsx`** : Nouvelle navigation simplifiée
   - 🏠 **Home** = Feed
   - ➕ **+** = Bouton gradient pour publier rapidement
-  - ☰ **Menu** = Drawer hamburger avec :
-    - Mon Profil
-    - Journal
-    - Galerie Privée  
-    - Comment je me sens
-    - 🛒 Boutique (toujours visible)
-    - ⚙️ Réglages
+  - ☰ **Menu** = Drawer hamburger avec Journal, Galerie, Émotions, Boutique, Réglages
+  - Header: Bouton recherche remplacé par profil, bouton réglages supprimé
+  - Support du paramètre `?tab=profile` pour ouvrir un onglet spécifique
+
+### Consolidation des Profils 🔄
+- **`app/(tabs)/profile.tsx`** : Redirige maintenant vers l'Alter Space
+- Un seul profil dans l'application (celui de l'Alter Space)
+
+---
 
 ## [2025-12-30] Réorganisation Feed & Recherche 🔄
 

@@ -398,7 +398,7 @@ export default function DashboardScreen() {
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                     <TouchableOpacity
                         style={styles.settingsButton}
-                        onPress={() => router.push('/settings/index' as any)}
+                        onPress={() => router.push('/settings' as any)}
                     >
                         <Ionicons name="settings-outline" size={24} color={colors.textSecondary} />
                     </TouchableOpacity>

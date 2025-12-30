@@ -42,6 +42,30 @@ export const PostService = {
     },
 
     /**
+     * Fetch a single post by its ID
+     */
+    getPostById: async (postId: string): Promise<Post | null> => {
+        try {
+            const docRef = doc(db, POSTS_COLLECTION, postId);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                return {
+                    id: docSnap.id,
+                    ...data,
+                    created_at: data.created_at?.toDate().toISOString() || new Date().toISOString(),
+                    updated_at: data.updated_at?.toDate().toISOString() || new Date().toISOString(),
+                } as Post;
+            }
+            return null;
+        } catch (error) {
+            console.error('Error fetching post by ID:', error);
+            throw error;
+        }
+    },
+
+    /**
      * Fetch posts for a specific system (or global feed if we implemented that)
      * currently fetching all posts for the system to show in their feed
      */

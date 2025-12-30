@@ -11,11 +11,13 @@ import {
     Alert,
     ActivityIndicator,
     KeyboardAvoidingView,
-    Platform
+    Platform,
+    Modal
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../../src/lib/firebase';
@@ -38,6 +40,13 @@ export default function EditAlterProfileScreen() {
     const [role, setRole] = useState(''); // We'll store this in custom_fields for now if dynamic
     const [color, setColor] = useState(freeAlterColors[0]);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+    // Dates
+    const [birthDate, setBirthDate] = useState<Date | null>(null);
+    const [arrivalDate, setArrivalDate] = useState<Date | null>(null);
+    const [showBirthPicker, setShowBirthPicker] = useState(false);
+    const [showArrivalPicker, setShowArrivalPicker] = useState(false);
+
     const [initialAlter, setInitialAlter] = useState<Alter | null>(null);
 
     useEffect(() => {
@@ -58,6 +67,13 @@ export default function EditAlterProfileScreen() {
                 setBio(data.bio || '');
                 setColor(data.color || freeAlterColors[0]);
                 setAvatarUrl(data.avatar_url || null);
+
+                if (data.birthDate) {
+                    setBirthDate(new Date(data.birthDate));
+                }
+                if (data.arrivalDate) {
+                    setArrivalDate(new Date(data.arrivalDate));
+                }
 
                 // Try to find role in custom_fields
                 const roleField = data.custom_fields?.find(f => f.label === 'Role');
@@ -121,7 +137,9 @@ export default function EditAlterProfileScreen() {
                 bio: bio.trim() || '',
                 color,
                 avatar_url: finalAvatarUrl || '',
-                custom_fields: customFields
+                custom_fields: customFields,
+                birthDate: birthDate?.toISOString().split('T')[0],
+                arrivalDate: arrivalDate?.toISOString().split('T')[0],
             };
 
             const docRef = doc(db, 'alters', alterId!);
@@ -166,7 +184,13 @@ export default function EditAlterProfileScreen() {
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
-                {/* Avatar Section */}
+                {/* ==================== IDENTITY SECTION ==================== */}
+                <View style={styles.sectionHeader}>
+                    <Ionicons name="person-outline" size={20} color={colors.primary} />
+                    <Text style={styles.sectionHeaderText}>Identité</Text>
+                </View>
+
+                {/* Avatar Section (Part of Identity visually) */}
                 <View style={styles.avatarSection}>
                     <TouchableOpacity onPress={pickImage} style={[styles.avatarContainer, { borderColor: color }]}>
                         {avatarUrl ? (
@@ -187,149 +211,213 @@ export default function EditAlterProfileScreen() {
                     </TouchableOpacity>
                 </View>
 
-                {/* Form Fields */}
-                <View style={styles.formGroup}>
-                    <Text style={styles.label}>Nom</Text>
-                    <TextInput
-                        style={styles.input}
-                        value={name}
-                        onChangeText={setName}
-                        placeholder="Nom de l'alter"
-                        placeholderTextColor={colors.textMuted}
-                    />
-                </View>
+                <View style={styles.formSection}>
+                    <View style={styles.formGroup}>
+                        <Text style={styles.label}>Nom</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={name}
+                            onChangeText={setName}
+                            placeholder="Nom de l'alter"
+                            placeholderTextColor={colors.textMuted}
+                        />
+                    </View>
 
-                <View style={styles.formGroup}>
-                    <Text style={styles.label}>Pronoms</Text>
-                    <TextInput
-                        style={styles.input}
-                        value={pronouns}
-                        onChangeText={setPronouns}
-                        placeholder="Ex: iel/ellui"
-                        placeholderTextColor={colors.textMuted}
-                    />
-                </View>
+                    <View style={styles.formGroup}>
+                        <Text style={styles.label}>Pronoms</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={pronouns}
+                            onChangeText={setPronouns}
+                            placeholder="Ex: iel/ellui"
+                            placeholderTextColor={colors.textMuted}
+                        />
+                    </View>
 
-                <View style={styles.formGroup}>
-                    <Text style={styles.label}>Rôle</Text>
-                    <TextInput
-                        style={styles.input}
-                        value={role}
-                        onChangeText={setRole}
-                        placeholder="Ex: Protecteur, Gatekeeper..."
-                        placeholderTextColor={colors.textMuted}
-                    />
-                </View>
+                    <View style={styles.formGroup}>
+                        <Text style={styles.label}>Rôle</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={role}
+                            onChangeText={setRole}
+                            placeholder="Ex: Protecteur, Gatekeeper..."
+                            placeholderTextColor={colors.textMuted}
+                        />
+                    </View>
 
-                <View style={styles.formGroup}>
-                    <Text style={styles.label}>Bio</Text>
-                    <TextInput
-                        style={[styles.input, styles.textArea]}
-                        value={bio}
-                        onChangeText={setBio}
-                        placeholder="Une courte description..."
-                        placeholderTextColor={colors.textMuted}
-                        multiline
-                        numberOfLines={4}
-                    />
-                </View>
-
-                <View style={styles.formGroup}>
-                    <Text style={styles.label}>Couleur du système</Text>
-                    <Text style={styles.colorSubLabel}>Couleurs gratuites</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colorRow}>
-                        {freeAlterColors.map((c) => (
+                    {/* Date Fields */}
+                    <View style={styles.dateRow}>
+                        <View style={[styles.formGroup, { flex: 1, marginRight: spacing.sm }]}>
+                            <Text style={styles.label}>Date de naissance</Text>
                             <TouchableOpacity
-                                key={c}
-                                style={[
-                                    styles.colorOption,
-                                    { backgroundColor: c, borderWidth: c === '#FFFFFF' ? 1 : 0, borderColor: colors.border },
-                                    color === c && styles.colorOptionSelected
-                                ]}
-                                onPress={() => setColor(c)}
-                            />
-                        ))}
-                    </ScrollView>
-
-                    <Text style={[styles.colorSubLabel, { marginTop: spacing.md }]}>
-                        Couleurs Premium ✨ {!isPremium && '🔒'}
-                    </Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colorRow}>
-                        {premiumAlterColors.map((c) => (
-                            <TouchableOpacity
-                                key={c}
-                                style={[
-                                    styles.colorOption,
-                                    { backgroundColor: c },
-                                    color === c && styles.colorOptionSelected,
-                                    !isPremium && styles.colorOptionLocked
-                                ]}
-                                onPress={() => {
-                                    if (isPremium) {
-                                        setColor(c);
-                                    } else {
-                                        Alert.alert(
-                                            'Premium requis ✨',
-                                            'Cette couleur est réservée aux membres Premium. Passez à Premium pour débloquer toutes les couleurs !',
-                                            [
-                                                { text: 'Plus tard', style: 'cancel' },
-                                                { text: 'Voir Premium', onPress: () => router.push('/shop') }
-                                            ]
-                                        );
-                                    }
-                                }}
+                                style={styles.dateInput}
+                                onPress={() => setShowBirthPicker(true)}
                             >
-                                {!isPremium && (
-                                    <View style={styles.lockIcon}>
-                                        <Ionicons name="lock-closed" size={12} color="white" />
-                                    </View>
-                                )}
+                                <Ionicons name="calendar-outline" size={18} color={colors.textMuted} />
+                                <Text style={[styles.dateText, !birthDate && { color: colors.textMuted }]}>
+                                    {birthDate ? birthDate.toLocaleDateString() : 'Sélectionner'}
+                                </Text>
                             </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
-
-                {/* ==================== COSMETICS SECTION ==================== */}
-                <View style={styles.formGroup}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text style={styles.label}>Cosmétiques équipés</Text>
-                        <TouchableOpacity onPress={() => router.push('/shop')}>
-                            <Text style={{ color: colors.primary, fontSize: 12 }}>Voir la boutique →</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Show equipped decorations or "None" */}
-                    <View style={styles.cosmeticsRow}>
-                        {/* Theme */}
-                        <View style={styles.cosmeticSlot}>
-                            <Text style={styles.cosmeticLabel}>🎨 Thème</Text>
-                            <Text style={styles.cosmeticValue}>
-                                {initialAlter?.equipped_items?.theme || 'Par défaut'}
-                            </Text>
                         </View>
 
-                        {/* Frame */}
-                        <View style={styles.cosmeticSlot}>
-                            <Text style={styles.cosmeticLabel}>🖼️ Cadre</Text>
-                            <Text style={styles.cosmeticValue}>
-                                {initialAlter?.equipped_items?.frame || 'Aucun'}
-                            </Text>
-                        </View>
-
-                        {/* Bubble */}
-                        <View style={styles.cosmeticSlot}>
-                            <Text style={styles.cosmeticLabel}>💬 Bulle</Text>
-                            <Text style={styles.cosmeticValue}>
-                                {initialAlter?.equipped_items?.bubble || 'Classique'}
-                            </Text>
+                        <View style={[styles.formGroup, { flex: 1, marginLeft: spacing.sm }]}>
+                            <Text style={styles.label}>Date d'arrivée</Text>
+                            <TouchableOpacity
+                                style={styles.dateInput}
+                                onPress={() => setShowArrivalPicker(true)}
+                            >
+                                <Ionicons name="calendar-outline" size={18} color={colors.textMuted} />
+                                <Text style={[styles.dateText, !arrivalDate && { color: colors.textMuted }]}>
+                                    {arrivalDate ? arrivalDate.toLocaleDateString() : 'Sélectionner'}
+                                </Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
 
-                    {/* Owned items count */}
-                    <Text style={styles.cosmeticHint}>
-                        {initialAlter?.owned_items?.length || 0} objets possédés • Accédez à la boutique pour équiper
-                    </Text>
+                    <View style={styles.formGroup}>
+                        <Text style={styles.label}>Bio</Text>
+                        <TextInput
+                            style={[styles.input, styles.textArea]}
+                            value={bio}
+                            onChangeText={setBio}
+                            placeholder="Une courte description..."
+                            placeholderTextColor={colors.textMuted}
+                            multiline
+                            numberOfLines={4}
+                        />
+                    </View>
                 </View>
+
+                {/* ==================== APPEARANCE SECTION ==================== */}
+                <View style={[styles.sectionHeader, { marginTop: spacing.xl }]}>
+                    <Ionicons name="color-palette-outline" size={20} color={colors.primary} />
+                    <Text style={styles.sectionHeaderText}>Apparence & Cosmétiques</Text>
+                </View>
+
+                <View style={styles.formSection}>
+                    <View style={styles.formGroup}>
+                        <Text style={styles.label}>Couleur thématique</Text>
+
+                        <View style={styles.colorGrid}>
+                            {freeAlterColors.map((c) => (
+                                <TouchableOpacity
+                                    key={c}
+                                    style={[
+                                        styles.colorCircle,
+                                        { backgroundColor: c, borderWidth: c === '#FFFFFF' ? 1 : 0, borderColor: colors.border },
+                                        color === c && styles.colorCircleSelected
+                                    ]}
+                                    onPress={() => setColor(c)}
+                                >
+                                    {color === c && <Ionicons name="checkmark" size={18} color="white" />}
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        <Text style={[styles.colorSubLabel, { marginTop: spacing.md }]}>
+                            Couleurs Premium ✨ {!isPremium && '🔒'}
+                        </Text>
+                        <View style={styles.colorGrid}>
+                            {premiumAlterColors.map((c) => (
+                                <TouchableOpacity
+                                    key={c}
+                                    style={[
+                                        styles.colorCircle,
+                                        { backgroundColor: c },
+                                        color === c && styles.colorCircleSelected,
+                                        !isPremium && styles.colorCircleLocked
+                                    ]}
+                                    onPress={() => {
+                                        if (isPremium) {
+                                            setColor(c);
+                                        } else {
+                                            Alert.alert(
+                                                'Premium requis ✨',
+                                                'Cette couleur est réservée aux membres Premium. Passez à Premium pour débloquer toutes les couleurs !',
+                                                [
+                                                    { text: 'Plus tard', style: 'cancel' },
+                                                    { text: 'Voir Premium', onPress: () => router.push('/shop') }
+                                                ]
+                                            );
+                                        }
+                                    }}
+                                >
+                                    {color === c && <Ionicons name="checkmark" size={18} color="white" />}
+                                    {!isPremium && <Ionicons name="lock-closed" size={14} color="rgba(255,255,255,0.6)" />}
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+
+                    {/* Cosmetics Grid */}
+                    <View style={styles.formGroup}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }}>
+                            <Text style={styles.label}>Équipement cosmétique</Text>
+                            <TouchableOpacity onPress={() => router.push('/shop')}>
+                                <Text style={styles.linkText}>Boutique →</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.cosmeticGrid}>
+                            {/* Theme Slot */}
+                            <TouchableOpacity style={styles.cosmeticCard} onPress={() => router.push('/shop')}>
+                                <View style={styles.cosmeticIconBg}>
+                                    <Ionicons name="brush-outline" size={24} color={colors.primary} />
+                                </View>
+                                <Text style={styles.cosmeticCardLabel}>Thème</Text>
+                                <Text style={styles.cosmeticCardValue} numberOfLines={1}>
+                                    {initialAlter?.equipped_items?.theme || 'Standard'}
+                                </Text>
+                            </TouchableOpacity>
+
+                            {/* Frame Slot */}
+                            <TouchableOpacity style={styles.cosmeticCard} onPress={() => router.push('/shop')}>
+                                <View style={styles.cosmeticIconBg}>
+                                    <Ionicons name="image-outline" size={24} color={colors.primary} />
+                                </View>
+                                <Text style={styles.cosmeticCardLabel}>Cadre</Text>
+                                <Text style={styles.cosmeticCardValue} numberOfLines={1}>
+                                    {initialAlter?.equipped_items?.frame || 'Aucun'}
+                                </Text>
+                            </TouchableOpacity>
+
+                            {/* Bubble Slot */}
+                            <TouchableOpacity style={styles.cosmeticCard} onPress={() => router.push('/shop')}>
+                                <View style={styles.cosmeticIconBg}>
+                                    <Ionicons name="chatbubble-outline" size={24} color={colors.primary} />
+                                </View>
+                                <Text style={styles.cosmeticCardLabel}>Bulle</Text>
+                                <Text style={styles.cosmeticCardValue} numberOfLines={1}>
+                                    {initialAlter?.equipped_items?.bubble || 'Classique'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+
+                {showBirthPicker && (
+                    <DateTimePicker
+                        value={birthDate || new Date()}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={(_, date) => {
+                            setShowBirthPicker(false);
+                            if (date) setBirthDate(date);
+                        }}
+                    />
+                )}
+
+                {showArrivalPicker && (
+                    <DateTimePicker
+                        value={arrivalDate || new Date()}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={(_, date) => {
+                            setShowArrivalPicker(false);
+                            if (date) setArrivalDate(date);
+                        }}
+                    />
+                )}
             </ScrollView>
         </KeyboardAvoidingView>
     );
@@ -414,14 +502,33 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         fontSize: 14,
     },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: spacing.md,
+        paddingBottom: spacing.xs,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+    },
+    sectionHeaderText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: colors.text,
+        marginLeft: spacing.sm,
+    },
+    formSection: {
+        marginBottom: spacing.md,
+    },
     formGroup: {
         marginBottom: spacing.lg,
     },
     label: {
-        ...typography.caption,
+        fontSize: 12,
+        fontWeight: '600',
         color: colors.textSecondary,
         marginBottom: spacing.xs,
         marginLeft: spacing.xs,
+        textTransform: 'uppercase',
     },
     input: {
         backgroundColor: colors.backgroundCard,
@@ -436,70 +543,88 @@ const styles = StyleSheet.create({
         height: 100,
         textAlignVertical: 'top',
     },
-    colorRow: {
+    dateRow: {
         flexDirection: 'row',
-        paddingVertical: spacing.xs,
+        justifyContent: 'space-between',
     },
-    colorOption: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        marginRight: spacing.md,
+    dateInput: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.backgroundCard,
+        borderRadius: borderRadius.md,
+        padding: spacing.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    dateText: {
+        marginLeft: spacing.sm,
+        color: colors.text,
+        fontSize: 15,
+    },
+    colorGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.md,
+        marginTop: spacing.xs,
+    },
+    colorCircle: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        justifyContent: 'center',
+        alignItems: 'center',
         borderWidth: 2,
         borderColor: 'transparent',
     },
-    colorOptionSelected: {
+    colorCircleSelected: {
         borderColor: colors.text,
         transform: [{ scale: 1.1 }],
     },
-    colorSubLabel: {
-        ...typography.caption,
-        color: colors.textSecondary,
-        marginBottom: spacing.xs,
-        marginLeft: spacing.xs,
-    },
-    colorOptionLocked: {
+    colorCircleLocked: {
         opacity: 0.6,
     },
-    lockIcon: {
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        marginTop: -8,
-        marginLeft: -8,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        borderRadius: 10,
-        padding: 4,
-    },
-    // ==================== COSMETICS STYLES ====================
-    cosmeticsRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: spacing.sm,
-        gap: spacing.sm,
-    },
-    cosmeticSlot: {
-        flex: 1,
-        backgroundColor: colors.backgroundCard,
-        borderRadius: borderRadius.md,
-        padding: spacing.sm,
-        alignItems: 'center',
-    },
-    cosmeticLabel: {
-        fontSize: 11,
-        color: colors.textSecondary,
-        marginBottom: 4,
-    },
-    cosmeticValue: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: colors.text,
-        textAlign: 'center',
-    },
-    cosmeticHint: {
-        marginTop: spacing.sm,
+    colorSubLabel: {
         fontSize: 11,
         color: colors.textMuted,
-        textAlign: 'center',
+        marginBottom: spacing.sm,
+        marginLeft: spacing.xs,
+    },
+    cosmeticGrid: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: spacing.sm,
+    },
+    cosmeticCard: {
+        flex: 1,
+        backgroundColor: colors.backgroundCard,
+        borderRadius: borderRadius.lg,
+        padding: spacing.md,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    cosmeticIconBg: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: colors.background,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: spacing.sm,
+    },
+    cosmeticCardLabel: {
+        fontSize: 11,
+        color: colors.textSecondary,
+        marginBottom: 2,
+    },
+    cosmeticCardValue: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: colors.text,
+    },
+    linkText: {
+        color: colors.primary,
+        fontSize: 13,
+        fontWeight: '600',
     },
 });

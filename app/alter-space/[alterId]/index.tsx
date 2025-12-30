@@ -38,7 +38,7 @@ const { width } = Dimensions.get('window');
 const MAX_WIDTH = 430;
 const GALLERY_ITEM_SIZE = (Math.min(width, MAX_WIDTH) - spacing.md * 4) / 3;
 
-type TabType = 'feed' | 'profile' | 'journal' | 'gallery' | 'emotions' | 'settings';
+type TabType = 'feed' | 'profile' | 'journal' | 'gallery' | 'emotions' | 'settings' | 'search';
 type FeedItem = Post | SystemTip;
 
 // Helper for media type
@@ -620,6 +620,26 @@ export default function AlterSpaceScreen() {
         );
     };
 
+    const renderSearch = () => (
+        <View style={styles.tabContent}>
+            <View style={styles.searchContainer}>
+                <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
+                <TextInput
+                    style={styles.searchInputPlaceholder}
+                    placeholder="Rechercher..."
+                    placeholderTextColor={colors.textSecondary}
+                />
+            </View>
+            <View style={styles.emptyState}>
+                <Ionicons name="search-outline" size={64} color={colors.textMuted} />
+                <Text style={styles.emptyTitle}>Recherche</Text>
+                <Text style={styles.emptySubtitle}>
+                    Recherchez parmi les posts, le journal et la galerie de {alter.name}.
+                </Text>
+            </View>
+        </View>
+    );
+
     const renderSettings = () => (
         <ScrollView style={styles.settingsContainer}>
             <View style={styles.settingSection}>
@@ -706,6 +726,7 @@ export default function AlterSpaceScreen() {
             {/* Content Area */}
             <View style={styles.contentArea}>
                 {activeTab === 'feed' && renderFeed()}
+                {activeTab === 'search' && renderSearch()}
                 {activeTab === 'profile' && renderProfile()}
                 {activeTab === 'journal' && renderJournal()}
                 {activeTab === 'gallery' && renderGallery()}
@@ -733,20 +754,20 @@ export default function AlterSpaceScreen() {
                     <Text style={[styles.tabLabel, activeTab === 'feed' && styles.tabLabelActive]}>Feed</Text>
                 </TouchableOpacity>
 
-                {/* 2. Journal */}
+                {/* 2. Search */}
                 <TouchableOpacity
                     style={styles.tab}
                     onPress={() => {
                         triggerHaptic.selection();
-                        setActiveTab('journal');
+                        setActiveTab('search');
                     }}
                 >
                     <Ionicons
-                        name={activeTab === 'journal' ? 'book' : 'book-outline'}
+                        name={activeTab === 'search' ? 'search' : 'search-outline'}
                         size={24}
-                        color={activeTab === 'journal' ? colors.primary : colors.textMuted}
+                        color={activeTab === 'search' ? colors.primary : colors.textMuted}
                     />
-                    <Text style={[styles.tabLabel, activeTab === 'journal' && styles.tabLabelActive]}>Journal</Text>
+                    <Text style={[styles.tabLabel, activeTab === 'search' && styles.tabLabelActive]}>Recherche</Text>
                 </TouchableOpacity>
 
                 {/* 3. + Create (Middle) */}
@@ -762,23 +783,7 @@ export default function AlterSpaceScreen() {
                     </View>
                 </TouchableOpacity>
 
-                {/* 4. Gallery */}
-                <TouchableOpacity
-                    style={styles.tab}
-                    onPress={() => {
-                        triggerHaptic.selection();
-                        setActiveTab('gallery');
-                    }}
-                >
-                    <Ionicons
-                        name={activeTab === 'gallery' ? 'images' : 'images-outline'}
-                        size={24}
-                        color={activeTab === 'gallery' ? colors.primary : colors.textMuted}
-                    />
-                    <Text style={[styles.tabLabel, activeTab === 'gallery' && styles.tabLabelActive]}>Galerie</Text>
-                </TouchableOpacity>
-
-                {/* 5. Profile */}
+                {/* 4. Profile */}
                 <TouchableOpacity
                     style={styles.tab}
                     onPress={() => {
@@ -793,8 +798,136 @@ export default function AlterSpaceScreen() {
                     />
                     <Text style={[styles.tabLabel, activeTab === 'profile' && styles.tabLabelActive]}>Profil</Text>
                 </TouchableOpacity>
+
+                {/* 5. Profile */}
+                {/* 5. Menu */}
+                <TouchableOpacity
+                    style={styles.tab}
+                    onPress={() => {
+                        triggerHaptic.selection();
+                        setMenuVisible(true);
+                    }}
+                >
+                    <Ionicons
+                        name="menu"
+                        size={24}
+                        color={colors.textMuted}
+                    />
+                    <Text style={styles.tabLabel}>Menu</Text>
+                </TouchableOpacity>
             </View>
 
+
+            {/* Menu Modal */}
+            <Modal
+                visible={menuVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setMenuVisible(false)}
+            >
+                <TouchableOpacity
+                    style={styles.menuOverlay}
+                    activeOpacity={1}
+                    onPress={() => setMenuVisible(false)}
+                >
+                    <View style={styles.menuBackdrop} />
+                </TouchableOpacity>
+
+                <View style={styles.menuDrawer}>
+                    <View style={styles.menuHandle} />
+                    <View style={styles.menuHeader}>
+                        <Text style={styles.menuTitle}>Menu</Text>
+                        <TouchableOpacity
+                            style={styles.menuCloseBtn}
+                            onPress={() => setMenuVisible(false)}
+                        >
+                            <Ionicons name="close" size={20} color={colors.text} />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Journal */}
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => {
+                            setMenuVisible(false);
+                            setActiveTab('journal');
+                        }}
+                    >
+                        <View style={[styles.menuIconBg, { backgroundColor: '#3BA55C30' }]}>
+                            <Ionicons name="book" size={22} color="#3BA55C" />
+                        </View>
+                        <Text style={styles.menuItemText}>Journal</Text>
+                        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                    </TouchableOpacity>
+
+                    {/* Gallery */}
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => {
+                            setMenuVisible(false);
+                            setActiveTab('gallery');
+                        }}
+                    >
+                        <View style={[styles.menuIconBg, { backgroundColor: '#FAA61A30' }]}>
+                            <Ionicons name="images" size={22} color="#FAA61A" />
+                        </View>
+                        <Text style={styles.menuItemText}>Galerie Privée</Text>
+                        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                    </TouchableOpacity>
+
+                    {/* History */}
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => {
+                            setMenuVisible(false);
+                            router.push('/history');
+                        }}
+                    >
+                        <View style={[styles.menuIconBg, { backgroundColor: '#F0B13230' }]}>
+                            <Ionicons name="stats-chart" size={22} color="#F0B132" />
+                        </View>
+                        <Text style={styles.menuItemText}>Historique & Stats</Text>
+                        <View style={[styles.menuBadge, { backgroundColor: colors.primary + '20' }]}>
+                            <Text style={[styles.menuBadgeText, { color: colors.primary, fontSize: 10 }]}>NOUVEAU</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                    </TouchableOpacity>
+
+                    <View style={styles.menuDivider} />
+
+                    {/* Shop */}
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => {
+                            setMenuVisible(false);
+                            router.push('/shop');
+                        }}
+                    >
+                        <View style={[styles.menuIconBg, { backgroundColor: `${colors.primary}30` }]}>
+                            <Ionicons name="storefront" size={22} color={colors.primary} />
+                        </View>
+                        <Text style={[styles.menuItemText, { color: colors.primary, fontWeight: '600' }]}>Boutique</Text>
+                        <View style={styles.menuBadge}>
+                            <Text style={styles.menuBadgeText}>✨</Text>
+                        </View>
+                    </TouchableOpacity>
+
+                    {/* Settings */}
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => {
+                            setMenuVisible(false);
+                            router.push('/settings');
+                        }}
+                    >
+                        <View style={[styles.menuIconBg, { backgroundColor: '#72767D30' }]}>
+                            <Ionicons name="settings" size={22} color="#72767D" />
+                        </View>
+                        <Text style={styles.menuItemText}>Réglages</Text>
+                        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                    </TouchableOpacity>
+                </View>
+            </Modal>
 
             {/* Full Screen Image Modal */}
             < Modal

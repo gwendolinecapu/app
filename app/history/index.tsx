@@ -22,7 +22,7 @@ import {
     Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { LineChart, PieChart, BarChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -58,8 +58,10 @@ const PERIOD_LABELS: Record<PeriodType, string> = {
 export default function HistoryScreen() {
     const { system, alters, currentAlter } = useAuth();
 
+    const params = useLocalSearchParams<{ tab: TabType }>();
+
     // États UI
-    const [activeTab, setActiveTab] = useState<TabType>('summary');
+    const [activeTab, setActiveTab] = useState<TabType>(params.tab || 'summary');
     const [period, setPeriod] = useState<PeriodType>('7d');
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);

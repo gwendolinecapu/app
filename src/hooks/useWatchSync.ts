@@ -3,7 +3,7 @@
  * Gère l'envoi des alters et la réception des événements de la montre
  */
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { Platform } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import WatchBridge, { AlterForWatch, FrontDataForWatch } from '../native/WatchBridge';
@@ -17,13 +17,15 @@ export function useWatchSync() {
     const { alters, activeFront, setFronting, user } = useAuth();
 
     // Convertir les alters pour la montre (avec valeurs par défaut pour les optionnels)
-    const altersForWatch: AlterForWatch[] = (alters || []).map((alter: Alter) => ({
-        id: alter.id,
-        name: alter.name,
-        color: alter.color || '#8B5CF6', // Couleur par défaut si undefined
-        avatarUrl: alter.avatar_url,
-        pronouns: alter.pronouns,
-    }));
+    // Utiliser useMemo pour éviter les re-renders infinis
+    const altersForWatch: AlterForWatch[] = useMemo(() =>
+        (alters || []).map((alter: Alter) => ({
+            id: alter.id,
+            name: alter.name,
+            color: alter.color || '#8B5CF6',
+            avatarUrl: alter.avatar_url,
+            pronouns: alter.pronouns,
+        })), [alters]);
 
     // Envoyer les alters à la montre quand ils changent
     useEffect(() => {

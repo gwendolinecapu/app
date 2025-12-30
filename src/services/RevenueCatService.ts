@@ -48,7 +48,6 @@ class RevenueCatService {
         }
 
         this.initialized = true;
-        this.initialized = true;
     }
 
     /**

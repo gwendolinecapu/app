@@ -12,6 +12,7 @@ import { ImageLightbox } from './ui/ImageLightbox';
 import { ImageCarousel } from './ui/ImageCarousel';
 import { FrontIndicator } from './ui/ActiveFrontBadge';
 import { ShareService } from '../services/share';
+import { ScaleButton } from './ui/ScaleButton';
 
 // =====================================================
 // POST CARD V2
@@ -137,79 +138,83 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                             </View>
                             <Text style={styles.timestamp}>{timeAgo(post.created_at)}</Text>
                         </View>
-                    </TouchableOpacity>
+                    </TouchableOpacity >
                     <TouchableOpacity>
                         <Ionicons name="ellipsis-horizontal" size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
-                </View>
+                </View >
             )}
 
             {/* Content Text */}
-            {post.content && (
-                <Text style={styles.content}>{post.content}</Text>
-            )}
+            {
+                post.content && (
+                    <Text style={styles.content}>{post.content}</Text>
+                )
+            }
 
             {/* Media Section with Double Tap to Like */}
-            {(post.media_url || hasMultipleImages) && (
-                <TapGestureHandler
-                    ref={doubleTapRef}
-                    numberOfTaps={2}
-                    onHandlerStateChange={onDoubleTap}
-                >
-                    <View style={styles.mediaContainer}>
-                        {/* Multi-Image Carousel */}
-                        {hasMultipleImages ? (
-                            <ImageCarousel
-                                images={post.media_urls!}
-                                onImagePress={handleImagePress}
-                            />
-                        ) : (
-                            <>
-                                {/* Single Image */}
-                                {mediaType === 'image' && (
-                                    <TouchableOpacity
-                                        activeOpacity={0.95}
-                                        onPress={() => {
-                                            setLightboxImageUrl(post.media_url || '');
-                                            setLightboxVisible(true);
-                                        }}
-                                        style={styles.mediaWrapper}
-                                    >
-                                        <Image
-                                            source={{ uri: post.media_url }}
-                                            style={styles.media}
-                                            resizeMode="cover"
-                                        />
-                                    </TouchableOpacity>
-                                )}
+            {
+                (post.media_url || hasMultipleImages) && (
+                    <TapGestureHandler
+                        ref={doubleTapRef}
+                        numberOfTaps={2}
+                        onHandlerStateChange={onDoubleTap}
+                    >
+                        <View style={styles.mediaContainer}>
+                            {/* Multi-Image Carousel */}
+                            {hasMultipleImages ? (
+                                <ImageCarousel
+                                    images={post.media_urls!}
+                                    onImagePress={handleImagePress}
+                                />
+                            ) : (
+                                <>
+                                    {/* Single Image */}
+                                    {mediaType === 'image' && (
+                                        <TouchableOpacity
+                                            activeOpacity={0.95}
+                                            onPress={() => {
+                                                setLightboxImageUrl(post.media_url || '');
+                                                setLightboxVisible(true);
+                                            }}
+                                            style={styles.mediaWrapper}
+                                        >
+                                            <Image
+                                                source={{ uri: post.media_url }}
+                                                style={styles.media}
+                                                resizeMode="cover"
+                                            />
+                                        </TouchableOpacity>
+                                    )}
 
-                                {/* Video Player */}
-                                {mediaType === 'video' && (
-                                    <VideoPlayer uri={post.media_url!} autoPlay={false} />
-                                )}
+                                    {/* Video Player */}
+                                    {mediaType === 'video' && (
+                                        <VideoPlayer uri={post.media_url!} autoPlay={false} />
+                                    )}
 
-                                {/* Audio Player */}
-                                {mediaType === 'audio' && (
-                                    <View style={styles.audioWrapper}>
-                                        <AudioPlayer uri={post.media_url!} />
-                                    </View>
-                                )}
-                            </>
-                        )}
+                                    {/* Audio Player */}
+                                    {mediaType === 'audio' && (
+                                        <View style={styles.audioWrapper}>
+                                            <AudioPlayer uri={post.media_url!} />
+                                        </View>
+                                    )}
+                                </>
+                            )}
 
-                        {/* Animated Heart Overlay (shown on double tap) */}
-                        <Animated.View style={[styles.heartOverlay, { transform: [{ scale: likeScale }] }]}>
-                            <Ionicons name="heart" size={80} color="white" style={styles.heartShadow} />
-                        </Animated.View>
-                    </View>
-                </TapGestureHandler>
-            )}
+                            {/* Animated Heart Overlay (shown on double tap) */}
+                            <Animated.View style={[styles.heartOverlay, { transform: [{ scale: likeScale }] }]}>
+                                <Ionicons name="heart" size={80} color="white" style={styles.heartShadow} />
+                            </Animated.View>
+                        </View>
+                    </TapGestureHandler>
+                )
+            }
 
             {/* Action Buttons */}
             <View style={styles.actions}>
                 <View style={styles.leftActions}>
                     {/* Like Button */}
-                    <TouchableOpacity style={styles.actionButton} onPress={handleHeartPress}>
+                    <ScaleButton style={styles.actionButton} onPress={handleHeartPress}>
                         <Ionicons
                             name={isLiked ? "heart" : "heart-outline"}
                             size={26}
@@ -218,20 +223,20 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                         {(post.likes?.length || 0) > 0 && (
                             <Text style={styles.actionText}>{post.likes?.length}</Text>
                         )}
-                    </TouchableOpacity>
+                    </ScaleButton>
 
                     {/* Comment Button */}
-                    <TouchableOpacity style={styles.actionButton} onPress={() => onComment && onComment(post.id)}>
+                    <ScaleButton style={styles.actionButton} onPress={() => onComment && onComment(post.id)}>
                         <Ionicons name="chatbubble-outline" size={24} color={colors.textSecondary} />
                         {(post.comments_count || 0) > 0 && (
                             <Text style={styles.actionText}>{post.comments_count}</Text>
                         )}
-                    </TouchableOpacity>
+                    </ScaleButton>
 
                     {/* Share Button - Now functional */}
-                    <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
+                    <ScaleButton style={styles.actionButton} onPress={handleShare}>
                         <Ionicons name="share-social-outline" size={24} color={colors.textSecondary} />
-                    </TouchableOpacity>
+                    </ScaleButton>
                 </View>
             </View>
 
@@ -241,7 +246,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                 imageUrl={lightboxImageUrl || post.media_url || ''}
                 onClose={() => setLightboxVisible(false)}
             />
-        </View>
+        </View >
     );
 });
 

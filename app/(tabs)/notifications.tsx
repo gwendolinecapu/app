@@ -25,6 +25,8 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { FriendService, FriendRequest } from '../../src/services/friends';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { triggerHaptic } from '../../src/lib/haptics';
+import { timeAgo } from '../../src/lib/date';
+import { ScaleButton } from '../../src/components/ui/ScaleButton';
 
 // Types pour les différentes notifications
 type NotificationType = 'friend_request' | 'follow' | 'like' | 'comment' | 'mention' | 'system';
@@ -166,18 +168,18 @@ export default function NotificationsScreen() {
                     </Text>
                 </View>
                 <View style={styles.requestActions}>
-                    <TouchableOpacity
+                    <ScaleButton
                         style={styles.acceptButton}
                         onPress={() => handleAcceptRequest(item.id)}
                     >
                         <Text style={styles.acceptButtonText}>Accepter</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </ScaleButton>
+                    <ScaleButton
                         style={styles.rejectButton}
                         onPress={() => handleRejectRequest(item.id)}
                     >
                         <Text style={styles.rejectButtonText}>Refuser</Text>
-                    </TouchableOpacity>
+                    </ScaleButton>
                 </View>
             </View>
         );
@@ -208,7 +210,7 @@ export default function NotificationsScreen() {
         };
 
         return (
-            <TouchableOpacity
+            <ScaleButton
                 style={[
                     styles.notificationItem,
                     !item.isRead && styles.notificationUnread
@@ -224,26 +226,12 @@ export default function NotificationsScreen() {
                     )}
                 </View>
                 <Text style={styles.notificationTime}>
-                    {formatTimeAgo(item.timestamp)}
+                    {timeAgo(item.timestamp)}
                 </Text>
-            </TouchableOpacity>
+            </ScaleButton>
         );
     };
 
-    // Formater le temps relatif
-    const formatTimeAgo = (date: Date): string => {
-        const now = new Date();
-        const diffMs = now.getTime() - date.getTime();
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMins / 60);
-        const diffDays = Math.floor(diffHours / 24);
-
-        if (diffMins < 1) return 'À l\'instant';
-        if (diffMins < 60) return `${diffMins}min`;
-        if (diffHours < 24) return `${diffHours}h`;
-        if (diffDays < 7) return `${diffDays}j`;
-        return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-    };
 
     // État vide
     const renderEmpty = () => (
@@ -502,4 +490,4 @@ const styles = StyleSheet.create({
         marginTop: spacing.xs,
     },
 });
-```
+

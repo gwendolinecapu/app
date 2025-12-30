@@ -1,32 +1,34 @@
-import { formatDistance } from 'date-fns';
+import { formatDistanceToNowStrict } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Timestamp } from 'firebase/firestore';
 
-export const timeAgo = (date: any): string => {
-    if (!date) return '';
+/**
+ * Compresse la chaîne de temps relative pour un format plus court.
+ * Ex: "il y a 2 heures" -> "2h", "il y a 5 minutes" -> "5min", "il y a 1 jour" -> "1j"
+ */
+export const formatRelativeTime = (dateString: string | number | Date): string => {
+    if (!dateString) return '';
 
-    let targetDate: Date;
+    const date = new Date(dateString);
+    const distance = formatDistanceToNowStrict(date, {
+        addSuffix: true,
+        locale: fr,
+    });
 
-    if (date instanceof Timestamp) {
-        targetDate = date.toDate();
-    } else if (date?.seconds) {
-        // Handle serialized timestamp
-        targetDate = new Date(date.seconds * 1000);
-    } else if (typeof date === 'string') {
-        targetDate = new Date(date);
-    } else if (date instanceof Date) {
-        targetDate = date;
-    } else {
-        return '';
-    }
-
-    // Check for invalid date
-    if (isNaN(targetDate.getTime())) return '';
-
-    return formatDistance(targetDate, new Date(), { locale: fr });
+    // Nettoyage et raccourcissement pour un style "réseau social"
+    return distance
+        .replace('il y a ', '')
+        .replace('environ ', '')
+        .replace('secondes', 's')
+        .replace('seconde', 's')
+        .replace('minutes', 'min')
+        .replace('minute', 'min')
+        .replace('heures', 'h')
+        .replace('heure', 'h')
+        .replace('jours', 'j')
+        .replace('jour', 'j')
+        .replace('mois', 'mo')
+        .replace('années', 'an')
+        .replace('année', 'an');
 };
 
-export const formatTimeSince = (date: any): string => {
-    const duration = timeAgo(date);
-    return `depuis ${duration}`;
-};
+export const timeAgo = formatRelativeTime;

@@ -93,6 +93,11 @@ class NotificationService {
             finalStatus = status;
         }
 
+        // Web Platform Safety Check
+        if (Platform.OS === 'web') {
+            return true; // Assume granted or handle via browser API if needed, but avoid blocking
+        }
+
         if (finalStatus !== 'granted') {
             console.warn('[NotificationService] Permission not granted');
             return false;

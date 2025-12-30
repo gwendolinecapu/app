@@ -77,7 +77,7 @@ export default function RegisterScreen() {
     return (
         <DismissKeyboard>
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined}
                 style={styles.container}
             >
                 <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -97,6 +97,7 @@ export default function RegisterScreen() {
                                 value={username}
                                 onChangeText={setUsername}
                                 autoCapitalize="none"
+                                autoComplete="username"
                             />
                         </View>
 
@@ -123,6 +124,7 @@ export default function RegisterScreen() {
                                 value={password}
                                 onChangeText={setPassword}
                                 secureTextEntry
+                                autoComplete="new-password"
                             />
                         </View>
 
@@ -135,6 +137,7 @@ export default function RegisterScreen() {
                                 value={confirmPassword}
                                 onChangeText={setConfirmPassword}
                                 secureTextEntry
+                                autoComplete="new-password"
                             />
                         </View>
 

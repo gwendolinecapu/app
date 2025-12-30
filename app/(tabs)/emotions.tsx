@@ -268,7 +268,7 @@ export default function EmotionsScreen() {
                 <View style={styles.historySection}>
                     <View style={styles.historyHeader}>
                         <Text style={styles.sectionTitle}>Historique récent</Text>
-                        <TouchableOpacity onPress={() => router.push('/emotions/history')}>
+                        <TouchableOpacity onPress={() => router.push({ pathname: '/history', params: { tab: 'emotions' } })}>
                             <Text style={styles.seeAllLink}>Voir tout →</Text>
                         </TouchableOpacity>
                     </View>

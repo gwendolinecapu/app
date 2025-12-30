@@ -582,6 +582,8 @@ const styles = StyleSheet.create({
     },
     pricingCardFeatured: {
         borderColor: 'rgba(139, 92, 246, 0.4)',
+        marginTop: 8,
+        marginBottom: 8,
     },
     discountBadge: {
         position: 'absolute',
@@ -598,16 +600,11 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     featuredBadge: {
-        position: 'absolute',
-        top: -10,
-        left: 16,
-        backgroundColor: '#8B5CF6',
-        paddingHorizontal: 10,
-        paddingVertical: 4,
         borderRadius: 12,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
+        zIndex: 10,
     },
     featuredText: {
         color: '#FFF',
@@ -615,12 +612,12 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     radioOuter: {
-        width: 22,
-        height: 22,
-        borderRadius: 11,
+        width: 20,
+        height: 20,
+        borderRadius: 10,
         borderWidth: 2,
         borderColor: 'rgba(255,255,255,0.3)',
-        marginRight: spacing.md,
+        marginRight: spacing.sm,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -628,9 +625,9 @@ const styles = StyleSheet.create({
         borderColor: '#8B5CF6',
     },
     radioInner: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
+        width: 10,
+        height: 10,
+        borderRadius: 5,
         backgroundColor: '#8B5CF6',
     },
     planInfo: {

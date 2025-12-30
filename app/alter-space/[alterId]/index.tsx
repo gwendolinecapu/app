@@ -38,7 +38,7 @@ const { width } = Dimensions.get('window');
 const MAX_WIDTH = 430;
 const GALLERY_ITEM_SIZE = (Math.min(width, MAX_WIDTH) - spacing.md * 4) / 3;
 
-type TabType = 'feed' | 'profile' | 'journal' | 'gallery' | 'emotions' | 'settings';
+type TabType = 'feed' | 'profile' | 'journal' | 'gallery' | 'emotions' | 'settings' | 'search';
 type FeedItem = Post | SystemTip;
 
 // Helper for media type
@@ -293,84 +293,124 @@ export default function AlterSpaceScreen() {
 
     const renderProfile = () => {
         const ProfileHeader = () => (
-            <View style={styles.profileSection}>
-                <View style={[styles.avatar, { backgroundColor: alter.color }]}>
-                    {alter.avatar_url ? (
-                        <Image source={{ uri: alter.avatar_url }} style={styles.avatarImage} />
-                    ) : (
-                        <Text style={styles.avatarText}>
-                            {alter.name.charAt(0).toUpperCase()}
-                        </Text>
-                    )}
-                </View>
-                <Text style={styles.name}>{alter.name}</Text>
-                {alter.pronouns ? (
-                    <Text style={styles.pronouns}>{alter.pronouns}</Text>
-                ) : null}
-                {alter.custom_fields?.find(f => f.label === 'Role')?.value ? (
-                    <View style={styles.roleTag}>
-                        <Ionicons name="shield" size={12} color={colors.primary} />
-                        <Text style={styles.roleText}>
-                            {alter.custom_fields.find(f => f.label === 'Role')?.value}
-                        </Text>
+            <View style={styles.profileContainer}>
+                {/* Top Section: Avatar + Stats */}
+                <View style={styles.topProfileSection}>
+                    {/* Avatar Column */}
+                    <View style={styles.avatarColumn}>
+                        <View style={[styles.profileAvatarContainer, { borderColor: alter.color || colors.primary }]}>
+                            <View style={[styles.profileAvatar, { backgroundColor: alter.color || colors.primary }]}>
+                                {alter.avatar_url ? (
+                                    <Image source={{ uri: alter.avatar_url }} style={styles.profileAvatarImage} />
+                                ) : (
+                                    <Text style={styles.profileAvatarText}>
+                                        {alter.name.charAt(0).toUpperCase()}
+                                    </Text>
+                                )}
+                            </View>
+                        </View>
+                        <Text style={styles.profileName} numberOfLines={1}>{alter.name}</Text>
                     </View>
-                ) : null}
-                <Text style={styles.bio}>
-                    {alter.bio || "Aucune biographie"}
-                </Text>
-                <View style={styles.statsRow}>
-                    <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>{posts.length}</Text>
-                        <Text style={styles.statLabel}>Posts</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>{friendCount}</Text>
-                        <Text style={styles.statLabel}>Amis</Text>
+
+                    {/* Stats Column */}
+                    <View style={styles.statsContainer}>
+                        <View style={styles.statBox}>
+                            <Text style={styles.statValue}>{posts.length}</Text>
+                            <Text style={styles.statLabel}>Posts</Text>
+                        </View>
+                        <View style={styles.statBox}>
+                            <Text style={styles.statValue}>{friendCount}</Text>
+                            <Text style={styles.statLabel}>Amis</Text>
+                        </View>
+                        <View style={styles.statBox}>
+                            <Text style={styles.statValue}>0</Text>
+                            <Text style={styles.statLabel}>Suivs</Text>
+                        </View>
                     </View>
                 </View>
 
-                {/* Profile Actions */}
-                <View style={styles.profileActions}>
+                {/* Bio Section */}
+                <View style={styles.bioContainer}>
+                    {alter.pronouns ? (
+                        <Text style={styles.bioPronouns}>{alter.pronouns}</Text>
+                    ) : null}
+
+                    {alter.custom_fields?.find(f => f.label === 'Role')?.value && (
+                        <View style={styles.bioRoleRow}>
+                            <Ionicons name="information-circle-outline" size={14} color={colors.textSecondary} />
+                            <Text style={styles.bioRoleText}>{alter.custom_fields.find(f => f.label === 'Role')?.value}</Text>
+                        </View>
+                    )}
+
+                    {alter.bio ? (
+                        <Text style={styles.bioText}>{alter.bio || "Aucune biographie"}</Text>
+                    ) : null}
+                </View>
+
+                {/* Action Buttons */}
+                <View style={styles.actionButtonsRow}>
                     {isOwner ? (
-                        <TouchableOpacity
-                            style={styles.editProfileButton}
-                            onPress={() => router.push(`/alter-space/${alter.id}/edit`)}
-                        >
-                            <Text style={styles.editProfileText}>Modifier le profil</Text>
-                        </TouchableOpacity>
+                        <>
+                            <TouchableOpacity
+                                style={styles.profileActionButton}
+                                onPress={() => router.push(`/alter-space/${alter.id}/edit`)}
+                            >
+                                <Text style={styles.profileActionButtonText}>Modifier</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.profileActionButton}
+                                onPress={() => router.push('/history')}
+                            >
+                                <Text style={styles.profileActionButtonText}>Historique</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.profileActionButton}
+                                onPress={() => router.push('/settings')}
+                            >
+                                <Ionicons name="settings-outline" size={16} color={colors.text} />
+                            </TouchableOpacity>
+                        </>
                     ) : (
                         <>
                             <TouchableOpacity
-                                style={styles.editProfileButton}
+                                style={[styles.profileActionButton, styles.primaryActionButton]}
+                                onPress={() => handleFriendAction(alter.id)}
+                            >
+                                <Text style={[styles.profileActionButtonText, styles.primaryActionButtonText]}>
+                                    {friendStatuses[alter.id] === 'friends' ? 'Amis' :
+                                        friendStatuses[alter.id] === 'pending' ? 'Demande envoyée' : 'Suivre'}
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.profileActionButton}
                                 onPress={() => router.push({ pathname: '/conversation/[id]', params: { id: alter.id } })}
                             >
-                                <Text style={styles.editProfileText}>Message</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.followButton} onPress={() => handleFriendAction(alter.id)}>
-                                <Text style={styles.followButtonText}>
-                                    {friendStatuses[alter.id] === 'friends' ? 'Amis' :
-                                        friendStatuses[alter.id] === 'pending' ? 'Demande envoyée' : 'Ajouter'}
-                                </Text>
+                                <Text style={styles.profileActionButtonText}>Message</Text>
                             </TouchableOpacity>
                         </>
                     )}
                 </View>
+
+                {/* Tab Switcher (Grid/List/Etc if needed) - Visual only for now */}
+                {/* <View style={styles.profileTabs}>
+                    <Ionicons name="grid" size={24} color={colors.text} />
+                </View> */}
             </View>
         );
-        // In "Profile" mode, we show all posts in a grid
+
+        // Grid View
         return (
             <View style={styles.galleryContainer}>
                 {posts.length === 0 ? (
                     <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                         <ProfileHeader />
                         <View style={styles.emptyState}>
-                            <Image
-                                source={require('../../../assets/icon.png')} // Fallback until we have a specific illustration
-                                style={{ width: 64, height: 64, marginBottom: 16, opacity: 0.5, alignSelf: 'center' }}
-                            />
+                            <View style={styles.emptyGridIcon}>
+                                <Ionicons name="camera-outline" size={32} color={colors.textMuted} />
+                            </View>
                             <Text style={styles.emptyTitle}>Aucune publication</Text>
                             <Text style={styles.emptySubtitle}>
-                                {alter.name} n'a pas encore publié
+                                Les photos et posts de {alter.name} apparaîtront ici.
                             </Text>
                         </View>
                     </ScrollView>
@@ -379,7 +419,20 @@ export default function AlterSpaceScreen() {
                         data={posts}
                         numColumns={3}
                         keyExtractor={(item) => item.id}
-                        ListHeaderComponent={ProfileHeader}
+                        ListHeaderComponent={() => (
+                            <>
+                                <ProfileHeader />
+                                {/* Instagram-style Tabs Icon Strip */}
+                                <View style={styles.feedTabsStrip}>
+                                    <TouchableOpacity style={[styles.feedTabIcon, styles.feedTabIconActive]}>
+                                        <Ionicons name="grid" size={24} color={colors.text} />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={styles.feedTabIcon}>
+                                        <Ionicons name="person-circle-outline" size={26} color={colors.textMuted} />
+                                    </TouchableOpacity>
+                                </View>
+                            </>
+                        )}
                         refreshControl={
                             <RefreshControl
                                 refreshing={refreshing}
@@ -388,15 +441,20 @@ export default function AlterSpaceScreen() {
                             />
                         }
                         renderItem={({ item }) => (
-                            <TouchableOpacity style={styles.galleryItem}>
+                            <TouchableOpacity
+                                style={styles.gridImageContainer}
+                                onPress={() => {
+                                    // Handle post press -> maybe open modal
+                                }}
+                            >
                                 {item.media_url ? (
                                     <Image
                                         source={{ uri: item.media_url }}
-                                        style={styles.galleryImage}
+                                        style={styles.gridImageContent}
                                     />
                                 ) : (
-                                    <View style={styles.textPostPreview}>
-                                        <Text style={styles.textPostContent} numberOfLines={3}>
+                                    <View style={styles.gridTextContent}>
+                                        <Text style={styles.gridTextPreview} numberOfLines={3}>
                                             {item.content}
                                         </Text>
                                     </View>
@@ -552,27 +610,24 @@ export default function AlterSpaceScreen() {
     );
 
     const renderEmotions = () => {
-        const handleAddEmotion = async (emoji: string) => {
+        const EMOTION_CONFIG: { type: EmotionType; icon: keyof typeof Ionicons.glyphMap; label: string; color: string }[] = [
+            { type: 'happy', icon: 'happy-outline', label: 'Joyeux', color: '#FFD93D' },
+            { type: 'sad', icon: 'sad-outline', label: 'Triste', color: '#3498DB' },
+            { type: 'anxious', icon: 'alert-circle-outline', label: 'Anxieux', color: '#F39C12' },
+            { type: 'angry', icon: 'flame-outline', label: 'En colère', color: '#E74C3C' },
+            { type: 'tired', icon: 'battery-dead-outline', label: 'Fatigué', color: '#A0AEC0' },
+            { type: 'calm', icon: 'leaf-outline', label: 'Calme', color: '#6BCB77' },
+            { type: 'confused', icon: 'help-circle-outline', label: 'Confus', color: '#9B59B6' },
+            { type: 'excited', icon: 'star-outline', label: 'Excité', color: '#FF6B6B' }
+        ];
+
+        const handleAddEmotion = async (emotionType: EmotionType) => {
             try {
-                // Map emoji to EmotionType
-                const moodMap: Record<string, EmotionType> = {
-                    '😊': 'happy',
-                    '😢': 'sad',
-                    '😰': 'anxious',
-                    '😡': 'angry',
-                    '😴': 'tired',
-                    '😌': 'calm',
-                    '😕': 'confused',
-                    '🤩': 'excited'
-                };
-
-                const emotionType = moodMap[emoji];
-                if (!emotionType) return;
-
                 triggerHaptic.selection();
                 triggerHaptic.selection();
                 await EmotionService.addEmotion(alterId as string, emotionType, 3);
-                toast.showToast(`Emotion enregistrée: ${emotionType}`, 'success');
+                const config = EMOTION_CONFIG.find(e => e.type === emotionType);
+                toast.showToast(`Emotion enregistrée: ${config?.label || emotionType}`, 'success');
                 loadLatestEmotion(); // Refresh display
             } catch (error) {
                 console.error('Failed to add emotion:', error);
@@ -580,32 +635,39 @@ export default function AlterSpaceScreen() {
             }
         };
 
+        const currentEmotionConfig = latestEmotion ? EMOTION_CONFIG.find(e => e.type === latestEmotion.emotion) : null;
+
         return (
             <ScrollView style={styles.tabContent}>
                 <Text style={styles.sectionTitle}>Comment te sens-tu, {alter.name} ?</Text>
 
                 {/* Emotion Grid */}
                 <View style={styles.emotionGrid}>
-                    {['😊', '😢', '😰', '😡', '😴', '😌', '😕', '🤩'].map((emoji, index) => (
+                    {EMOTION_CONFIG.map((item, index) => (
                         <TouchableOpacity
                             key={index}
-                            style={styles.emotionButton}
-                            onPress={() => handleAddEmotion(emoji)}
+                            style={[styles.emotionButton, { borderColor: item.color + '40', borderWidth: 1 }]}
+                            onPress={() => handleAddEmotion(item.type)}
                         >
-                            <Text style={styles.emotionEmoji}>{emoji}</Text>
+                            <Ionicons name={item.icon} size={32} color={item.color} />
+                            <Text style={[styles.emotionLabel, { color: colors.textSecondary, fontSize: 12, marginTop: 4 }]}>{item.label}</Text>
                         </TouchableOpacity>
                     ))}
                 </View>
 
                 {latestEmotion ? (
                     <View style={styles.emotionStatusContainer}>
-                        <Text style={styles.emotionStatusEmoji}>{EMOTION_EMOJIS[latestEmotion.emotion]}</Text>
-                        <Text style={styles.emotionStatusText}>
-                            Actuellement <Text style={{ fontWeight: 'bold' }}>{EMOTION_LABELS[latestEmotion.emotion]}</Text>
-                        </Text>
-                        <Text style={styles.emotionStatusTime}>
-                            {timeAgo(latestEmotion.created_at) ? `Depuis ${timeAgo(latestEmotion.created_at)}` : "À l'instant"}
-                        </Text>
+                        <View style={[styles.emotionStatusIcon, { backgroundColor: (currentEmotionConfig?.color || colors.primary) + '20' }]}>
+                            <Ionicons name={currentEmotionConfig?.icon || 'heart-outline'} size={24} color={currentEmotionConfig?.color || colors.primary} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.emotionStatusText}>
+                                Actuellement <Text style={{ fontWeight: 'bold', color: currentEmotionConfig?.color || colors.text }}>{currentEmotionConfig?.label || EMOTION_LABELS[latestEmotion.emotion]}</Text>
+                            </Text>
+                            <Text style={styles.emotionStatusTime}>
+                                {timeAgo(latestEmotion.created_at) ? `Depuis ${timeAgo(latestEmotion.created_at)}` : "À l'instant"}
+                            </Text>
+                        </View>
                     </View>
                 ) : (
                     <View style={styles.emptyState}>
@@ -619,6 +681,26 @@ export default function AlterSpaceScreen() {
             </ScrollView>
         );
     };
+
+    const renderSearch = () => (
+        <View style={styles.tabContent}>
+            <View style={styles.searchContainer}>
+                <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
+                <TextInput
+                    style={styles.searchInputPlaceholder}
+                    placeholder="Rechercher..."
+                    placeholderTextColor={colors.textSecondary}
+                />
+            </View>
+            <View style={styles.emptyState}>
+                <Ionicons name="search-outline" size={64} color={colors.textMuted} />
+                <Text style={styles.emptyTitle}>Recherche</Text>
+                <Text style={styles.emptySubtitle}>
+                    Recherchez parmi les posts, le journal et la galerie de {alter.name}.
+                </Text>
+            </View>
+        </View>
+    );
 
     const renderSettings = () => (
         <ScrollView style={styles.settingsContainer}>
@@ -682,23 +764,23 @@ export default function AlterSpaceScreen() {
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{alter.name}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    {/* Profil - afficher le profil de l'alter dans l'alter space */}
+                    {/* Search */}
                     <TouchableOpacity
                         style={styles.messageButton}
                         onPress={() => {
-                            setActiveTab('profile');
+                            setActiveTab('search');
                         }}
                     >
-                        <Ionicons name="person-circle-outline" size={26} color={colors.text} />
+                        <Ionicons name="search" size={26} color={colors.text} />
                     </TouchableOpacity>
+                    {/* Notifications */}
                     <TouchableOpacity
                         style={styles.messageButton}
                         onPress={() => {
-                            // For now, go to global messages.
-                            router.push('/(tabs)/messages');
+                            router.push('/(tabs)/notifications');
                         }}
                     >
-                        <Ionicons name="chatbubble-ellipses-outline" size={26} color={colors.text} />
+                        <Ionicons name="heart-outline" size={26} color={colors.text} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -706,6 +788,7 @@ export default function AlterSpaceScreen() {
             {/* Content Area */}
             <View style={styles.contentArea}>
                 {activeTab === 'feed' && renderFeed()}
+                {activeTab === 'search' && renderSearch()}
                 {activeTab === 'profile' && renderProfile()}
                 {activeTab === 'journal' && renderJournal()}
                 {activeTab === 'gallery' && renderGallery()}
@@ -762,23 +845,7 @@ export default function AlterSpaceScreen() {
                     </View>
                 </TouchableOpacity>
 
-                {/* 4. Gallery */}
-                <TouchableOpacity
-                    style={styles.tab}
-                    onPress={() => {
-                        triggerHaptic.selection();
-                        setActiveTab('gallery');
-                    }}
-                >
-                    <Ionicons
-                        name={activeTab === 'gallery' ? 'images' : 'images-outline'}
-                        size={24}
-                        color={activeTab === 'gallery' ? colors.primary : colors.textMuted}
-                    />
-                    <Text style={[styles.tabLabel, activeTab === 'gallery' && styles.tabLabelActive]}>Galerie</Text>
-                </TouchableOpacity>
-
-                {/* 5. Profile */}
+                {/* 4. Profile */}
                 <TouchableOpacity
                     style={styles.tab}
                     onPress={() => {
@@ -793,8 +860,136 @@ export default function AlterSpaceScreen() {
                     />
                     <Text style={[styles.tabLabel, activeTab === 'profile' && styles.tabLabelActive]}>Profil</Text>
                 </TouchableOpacity>
+
+                {/* 5. Profile */}
+                {/* 5. Menu */}
+                <TouchableOpacity
+                    style={styles.tab}
+                    onPress={() => {
+                        triggerHaptic.selection();
+                        setMenuVisible(true);
+                    }}
+                >
+                    <Ionicons
+                        name="menu"
+                        size={24}
+                        color={colors.textMuted}
+                    />
+                    <Text style={styles.tabLabel}>Menu</Text>
+                </TouchableOpacity>
             </View>
 
+
+            {/* Menu Modal */}
+            <Modal
+                visible={menuVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setMenuVisible(false)}
+            >
+                <TouchableOpacity
+                    style={styles.menuOverlay}
+                    activeOpacity={1}
+                    onPress={() => setMenuVisible(false)}
+                >
+                    <View style={styles.menuBackdrop} />
+                </TouchableOpacity>
+
+                <View style={styles.menuDrawer}>
+                    <View style={styles.menuHandle} />
+                    <View style={styles.menuHeader}>
+                        <Text style={styles.menuTitle}>Menu</Text>
+                        <TouchableOpacity
+                            style={styles.menuCloseBtn}
+                            onPress={() => setMenuVisible(false)}
+                        >
+                            <Ionicons name="close" size={20} color={colors.text} />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Journal */}
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => {
+                            setMenuVisible(false);
+                            setActiveTab('journal');
+                        }}
+                    >
+                        <View style={[styles.menuIconBg, { backgroundColor: '#3BA55C30' }]}>
+                            <Ionicons name="book" size={22} color="#3BA55C" />
+                        </View>
+                        <Text style={styles.menuItemText}>Journal</Text>
+                        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                    </TouchableOpacity>
+
+                    {/* Gallery */}
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => {
+                            setMenuVisible(false);
+                            setActiveTab('gallery');
+                        }}
+                    >
+                        <View style={[styles.menuIconBg, { backgroundColor: '#FAA61A30' }]}>
+                            <Ionicons name="images" size={22} color="#FAA61A" />
+                        </View>
+                        <Text style={styles.menuItemText}>Galerie Privée</Text>
+                        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                    </TouchableOpacity>
+
+                    {/* History */}
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => {
+                            setMenuVisible(false);
+                            router.push('/history');
+                        }}
+                    >
+                        <View style={[styles.menuIconBg, { backgroundColor: '#F0B13230' }]}>
+                            <Ionicons name="stats-chart" size={22} color="#F0B132" />
+                        </View>
+                        <Text style={styles.menuItemText}>Historique & Stats</Text>
+                        <View style={[styles.menuBadge, { backgroundColor: colors.primary + '20' }]}>
+                            <Text style={[styles.menuBadgeText, { color: colors.primary, fontSize: 10 }]}>NOUVEAU</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                    </TouchableOpacity>
+
+                    <View style={styles.menuDivider} />
+
+                    {/* Shop */}
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => {
+                            setMenuVisible(false);
+                            router.push('/shop');
+                        }}
+                    >
+                        <View style={[styles.menuIconBg, { backgroundColor: `${colors.primary}30` }]}>
+                            <Ionicons name="storefront" size={22} color={colors.primary} />
+                        </View>
+                        <Text style={[styles.menuItemText, { color: colors.primary, fontWeight: '600' }]}>Boutique</Text>
+                        <View style={styles.menuBadge}>
+                            <Ionicons name="sparkles" size={12} color="#FFF" />
+                        </View>
+                    </TouchableOpacity>
+
+                    {/* Settings */}
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => {
+                            setMenuVisible(false);
+                            router.push('/settings');
+                        }}
+                    >
+                        <View style={[styles.menuIconBg, { backgroundColor: '#72767D30' }]}>
+                            <Ionicons name="settings" size={22} color="#72767D" />
+                        </View>
+                        <Text style={styles.menuItemText}>Réglages</Text>
+                        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                    </TouchableOpacity>
+                </View>
+            </Modal>
 
             {/* Full Screen Image Modal */}
             < Modal
@@ -918,11 +1113,7 @@ const styles = StyleSheet.create({
         ...typography.h3,
         fontWeight: 'bold',
     },
-    statLabel: {
-        ...typography.caption,
-        color: colors.textSecondary,
-        fontSize: 14,
-    },
+
     profileActions: {
         flexDirection: 'row',
         gap: 10,
@@ -1446,5 +1637,207 @@ const styles = StyleSheet.create({
     },
     menuBadgeText: {
         fontSize: 14,
+    },
+    // ==================== INSTAGRAM PROFILE STYLES ====================
+    profileContainer: {
+        paddingTop: 16,
+        paddingBottom: 0,
+        backgroundColor: colors.background,
+    },
+    topProfileSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        marginBottom: 12,
+    },
+    avatarColumn: {
+        alignItems: 'center',
+        marginRight: 24,
+    },
+    profileAvatarContainer: {
+        width: 86,
+        height: 86,
+        borderRadius: 43,
+        padding: 3,
+        borderWidth: 2,
+        marginBottom: 4,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    profileAvatar: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 50,
+        overflow: 'hidden',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    profileAvatarImage: {
+        width: '100%',
+        height: '100%',
+    },
+    profileAvatarText: {
+        fontSize: 32,
+        color: '#FFF',
+        fontWeight: 'bold',
+    },
+    profileName: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: colors.text,
+        maxWidth: 90,
+        textAlign: 'center',
+    },
+    statsContainer: {
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        marginRight: 16,
+    },
+    statBox: {
+        alignItems: 'center',
+    },
+    statValue: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: colors.text,
+        marginBottom: 0,
+    },
+    statLabel: {
+        fontSize: 13,
+        color: colors.text,
+    },
+    bioContainer: {
+        paddingHorizontal: 16,
+        marginBottom: 16,
+    },
+    bioDisplayName: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: colors.text,
+        marginBottom: 4,
+    },
+    bioPronouns: {
+        fontSize: 14,
+        color: colors.textSecondary,
+        marginBottom: 2,
+    },
+    bioRoleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 4,
+        gap: 4,
+    },
+    bioRoleText: {
+        fontSize: 13,
+        color: colors.textSecondary,
+    },
+    bioText: {
+        fontSize: 14,
+        color: colors.text,
+        lineHeight: 20,
+    },
+    actionButtonsRow: {
+        flexDirection: 'row',
+        paddingHorizontal: 16,
+        gap: 8,
+        marginBottom: 10,
+    },
+    profileActionButton: {
+        flex: 1,
+        backgroundColor: colors.backgroundCard !== '#ffffff' ? colors.backgroundCard : '#EFEFEF',
+        paddingVertical: 7,
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    primaryActionButton: {
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
+    },
+    profileActionButtonText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: colors.text,
+    },
+    primaryActionButtonText: {
+        color: '#FFF',
+    },
+    feedTabsStrip: {
+        flexDirection: 'row',
+        height: 48,
+        borderTopWidth: 0,
+        borderBottomWidth: 1,
+        borderColor: colors.border,
+        justifyContent: 'space-around',
+        alignItems: 'center',
+    },
+    feedTabIcon: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100%',
+    },
+    feedTabIconActive: {
+        borderBottomWidth: 1,
+        borderBottomColor: colors.text,
+    },
+    gridImageContainer: {
+        width: width / 3,
+        height: width / 3,
+        borderWidth: 0.5,
+        borderColor: colors.background,
+    },
+    gridImageContent: {
+        width: '100%',
+        height: '100%',
+    },
+    gridTextContent: {
+        flex: 1,
+        backgroundColor: colors.backgroundCard,
+        padding: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    gridTextPreview: {
+        fontSize: 10,
+        color: colors.text,
+        textAlign: 'center',
+    },
+    emptyGridState: {
+        padding: 40,
+        alignItems: 'center',
+    },
+    emptyGridIcon: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        borderWidth: 1.5,
+        borderColor: colors.text,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
+    },
+    emptyGridTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: colors.text,
+    },
+    emotionLabel: {
+        fontSize: 12,
+        color: colors.textSecondary,
+        textAlign: 'center',
+        marginTop: 4,
+    },
+    emotionStatusIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: spacing.md,
     },
 });

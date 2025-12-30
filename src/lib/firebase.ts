@@ -1,7 +1,8 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
 // @ts-ignore - getReactNativePersistence is resolved via metro.config.js to RN bundle
 import { getAuth, initializeAuth, getReactNativePersistence } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Configuration Firebase
@@ -32,8 +33,20 @@ const auth = initializeAuth(app, {
 // Initialisation de Firestore
 const db = getFirestore(app);
 
+// Activation de la persistance hors-ligne (IndexedDB pour Web, AsyncStorage pour React Native)
+// Cela permet à l'app de fonctionner sans connexion et de synchroniser quand le réseau revient.
+enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code === 'failed-precondition') {
+        // Multiple tabs open, persistence can only be enabled in one tab at a time.
+        console.warn('Firestore persistence failed: Multiple tabs open');
+    } else if (err.code === 'unimplemented') {
+        // The current browser does not support all of the features required
+        console.warn('Firestore persistence not supported in this environment');
+    }
+});
+
 // Initialisation de Storage
-import { getStorage } from 'firebase/storage';
 const storage = getStorage(app);
 
 export { auth, db, storage };
+

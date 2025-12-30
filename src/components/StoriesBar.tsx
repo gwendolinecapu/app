@@ -59,8 +59,17 @@ export const StoriesBar = ({ onStoryPress, friendIds = [] }: StoriesBarProps) =>
 
             setMyStories(mine.length > 0 ? mine[0].stories : []);
             setAuthors(others);
-        } catch (error) {
-            console.error('Failed to load stories:', error);
+        } catch (error: any) {
+            // Gérer silencieusement les erreurs de permissions Firestore
+            // Ces erreurs sont normales quand les règles de sécurité bloquent l'accès
+            if (error?.code === 'permission-denied') {
+                console.log('[Stories] Permissions non configurées - stories désactivées');
+            } else {
+                console.warn('[Stories] Erreur de chargement:', error?.message || error);
+            }
+            // Continuer avec des tableaux vides
+            setMyStories([]);
+            setAuthors([]);
         } finally {
             setLoading(false);
         }

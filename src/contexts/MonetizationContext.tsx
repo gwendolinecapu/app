@@ -82,7 +82,7 @@ interface MonetizationContextType {
 const MonetizationContext = createContext<MonetizationContextType | undefined>(undefined);
 
 export function MonetizationProvider({ children }: { children: React.ReactNode }) {
-    const { user } = useAuth();
+    const { user, refreshAlters } = useAuth();
     const [loading, setLoading] = useState(true);
 
     // États dérivés des services
@@ -124,8 +124,8 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     const refreshState = useCallback(() => {
         setTier(PremiumService.getCurrentTier());
         setCredits(CreditService.getBalance());
-        // setOwnedDecorations(DecorationService.getOwnedDecorations()); // Removed
-    }, []);
+        refreshAlters();
+    }, [refreshAlters]);
 
     const refresh = useCallback(async () => {
         if (user?.uid) {

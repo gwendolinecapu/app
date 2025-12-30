@@ -70,9 +70,22 @@ export function useWatchSync() {
         });
 
         // Quand la montre sélectionne une humeur
-        const unsubMood = WatchBridge.onMoodSelected((event) => {
+        const unsubMood = WatchBridge.onMoodSelected(async (event) => {
             console.log('[Watch] Mood selected:', event.mood, 'intensity:', event.intensity);
-            // TODO: Enregistrer l'émotion dans Firestore
+
+            // Trouver qui est au front pour enregistrer l'émotion
+            const currentAlter = activeFront?.alters[0];
+            if (currentAlter) {
+                try {
+                    // Import dynamique ou utilisation du service importé
+                    const { EmotionService } = require('../services/emotions');
+                    await EmotionService.addEmotion(currentAlter.id, event.mood, event.intensity);
+                } catch (e) {
+                    console.error('[Watch] Failed to save emotion:', e);
+                }
+            } else {
+                console.warn('[Watch] No active alter to save mood');
+            }
         });
 
         // Quand la montre demande les alters

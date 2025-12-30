@@ -66,6 +66,24 @@ export default function NotificationsScreen() {
             // Pour l'instant, on simule quelques notifications
             const mockNotifications: Notification[] = [];
 
+            // Mock likes and comments
+            mockNotifications.push({
+                id: 'mock_like_1',
+                type: 'like',
+                title: 'Nouveau like',
+                subtitle: 'Alex a aimé votre post',
+                timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 mins ago
+                isRead: false,
+            });
+            mockNotifications.push({
+                id: 'mock_comment_1',
+                type: 'comment',
+                title: 'Nouveau commentaire',
+                subtitle: 'Sarah a commenté: "Super photo !"',
+                timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
+                isRead: true,
+            });
+
             // Convertir les demandes d'amis en notifications
             pending.forEach(req => {
                 mockNotifications.push({

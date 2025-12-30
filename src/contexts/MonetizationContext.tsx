@@ -43,31 +43,32 @@ interface MonetizationContextType {
     adFreeDaysRemaining: number;
 
     // Reward Ads
+    // Reward Ads
     canWatchRewardAd: boolean;
     rewardAdsRemaining: number;
     adFreeProgress: { current: number; needed: number };
     premiumProgress: { current: number; needed: number };
-    watchRewardAd: () => Promise<RewardResult>;
+    watchRewardAd: (alterId: string) => Promise<RewardResult>;
+    claimRewardAd: (alterId: string) => Promise<number>;
 
     // Crédits
-    canClaimDaily: boolean;
+    checkDailyLogin: (alterId: string) => Promise<boolean>;
     currentStreak: number;
-    claimDailyLogin: () => Promise<{ amount: number; streak: number; streakBonus: number }>;
+    claimDailyLogin: (alterId: string) => Promise<{ amount: number; streak: number; streakBonus: number }>;
 
     // Boutique
     shopItems: ShopItem[];
     creditPacks: ShopItem[];
-    purchaseItem: (item: ShopItem) => Promise<boolean>;
+    purchaseItem: (item: ShopItem, alterId?: string) => Promise<boolean>;
     purchaseIAP: (packageId: string) => Promise<boolean>;
     restorePurchases: () => Promise<boolean>;
     presentPaywall: () => Promise<boolean>;
     presentCustomerCenter: () => Promise<void>;
 
     // Décorations
-    ownedDecorations: Decoration[];
-    purchaseDecoration: (decorationId: string) => Promise<boolean>;
-    equipDecoration: (alterId: string, decorationId: string) => Promise<boolean>;
-    getEquippedDecoration: (alterId: string) => Decoration | null;
+    purchaseDecoration: (decorationId: string, alterId: string) => Promise<boolean>;
+    equipDecoration: (alterId: string, decorationId: string, type: 'frame' | 'theme' | 'bubble') => Promise<boolean>;
+    getEquippedDecorationId: (alter: any, type: 'frame' | 'theme' | 'bubble') => string | undefined;
 
     // Pubs
     getNativeAd: () => NativeAdData | null;
@@ -87,7 +88,6 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     // États dérivés des services
     const [tier, setTier] = useState<UserTier>('free');
     const [credits, setCredits] = useState(0);
-    const [ownedDecorations, setOwnedDecorations] = useState<Decoration[]>([]);
 
     // ==================== INITIALIZATION ====================
 
@@ -124,7 +124,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     const refreshState = useCallback(() => {
         setTier(PremiumService.getCurrentTier());
         setCredits(CreditService.getBalance());
-        setOwnedDecorations(DecorationService.getOwnedDecorations());
+        // setOwnedDecorations(DecorationService.getOwnedDecorations()); // Removed
     }, []);
 
     const refresh = useCallback(async () => {
@@ -178,11 +178,11 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     const adFreeProgress = PremiumService.getAdFreeProgress();
     const premiumProgress = PremiumService.getPremiumProgress();
 
-    const watchRewardAd = useCallback(async (): Promise<RewardResult> => {
+    const watchRewardAd = useCallback(async (alterId: string): Promise<RewardResult> => {
         const result = await AdMediationService.showRewardedAd();
 
         if (result.completed) {
-            await CreditService.claimRewardAd();
+            await CreditService.claimRewardAd(alterId);
             await PremiumService.recordRewardAdWatch();
             refreshState();
         }
@@ -191,19 +191,43 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
     // ==================== CREDITS ====================
 
-    const canClaimDaily = CreditService.canClaimDailyLogin();
-    const currentStreak = CreditService.getCurrentStreak();
+    const currentStreak = CreditService.getCurrentStreak(); // Still useful for system analytics? Or per alter? 
+    // CreditService now has per-alter streak. 
+    // We should probably expose a method to get streak for alter. 
+    // For now, let's remove system-wide streak from context or update it to be flexible.
 
-    const claimDailyLogin = useCallback(async () => {
-        const result = await CreditService.claimDailyLogin();
+    const canClaimDaily = useCallback(async (alterId: string) => {
+        return CreditService.canClaimDailyLogin(alterId);
+    }, []);
+
+    const claimDailyLogin = useCallback(async (alterId: string) => {
+        const result = await CreditService.claimDailyLogin(alterId);
+        refreshState();
+        return result;
+    }, [refreshState]);
+
+    const claimRewardAd = useCallback(async (alterId: string) => {
+        const result = await CreditService.claimRewardAd(alterId);
         refreshState();
         return result;
     }, [refreshState]);
 
     // ==================== BOUTIQUE ====================
 
-    const purchaseItem = useCallback(async (item: ShopItem): Promise<boolean> => {
-        const success = await CreditService.purchaseItem(item);
+    const purchaseItem = useCallback(async (item: ShopItem, alterId?: string): Promise<boolean> => {
+        // If it's a decoration, we need alterId
+        if (item.type === 'decoration') {
+            if (!alterId) {
+                console.error("PurchaseItem: alterId required for decoration");
+                return false;
+            }
+            // Purchase logic for decoration is: 
+            // 1. DecorationService.purchaseDecoration handles check + credit deduction + grant
+            return DecorationService.purchaseDecoration(item.id, alterId);
+        }
+
+        // Standard system items (premium, ad-free)
+        const success = await CreditService.purchaseItem(item, true);
         if (success) refreshState();
         return success;
     }, [refreshState]);
@@ -270,18 +294,31 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
     // ==================== DECORATIONS ====================
 
-    const purchaseDecoration = useCallback(async (decorationId: string): Promise<boolean> => {
-        const success = await DecorationService.purchaseDecoration(decorationId);
+    // Removed ownedDecorations state as it is per-alter.
+
+    const purchaseDecoration = useCallback(async (decorationId: string, alterId: string): Promise<boolean> => {
+        const success = await DecorationService.purchaseDecoration(decorationId, alterId);
         if (success) refreshState();
         return success;
     }, [refreshState]);
 
-    const equipDecoration = useCallback(async (alterId: string, decorationId: string): Promise<boolean> => {
-        return DecorationService.equipDecoration(alterId, decorationId);
+    const equipDecoration = useCallback(async (alterId: string, decorationId: string, type: 'frame' | 'theme' | 'bubble'): Promise<boolean> => {
+        return DecorationService.equipDecoration(alterId, decorationId, type);
     }, []);
 
-    const getEquippedDecoration = useCallback((alterId: string): Decoration | null => {
-        return DecorationService.getEquippedDecoration(alterId);
+    const getEquippedDecorationId = useCallback((alter: any, type: 'frame' | 'theme' | 'bubble'): string | undefined => {
+        return DecorationService.getEquippedDecorationId(alter, type);
+    }, []);
+
+    const getOwnedDecorations = useCallback(async (alterId: string): Promise<Decoration[]> => {
+        // This is async now. Callers should handle promise.
+        // Or we rely on the Alter object passed to the UI.
+        const catalog = DecorationService.getCatalog();
+        // We need to fetch the alter or expect the UI to pass us the list of owned IDs?
+        // UI usually has the Alter object.
+        // DecorationService.ownsDecoration checks against Firestore.
+        // Better: Helper "getOwnedDecorationsForAlter(alter)"
+        return [];
     }, []);
 
     // ==================== ADS ====================
@@ -290,6 +327,8 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         if (isAdFree) return null;
         return AdMediationService.getPreloadedNativeAd();
     }, [isAdFree]);
+
+    // ==================== CONTEXT VALUE ====================
 
     // ==================== CONTEXT VALUE ====================
 
@@ -316,8 +355,9 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         adFreeProgress,
         premiumProgress,
         watchRewardAd,
+        claimRewardAd,
 
-        canClaimDaily,
+        checkDailyLogin: canClaimDaily, // mapped to the callback
         currentStreak,
         claimDailyLogin,
 
@@ -329,10 +369,9 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         presentPaywall,
         presentCustomerCenter,
 
-        ownedDecorations,
         purchaseDecoration,
         equipDecoration,
-        getEquippedDecoration,
+        getEquippedDecorationId,
 
         getNativeAd,
         refresh,

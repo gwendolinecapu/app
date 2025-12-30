@@ -20,6 +20,9 @@
 - **AdMediationService**: Fixed crash in Expo Go when `mobileAds` is null (now skips initialization gracefully).
 - **Shop Types**: Fixed TypeScript errors using `equipped_items` object instead of non-existent `avatar_frame`/`themeId`/`bubbleStyle` properties.
 - **Compilation**: Fixed critical JSX syntax errors in `app/(tabs)/alters.tsx` (unclosed `Modal` and `View` tags).
+- **Navigation**: Updated Alter Space navigation:
+    - **Bottom Bar**: Feed, Search (New), +, Profile (Moved from Menu), Menu.
+    - **Menu Drawer**: Journal, Gallery (Restored), Shop, Settings.
 
 
 ## [2025-12-30] Shop UI & Système d'Amis Corrigé 🛒🤝
@@ -595,3 +598,27 @@ Ajouter les 7 receivers dans AndroidManifest.xml
 - **Boutique** : Nouvel onglet "Premium" et accès aux packs de crédits (IAP).
 - **Service** : `PremiumService` mis à jour pour vérifier RevenueCat + Silent Trial.
 - **Types** : `ShopItem` supporte `revenueCatPackageId`.
+
+## [2025-12-30] Historique & Statistiques Avancées 📊
+
+### Nouvel Écran Unifié
+- **`app/history/index.tsx`** : Consolidation de l'historique Front & Émotions en un seul écran puissant.
+- **Onglets Navigation** :
+  - **Résumé** : Vue d'ensemble avec cartes de stats clés, graphiques d'activité et insights personnalisés (style Spotify Wrapped).
+  - **Front** : Statistiques détaillées de fronting (Top alters, répartition journalière, switchs).
+  - **Émotions** : Analyse émotionnelle approfondie (Distribution, tendances d'humeur, patterns détectés).
+- **Filtres de Période** : 7j, 30j, 90j, Année, Tout.
+
+### Statistiques Avancées (Backend)
+- **`src/services/emotions.ts`** :
+  - `getEmotionsTrend` : Tendance d'humeur pondérée par valence.
+  - `getMoodAverage` : Comparaison intensité vs période précédente.
+  - `detectPatterns` : Détection intelligente de patterns (ex: "Souvent anxieux le Lundi").
+- **`src/services/fronting.ts`** :
+  - `getDailyBreakdown` : Granularité personnalisable pour graphiques.
+  - `getSwitchPatterns` : Analyse horaire des switchs.
+  - `getLongestSession` : Record de durée de front.
+
+### Intégration UX
+- **Alter Space** : Menu hamburger enrichi avec accès direct "Historique & Stats" (Badge "NOUVEAU").
+- **Visualisations** : Graphiques interactifs (LineChart, BarChart, PieChart) avec `react-native-chart-kit`.

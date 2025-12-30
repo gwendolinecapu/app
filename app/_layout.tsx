@@ -121,9 +121,7 @@ export default function RootLayout() {
                                                 {/* Autres écrans */}
                                                 <Stack.Screen name="crisis/index" options={{ headerShown: false }} />
                                                 <Stack.Screen name="crisis/guide" options={{ headerShown: false }} />
-                                                <Stack.Screen name="emotions/history" options={{ headerShown: false }} />
-                                                <Stack.Screen name="fronting/history" options={{ headerShown: false }} />
-                                                <Stack.Screen name="stats" options={{ headerShown: false }} />
+
 
                                                 {/* Boutique */}
                                                 <Stack.Screen name="shop/index" options={{ headerShown: false }} />

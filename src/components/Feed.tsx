@@ -119,7 +119,12 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent }
             if (refresh) {
                 setRawPosts(response.posts);
             } else {
-                setRawPosts(prev => [...prev, ...response.posts]);
+                setRawPosts(prev => {
+                    const newPosts = response.posts.filter(
+                        newPost => !prev.some(existingPost => existingPost.id === newPost.id)
+                    );
+                    return [...prev, ...newPosts];
+                });
             }
 
             setLastVisible(response.lastVisible);
@@ -281,17 +286,9 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent }
             <FlatList
                 data={postsWithAds}
                 renderItem={renderItem}
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-                keyExtractor={(item: any) => item.id || `item-${Math.random()}`}
+                keyExtractor={(item: any, index: number) => item.id || `item-${index}`}
                 ListHeaderComponent={renderHeader}
                 stickyHeaderIndices={[0]}
-=======
-                keyExtractor={(item: any, index: number) => item.id || `item-${index}`}
->>>>>>> Stashed changes
-=======
-                keyExtractor={(item: any, index: number) => item.id || `item-${index}`}
->>>>>>> Stashed changes
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}

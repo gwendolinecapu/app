@@ -126,27 +126,25 @@ export const PostService = {
      */
     fetchFeed: async (friendIds: string[], lastVisible: QueryDocumentSnapshot | null = null, pageSize: number = 20) => {
         try {
-            // Firestore 'in' query supports max 10 values. For real feeds, we need a better structure 
-            // (e.g. duplicating posts to feeds or querying 'public' + client side filter if small).
-            // For this MVP, if friendIds is small, we use 'in'.
-            // If friendIds is empty, show global.
+            // Firestore 'in' query supports max 10 values.
+            // If friendIds is empty, show empty feed (or suggestions in UI).
 
-            let q;
-
-            if (friendIds.length > 0) {
-                // Limit to 10 for 'in' query constraint
-                const targetIds = friendIds.slice(0, 10);
-                q = query(
-                    collection(db, POSTS_COLLECTION),
-                    where('alter_id', 'in', targetIds),
-                    orderBy('created_at', 'desc'),
-                    limit(pageSize)
-                );
-            } else {
-                // Fallback to global if no friends (or empty feed?)
-                // User wants "friends in our feed". If no friends, maybe show global?
-                return PostService.fetchGlobalFeed(lastVisible, pageSize);
+            if (friendIds.length === 0) {
+                return {
+                    posts: [],
+                    lastVisible: null
+                };
             }
+
+            // Limit to 10 for 'in' query constraint
+            const targetIds = friendIds.slice(0, 10);
+
+            let q = query(
+                collection(db, POSTS_COLLECTION),
+                where('system_id', 'in', targetIds),
+                orderBy('created_at', 'desc'),
+                limit(pageSize)
+            );
 
             if (lastVisible) {
                 q = query(q, startAfter(lastVisible));

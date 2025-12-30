@@ -260,10 +260,12 @@ export default function NotificationsScreen() {
     const hasContent = friendRequests.length > 0 || notifications.length > 0;
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Header */}
+        <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Notifications</Text>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <Ionicons name="arrow-back" size={24} color={'white'} />
+                </TouchableOpacity>
+                <Text style={styles.title}>Notifications</Text>
                 {hasContent && (
                     <TouchableOpacity onPress={() => triggerHaptic.selection()}>
                         <Text style={styles.clearAllText}>Tout effacer</Text>
@@ -333,21 +335,26 @@ const styles = StyleSheet.create({
     },
     header: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.md, // Keep some vertical padding for consistency
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
+        // Removed justifyContent: 'space-between' to allow title to take space
     },
-    headerTitle: {
+    backButton: {
+        marginRight: spacing.md,
+    },
+    title: {
         ...typography.h2,
-        color: colors.text,
+        color: colors.text, // Changed from 'white' to colors.text for consistency
+        flex: 1, // Allow title to take space if needed
     },
     clearAllText: {
         ...typography.bodySmall,
         color: colors.primary,
         fontWeight: '600',
+        marginLeft: spacing.md, // Add margin to separate from title
     },
     listContent: {
         flexGrow: 1,
@@ -495,3 +502,4 @@ const styles = StyleSheet.create({
         marginTop: spacing.xs,
     },
 });
+```

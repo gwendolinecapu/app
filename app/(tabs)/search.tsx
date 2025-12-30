@@ -69,29 +69,8 @@ export default function SearchScreen() {
             const searchResults: SearchResult[] = [];
             const searchLower = searchQuery.toLowerCase();
 
-            // Recherche dans les systèmes par email (DISABLED - Permission Error)
-            /*
-            const systemsQuery = query(
-                collection(db, 'systems'),
-                where('email', '>=', searchLower),
-                where('email', '<=', searchLower + '\uf8ff'),
-                limit(10)
-            );
-
-            const systemsSnapshot = await getDocs(systemsQuery);
-            systemsSnapshot.forEach((doc) => {
-                const data = doc.data();
-                if (doc.id !== system?.id) {
-                    searchResults.push({
-                        id: doc.id,
-                        name: data.name || data.email?.split('@')[0] || 'Système',
-                        email: data.email,
-                        color: '#7C3AED', 
-                        type: 'system',
-                    });
-                }
-            });
-            */
+            // Recherche dans les profils publics (systèmes) via FollowService
+            // Note: La recherche directe dans 'systems' est restreinte par les règles de sécurité.
 
             // Recherche dans les profils publics (systèmes)
             const publicProfiles = await FollowService.searchUsers(searchLower, 5);

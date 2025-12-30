@@ -42,48 +42,8 @@ const ITEM_WIDTH = (width - spacing.md * (COLUMN_COUNT + 1)) / COLUMN_COUNT;
 
 // ==================== HELPERS ====================
 
-const getItemIconInfo = (item: ShopItem): { name: keyof typeof Ionicons.glyphMap, color: string } => {
-    // Mapping item IDs to Icons for a better look than emojis
-    const id = item.id;
+// function getItemIconInfo deleted
 
-    // Frames
-    if (id.includes('leaves') || id.includes('floral')) return { name: 'leaf', color: '#4ade80' };
-    if (id.includes('flames')) return { name: 'flame', color: '#f87171' };
-    if (id.includes('neon')) return { name: 'flash', color: '#facc15' };
-    if (id.includes('glitch')) return { name: 'code-slash', color: '#a78bfa' };
-    if (id.includes('crown')) return { name: 'trophy', color: '#fbbf24' };
-    if (id.includes('circuit')) return { name: 'hardware-chip', color: '#60a5fa' };
-    if (id.includes('stars')) return { name: 'star', color: '#fbbf24' };
-    if (id.includes('vintage')) return { name: 'film', color: '#d1d5db' };
-    if (id.includes('water')) return { name: 'water', color: '#38bdf8' };
-    if (id.includes('ice')) return { name: 'snow', color: '#a5f3fc' };
-    if (id.includes('gold')) return { name: 'medal', color: '#fbbf24' };
-    if (id.includes('rainbow')) return { name: 'color-palette', color: '#c084fc' };
-
-    // Bubbles
-    if (id.includes('cloud')) return { name: 'cloud', color: '#e5e7eb' };
-    if (id.includes('comic')) return { name: 'chatbubble', color: '#fbbf24' };
-    if (id.includes('pixel')) return { name: 'grid', color: '#a5b4fc' };
-    if (id.includes('terminal')) return { name: 'terminal', color: '#4ade80' };
-    if (id.includes('heart')) return { name: 'heart', color: '#f43f5e' };
-    if (id.includes('star')) return { name: 'star', color: '#fbbf24' };
-    if (id.includes('glass')) return { name: 'prism', color: '#a5f3fc' };
-    if (id.includes('paper')) return { name: 'document-text', color: '#fca5a5' };
-    if (id.includes('wood')) return { name: 'leaf', color: '#d97706' };
-    if (id.includes('stone')) return { name: 'ellipse', color: '#9ca3af' };
-    if (id.includes('gradient')) return { name: 'color-filter', color: '#c084fc' };
-    if (id.includes('thought')) return { name: 'cloud-circle', color: '#e5e7eb' };
-
-    // Defaults based on type
-    if (item.type === 'frame') return { name: 'scan-outline', color: '#94a3b8' };
-    if (item.type === 'bubble') return { name: 'chatbubble-ellipses-outline', color: '#94a3b8' };
-    if (item.type === 'theme') {
-        const previewColor = item.preview && item.preview.startsWith('#') ? item.preview : '#94a3b8';
-        return { name: 'color-wand', color: previewColor };
-    }
-
-    return { name: 'cube-outline', color: '#94a3b8' };
-};
 
 // ==================== ANIMATIONS ====================
 
@@ -156,41 +116,116 @@ const FadeInView = ({ children, delay = 0, style }: { children: ReactNode, delay
 
 // ==================== COMPONENTS ====================
 
+// ==================== RENDERING HELPERS ====================
+
+const getFrameStyle = (id: string, isPreview = false) => {
+    const base = {
+        borderWidth: isPreview ? 3 : 2,
+        borderColor: '#94a3b8',
+        borderRadius: 999,
+        borderStyle: 'solid' as 'solid' | 'dotted' | 'dashed',
+        shadowColor: 'transparent',
+        shadowOpacity: 0,
+        shadowRadius: 0,
+        elevation: 0,
+    };
+
+    if (id.includes('basic')) return { ...base, borderWidth: 1, borderColor: '#cbd5e1' };
+    if (id.includes('double')) return { ...base, borderWidth: 4, borderColor: '#fff' };
+    if (id.includes('dashed')) return { ...base, borderStyle: 'dashed', borderColor: '#fff' };
+    if (id.includes('square')) return { ...base, borderRadius: 12, borderColor: '#fff' };
+
+    // Colorful Frames
+    if (id.includes('neon')) return {
+        ...base, borderColor: '#0ff',
+        shadowColor: '#0ff', shadowOpacity: 0.8, shadowRadius: 10, elevation: 10, borderWidth: 2
+    };
+    if (id.includes('gold')) return { ...base, borderColor: '#ffd700', borderWidth: 2 };
+    if (id.includes('leaves') || id.includes('floral')) return { ...base, borderColor: '#4ade80', borderStyle: 'dashed' };
+    if (id.includes('flames')) return { ...base, borderColor: '#f87171', borderWidth: 3 };
+    if (id.includes('ice')) return { ...base, borderColor: '#a5f3fc', borderWidth: 2 };
+    if (id.includes('water')) return { ...base, borderColor: '#38bdf8' };
+    if (id.includes('rainbow')) return { ...base, borderColor: '#c084fc', borderWidth: 3 };
+    if (id.includes('glitch')) return { ...base, borderColor: '#a78bfa', borderWidth: 2, borderStyle: 'dotted' };
+    if (id.includes('crown')) return { ...base, borderColor: '#fbbf24', borderWidth: 3 };
+
+    return base;
+};
+
+const getBubbleStyle = (id: string) => {
+    const base = {
+        backgroundColor: '#334155',
+        borderRadius: 16,
+        padding: 8,
+        borderWidth: 0,
+        borderColor: 'transparent',
+    };
+
+    if (id.includes('round')) return { ...base, borderRadius: 24 };
+    if (id.includes('square')) return { ...base, borderRadius: 4 };
+    if (id.includes('minimal')) return { ...base, backgroundColor: 'transparent', borderWidth: 1, borderColor: '#94a3b8' };
+    if (id.includes('cloud')) return { ...base, borderRadius: 20, backgroundColor: '#f1f5f9' };
+    if (id.includes('comic')) return { ...base, borderRadius: 0, borderWidth: 2, borderColor: '#000', backgroundColor: '#fff' };
+    if (id.includes('pixel')) return { ...base, borderRadius: 0, borderWidth: 1, borderColor: '#fff', backgroundColor: '#000' };
+    if (id.includes('paper')) return { ...base, backgroundColor: '#fecaca', borderRadius: 2 }; // Pinkish paper
+    if (id.includes('terminal')) return { ...base, backgroundColor: '#000', borderWidth: 1, borderColor: '#4ade80' };
+    if (id.includes('neon')) return { ...base, borderWidth: 1, borderColor: '#0ff', backgroundColor: 'rgba(0, 255, 255, 0.1)' };
+    if (id.includes('glass')) return { ...base, backgroundColor: 'rgba(255, 255, 255, 0.2)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' };
+    if (id.includes('gold')) return { ...base, backgroundColor: '#000', borderWidth: 1, borderColor: '#ffd700' };
+
+    return base;
+};
+
+// ==================== COMPONENTS ====================
+
 const ItemPreview = ({ item }: { item: ShopItem }) => {
-    // Special rendering for Themes (Color Circles)
-    if (item.type === 'theme' && item.preview && item.preview.startsWith('#')) {
+    // 1. THEMES: Mini Application Preview
+    if (item.type === 'theme') {
         return (
-            <View style={[styles.previewBase, styles.themePreviewBase]}>
-                <View style={[styles.themeCircle, { backgroundColor: item.preview }]} />
+            <View style={styles.previewBase}>
+                <View style={[styles.themePreviewCard, { backgroundColor: item.preview || '#0f172a' }]}>
+                    <View style={styles.themePreviewHeader} />
+                    <View style={styles.themePreviewBody}>
+                        <View style={styles.themePreviewRow} />
+                        <View style={[styles.themePreviewRow, { width: '60%' }]} />
+                    </View>
+                </View>
             </View>
         );
     }
 
-    // Special rendering for Frames (Border Styles)
+    // 2. FRAMES: Avatar with Border
     if (item.type === 'frame') {
-        let frameStyle: any = { borderWidth: 2, borderColor: '#fff' };
-        if (item.id.includes('basic')) frameStyle = { borderWidth: 1, borderColor: '#cbd5e1' };
-        if (item.id.includes('double')) frameStyle = { borderWidth: 4, borderColor: '#fff', borderStyle: 'solid' };
-        if (item.id.includes('dashed')) frameStyle = { borderWidth: 2, borderColor: '#fff', borderStyle: 'dashed' };
-        if (item.id.includes('neon')) frameStyle = { borderWidth: 2, borderColor: '#0ff', shadowColor: '#0ff', shadowOpacity: 0.8, shadowRadius: 10, elevation: 10 };
-        if (item.id.includes('gold')) frameStyle = { borderWidth: 2, borderColor: '#ffd700' };
-        if (item.id.includes('square')) frameStyle = { borderWidth: 2, borderColor: '#fff', borderRadius: 8 };
-
-        // If simple geometric frame, render CSS shape
-        if (['frame_basic', 'frame_double', 'frame_dashed', 'frame_square', 'frame_neon', 'frame_gold'].includes(item.id)) {
-            return (
-                <View style={styles.previewBase}>
-                    <View style={[styles.framePreview, frameStyle]} />
+        const frameStyle = getFrameStyle(item.id, true);
+        return (
+            <View style={styles.previewBase}>
+                <View style={[styles.framePreviewAvatar, frameStyle]}>
+                    <Ionicons name="person" size={20} color="#64748b" />
                 </View>
-            );
-        }
+            </View>
+        );
     }
 
-    // Default to Icon lookup for complex frames and bubbles
-    const iconInfo = getItemIconInfo(item);
+    // 3. BUBBLES: Message Bubble
+    if (item.type === 'bubble') {
+        const bubbleStyle = getBubbleStyle(item.id);
+        const isDarkContent = item.id.includes('cloud') || item.id.includes('comic') || item.id.includes('paper');
+        const textColor = isDarkContent ? '#000' : '#fff';
+
+        return (
+            <View style={styles.previewBase}>
+                <View style={[styles.bubblePreviewContainer, bubbleStyle]}>
+                    <View style={[styles.bubbleLine, { backgroundColor: textColor, opacity: 0.6, width: 24 }]} />
+                    <View style={[styles.bubbleLine, { backgroundColor: textColor, opacity: 0.4, width: 16, marginTop: 4 }]} />
+                </View>
+            </View>
+        );
+    }
+
+    // Fallback
     return (
         <View style={styles.previewBase}>
-            <Ionicons name={iconInfo.name} size={40} color={iconInfo.color} />
+            <Ionicons name={item.icon as any || "cube-outline"} size={32} color="#94a3b8" />
         </View>
     );
 };
@@ -439,7 +474,7 @@ export default function ShopScreen() {
                             const success = await purchaseItem(item, currentAlter.id);
                             if (success) {
                                 triggerHaptic.success();
-                                Alert.alert("Succès ✨", `Vous possédez maintenant ${item.name}.`);
+                                Alert.alert("Succès", `Vous possédez maintenant ${item.name}.`);
                             }
                         }
                     }
@@ -468,7 +503,7 @@ export default function ShopScreen() {
             </View>
 
             <View style={styles.spacingMd} />
-            <PremiumBanner onPress={presentPaywall} />
+            <PremiumBanner onPress={() => router.push('/premium')} />
             <View style={styles.spacingSm} />
             <CategoryTabs activeCategory={activeCategory} onSelect={handleCategorySelect} />
         </View>
@@ -697,21 +732,48 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    themePreviewBase: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        borderRadius: 32,
+    themePreviewCard: {
+        width: 48,
+        height: 80, // Aspect ratio phone
+        borderRadius: 6,
+        padding: 4,
+        justifyContent: 'flex-start',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        overflow: 'hidden',
     },
-    themeCircle: {
+    themePreviewHeader: {
+        height: 8,
+        width: '100%',
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 2,
+        marginBottom: 6,
+    },
+    themePreviewBody: {
+        gap: 4,
+    },
+    themePreviewRow: {
+        height: 6,
+        width: '80%',
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 2,
+    },
+    framePreviewAvatar: {
         width: 48,
         height: 48,
-        borderRadius: 24,
-        borderWidth: 2,
-        borderColor: 'rgba(255,255,255,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#1e293b',
     },
-    framePreview: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
+    bubblePreviewContainer: {
+        minWidth: 40,
+        minHeight: 30,
+        justifyContent: 'center',
+        alignItems: 'flex-start',
+    },
+    bubbleLine: {
+        height: 3,
+        borderRadius: 1.5,
     },
     cardInfo: {
         padding: spacing.sm,

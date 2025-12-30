@@ -224,6 +224,10 @@ export default function DashboardScreen() {
     };
 
     const handleCreateAlter = async () => {
+        console.log('[DEBUG] handleCreateAlter called');
+        console.log('[DEBUG] newAlterName:', newAlterName);
+        console.log('[DEBUG] user:', user?.uid);
+
         if (!newAlterName.trim()) {
             Alert.alert('Erreur', 'Le nom est requis');
             return;
@@ -231,6 +235,7 @@ export default function DashboardScreen() {
 
         if (!user) {
             Alert.alert('Erreur', 'Vous devez être connecté');
+            console.error('[DEBUG] No user found!');
             return;
         }
 
@@ -248,7 +253,7 @@ export default function DashboardScreen() {
                     await uploadBytes(storageRef, blob);
                     avatarUrl = await getDownloadURL(storageRef);
                 } catch (uploadErr) {
-
+                    console.error('[DEBUG] Image upload failed:', uploadErr);
                 }
             }
 
@@ -266,13 +271,16 @@ export default function DashboardScreen() {
                 created_at: new Date().toISOString(),
             };
 
+            console.log('[DEBUG] Creating alter with data:', newAlter);
             await addDoc(collection(db, 'alters'), newAlter);
+            console.log('[DEBUG] Alter created successfully!');
 
             await refreshAlters();
             setModalVisible(false);
             resetForm();
             Alert.alert('Succès', `${newAlterName} a été créé !`);
         } catch (error: any) {
+            console.error('[DEBUG] Error creating alter:', error);
             Alert.alert('Erreur', error.message || 'Une erreur est survenue');
         } finally {
             setLoading(false);
@@ -396,6 +404,14 @@ export default function DashboardScreen() {
                     <Text style={styles.title}>Qui est là ?</Text>
                 </View>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {/* Shop Button */}
+                    <TouchableOpacity
+                        style={styles.settingsButton}
+                        onPress={() => router.push('/shop' as any)}
+                    >
+                        <Ionicons name="storefront-outline" size={24} color={colors.primary} />
+                    </TouchableOpacity>
+                    {/* Settings Button */}
                     <TouchableOpacity
                         style={styles.settingsButton}
                         onPress={() => router.push('/settings' as any)}

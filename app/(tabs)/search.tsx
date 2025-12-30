@@ -67,7 +67,8 @@ export default function SearchScreen() {
             const searchResults: SearchResult[] = [];
             const searchLower = searchQuery.toLowerCase();
 
-            // Recherche dans les systèmes par email
+            // Recherche dans les systèmes par email (DISABLED - Permission Error)
+            /*
             const systemsQuery = query(
                 collection(db, 'systems'),
                 where('email', '>=', searchLower),
@@ -83,11 +84,12 @@ export default function SearchScreen() {
                         id: doc.id,
                         name: data.name || data.email?.split('@')[0] || 'Système',
                         email: data.email,
-                        color: '#7C3AED',
+                        color: '#7C3AED', 
                         type: 'system',
                     });
                 }
             });
+            */
 
             // Recherche dans les alters par nom (publics uniquement)
             const altersQuery = query(

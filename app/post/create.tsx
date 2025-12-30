@@ -21,12 +21,97 @@ import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 
 type PostType = 'text' | 'photo' | 'video';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const DRAFT_STORAGE_KEY = 'post_draft_v1';
+
 export default function CreatePostScreen() {
     const { activeFront, system, currentAlter } = useAuth();
     const [postType, setPostType] = useState<PostType>('text');
     const [content, setContent] = useState('');
     const [mediaUri, setMediaUri] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+
+    useEffect(() => {
+        checkDraft();
+    }, []);
+
+    useEffect(() => {
+        // Auto-save draft when content changes
+        // Only save if draft has been checked/loaded to avoid overwriting with empty state on init
+        if (isDraftLoaded) {
+            saveDraft();
+        }
+    }, [content, mediaUri, postType, isDraftLoaded]);
+
+    const checkDraft = async () => {
+        try {
+            const draftJson = await AsyncStorage.getItem(DRAFT_STORAGE_KEY);
+            if (draftJson) {
+                const draft = JSON.parse(draftJson);
+                // Check if draft has meaningful content
+                if (draft.content || draft.mediaUri) {
+                    Alert.alert(
+                        'Brouillon trouvé',
+                        'Voulez-vous reprendre votre dernier post ?',
+                        [
+                            {
+                                text: 'Non',
+                                style: 'cancel',
+                                onPress: () => {
+                                    clearDraft();
+                                    setIsDraftLoaded(true);
+                                }
+                            },
+                            {
+                                text: 'Oui',
+                                onPress: () => {
+                                    setContent(draft.content || '');
+                                    setMediaUri(draft.mediaUri || null);
+                                    setPostType(draft.postType || 'text');
+                                    setIsDraftLoaded(true);
+                                }
+                            }
+                        ]
+                    );
+                    return;
+                }
+            }
+            setIsDraftLoaded(true);
+        } catch (e) {
+            console.error('Failed to load draft', e);
+            setIsDraftLoaded(true);
+        }
+    };
+
+    const saveDraft = async () => {
+        try {
+            if (!content && !mediaUri) {
+                // If empty, maybe clear it? Or just ignore.
+                // Let's clear it if strictly empty to keep storage clean
+                // But normally we only clear on explicit action or post success
+                return;
+            }
+            const draft = {
+                content,
+                mediaUri,
+                postType,
+                timestamp: Date.now(),
+            };
+            await AsyncStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+        } catch (e) {
+            console.error('Failed to save draft', e);
+        }
+    };
+
+    const clearDraft = async () => {
+        try {
+            await AsyncStorage.removeItem(DRAFT_STORAGE_KEY);
+        } catch (e) {
+            console.error('Failed to clear draft', e);
+        }
+    };
 
     useEffect(() => {
         // Request permissions on mount just in case
@@ -108,6 +193,9 @@ export default function CreatePostScreen() {
             }
 
             await PostService.createPost(postData);
+
+            // Clear draft on success
+            await clearDraft();
 
             router.back();
         } catch (error: any) {

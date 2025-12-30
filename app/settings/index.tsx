@@ -175,6 +175,7 @@ export default function SettingsScreen() {
                     {renderSettingItem("Email", "mail-outline", () => { }, system?.email)}
                     {renderSettingItem("Système", "planet-outline", () => { }, system?.username)}
                     {renderSettingItem("Copier mon ID", "copy-outline", handleCopySystemId)}
+                    {renderSettingItem("Utilisateurs bloqués", "shield-outline", () => router.push('/settings/blocked' as any))}
                     {renderSettingItem("Mot de passe", "lock-closed-outline", () => Alert.alert("Info", "Modification bientôt disponible"))}
                 </View>
 

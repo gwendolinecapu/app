@@ -18,21 +18,44 @@ interface MessageInputProps {
     onOpenPoll: () => void;
     onOpenNote: () => void;
     onPickImage?: () => void;
+    onTyping?: (isTyping: boolean) => void;
 }
 
 export const MessageInput: React.FC<MessageInputProps> = ({
     onSend,
     onOpenPoll,
     onOpenNote,
-    onPickImage
+    onPickImage,
+    onTyping
 }) => {
     const [text, setText] = useState('');
     const [menuVisible, setMenuVisible] = useState(false);
+    const typingTimeoutRef = React.useRef<any>(null);
+
+    const handleTextChange = (newText: string) => {
+        setText(newText);
+
+        if (onTyping) {
+            onTyping(true);
+
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+            }
+
+            typingTimeoutRef.current = setTimeout(() => {
+                onTyping(false);
+            }, 2000);
+        }
+    };
 
     const handleSend = () => {
         if (!text.trim()) return;
         onSend(text.trim(), 'text');
         setText('');
+        if (onTyping) {
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+            onTyping(false);
+        }
     };
 
     return (
@@ -86,7 +109,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                 placeholder="Message..."
                 placeholderTextColor={colors.textMuted}
                 value={text}
-                onChangeText={setText}
+                onChangeText={handleTextChange}
                 multiline
                 maxLength={1000}
             />

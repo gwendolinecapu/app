@@ -9,7 +9,9 @@ import {
     getDocs,
     orderBy,
     getDoc,
-    arrayUnion
+    arrayUnion,
+    setDoc,
+    onSnapshot
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Group, GroupMember, Message } from '../types';
@@ -240,5 +242,91 @@ export const GroupService = {
             console.error("Erreur vote sondage:", error);
             throw error;
         }
+    },
+
+    /**
+     * Ajoute ou retire une réaction sur un message
+     */
+    toggleReaction: async (messageId: string, emoji: string, userId: string) => {
+        try {
+            const messageRef = doc(db, 'messages', messageId);
+            const messageSnap = await getDoc(messageRef);
+
+            if (!messageSnap.exists()) return;
+
+            const message = messageSnap.data();
+            const reactions = message.reactions || [];
+
+            // Vérifier si l'utilisateur a déjà réagi avec cet emoji
+            const existingIndex = reactions.findIndex(
+                (r: any) => r.user_id === userId && r.emoji === emoji
+            );
+
+            let newReactions;
+            if (existingIndex >= 0) {
+                // Retirer la réaction
+                newReactions = reactions.filter((_: any, index: number) => index !== existingIndex);
+            } else {
+                // Ajouter la réaction
+                newReactions = [...reactions, { emoji, user_id: userId }];
+            }
+
+            await updateDoc(messageRef, {
+                reactions: newReactions
+            });
+        } catch (error) {
+            console.error("Erreur toggle réaction:", error);
+            throw error;
+        }
+    },
+
+    /**
+     * Met à jour le statut "en train d'écrire"
+     * Utilise une collection dédiée 'typing_status'
+     * Doc ID: ${groupId}_${systemId}
+     */
+    setTypingStatus: async (groupId: string, systemId: string, isTyping: boolean, username: string) => {
+        try {
+            const docId = `${groupId}_${systemId}`;
+            const typingRef = doc(db, 'typing_status', docId);
+
+            if (isTyping) {
+                await setDoc(typingRef, {
+                    group_id: groupId,
+                    system_id: systemId,
+                    username: username,
+                    last_typed: Date.now()
+                });
+            } else {
+                await deleteDoc(typingRef);
+            }
+        } catch (error) {
+            // Silencieux pour ne pas spammer les logs si erreur mineure réseau
+        }
+    },
+
+    /**
+     * Écoute les utilisateurs en train d'écrire dans un groupe
+     */
+    subscribeToTyping: (groupId: string, callback: (typers: string[]) => void) => {
+        const q = query(
+            collection(db, 'typing_status'),
+            where('group_id', '==', groupId)
+        );
+
+        return onSnapshot(q, (snapshot) => {
+            const now = Date.now();
+            const typers: string[] = [];
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                // Filtrer les vieux status (> 10s) pour éviter les fantômes
+                if (now - data.last_typed < 10000) {
+                    typers.push(data.username);
+                }
+            });
+
+            callback(typers);
+        });
     }
 };

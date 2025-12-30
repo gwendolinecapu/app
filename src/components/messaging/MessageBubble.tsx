@@ -20,6 +20,29 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 }) => {
     const senderName = senderAlter ? senderAlter.name : "Membre inconnu";
     const senderColor = senderAlter ? senderAlter.color : colors.textSecondary;
+    const [showReactions, setShowReactions] = React.useState(false);
+
+    // Group callbacks for reactions
+    const groupByEmoji = (reactions: { emoji: string; user_id: string }[]) => {
+        const grouped: Record<string, number> = {};
+        reactions.forEach(r => {
+            grouped[r.emoji] = (grouped[r.emoji] || 0) + 1;
+        });
+        return Object.entries(grouped);
+    };
+
+    const handleLongPress = () => {
+        // Toggle reaction picker (simplified)
+        setShowReactions(!showReactions);
+    };
+
+    const handleReaction = (emoji: string) => {
+        if (!currentUserId) return;
+        GroupService.toggleReaction(message.id, emoji, currentUserId);
+        setShowReactions(false);
+    };
+
+    const REACTION_OPTIONS = ['❤️', '😂', '😮', '😢', '😡', '👍'];
 
     // --- Renderers for types ---
 
@@ -98,10 +121,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             case 'image': return (
                 <View>
                     <RNImage
-                        source={{ uri: message.media_url || message.content }}
+                        source={{ uri: message.media_url || message.imageUrl || message.content }}
                         style={{ width: 200, height: 200, borderRadius: 8, resizeMode: 'cover' }}
                     />
-                    {message.media_url && message.content ? (
+                    {(message.media_url || message.imageUrl) && message.content && message.content !== message.media_url ? (
                         <Text style={{ marginTop: 4, color: isMine ? '#fff' : '#000' }}>{message.content}</Text>
                     ) : null}
                 </View>
@@ -123,11 +146,15 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 </View>
             )}
 
-            <View style={[
-                styles.bubble,
-                isMine ? styles.bubbleMine : styles.bubbleOther,
-                message.type !== 'text' && styles.bubbleRich
-            ]}>
+            <TouchableOpacity
+                activeOpacity={0.8}
+                onLongPress={handleLongPress}
+                style={[
+                    styles.bubble,
+                    isMine ? styles.bubbleMine : styles.bubbleOther,
+                    message.type !== 'text' && styles.bubbleRich
+                ]}
+            >
                 {!isMine && <Text style={styles.senderName}>{senderName}</Text>}
 
                 {renderContent()}
@@ -135,7 +162,30 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 <Text style={[styles.time, isMine ? styles.timeMine : styles.timeOther]}>
                     {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
-            </View>
+
+                {/* Reactions Display */}
+                {message.reactions && message.reactions.length > 0 && (
+                    <View style={styles.reactionsContainer}>
+                        {groupByEmoji(message.reactions).map(([emoji, count]) => (
+                            <View key={emoji} style={styles.reactionBadge}>
+                                <Text style={styles.reactionEmoji}>{emoji}</Text>
+                                <Text style={styles.reactionCount}>{count}</Text>
+                            </View>
+                        ))}
+                    </View>
+                )}
+            </TouchableOpacity>
+
+            {/* Reaction Picker Popup */}
+            {showReactions && (
+                <View style={[styles.reactionPicker, isMine ? { right: 0 } : { left: 0 }]}>
+                    {REACTION_OPTIONS.map(emoji => (
+                        <TouchableOpacity key={emoji} onPress={() => handleReaction(emoji)} style={styles.reactionOption}>
+                            <Text style={{ fontSize: 20 }}>{emoji}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            )}
         </View>
     );
 };
@@ -295,5 +345,45 @@ const styles = StyleSheet.create({
         color: colors.textMuted,
         textAlign: 'center',
         marginTop: spacing.xs,
+    },
+    reactionsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginTop: 4,
+        gap: 4,
+    },
+    reactionBadge: {
+        flexDirection: 'row',
+        backgroundColor: 'rgba(0,0,0,0.05)',
+        borderRadius: 12,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        alignItems: 'center',
+    },
+    reactionEmoji: {
+        fontSize: 12,
+        marginRight: 2,
+    },
+    reactionCount: {
+        fontSize: 10,
+        color: colors.textSecondary,
+        fontWeight: 'bold',
+    },
+    reactionPicker: {
+        position: 'absolute',
+        top: -45,
+        backgroundColor: 'white',
+        borderRadius: 20,
+        flexDirection: 'row',
+        padding: 4,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+        zIndex: 100,
+    },
+    reactionOption: {
+        padding: 6,
     }
 });

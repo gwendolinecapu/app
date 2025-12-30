@@ -734,3 +734,47 @@ Ajouter les 7 receivers dans AndroidManifest.xml
 
 ### Résultat
 ✅ Compilation TypeScript restaurée et erreurs de style résolues.
+
+## [2025-12-30] System Safety & Private Vault (Phase 8) 🛡️
+
+### New Features
+- **Grounding Tool (SOS)**: Added a "Crisis" button in the dashboard header leading to a breathing exercise tool with haptic feedback.
+- **Mood Weather**: Integrated system-wide mood tracking ("Headspace") in the dashboard weather component.
+- **Private Vault**: Implemented biometric security (FaceID/TouchID) for the Journal and Private Gallery sections.
+- **Secure Container**: Reusable `SecureContainer` component that locks content until authentication.
+
+### Improvements
+- **Dashboard**: Added SOS button (warning icon) for quick access to grounding tools.
+- **Alter Space**: Secured Journal and Gallery tabs behind biometric authentication.
+- **Theme**: Added `errorBackground` color for SOS features.
+
+## [2025-12-31] Social Interactivity (Phase 9) 💬
+### New Features
+- **Message Reactions**: Added long-press menu on messages to react with emojis (❤️, 😂, etc.). Reactions are synchronized in real-time.
+- **Typing Indicators**: Real-time "User is typing..." status in Group Chats using a specialized `typing_status` Firestore collection.
+
+### Improvements
+- **GroupService**: Enhanced with `toggleReaction`, `setTypingStatus`, and `subscribeToTyping`.
+- **MessageInput**: Added debounce logic to efficiently handle typing events.
+- **MessageBubble**: Updated to render reaction badges and handle interactive touches.
+
+## [1.0.0-beta.11] - 2025-01-01
+
+### Added - Advanced System Tools
+- **Team Chat**: Canal de communication interne dédié au système, accessible depuis le Dashboard.
+- **Alter Primers**: Ajout de notes épinglées (Triggers, Comforts, Tips) sur les profils d'alters.
+- **System Relationships**: Gestion des relations entre alters (Ami, Famille, Partenaire, etc.) directement depuis le profil.
+
+### Improved
+- **Team Chat**: Support du temps réel et indicateurs de frappe via `MessageList` composant partagé.
+- **Alter Space**: Intégration des nouveaux outils (Primers & Relationships) dans l'onglet Profil.
+
+## [2025-12-31] Widgets & Tools (Phase 10) 📊
+### New Features
+- **System Calendar**: Interactive calendar widget on the dashboard showing fronting history dots. Tap a day to see who fronted.
+- **System Tasks**: Shared to-do list for the system with real-time sync. Add, check, and delete tasks.
+- **Fronting Stats**: Visual pie chart showing the top 5 most active alters based on the last 50 switches.
+
+### Improvements
+- **Dashboard**: Reorganized layout to include a "Tools" section with the new widgets.
+- **Date Handling**: Integrated `date-fns` with French locale for better date formatting in the calendar.

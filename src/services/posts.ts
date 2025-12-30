@@ -216,6 +216,28 @@ export const PostService = {
     },
 
     /**
+     * Upload an audio file for a post (voice note)
+     */
+    uploadAudio: async (uri: string, systemId: string): Promise<string> => {
+        try {
+            const response = await fetch(uri);
+            const blob = await response.blob();
+            // Extension depends on platform/recording settings, usually m4a or caf on iOS, 3gp/mp4 on Android
+            // expo-av high quality preset uses .m4a usually
+            const filename = `posts/${systemId}/audio/${Date.now()}.m4a`;
+            const storageRef = ref(storage, filename);
+
+            await uploadBytes(storageRef, blob, {
+                contentType: 'audio/m4a', // Best guess for high quality preset
+            });
+            return await getDownloadURL(storageRef);
+        } catch (error) {
+            console.error('Error uploading audio:', error);
+            throw error;
+        }
+    },
+
+    /**
      * Like or unlike a post
      */
     toggleLike: async (postId: string, userId: string, alterId?: string) => {

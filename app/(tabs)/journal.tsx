@@ -21,6 +21,7 @@ import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { JournalEntry, EmotionType, EMOTION_EMOJIS } from '../../src/types';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { SecureContainer } from '../../src/components/security/SecureContainer';
 
 export default function JournalScreen() {
     const { currentAlter, user } = useAuth();
@@ -144,47 +145,52 @@ export default function JournalScreen() {
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Header */}
-            <View style={[styles.header, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }]}>
-                <View>
-                    <Text style={styles.title}>Mon Journal</Text>
-                    <Text style={styles.subtitle}>
-                        Par {currentAlter.name}
-                    </Text>
-                </View>
-                <TouchableOpacity onPress={() => router.push('/crisis/index' as any)}>
-                    <Ionicons name="warning-outline" size={28} color={colors.error || '#FF4444'} />
-                </TouchableOpacity>
-            </View>
-
-            {/* Liste des entrées */}
-            <FlatList
-                data={entries}
-                keyExtractor={(item) => item.id}
-                renderItem={renderEntry}
-                contentContainerStyle={styles.listContent}
-                ListEmptyComponent={
-                    <View style={styles.emptyState}>
-                        <Text style={styles.emptyEmoji}>📝</Text>
-                        <Text style={styles.emptyTitle}>
-                            {loading ? 'Chargement...' : 'Aucune entrée'}
-                        </Text>
-                        <Text style={styles.emptySubtitle}>
-                            Commence à écrire tes pensées
+        <SecureContainer
+            title="Journal Sécurisé"
+            subtitle="Authentifie-toi pour accéder à tes pensées"
+        >
+            <SafeAreaView style={styles.container} edges={['top']}>
+                {/* Header */}
+                <View style={[styles.header, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }]}>
+                    <View>
+                        <Text style={styles.title}>Mon Journal</Text>
+                        <Text style={styles.subtitle}>
+                            Par {currentAlter.name}
                         </Text>
                     </View>
-                }
-            />
+                    <TouchableOpacity onPress={() => router.push('/crisis/index' as any)}>
+                        <Ionicons name="warning-outline" size={28} color={colors.error || '#FF4444'} />
+                    </TouchableOpacity>
+                </View>
 
-            {/* FAB - Bouton flottant pour créer */}
-            <TouchableOpacity
-                style={styles.fab}
-                onPress={() => router.push('/journal/create')}
-            >
-                <Text style={styles.fabIcon}>+</Text>
-            </TouchableOpacity>
-        </SafeAreaView>
+                {/* Liste des entrées */}
+                <FlatList
+                    data={entries}
+                    keyExtractor={(item) => item.id}
+                    renderItem={renderEntry}
+                    contentContainerStyle={styles.listContent}
+                    ListEmptyComponent={
+                        <View style={styles.emptyState}>
+                            <Text style={styles.emptyEmoji}>📝</Text>
+                            <Text style={styles.emptyTitle}>
+                                {loading ? 'Chargement...' : 'Aucune entrée'}
+                            </Text>
+                            <Text style={styles.emptySubtitle}>
+                                Commence à écrire tes pensées
+                            </Text>
+                        </View>
+                    }
+                />
+
+                {/* FAB - Bouton flottant pour créer */}
+                <TouchableOpacity
+                    style={styles.fab}
+                    onPress={() => router.push('/journal/create')}
+                >
+                    <Text style={styles.fabIcon}>+</Text>
+                </TouchableOpacity>
+            </SafeAreaView>
+        </SecureContainer>
     );
 }
 

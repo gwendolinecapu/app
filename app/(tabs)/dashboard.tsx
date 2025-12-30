@@ -27,8 +27,12 @@ import { colors, spacing, borderRadius, typography, alterColors } from '../../sr
 import { Ionicons } from '@expo/vector-icons';
 import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SystemWeather } from '../../src/components/SystemWeather';
+import { SwitchNote } from '../../src/components/SwitchNote';
+import { FrontingStats } from '../../src/components/FrontingStats';
 import { useScrollToTop } from '@react-navigation/native'
 import { triggerHaptic } from '../../src/lib/haptics';
+import { SystemCalendar } from '../../src/components/widgets/SystemCalendar';
+import { SystemTasks } from '../../src/components/widgets/SystemTasks';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -399,6 +403,13 @@ export default function DashboardScreen() {
                     <Text style={styles.title}>Qui est là ?</Text>
                 </View>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {/* SOS Button */}
+                    <TouchableOpacity
+                        style={[styles.settingsButton, { backgroundColor: colors.errorBackground, borderRadius: borderRadius.full }]}
+                        onPress={() => router.push('/tools/grounding')}
+                    >
+                        <Ionicons name="medical" size={20} color={colors.error} />
+                    </TouchableOpacity>
                     {/* Shop Button */}
                     <TouchableOpacity
                         style={styles.settingsButton}
@@ -420,6 +431,44 @@ export default function DashboardScreen() {
                 {/* System Weather Widget */}
                 <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
                     <SystemWeather />
+                </View>
+
+                {/* System Tools - Tasks & Calendar */}
+                <View style={{ paddingHorizontal: 16, marginBottom: 8, flexDirection: 'row', gap: 8 }}>
+                    <View style={{ flex: 1 }}>
+                        <SystemTasks />
+                    </View>
+                </View>
+
+                <TouchableOpacity
+                    style={{
+                        marginHorizontal: 16,
+                        marginBottom: 8,
+                        backgroundColor: colors.backgroundCard,
+                        padding: 12,
+                        borderRadius: borderRadius.lg,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        borderWidth: 1,
+                        borderColor: colors.border
+                    }}
+                    onPress={() => router.push('/team-chat' as any)}
+                >
+                    <Ionicons name="chatbubbles-outline" size={20} color={colors.primary} />
+                    <Text style={{ ...typography.body, fontWeight: 'bold', color: colors.primary }}>
+                        Team Chat
+                    </Text>
+                </TouchableOpacity>
+
+                <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+                    <SystemCalendar />
+                </View>
+
+                {/* Switch Note Widget */}
+                <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+                    <SwitchNote />
                 </View>
 
 
@@ -492,6 +541,11 @@ export default function DashboardScreen() {
                             offset: (BUBBLE_SIZE + 24) * Math.floor(index / NUM_COLUMNS),
                             index,
                         })}
+                        ListFooterComponent={
+                            <View style={{ paddingTop: 20 }}>
+                                <FrontingStats />
+                            </View>
+                        }
                     />
                 </View>
 

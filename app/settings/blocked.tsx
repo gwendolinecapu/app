@@ -60,8 +60,8 @@ export default function BlockedUsersScreen() {
         <View style={styles.userCard}>
             <View style={styles.userInfo}>
                 <View style={styles.avatarContainer}>
-                    {item.avatarUrl ? (
-                        <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+                    {item.avatar_url ? (
+                        <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
                     ) : (
                         <View style={[styles.avatar, styles.avatarPlaceholder]}>
                             <Text style={styles.avatarText}>
@@ -72,7 +72,7 @@ export default function BlockedUsersScreen() {
                 </View>
                 <View style={styles.textContainer}>
                     <Text style={styles.username}>{item.username || 'Utilisateur inconnu'}</Text>
-                    {item.systemName && <Text style={styles.systemName}>{item.systemName}</Text>}
+                    {/* item.systemName removed as it does not exist on System type */}
                 </View>
             </View>
 

@@ -5,6 +5,7 @@ export interface System {
     email: string;
     username: string;
     avatar_url?: string;
+    bio?: string;
     headspace?: string; // 'sunny', 'cloudy', 'rainy', 'stormy', 'night', etc.
     created_at: string;
 }

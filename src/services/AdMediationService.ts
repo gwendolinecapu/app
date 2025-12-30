@@ -133,7 +133,7 @@ class AdMediationService {
                 // Précharger les pubs reward AdMob (only if SDK is available)
                 this.preloadRewardedAds();
             } else {
-                console.log('[AdMediation] Running in Expo Go - AdMob disabled, using mocks');
+                // AdMob disabled in Expo Go
             }
 
             // Initialiser les autres réseaux (placeholders pour l'instant)
@@ -165,7 +165,6 @@ class AdMediationService {
     private async preloadRewardedAds(): Promise<void> {
         // Guard: Skip if AdMob SDK not available (Expo Go)
         if (!RewardedAd) {
-            console.log('[AdMediation] RewardedAd not available, skipping preload');
             return;
         }
 

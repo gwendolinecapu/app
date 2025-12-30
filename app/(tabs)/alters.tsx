@@ -134,7 +134,7 @@ export default function AltersScreen() {
                     await uploadBytes(storageRef, blob);
                     avatarUrl = await getDownloadURL(storageRef);
                 } catch (uploadErr) {
-                    console.log('Image upload failed, continuing without avatar:', uploadErr);
+
                 }
             }
 
@@ -151,14 +151,14 @@ export default function AltersScreen() {
             };
 
             const docRef = await addDoc(collection(db, 'alters'), newAlterData);
-            console.log('Alter created with ID:', docRef.id);
+
 
             await refreshAlters();
             setModalVisible(false);
             resetForm();
             Alert.alert('Succès', `${newAlterName} a été créé !`);
         } catch (error: any) {
-            console.log('Create alter error:', error);
+
             Alert.alert('Erreur', error.message || 'Une erreur est survenue');
         } finally {
             setLoading(false);
@@ -241,10 +241,6 @@ export default function AltersScreen() {
                     onPress: () => toggleArchive(alter.id),
                     style: 'destructive'
                 },
-                {
-                    text: 'Modifier',
-                    onPress: () => router.push(`/alter/${alter.id}`)
-                },
                 { text: 'Annuler', style: 'cancel' }
             ]
         );
@@ -254,9 +250,14 @@ export default function AltersScreen() {
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.push('/settings')}>
-                    <Text style={styles.headerIcon}>⚙️</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <TouchableOpacity onPress={() => router.back()}>
+                        <Ionicons name="arrow-back" size={24} color={colors.text} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push('/settings/index' as any)}>
+                        <Text style={styles.headerIcon}>⚙️</Text>
+                    </TouchableOpacity>
+                </View>
                 <Text style={styles.title}>Mes Alters</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
                     <TouchableOpacity onPress={() => router.push('/crisis/index' as any)}>
@@ -335,12 +336,6 @@ export default function AltersScreen() {
                         <Text style={styles.currentAlterName}>{currentAlter.name}</Text>
                         <Text style={styles.currentAlterStatus}>En front</Text>
                     </View>
-                    <TouchableOpacity
-                        style={{ padding: 10 }}
-                        onPress={() => router.push(`/alter/${currentAlter.id}`)}
-                    >
-                        <Ionicons name="settings-outline" size={24} color={colors.textSecondary} />
-                    </TouchableOpacity>
                 </View>
             )}
 

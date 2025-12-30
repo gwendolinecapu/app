@@ -27,7 +27,7 @@ const firebaseConfig = {
 };
 
 // Initialisation (Compat Mode guarantees registration)
-let app;
+let app: any; // Type 'any' to avoid compatibility issues between Modular and Compat SDKs
 if (!firebase.apps.length) {
     app = firebase.initializeApp(firebaseConfig);
 } else {
@@ -35,7 +35,7 @@ if (!firebase.apps.length) {
 }
 
 // Auth Initialization
-let auth;
+let auth: any; // Type 'any' due to mixed Modular/Compat usage
 if (Platform.OS === 'web') {
     // Web: Use compat auth instance which is fully initialized
     auth = firebase.auth();
@@ -68,8 +68,5 @@ enableIndexedDbPersistence(db).catch((err) => {
         console.warn('Firestore persistence not supported in this environment');
     }
 });
-
-// Initialisation de Storage
-const storage = getStorage(app);
 
 export { auth, db, storage };

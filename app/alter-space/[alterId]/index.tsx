@@ -173,6 +173,7 @@ export default function AlterSpaceScreen() {
 
     useEffect(() => {
         // Initial load from local context
+        const foundAlter = alters.find(a => a.id === alterId);
         if (foundAlter) {
             setAlter(foundAlter);
             FriendService.getFriends(foundAlter.id).then(friends => {

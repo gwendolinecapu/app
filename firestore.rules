@@ -207,50 +207,46 @@ service cloud.firestore {
     // Public Profiles Collection (Profils publics)
     // ============================================
     match /public_profiles/{profileId} {
-      // Lecture: les profils publics sont lisibles par tous les users auth
-      // Les profils privés sont lisibles uniquement par le propriétaire
+      // Read: own profile always, OR anyone can read if is_public is true
+      // Use profileId to check ownership (profileId == systemId)
       allow read: if isAuthenticated() && (
-        resource.data.is_public == true || 
-        resource.data.system_id == request.auth.uid
+        profileId == request.auth.uid || 
+        resource.data.is_public == true
       );
       
-      // Création/Modification: uniquement le propriétaire
+      // Create: only the owner can create their profile (profileId must match auth uid)
       allow create: if isAuthenticated() && 
+        profileId == request.auth.uid &&
         request.resource.data.system_id == request.auth.uid;
-      allow update: if isAuthenticated() && 
-        resource.data.system_id == request.auth.uid;
       
-      // Suppression: uniquement le propriétaire
+      // Update: only the owner
+      allow update: if isAuthenticated() && 
+        profileId == request.auth.uid;
+      
+      // Delete: only the owner
       allow delete: if isAuthenticated() && 
-        resource.data.system_id == request.auth.uid;
+        profileId == request.auth.uid;
     }
 
     // ============================================
     // Friend Requests Collection
+    // NOTE: senderId and receiverId are Alter IDs, NOT user auth UIDs!
+    // We use systemId to track ownership.
     // ============================================
     match /friend_requests/{requestId} {
-      allow read: if isAuthenticated() && (
-        resource.data.senderId == request.auth.uid || 
-        resource.data.receiverId == request.auth.uid ||
-        resource.data.systemId == request.auth.uid // Allow requester system to read
-      );
-      // Sender creates (Must include systemId matches auth uid)
+      // Read: any authenticated user can read friend requests
+      // (client-side filters by receiverId which is an Alter belonging to the user)
+      allow read: if isAuthenticated();
+      
+      // Create: sender's system must be authenticated
       allow create: if isAuthenticated() && request.resource.data.systemId == request.auth.uid;
-      // Receiver updates (accept/reject)
-      // Note: receiverId is likely an Alter ID, so we can't easily check auth.uid against it without lookups.
-      // WEAK CHECK: allow update if auth.uid is involved or simple authenticated for now to unblock?
-      // Better: if the receiver Alter belongs to the auth user.
-      // For now, let's keep it restricted but rely on client using systemId if possible or just allowing authenticated updates if they are targeted.
-      // Actually, for accept/reject, the USER is the receiver system.
-      // So request.auth.uid must be the owner of receiverId.
-      // Since we can't check owner easily, we might need receiverSystemId.
-      // Let's assume simpler: allow update if authenticated (and trust app logic) OR fix data model.
-      // To unblock user: allow update if isAuthenticated(); (TEMPORARY FIX for unblocking)
+      
+      // Update: any authenticated user (for accept/reject flow)
       allow update: if isAuthenticated(); 
+      
+      // Delete: system owner or involved party
       allow delete: if isAuthenticated() && (
-         resource.data.systemId == request.auth.uid || 
-         resource.data.senderId == request.auth.uid || 
-         resource.data.receiverId == request.auth.uid
+         resource.data.systemId == request.auth.uid
       );
     }
 

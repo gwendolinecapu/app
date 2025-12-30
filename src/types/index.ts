@@ -51,6 +51,10 @@ export interface Alter {
     last_daily_reward?: string; // Date (YYYY-MM-DD) of last claim
     last_reward_ad?: number; // Timestamp of last ad watch
 
+    // Customize Identity
+    birthDate?: string; // YYYY-MM-DD
+    arrivalDate?: string; // YYYY-MM-DD
+
     // Equipped Cosmetics
     equipped_items?: {
         frame?: string;
@@ -287,6 +291,7 @@ export interface Follow {
 export interface PublicProfile {
     system_id: string;       // Référence vers systems
     display_name: string;    // Nom public du système
+    email?: string;          // Email pour la recherche (optionnel pour la vie privée)
     bio?: string;
     avatar_url?: string;
     is_public: boolean;      // Profil visible dans découverte (false par défaut)

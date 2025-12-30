@@ -83,6 +83,7 @@ export default function AlterSpaceScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const [friendStatuses, setFriendStatuses] = useState<Record<string, string>>({});
     const [friendCount, setFriendCount] = useState(0);
+    const [friendIds, setFriendIds] = useState<string[]>([]);
 
     // État pour la galerie privée
     const [galleryImages, setGalleryImages] = useState<Array<{ id: string, uri: string, createdAt: Date }>>([]);
@@ -153,7 +154,10 @@ export default function AlterSpaceScreen() {
             if (docSnap.exists()) {
                 const alterData = { id: docSnap.id, ...docSnap.data() } as Alter;
                 setAlter(alterData);
-                FriendService.getFriends(alterData.id).then(friends => setFriendCount(friends.length));
+                FriendService.getFriends(alterData.id).then(friends => {
+                    setFriendCount(friends.length);
+                    setFriendIds(friends);
+                });
             }
         } catch (error) {
             console.error('Error fetching alter:', error);
@@ -169,10 +173,12 @@ export default function AlterSpaceScreen() {
 
     useEffect(() => {
         // Initial load from local context
-        const foundAlter = alters.find((a) => a.id === alterId);
         if (foundAlter) {
             setAlter(foundAlter);
-            FriendService.getFriends(foundAlter.id).then(friends => setFriendCount(friends.length));
+            FriendService.getFriends(foundAlter.id).then(friends => {
+                setFriendCount(friends.length);
+                setFriendIds(friends);
+            });
         }
     }, [alterId, alters]);
 
@@ -398,6 +404,7 @@ export default function AlterSpaceScreen() {
                 ListHeaderComponent={
                     <StoriesBar
                         onStoryPress={handleStoryPress}
+                        friendIds={friendIds}
                     />
                 }
             />

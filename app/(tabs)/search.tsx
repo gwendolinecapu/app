@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -15,6 +15,10 @@ import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { db } from '../../src/lib/firebase';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { FriendService } from '../../src/services/friends';
+import { useToast } from '../../src/components/ui/Toast';
+import { triggerHaptic } from '../../src/lib/haptics';
+
 
 interface SearchResult {
     id: string;
@@ -23,14 +27,20 @@ interface SearchResult {
     avatar_url?: string;
     color: string;
     type: 'system' | 'alter';
+    systemId?: string;
 }
 
 export default function SearchScreen() {
-    const { system } = useAuth();
+    const { system, currentAlter, alters } = useAuth();
+    const toast = useToast();
     const [searchQuery, setSearchQuery] = useState('');
     const [results, setResults] = useState<SearchResult[]>([]);
     const [loading, setLoading] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
+    // Track status per result: 'none' | 'pending' | 'friends' | 'loading'
+    const [friendStatuses, setFriendStatuses] = useState<Record<string, string>>({});
+    // Suggested friends (recent systems with public alters)
+    const [suggestions, setSuggestions] = useState<SearchResult[]>([]);
 
     // Recherche en temps réel avec debounce
     useEffect(() => {
@@ -108,49 +118,181 @@ export default function SearchScreen() {
         }
     };
 
-    const renderResult = ({ item }: { item: SearchResult }) => (
-        <TouchableOpacity style={styles.resultItem}>
-            <View style={[styles.resultAvatar, { backgroundColor: item.color }]}>
-                {item.avatar_url ? (
-                    <Image source={{ uri: item.avatar_url }} style={styles.avatarImage} />
-                ) : (
-                    <Text style={styles.avatarText}>
-                        {item.name.charAt(0).toUpperCase()}
+    // Check friend status for all results
+    useEffect(() => {
+        const checkStatuses = async () => {
+            if (!currentAlter || results.length === 0) return;
+
+            const statuses: Record<string, string> = {};
+            for (const result of results) {
+                try {
+                    const status = await FriendService.checkStatus(currentAlter.id, result.id);
+                    statuses[result.id] = status;
+                } catch {
+                    statuses[result.id] = 'none';
+                }
+            }
+            setFriendStatuses(statuses);
+        };
+        checkStatuses();
+    }, [results, currentAlter]);
+
+    // Load suggestions (public alters from other systems)
+    useEffect(() => {
+        const loadSuggestions = async () => {
+            if (!system) return;
+            try {
+                const q = query(
+                    collection(db, 'alters'),
+                    where('is_public', '==', true),
+                    limit(10)
+                );
+                const snap = await getDocs(q);
+                const sugg: SearchResult[] = [];
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    if (data.system_id !== system.id) {
+                        sugg.push({
+                            id: doc.id,
+                            name: data.name,
+                            avatar_url: data.avatar_url,
+                            color: data.color || '#7C3AED',
+                            type: 'alter',
+                            systemId: data.system_id,
+                        });
+                    }
+                });
+                setSuggestions(sugg.slice(0, 5));
+            } catch (e) {
+                console.log('[Search] No public alters found');
+            }
+        };
+        loadSuggestions();
+    }, [system]);
+
+    // Send friend request
+    const handleFollow = useCallback(async (targetId: string, targetName: string) => {
+        if (!currentAlter) {
+            toast.showToast('Sélectionnez un alter d\'abord', 'warning');
+            return;
+        }
+
+        const currentStatus = friendStatuses[targetId];
+        if (currentStatus === 'friends') {
+            toast.showToast('Vous êtes déjà amis !', 'info');
+            return;
+        }
+        if (currentStatus === 'pending') {
+            toast.showToast('Demande déjà envoyée', 'info');
+            return;
+        }
+
+        setFriendStatuses(prev => ({ ...prev, [targetId]: 'loading' }));
+        triggerHaptic.selection();
+
+        try {
+            await FriendService.sendRequest(currentAlter.id, targetId);
+            setFriendStatuses(prev => ({ ...prev, [targetId]: 'pending' }));
+            toast.showToast(`Demande envoyée à ${targetName}`, 'success');
+        } catch (error: any) {
+            console.error('Friend request error:', error);
+            setFriendStatuses(prev => ({ ...prev, [targetId]: 'none' }));
+            toast.showToast(error.message || 'Erreur lors de l\'envoi', 'error');
+        }
+    }, [currentAlter, friendStatuses, toast]);
+
+    // Get button text & style based on status
+    const getButtonProps = (status: string | undefined) => {
+        switch (status) {
+            case 'friends':
+                return { text: 'Amis ✓', style: styles.friendsButton };
+            case 'pending':
+                return { text: 'En attente', style: styles.pendingButton };
+            case 'loading':
+                return { text: '...', style: styles.pendingButton };
+            default:
+                return { text: 'Ajouter', style: styles.followButton };
+        }
+    };
+
+    const renderResult = ({ item }: { item: SearchResult }) => {
+        const status = friendStatuses[item.id];
+        const buttonProps = getButtonProps(status);
+        const isDisabled = status === 'friends' || status === 'pending' || status === 'loading';
+
+        return (
+            <TouchableOpacity style={styles.resultItem}>
+                <View style={[styles.resultAvatar, { backgroundColor: item.color }]}>
+                    {item.avatar_url ? (
+                        <Image source={{ uri: item.avatar_url }} style={styles.avatarImage} />
+                    ) : (
+                        <Text style={styles.avatarText}>
+                            {item.name.charAt(0).toUpperCase()}
+                        </Text>
+                    )}
+                </View>
+                <View style={styles.resultInfo}>
+                    <Text style={styles.resultName}>{item.name}</Text>
+                    {item.email && (
+                        <Text style={styles.resultEmail}>{item.email}</Text>
+                    )}
+                    <Text style={styles.resultType}>
+                        {item.type === 'system' ? 'Système' : 'Alter'}
                     </Text>
-                )}
-            </View>
-            <View style={styles.resultInfo}>
-                <Text style={styles.resultName}>{item.name}</Text>
-                {item.email && (
-                    <Text style={styles.resultEmail}>{item.email}</Text>
-                )}
-                <Text style={styles.resultType}>
-                    {item.type === 'system' ? 'Système' : 'Alter'}
-                </Text>
-            </View>
-            <TouchableOpacity style={styles.followButton}>
-                <Text style={styles.followButtonText}>Suivre</Text>
+                </View>
+                <TouchableOpacity
+                    style={buttonProps.style}
+                    onPress={() => handleFollow(item.id, item.name)}
+                    disabled={isDisabled}
+                >
+                    <Text style={styles.followButtonText}>{buttonProps.text}</Text>
+                </TouchableOpacity>
             </TouchableOpacity>
-        </TouchableOpacity>
-    );
+        );
+    };
 
     const renderSuggestedBubbles = () => (
         <View style={styles.suggestedSection}>
             <Text style={styles.sectionTitle}>Suggestions</Text>
             <View style={styles.bubblesRow}>
-                {/* Placeholder bubbles comme dans le design Canva */}
-                <View style={styles.suggestionBubble}>
-                    <View style={[styles.bubbleAvatar, { backgroundColor: '#E879F9' }]}>
-                        <Text style={styles.bubbleInitial}>L</Text>
+                {suggestions.length > 0 ? (
+                    suggestions.map((sugg) => {
+                        const status = friendStatuses[sugg.id];
+                        return (
+                            <TouchableOpacity
+                                key={sugg.id}
+                                style={styles.suggestionBubble}
+                                onPress={() => handleFollow(sugg.id, sugg.name)}
+                            >
+                                <View style={[styles.bubbleAvatar, { backgroundColor: sugg.color }]}>
+                                    {sugg.avatar_url ? (
+                                        <Image source={{ uri: sugg.avatar_url }} style={{ width: 60, height: 60, borderRadius: 30 }} />
+                                    ) : (
+                                        <Text style={styles.bubbleInitial}>{sugg.name.charAt(0)}</Text>
+                                    )}
+                                    {status === 'pending' && (
+                                        <View style={styles.pendingBadge}>
+                                            <Ionicons name="time" size={12} color="#fff" />
+                                        </View>
+                                    )}
+                                    {status === 'friends' && (
+                                        <View style={styles.friendsBadge}>
+                                            <Ionicons name="checkmark" size={12} color="#fff" />
+                                        </View>
+                                    )}
+                                </View>
+                                <Text style={styles.bubbleName} numberOfLines={1}>{sugg.name}</Text>
+                            </TouchableOpacity>
+                        );
+                    })
+                ) : (
+                    <View style={styles.suggestionBubble}>
+                        <View style={[styles.bubbleAvatar, { backgroundColor: '#60A5FA' }]}>
+                            <Ionicons name="people" size={24} color="white" />
+                        </View>
+                        <Text style={styles.bubbleName}>Aucun</Text>
                     </View>
-                    <Text style={styles.bubbleName}>Lilou</Text>
-                </View>
-                <View style={styles.suggestionBubble}>
-                    <View style={[styles.bubbleAvatar, { backgroundColor: '#60A5FA' }]}>
-                        <Ionicons name="person-add" size={20} color="white" />
-                    </View>
-                    <Text style={styles.bubbleName}>Ajouter</Text>
-                </View>
+                )}
             </View>
         </View>
     );
@@ -324,10 +466,48 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.md,
         borderRadius: borderRadius.full,
     },
+    pendingButton: {
+        backgroundColor: colors.textMuted,
+        paddingVertical: spacing.xs,
+        paddingHorizontal: spacing.md,
+        borderRadius: borderRadius.full,
+    },
+    friendsButton: {
+        backgroundColor: colors.success,
+        paddingVertical: spacing.xs,
+        paddingHorizontal: spacing.md,
+        borderRadius: borderRadius.full,
+    },
     followButtonText: {
         color: 'white',
         fontWeight: '600',
         fontSize: 13,
+    },
+    pendingBadge: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        backgroundColor: colors.warning,
+        width: 18,
+        height: 18,
+        borderRadius: 9,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: colors.background,
+    },
+    friendsBadge: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        backgroundColor: colors.success,
+        width: 18,
+        height: 18,
+        borderRadius: 9,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: colors.background,
     },
     suggestedSection: {
         paddingHorizontal: spacing.lg,

@@ -1712,12 +1712,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         marginBottom: 16,
     },
-    bioDisplayName: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: colors.text,
-        marginBottom: 4,
-    },
     bioPronouns: {
         fontSize: 14,
         color: colors.textSecondary,

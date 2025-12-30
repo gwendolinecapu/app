@@ -40,6 +40,9 @@ class PremiumService {
         this.userId = userId;
 
         try {
+            // Verify auth matches or proceed with caution
+            if (!userId) return;
+
             // Charger depuis Firestore
             const docRef = doc(db, FIRESTORE_COLLECTION, userId);
             const docSnap = await getDoc(docRef);

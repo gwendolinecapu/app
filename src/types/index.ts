@@ -58,6 +58,10 @@ export interface Post {
     visibility: 'private' | 'system' | 'friends' | 'public';
     created_at: string;
     updated_at: string;
+    // Denormalized author info for feed display (populated on fetch)
+    author_id?: string;      // = alter_id or system_id as fallback
+    author_name?: string;    // Alter name or System username
+    author_avatar?: string;  // Alter avatar or System avatar
     // Metrics
     likes: string[]; // Array of user/system IDs
     comments_count: number;

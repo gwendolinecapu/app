@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, FlatList, StyleSheet, ActivityIndicator, Text, RefreshControl } from 'react-native';
+import { router } from 'expo-router';
 import { PostService } from '../services/posts';
 import { Post } from '../types';
 import { PostCard } from './PostCard';
 import { NativeAdCard } from './ads/NativeAdCard';
+import { CommentsModal } from './CommentsModal';
 import { Skeleton } from './ui/Skeleton';
 import { colors, spacing, typography } from '../lib/theme';
 import { useAuth } from '../contexts/AuthContext';
-import { SYSTEM_TIPS } from '../data/tips';
 
 interface FeedProps {
     type?: 'global' | 'friends' | 'system'; // Future proofing
@@ -22,6 +23,10 @@ export const Feed = ({ type = 'global', systemId }: FeedProps) => {
     const [lastVisible, setLastVisible] = useState<any>(null);
     const [hasMore, setHasMore] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
+
+    // Comments Modal State
+    const [commentsModalVisible, setCommentsModalVisible] = useState(false);
+    const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
     const loadPosts = useCallback(async (refresh = false) => {
         if (loadingMore && !refresh) return;
@@ -48,12 +53,6 @@ export const Feed = ({ type = 'global', systemId }: FeedProps) => {
 
             setLastVisible(updatedLastVisible);
 
-            // Inject Ads and Tips
-            const postsWithExtras = [...newPosts];
-
-            // Logic to inject ads/tips could be here, but for now we just append posts
-            // We can inject "Ad" items later in the rendering list
-
             if (refresh) {
                 setPosts(newPosts);
             } else {
@@ -78,7 +77,7 @@ export const Feed = ({ type = 'global', systemId }: FeedProps) => {
         try {
             // Optimistic update
             setPosts(prev => prev.map(item => {
-                if ('id' in item && item.id === postId) { // Check if it's a post
+                if ('id' in item && item.id === postId) {
                     const post = item as Post;
                     const likes = post.likes || [];
                     const isLiked = likes.includes(user.uid);
@@ -96,7 +95,22 @@ export const Feed = ({ type = 'global', systemId }: FeedProps) => {
             await PostService.toggleLike(postId, user.uid);
         } catch (error) {
             console.error('Like failed', error);
-            // Revert on error? For now simple log.
+        }
+    };
+
+    // Open comments modal
+    const handleComment = (postId: string) => {
+        setSelectedPostId(postId);
+        setCommentsModalVisible(true);
+    };
+
+    // Navigate to author profile
+    const handleAuthorPress = (authorId: string, systemId?: string) => {
+        // Navigate to alter-space for internal, or profile for external
+        if (systemId) {
+            router.push(`/alter-space/${authorId}` as any);
+        } else {
+            router.push(`/profile/${authorId}` as any);
         }
     };
 
@@ -113,6 +127,8 @@ export const Feed = ({ type = 'global', systemId }: FeedProps) => {
             <PostCard
                 post={item}
                 onLike={handleLike}
+                onComment={handleComment}
+                onAuthorPress={handleAuthorPress}
                 currentUserId={user?.uid}
             />
         );
@@ -151,27 +167,39 @@ export const Feed = ({ type = 'global', systemId }: FeedProps) => {
     }
 
     return (
-        <FlatList
-            data={posts}
-            renderItem={renderItem}
-            keyExtractor={(item: any) => item.id || `ad-${Math.random()}`} // Fallback for ad key
-            refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={() => loadPosts(true)} tintColor={colors.primary} />
-            }
-            onEndReached={() => {
-                if (hasMore && !loadingMore) {
-                    loadPosts();
+        <>
+            <FlatList
+                data={posts}
+                renderItem={renderItem}
+                keyExtractor={(item: any) => item.id || `ad-${Math.random()}`}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={() => loadPosts(true)} tintColor={colors.primary} />
                 }
-            }}
-            onEndReachedThreshold={0.5}
-            ListFooterComponent={renderFooter}
-            ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyText}>Aucun post pour le moment.</Text>
-                </View>
-            }
-            contentContainerStyle={styles.listContent}
-        />
+                onEndReached={() => {
+                    if (hasMore && !loadingMore) {
+                        loadPosts();
+                    }
+                }}
+                onEndReachedThreshold={0.5}
+                ListFooterComponent={renderFooter}
+                ListEmptyComponent={
+                    <View style={styles.emptyContainer}>
+                        <Text style={styles.emptyText}>Aucun post pour le moment.</Text>
+                    </View>
+                }
+                contentContainerStyle={styles.listContent}
+            />
+
+            {/* Comments Modal */}
+            <CommentsModal
+                visible={commentsModalVisible}
+                postId={selectedPostId}
+                onClose={() => {
+                    setCommentsModalVisible(false);
+                    setSelectedPostId(null);
+                }}
+            />
+        </>
     );
 };
 

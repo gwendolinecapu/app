@@ -1,5 +1,46 @@
 # Changelog
 
+## [2025-12-30] Feed V2 - Expérience Sociale Complète 📱
+
+### Phase 1 : Navigation Profil
+- **`PostCard.tsx`** : Header auteur cliquable avec `onAuthorPress` callback
+- Navigation vers `alter-space` ou `profile` selon le type d'auteur
+
+### Phase 2 : Système de Commentaires
+- **`src/services/comments.ts`** : Service Firebase (addComment, fetchComments, deleteComment)
+- **`src/components/CommentsModal.tsx`** : Modal bottom-sheet avec liste et input
+- Compteur `comments_count` mis à jour atomiquement sur les posts
+
+### Phase 3 : Média Rich
+- **`expo-av`** : Installé pour lecture audio/vidéo
+- **`src/components/ui/ImageLightbox.tsx`** : Modal plein écran avec zoom pinch-to-zoom
+- **`src/components/ui/VideoPlayer.tsx`** : Lecteur vidéo avec contrôles overlay et autoplay muet
+- **`src/components/ui/AudioPlayer.tsx`** : Lecteur audio avec barre de progression et waveform
+
+### Phase 4 : Stories (Instagram-style)
+- **`src/services/stories.ts`** : Service Firebase complet
+  - Création avec expiration 24h automatique
+  - Fetch stories actives des amis
+  - Marquage comme vu
+  - Groupement par auteur
+- **`src/components/StoriesBar.tsx`** : Barre horizontale en haut du feed
+  - Cercles dégradés Instagram pour stories non-vues
+  - Bouton "+" pour créer une story
+- **`src/components/StoryViewer.tsx`** : Viewer plein écran
+  - Progress bars animées
+  - Tap gauche/droite pour naviguer
+  - Auto-advance après 5s (images)
+  - Support vidéo
+- **`app/story/create.tsx`** : Écran création
+  - Picker caméra/galerie
+  - Upload vers Firebase Storage
+  - Preview avant publication
+
+### Intégration Dashboard
+- **`app/(tabs)/dashboard.tsx`** : StoriesBar + Feed + StoryViewer en mode "feed"
+
+---
+
 ## [2025-12-29] Système de Monétisation Complet 💰
 
 ### Publicités (Médiation Multi-Régie)

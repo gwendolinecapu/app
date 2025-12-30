@@ -28,7 +28,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SystemWeather } from '../../src/components/SystemWeather';
 import { Feed } from '../../src/components/Feed';
-import { useScrollToTop } from '@react-navigation/native';
+import { StoriesBar } from '../../src/components/StoriesBar';
+import { StoryViewer } from '../../src/components/StoryViewer';
+import { Story } from '../../src/services/stories';
+import { useScrollToTop } from '@react-navigation/native'
 import { triggerHaptic } from '../../src/lib/haptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -81,6 +84,10 @@ export default function DashboardScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const [refreshing, setRefreshing] = useState(false);
     const [viewMode, setViewMode] = useState<'fronting' | 'feed'>('fronting');
+
+    // Story viewer state
+    const [storyViewerVisible, setStoryViewerVisible] = useState(false);
+    const [selectedStories, setSelectedStories] = useState<Story[]>([]);
 
     // Create new alter state
     const [newAlterName, setNewAlterName] = useState('');
@@ -430,7 +437,26 @@ export default function DashboardScreen() {
             </View>
 
             {viewMode === 'feed' ? (
-                <Feed />
+                <View style={{ flex: 1 }}>
+                    {/* Stories Bar at top of Feed */}
+                    <StoriesBar
+                        friendIds={[]} // TODO: Get from FriendService
+                        onStoryPress={(authorId, stories) => {
+                            setSelectedStories(stories);
+                            setStoryViewerVisible(true);
+                        }}
+                    />
+                    <Feed />
+                    {/* Story Viewer Modal */}
+                    <StoryViewer
+                        visible={storyViewerVisible}
+                        stories={selectedStories}
+                        onClose={() => {
+                            setStoryViewerVisible(false);
+                            setSelectedStories([]);
+                        }}
+                    />
+                </View>
             ) : (
                 <>
                     {/* System Weather Widget */}

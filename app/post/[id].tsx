@@ -10,6 +10,7 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { colors, spacing, typography, borderRadius } from '../../src/lib/theme';
 import { Post, Comment } from '../../src/types';
 import { triggerHaptic } from '../../src/lib/haptics';
+import { ScaleButton } from '../../src/components/ui/ScaleButton';
 
 export default function PostDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -99,6 +100,8 @@ export default function PostDetailScreen() {
 
     if (!post) return null;
 
+
+
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -108,9 +111,9 @@ export default function PostDetailScreen() {
             <Stack.Screen options={{ headerShown: false }} />
 
             <View style={[styles.header, { paddingTop: insets.top || 16 }]}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <ScaleButton onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="chevron-back" size={28} color={colors.text} />
-                </TouchableOpacity>
+                </ScaleButton>
                 <Text style={styles.headerTitle}>Publications</Text>
                 <View style={{ width: 40 }} />
             </View>
@@ -154,7 +157,7 @@ export default function PostDetailScreen() {
                     onChangeText={setCommentText}
                     multiline
                 />
-                <TouchableOpacity
+                <ScaleButton
                     onPress={handleAddComment}
                     disabled={!commentText.trim() || submittingComment}
                     style={styles.sendButton}
@@ -169,7 +172,7 @@ export default function PostDetailScreen() {
                             Publier
                         </Text>
                     )}
-                </TouchableOpacity>
+                </ScaleButton>
             </View>
         </KeyboardAvoidingView>
     );

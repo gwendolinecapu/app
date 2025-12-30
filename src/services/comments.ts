@@ -13,23 +13,13 @@ import {
     updateDoc,
     increment
 } from 'firebase/firestore';
+import { Comment } from '../types';
 
 // =====================================================
 // COMMENTS SERVICE
 // Gère les commentaires sur les posts
 // Collection: posts/{postId}/comments (sous-collection)
 // =====================================================
-
-export interface Comment {
-    id: string;
-    post_id: string;
-    author_id: string;       // Alter ID ou System ID
-    author_name: string;     // Dénormalisé pour affichage rapide
-    author_avatar?: string;
-    content: string;
-    created_at: string;
-    // Future: likes, replies
-}
 
 export interface CreateCommentInput {
     postId: string;

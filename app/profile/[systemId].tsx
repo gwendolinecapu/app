@@ -22,6 +22,9 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { FollowService } from '../../src/services/follows';
 import { PublicProfile, Post } from '../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
+import { SkeletonProfile } from '../../src/components/ui/Skeleton';
+import { EmptyState } from '../../src/components/ui/EmptyState';
+import { ScaleButton } from '../../src/components/ui/ScaleButton';
 
 const GRID_ITEM_SIZE = (Dimensions.get('window').width - spacing.md * 2 - 4) / 3;
 
@@ -96,9 +99,7 @@ export default function ExternalProfileScreen() {
     if (loading) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={colors.primary} />
-                </View>
+                <SkeletonProfile />
             </SafeAreaView>
         );
     }
@@ -111,13 +112,11 @@ export default function ExternalProfileScreen() {
                         <Ionicons name="arrow-back" size={24} color={colors.text} />
                     </TouchableOpacity>
                 </View>
-                <View style={styles.emptyState}>
-                    <Ionicons name="person-outline" size={64} color={colors.textMuted} />
-                    <Text style={styles.emptyTitle}>Profil non trouvé</Text>
-                    <Text style={styles.emptySubtitle}>
-                        Ce système n'a pas de profil public
-                    </Text>
-                </View>
+                <EmptyState
+                    icon="person-outline"
+                    title="Profil non trouvé"
+                    message="Ce système n'a pas de profil public ou n'existe pas."
+                />
             </SafeAreaView>
         );
     }
@@ -176,7 +175,7 @@ export default function ExternalProfileScreen() {
 
                 {/* Follow Button */}
                 <View style={styles.actionButtons}>
-                    <TouchableOpacity
+                    <ScaleButton
                         style={[
                             styles.followButton,
                             isFollowing && styles.followingButton,
@@ -189,16 +188,18 @@ export default function ExternalProfileScreen() {
                         ]}>
                             {isFollowing ? 'Ne plus suivre' : 'Suivre'}
                         </Text>
-                    </TouchableOpacity>
+                    </ScaleButton>
                 </View>
 
                 {/* Posts Grid */}
                 <View style={styles.postsGrid}>
                     {posts.length === 0 ? (
-                        <View style={styles.noPostsContainer}>
-                            <Ionicons name="camera-outline" size={48} color={colors.textMuted} />
-                            <Text style={styles.noPosts}>Aucune publication publique</Text>
-                        </View>
+                        <EmptyState
+                            icon="camera-outline"
+                            title="Aucune publication publique"
+                            message="Ce système n'a pas encore partagé de contenu."
+                            style={{ padding: spacing.xxl, width: '100%' }}
+                        />
                     ) : (
                         posts.map((post) => (
                             <View key={post.id} style={styles.gridItem}>

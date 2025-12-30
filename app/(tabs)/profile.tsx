@@ -23,6 +23,9 @@ import { PostService } from '../../src/services/posts';
 import { PostCard } from '../../src/components/PostCard';
 import { CommentsModal } from '../../src/components/CommentsModal';
 import { triggerHaptic } from '../../src/lib/haptics';
+import { SkeletonProfile } from '../../src/components/ui/Skeleton';
+import { EmptyState } from '../../src/components/ui/EmptyState';
+import { ScaleButton } from '../../src/components/ui/ScaleButton';
 
 const { width } = Dimensions.get('window');
 const GRID_SIZE = (width - 4) / 3;
@@ -32,6 +35,7 @@ export default function ProfileScreen() {
     const [posts, setPosts] = useState<Post[]>([]);
     const [stats, setStats] = useState({ posts: 0, followers: 0, following: 0 });
     const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
+    const [loading, setLoading] = useState(true);
 
     // Feed View State
     const [selectedPostIndex, setSelectedPostIndex] = useState<number | null>(null);
@@ -41,10 +45,17 @@ export default function ProfileScreen() {
 
     useEffect(() => {
         if (currentAlter && user) {
-            fetchPosts();
-            fetchFollowStats();
+            loadProfileData();
+        } else {
+            setLoading(false);
         }
     }, [currentAlter, user]);
+
+    const loadProfileData = async () => {
+        setLoading(true);
+        await Promise.all([fetchPosts(), fetchFollowStats()]);
+        setLoading(false);
+    };
 
     const fetchPosts = async () => {
         if (!currentAlter || !user) return;
@@ -156,19 +167,24 @@ export default function ProfileScreen() {
         setSelectedPostIndex(null);
     };
 
+    if (loading) {
+        return (
+            <SafeAreaView style={styles.container} edges={['top']}>
+                <SkeletonProfile />
+            </SafeAreaView>
+        );
+    }
+
     if (!currentAlter) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
-                <View style={styles.emptyState}>
-                    <Ionicons name="person-outline" size={64} color={colors.textMuted} />
-                    <Text style={styles.emptyTitle}>Aucun alter sélectionné</Text>
-                    <TouchableOpacity
-                        style={styles.button}
-                        onPress={() => router.push('/(tabs)/dashboard')}
-                    >
-                        <Text style={styles.buttonText}>Voir les alters</Text>
-                    </TouchableOpacity>
-                </View>
+                <EmptyState
+                    icon="person-outline"
+                    title="Aucun alter sélectionné"
+                    message="Sélectionnez un alter depuis le tableau de bord pour voir son profil."
+                    actionLabel="Voir les alters"
+                    onAction={() => router.push('/(tabs)/dashboard')}
+                />
             </SafeAreaView>
         );
     }
@@ -241,19 +257,19 @@ export default function ProfileScreen() {
 
                 {/* Action Buttons */}
                 <View style={styles.actionButtons}>
-                    <TouchableOpacity
+                    <ScaleButton
                         style={styles.editButton}
                         onPress={() => router.push(`/alter/${currentAlter.id}`)}
                     >
                         <Ionicons name="pencil" size={16} color={colors.text} style={{ marginRight: 6 }} />
                         <Text style={styles.editButtonText}>Modifier le profil</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </ScaleButton>
+                    <ScaleButton
                         style={styles.statsButton}
                         onPress={() => router.push('/history')}
                     >
                         <Ionicons name="bar-chart-outline" size={20} color={colors.text} />
-                    </TouchableOpacity>
+                    </ScaleButton>
                 </View>
 
                 {/* Tabs: Grid / List */}
@@ -283,21 +299,20 @@ export default function ProfileScreen() {
                 {/* Posts Grid - Instagram Style */}
                 <View style={styles.postsGrid}>
                     {posts.length === 0 ? (
-                        <View style={styles.noPostsContainer}>
-                            <Ionicons name="camera-outline" size={48} color={colors.textMuted} />
-                            <Text style={styles.noPosts}>Aucune publication</Text>
-                            <TouchableOpacity
-                                style={styles.createPostButton}
-                                onPress={() => router.push('/post/create')}
-                            >
-                                <Text style={styles.createPostText}>Créer une publication</Text>
-                            </TouchableOpacity>
-                        </View>
+                        <EmptyState
+                            icon="camera-outline"
+                            title="Aucune publication"
+                            message="Partagez votre première photo ou pensée !"
+                            actionLabel="Créer une publication"
+                            onAction={() => router.push('/post/create')}
+                            style={{ padding: spacing.xxl, width: '100%' }}
+                        />
                     ) : (
                         posts.map((post, index) => (
-                            <TouchableOpacity
+                            <ScaleButton
                                 key={post.id}
                                 style={styles.gridItem}
+                                scaleTo={0.98}
                                 onPress={() => {
                                     triggerHaptic.selection();
                                     setSelectedPostIndex(index);
@@ -315,7 +330,7 @@ export default function ProfileScreen() {
                                         </Text>
                                     </View>
                                 )}
-                            </TouchableOpacity>
+                            </ScaleButton>
                         ))
                     )}
                 </View>

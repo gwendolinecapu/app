@@ -1,5 +1,29 @@
 # Changelog
 
+## [2025-12-30] Shop UI & Système d'Amis Corrigé 🛒🤝
+
+### Boutique (Shop)
+- **`app/(tabs)/dashboard.tsx`** : Bouton 🏪 boutique ajouté dans le header
+- **`app/alter-space/[alterId]/edit.tsx`** : Section cosmétiques équipés (Theme/Frame/Bubble)
+
+### Système d'Amis (Bug Fix)
+- **`app/alter-space/[alterId]/index.tsx`** :
+  - Correction: Le statut d'ami est maintenant vérifié au chargement du profil
+  - Correction: `handleFriendAction` utilise maintenant le bon alter (celui de l'utilisateur, pas celui visité)
+  - Ajout de logs de debug pour tracer les demandes d'amis
+
+### Navigation Alter Space (Refactoring) 🧭
+- **`app/alter-space/[alterId]/index.tsx`** : Nouvelle navigation simplifiée
+  - 🏠 **Home** = Feed
+  - ➕ **+** = Bouton gradient pour publier rapidement
+  - ☰ **Menu** = Drawer hamburger avec :
+    - Mon Profil
+    - Journal
+    - Galerie Privée  
+    - Comment je me sens
+    - 🛒 Boutique (toujours visible)
+    - ⚙️ Réglages
+
 ## [2025-12-30] Réorganisation Feed & Recherche 🔄
 
 ### Feed V2 amélioré

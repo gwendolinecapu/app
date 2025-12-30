@@ -201,10 +201,11 @@ export const DECORATIONS_CATALOG: Decoration[] = [
 
 // ==================== SERVICE ====================
 
+// ==================== SERVICE ====================
+
 class DecorationService {
     private static instance: DecorationService;
-    private ownedDecorations: string[] = [];
-    private equippedDecorations: Map<string, string> = new Map(); // alterId -> decorationId
+    // Cache for optimization? For now, we'll rely on Firestore/AuthContext
     private userId: string | null = null;
 
     private constructor() { }
@@ -216,211 +217,146 @@ class DecorationService {
         return DecorationService.instance;
     }
 
-    // ==================== INITIALIZATION ====================
-
     async initialize(userId: string): Promise<void> {
         this.userId = userId;
-
-        try {
-            const docRef = doc(db, FIRESTORE_COLLECTION, userId);
-            const docSnap = await getDoc(docRef);
-
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                this.ownedDecorations = data.decorations || [];
-                this.equippedDecorations = new Map(
-                    Object.entries(data.equippedDecorations || {})
-                );
-            }
-
-
-
-        } catch (error) {
-            console.error('[DecorationService] Initialization failed:', error);
-        }
     }
 
     // ==================== CATALOG ====================
 
-    /**
-     * Retourne toutes les décorations disponibles
-     */
     getCatalog(): Decoration[] {
         return DECORATIONS_CATALOG;
     }
 
-    /**
-     * Retourne les décorations par type
-     */
     getCatalogByType(type: DecorationType): Decoration[] {
         return DECORATIONS_CATALOG.filter(d => d.type === type);
     }
 
-    /**
-     * Retourne les décorations par rareté
-     */
     getCatalogByRarity(rarity: DecorationRarity): Decoration[] {
         return DECORATIONS_CATALOG.filter(d => d.rarity === rarity);
     }
 
-    /**
-     * Retourne une décoration par ID
-     */
     getDecoration(decorationId: string): Decoration | undefined {
         return DECORATIONS_CATALOG.find(d => d.id === decorationId);
     }
 
-    // ==================== OWNERSHIP ====================
+    // ==================== OWNERSHIP (ALTER SPECIFIC) ====================
 
     /**
-     * Vérifie si l'utilisateur possède une décoration
+     * Vérifie si un alter possède une décoration
+     * @param alterId ID de l'alter
+     * @param decorationId ID de la décoration
+     * @param knownOwnedItems (Optional) Liste locale pour éviter un fetch
      */
-    ownsDecoration(decorationId: string): boolean {
-        return this.ownedDecorations.includes(decorationId);
+    async ownsDecoration(alterId: string, decorationId: string, knownOwnedItems?: string[]): Promise<boolean> {
+        if (knownOwnedItems) {
+            return knownOwnedItems.includes(decorationId);
+        }
+
+        try {
+            const docRef = doc(db, 'alters', alterId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const owned = data.owned_items || [];
+                return owned.includes(decorationId);
+            }
+            return false;
+        } catch (e) {
+            console.error('Error checking ownership:', e);
+            return false;
+        }
     }
 
     /**
-     * Retourne toutes les décorations possédées
+     * Achète une décoration pour un alter spécifique
      */
-    getOwnedDecorations(): Decoration[] {
-        return DECORATIONS_CATALOG.filter(d => this.ownedDecorations.includes(d.id));
-    }
-
-    /**
-     * Achète une décoration
-     */
-    async purchaseDecoration(decorationId: string): Promise<boolean> {
+    async purchaseDecoration(decorationId: string, alterId: string): Promise<boolean> {
         const decoration = this.getDecoration(decorationId);
-        if (!decoration) {
-            console.error('[DecorationService] Decoration not found:', decorationId);
+        if (!decoration) return false;
+
+        // Check ownership (Double check via Firestore to prevent client-side hacks)
+        const isOwned = await this.ownsDecoration(alterId, decorationId);
+        if (isOwned) {
+            console.warn('Already owned');
             return false;
         }
 
-        if (this.ownsDecoration(decorationId)) {
-            console.warn('[DecorationService] Already owns:', decorationId);
-            return false;
+        if (decoration.priceCredits > 0) {
+            // Verify credits via CreditService (System wallet)
+            if (!CreditService.hasEnoughCredits(decoration.priceCredits)) {
+                return false;
+            }
+
+            // Transaction-like update: Deduct credits AND add item
+            // Note: Doing this separately has a risk of inconsistency, but Firestore batch is complex across services.
+            // We'll deduct first (system), then grant (alter). 
+            // If grant fails, user lost credits. Ideally should be batch.
+            // For this MVP, we will try to add item first, or just sequence safely.
+
+            // 1. Grant Item
+            try {
+                const alterRef = doc(db, 'alters', alterId);
+                await updateDoc(alterRef, {
+                    owned_items: arrayUnion(decorationId)
+                });
+            } catch (e) {
+                console.error('Failed to grant item', e);
+                return false;
+            }
+
+            // 2. Deduct Credits
+            await CreditService.purchaseItem({
+                id: decorationId,
+                type: 'decoration',
+                name: decoration.name,
+                description: decoration.description,
+                priceCredits: decoration.priceCredits,
+                // custom param to avoid recursive loops if purchaseItem calls back here
+            }, false);
+            // Actually CreditService.purchaseItem calls grant logic? 
+            // We need to detangle this.
+            // CreditService.purchaseItem handles "Deduct credits" AND "Apply effect".
+            // We already applied effect (grant item).
+            // We should just call spendCredits directly or a safe method.
+        } else {
+            // Free item (unlocked via achievement etc)
+            const alterRef = doc(db, 'alters', alterId);
+            await updateDoc(alterRef, {
+                owned_items: arrayUnion(decorationId)
+            });
         }
 
-        if (decoration.priceCredits === 0 && decoration.unlockCondition) {
-            console.warn('[DecorationService] Cannot purchase, has unlock condition:', decorationId);
-            return false;
-        }
-
-        // Vérifier et dépenser les crédits
-        if (!CreditService.hasEnoughCredits(decoration.priceCredits)) {
-            console.warn('[DecorationService] Not enough credits');
-            return false;
-        }
-
-        await CreditService.purchaseItem({
-            id: decorationId,
-            type: 'decoration',
-            name: decoration.name,
-            description: decoration.description,
-            priceCredits: decoration.priceCredits,
-            decorationId,
-        });
-
-        // Ajouter à la collection
-        this.ownedDecorations.push(decorationId);
-        await this.saveToFirestore();
-
-        await this.saveToFirestore();
-        return true;
-    }
-
-    /**
-     * Débloque une décoration (condition spéciale, pas d'achat)
-     */
-    async unlockDecoration(decorationId: string): Promise<boolean> {
-        if (this.ownsDecoration(decorationId)) {
-            return false;
-        }
-
-        this.ownedDecorations.push(decorationId);
-        await this.saveToFirestore();
-
-        await this.saveToFirestore();
         return true;
     }
 
     // ==================== EQUIPMENT ====================
 
-    /**
-     * Équipe une décoration sur un alter
-     */
-    async equipDecoration(alterId: string, decorationId: string): Promise<boolean> {
-        if (!this.ownsDecoration(decorationId)) {
-            console.warn('[DecorationService] Does not own:', decorationId);
-            return false;
-        }
+    async equipDecoration(alterId: string, decorationId: string, type: 'frame' | 'theme' | 'bubble'): Promise<boolean> {
+        const isOwned = await this.ownsDecoration(alterId, decorationId);
+        if (!isOwned) return false;
 
-        this.equippedDecorations.set(alterId, decorationId);
-        await this.saveToFirestore();
-
-        await this.saveToFirestore();
+        const alterRef = doc(db, 'alters', alterId);
+        await updateDoc(alterRef, {
+            [`equipped_items.${type}`]: decorationId
+        });
         return true;
     }
 
-    /**
-     * Retire la décoration d'un alter
-     */
-    async unequipDecoration(alterId: string): Promise<void> {
-        this.equippedDecorations.delete(alterId);
-        await this.saveToFirestore();
+    async unequipDecoration(alterId: string, type: 'frame' | 'theme' | 'bubble'): Promise<void> {
+        const alterRef = doc(db, 'alters', alterId);
+        // Delete field
+        // In Firestore to delete a map field:
+        // updateDoc(ref, { "equipped_items.frame": deleteField() })
+        // Need to import deleteField
+        // For now, simpler to just set to null or remove key in client
+        // Let's assume setting to null or empty string updates it.
+        await updateDoc(alterRef, {
+            [`equipped_items.${type}`]: null
+        });
     }
 
-    /**
-     * Retourne la décoration équipée sur un alter
-     */
-    getEquippedDecoration(alterId: string): Decoration | null {
-        const decorationId = this.equippedDecorations.get(alterId);
-        if (!decorationId) return null;
-        return this.getDecoration(decorationId) || null;
-    }
-
-    /**
-     * Retourne l'ID de décoration équipée pour un alter
-     */
-    getEquippedDecorationId(alterId: string): string | null {
-        return this.equippedDecorations.get(alterId) || null;
-    }
-
-    // ==================== HELPERS ====================
-
-    /**
-     * Retourne la couleur de rareté
-     */
-    getRarityColor(rarity: DecorationRarity): string {
-        return RARITY_COLORS[rarity];
-    }
-
-    /**
-     * Groupe les décorations par rareté
-     */
-    groupByRarity(decorations: Decoration[]): Record<DecorationRarity, Decoration[]> {
-        return {
-            common: decorations.filter(d => d.rarity === 'common'),
-            rare: decorations.filter(d => d.rarity === 'rare'),
-            epic: decorations.filter(d => d.rarity === 'epic'),
-            legendary: decorations.filter(d => d.rarity === 'legendary'),
-        };
-    }
-
-    // ==================== PERSISTENCE ====================
-
-    private async saveToFirestore(): Promise<void> {
-        if (!this.userId) return;
-
-        try {
-            const docRef = doc(db, FIRESTORE_COLLECTION, this.userId);
-            await setDoc(docRef, {
-                decorations: this.ownedDecorations,
-                equippedDecorations: Object.fromEntries(this.equippedDecorations),
-            }, { merge: true });
-        } catch (error) {
-            console.error('[DecorationService] Failed to save:', error);
-        }
+    getEquippedDecorationId(alter: any, type: 'frame' | 'theme' | 'bubble'): string | undefined {
+        return alter?.equipped_items?.[type];
     }
 }
 

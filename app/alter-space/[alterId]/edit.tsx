@@ -23,9 +23,6 @@ import { Alter } from '../../../src/types';
 import { alterColors, freeAlterColors, premiumAlterColors, colors, spacing, borderRadius, typography } from '../../../src/lib/theme';
 import PremiumService from '../../../src/services/PremiumService';
 
-// Check premium status
-const [isPremium, setIsPremium] = useState(PremiumService.isPremium());
-
 export default function EditAlterProfileScreen() {
     const { alterId } = useLocalSearchParams<{ alterId: string }>();
     const [loading, setLoading] = useState(true);
@@ -291,6 +288,48 @@ export default function EditAlterProfileScreen() {
                         ))}
                     </ScrollView>
                 </View>
+
+                {/* ==================== COSMETICS SECTION ==================== */}
+                <View style={styles.formGroup}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={styles.label}>Cosmétiques équipés</Text>
+                        <TouchableOpacity onPress={() => router.push('/shop')}>
+                            <Text style={{ color: colors.primary, fontSize: 12 }}>Voir la boutique →</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Show equipped decorations or "None" */}
+                    <View style={styles.cosmeticsRow}>
+                        {/* Theme */}
+                        <View style={styles.cosmeticSlot}>
+                            <Text style={styles.cosmeticLabel}>🎨 Thème</Text>
+                            <Text style={styles.cosmeticValue}>
+                                {initialAlter?.equipped_items?.theme || 'Par défaut'}
+                            </Text>
+                        </View>
+
+                        {/* Frame */}
+                        <View style={styles.cosmeticSlot}>
+                            <Text style={styles.cosmeticLabel}>🖼️ Cadre</Text>
+                            <Text style={styles.cosmeticValue}>
+                                {initialAlter?.equipped_items?.frame || 'Aucun'}
+                            </Text>
+                        </View>
+
+                        {/* Bubble */}
+                        <View style={styles.cosmeticSlot}>
+                            <Text style={styles.cosmeticLabel}>💬 Bulle</Text>
+                            <Text style={styles.cosmeticValue}>
+                                {initialAlter?.equipped_items?.bubble || 'Classique'}
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Owned items count */}
+                    <Text style={styles.cosmeticHint}>
+                        {initialAlter?.owned_items?.length || 0} objets possédés • Accédez à la boutique pour équiper
+                    </Text>
+                </View>
             </ScrollView>
         </KeyboardAvoidingView>
     );
@@ -431,5 +470,36 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.5)',
         borderRadius: 10,
         padding: 4,
+    },
+    // ==================== COSMETICS STYLES ====================
+    cosmeticsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: spacing.sm,
+        gap: spacing.sm,
+    },
+    cosmeticSlot: {
+        flex: 1,
+        backgroundColor: colors.backgroundCard,
+        borderRadius: borderRadius.md,
+        padding: spacing.sm,
+        alignItems: 'center',
+    },
+    cosmeticLabel: {
+        fontSize: 11,
+        color: colors.textSecondary,
+        marginBottom: 4,
+    },
+    cosmeticValue: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: colors.text,
+        textAlign: 'center',
+    },
+    cosmeticHint: {
+        marginTop: spacing.sm,
+        fontSize: 11,
+        color: colors.textMuted,
+        textAlign: 'center',
     },
 });

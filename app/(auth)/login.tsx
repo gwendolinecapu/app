@@ -8,6 +8,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     Alert,
+    Image,
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -50,7 +51,11 @@ export default function LoginScreen() {
                 style={styles.container}
             >
                 <View style={styles.header}>
-                    <Text style={styles.logo}>💜</Text>
+                    <Image
+                        source={require('../../assets/adaptive-icon.png')}
+                        style={styles.logoImage}
+                        resizeMode="contain"
+                    />
                     <Text style={styles.title}>PluralConnect</Text>
                     <Text style={styles.subtitle}>Un espace safe pour votre système</Text>
                 </View>
@@ -119,8 +124,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: spacing.xxl,
     },
-    logo: {
-        fontSize: 64,
+    logoImage: {
+        width: 80,
+        height: 80,
         marginBottom: spacing.md,
     },
     title: {

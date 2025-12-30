@@ -112,7 +112,13 @@
           "androidAppId": "ca-app-pub-7014088517639318~7514041741"
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "L'accès à vos photos est nécessaire pour les ajouter à la galerie de l'alter."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

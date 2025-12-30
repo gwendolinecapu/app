@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased] - 2025-12-30
+
+### Added
+- **Shop UI Overhaul**: Completely redesigned the shop with a premium dark theme, glassmorphism effects, and smoother animations.
+- **Performance**: Switched `ShopScreen` to use `FlatList` for better rendering of large item lists.
+- **Components**: Added `ShopItemCard` and `PremiumBanner` as modular components.
+- **UX**: Improved visual feedback for equipping items and purchasing.
+
+
 ## [2025-12-30] Shop UI & Système d'Amis Corrigé 🛒🤝
 
 ### Boutique (Shop)

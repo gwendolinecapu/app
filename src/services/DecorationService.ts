@@ -309,9 +309,10 @@ class DecorationService {
                 id: decorationId,
                 type: 'decoration',
                 name: decoration.name,
+                description: decoration.description,
                 priceCredits: decoration.priceCredits,
                 // custom param to avoid recursive loops if purchaseItem calls back here
-            }, false); // Pass false to say "Don't trigger generic purchase logic again" if needed?
+            }, false);
             // Actually CreditService.purchaseItem calls grant logic? 
             // We need to detangle this.
             // CreditService.purchaseItem handles "Deduct credits" AND "Apply effect".

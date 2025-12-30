@@ -1,7 +1,3 @@
-/**
- * Atelier - Personnalisation & Style (Discord Style)
- */
-
 import React, { useState } from 'react';
 import {
     View,
@@ -9,7 +5,6 @@ import {
     StyleSheet,
     TouchableOpacity,
     ScrollView,
-    Image,
     Alert,
     Dimensions
 } from 'react-native';
@@ -17,10 +12,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
-import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
+import { colors, spacing } from '../../src/lib/theme';
 import { triggerHaptic } from '../../src/lib/haptics';
 import { useMonetization } from '../../src/contexts/MonetizationContext';
+import { useAuth } from '../../src/contexts/AuthContext';
 import { ShopItem } from '../../src/services/MonetizationTypes';
 import { SHOP_ITEMS } from '../../src/services/ShopData';
 
@@ -33,12 +28,15 @@ export default function ShopScreen() {
     const router = useRouter();
     const {
         credits,
-        addCredits,
+        addCredits, // Not used directly, reward ad handles it
         isPremium,
         purchaseItem,
         presentPaywall,
-        loading
+        loading,
+        watchRewardAd
     } = useMonetization();
+    const { currentAlter } = useAuth();
+
     const [activeCategory, setActiveCategory] = useState<ShopCategory>('themes');
     const [adLoading, setAdLoading] = useState(false);
 
@@ -48,6 +46,11 @@ export default function ShopScreen() {
 
     const handlePurchase = async (item: ShopItem) => {
         triggerHaptic.selection();
+
+        if (!currentAlter && item.type === 'decoration') {
+            Alert.alert("Mode Système", "Veuillez sélectionner un alter pour acheter des décorations.");
+            return;
+        }
 
         if (item.isPremium && !isPremium) {
             Alert.alert(
@@ -62,15 +65,24 @@ export default function ShopScreen() {
         }
 
         if (item.isPremium && isPremium) {
-            // Already owned/unlocked by premium logic, but let's simulate 'equip' or 'purchase for 0' if needed
-            // For now, assume it's "Free with Premium" so we just confirm
-            Alert.alert("Premium", "Cet objet est inclus dans votre abonnement !");
-            // Logic to equip would go here
-            return;
+            // Already owned/unlocked by premium logic check logic below
+            // Logic to equip would go here or just say "Inclus".
+            // If it's a decoration, we might still "claim" it for 0 cost so it shows in owned_items?
+            // Or just consider it owned always.
+            // For now, let's treat it as purchase required (price 0 or skipped).
         }
 
         // Credit Purchase
-        const success = await purchaseItem(item);
+        const alterId = item.type === 'decoration' ? currentAlter?.id : undefined;
+
+        // Check if already owned logic is handled in service, but we can check here too
+        const isOwned = currentAlter?.owned_items?.includes(item.id);
+        if (isOwned) {
+            Alert.alert("Déjà possédé", "Vous avez déjà cet objet !");
+            return;
+        }
+
+        const success = await purchaseItem(item, alterId);
         if (success) {
             triggerHaptic.success();
             Alert.alert("Succès", `Vous avez obtenu : ${item.name}`);
@@ -81,15 +93,20 @@ export default function ShopScreen() {
     };
 
     const handleWatchAd = async () => {
+        if (!currentAlter) {
+            Alert.alert("Mode Système", "Veuillez sélectionner un alter pour recevoir la récompense.");
+            return;
+        }
         triggerHaptic.selection();
         setAdLoading(true);
-        // Simulate Ad
-        setTimeout(() => {
+        try {
+            await watchRewardAd(currentAlter.id);
+            // Result handled in context (alerts etc)
+        } catch (e) {
+            // Error logged
+        } finally {
             setAdLoading(false);
-            addCredits(50, 'reward_ad');
-            triggerHaptic.success();
-            Alert.alert("Récompense", "Merci d'avoir regardé ! +50 crédits ajoutés.");
-        }, 2000);
+        }
     };
 
     const renderCategoryTab = (category: ShopCategory, label: string) => (
@@ -111,6 +128,13 @@ export default function ShopScreen() {
 
     const renderItem = (item: ShopItem) => {
         const isUnlocked = item.isPremium && isPremium;
+        const isOwned = currentAlter?.owned_items?.includes(item.id);
+        const showAsOwned = isOwned || (item.isPremium && isPremium); // If premium, maybe always show accessible? Or need claim?
+        // Let's assume need claim for now for consistency, or if simple model, premium = access.
+        // Given Requirements "uniquely owned... by specific Alter", premium status is system-wide.
+        // If item is premium, maybe it bypasses cost but still needs "add to inventory"?
+        // Or if it's strictly premium, maybe no inventory needed.
+        // Let's stick to "owned" check.
 
         return (
             <TouchableOpacity
@@ -139,9 +163,11 @@ export default function ShopScreen() {
                                 <Text style={styles.badgeText}>{isUnlocked ? "Inclus" : "Premium"}</Text>
                             </View>
                         ) : (
-                            <View style={styles.badge}>
-                                <Ionicons name="star" size={10} color={colors.primary} />
-                                <Text style={[styles.badgeText, { color: colors.primary }]}>{item.priceCredits}</Text>
+                            <View style={[styles.badge, isOwned && styles.badgeOwned]}>
+                                <Ionicons name={isOwned ? "checkmark" : "star"} size={10} color={isOwned ? "white" : colors.primary} />
+                                <Text style={[styles.badgeText, !isOwned && { color: colors.primary }]}>
+                                    {isOwned ? "Possédé" : item.priceCredits}
+                                </Text>
                             </View>
                         )}
                         {item.isPremium && !isPremium && (
@@ -191,6 +217,13 @@ export default function ShopScreen() {
                     </LinearGradient>
                 </TouchableOpacity>
 
+                {/* Current Alter Info */}
+                <View style={{ paddingHorizontal: spacing.md, marginBottom: spacing.sm }}>
+                    <Text style={{ color: '#aaa', fontSize: 12 }}>
+                        Achats pour : <Text style={{ color: '#fff', fontWeight: 'bold' }}>{currentAlter?.name || 'Système (Aucun alter sélectionné)'}</Text>
+                    </Text>
+                </View>
+
                 {/* Categories */}
                 <View style={styles.tabsContainer}>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.sm }}>
@@ -206,7 +239,7 @@ export default function ShopScreen() {
                 </View>
 
                 {/* Rewarded Ad CTA */}
-                <TouchableOpacity style={styles.adCard} onPress={handleWatchAd} disabled={adLoading}>
+                <TouchableOpacity style={[styles.adCard, !currentAlter && { opacity: 0.5 }]} onPress={handleWatchAd} disabled={adLoading || !currentAlter}>
                     <LinearGradient
                         colors={['#23272A', '#2C2F33']}
                         style={styles.adGradient}

@@ -128,6 +128,11 @@ export const typography = {
         fontWeight: 'normal' as const,
         color: colors.textMuted,
     },
+    tiny: {
+        fontSize: 10,
+        fontWeight: 'bold' as const,
+        color: colors.text,
+    },
     button: {
         fontSize: 16,
         fontWeight: 'bold' as const,

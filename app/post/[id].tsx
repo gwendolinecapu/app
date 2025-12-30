@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { BlurView } from 'expo-blur';
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, TextInput, Image } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PostCard } from '../../src/components/PostCard';
+import { Skeleton, SkeletonFeed } from '../../src/components/ui/Skeleton';
 import { PostService } from '../../src/services/posts';
 import { CommentService } from '../../src/services/comments';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -22,6 +24,8 @@ export default function PostDetailScreen() {
     const [loading, setLoading] = useState(true);
     const [commentText, setCommentText] = useState('');
     const [submittingComment, setSubmittingComment] = useState(false);
+
+    const headerHeight = 60 + (insets.top || 0);
 
     useEffect(() => {
         if (id) {
@@ -93,15 +97,26 @@ export default function PostDetailScreen() {
 
     if (loading) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.primary} />
-            </View>
+            <SafeAreaView style={styles.container}>
+                <View style={[styles.header, { paddingTop: 16 }]}>
+                    <ScaleButton onPress={() => router.back()} style={styles.backButton}>
+                        <Ionicons name="chevron-back" size={28} color={colors.text} />
+                    </ScaleButton>
+                    <Text style={styles.headerTitle}>Publications</Text>
+                    <View style={{ width: 40 }} />
+                </View>
+                <ScrollView contentContainerStyle={styles.content}>
+                    <SkeletonFeed />
+                    <View style={{ padding: 16 }}>
+                        <Skeleton variant="text" width={100} height={20} style={{ marginBottom: 16 }} />
+                        <SkeletonFeed />
+                    </View>
+                </ScrollView>
+            </SafeAreaView>
         );
     }
 
     if (!post) return null;
-
-
 
     return (
         <KeyboardAvoidingView
@@ -111,15 +126,19 @@ export default function PostDetailScreen() {
         >
             <Stack.Screen options={{ headerShown: false }} />
 
-            <View style={[styles.header, { paddingTop: insets.top || 16 }]}>
+            <BlurView
+                intensity={80}
+                tint="dark"
+                style={[styles.headerAbsolute, { paddingTop: insets.top || 16, height: headerHeight }]}
+            >
                 <ScaleButton onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="chevron-back" size={28} color={colors.text} />
                 </ScaleButton>
                 <Text style={styles.headerTitle}>Publications</Text>
                 <View style={{ width: 40 }} />
-            </View>
+            </BlurView>
 
-            <ScrollView contentContainerStyle={styles.content}>
+            <ScrollView contentContainerStyle={[styles.content, { paddingTop: headerHeight }]}>
                 <PostCard
                     post={post}
                     onLike={handleLike}
@@ -189,6 +208,19 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: colors.background,
+    },
+    headerAbsolute: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.1)',
     },
     header: {
         flexDirection: 'row',

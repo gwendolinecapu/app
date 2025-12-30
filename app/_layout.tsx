@@ -85,31 +85,31 @@ export default function RootLayout() {
                                                 />
                                                 {/* Settings et sous-écrans */}
                                                 <Stack.Screen name="settings/index" options={{ headerShown: false }} />
-                                                <Stack.Screen name="settings/import" options={{ headerShown: false }} />
+                                                <Stack.Screen name="settings/import" options={{ headerShown: false, presentation: 'modal' }} />
                                                 <Stack.Screen name="settings/notifications" options={{ headerShown: false }} />
 
                                                 {/* Roles */}
                                                 <Stack.Screen name="roles/index" options={{ headerShown: false }} />
-                                                <Stack.Screen name="roles/create" options={{ headerShown: false }} />
+                                                <Stack.Screen name="roles/create" options={{ headerShown: false, presentation: 'modal' }} />
 
                                                 {/* Help/Demandes d'aide */}
                                                 <Stack.Screen name="help/index" options={{ headerShown: false }} />
-                                                <Stack.Screen name="help/create" options={{ headerShown: false }} />
+                                                <Stack.Screen name="help/create" options={{ headerShown: false, presentation: 'modal' }} />
 
                                                 {/* Journal */}
                                                 <Stack.Screen name="journal/[id]" options={{ headerShown: false }} />
 
                                                 {/* Premium */}
                                                 <Stack.Screen name="premium/index" options={{ headerShown: false, presentation: 'modal' }} />
-                                                <Stack.Screen name="journal/create" options={{ headerShown: false }} />
+                                                <Stack.Screen name="journal/create" options={{ headerShown: false, presentation: 'modal' }} />
 
                                                 {/* Tasks */}
                                                 <Stack.Screen name="tasks/index" options={{ headerShown: false }} />
-                                                <Stack.Screen name="tasks/create" options={{ headerShown: false }} />
+                                                <Stack.Screen name="tasks/create" options={{ headerShown: false, presentation: 'modal' }} />
 
                                                 {/* Groups */}
                                                 <Stack.Screen name="groups/[id]" options={{ headerShown: false }} />
-                                                <Stack.Screen name="groups/create" options={{ headerShown: false }} />
+                                                <Stack.Screen name="groups/create" options={{ headerShown: false, presentation: 'modal' }} />
 
                                                 {/* Découverte et profils externes (Social) */}
                                                 <Stack.Screen name="discover/index" options={{ headerShown: false }} />

@@ -13,6 +13,9 @@ import { ImageCarousel } from './ui/ImageCarousel';
 import { FrontIndicator } from './ui/ActiveFrontBadge';
 import { ShareService } from '../services/share';
 import { ScaleButton } from './ui/ScaleButton';
+import { ReportModal } from './ReportModal';
+import { ReportingService, ReportReason } from '../services/reporting';
+import { Alert, ActionSheetIOS, Platform } from 'react-native';
 
 // =====================================================
 // POST CARD V2
@@ -44,6 +47,9 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
     // Lightbox state for image zoom
     const [lightboxVisible, setLightboxVisible] = useState(false);
     const [lightboxImageUrl, setLightboxImageUrl] = useState('');
+
+    // Report Modal specific state
+    const [reportModalVisible, setReportModalVisible] = useState(false);
 
     const isLiked = currentUserId && post.likes?.includes(currentUserId);
 
@@ -109,6 +115,57 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
         return 'image';
     };
 
+    const handleOptions = () => {
+        const options = ['Signaler', 'Annuler'];
+        const destructiveButtonIndex = 0;
+        const cancelButtonIndex = 1;
+
+        if (Platform.OS === 'ios') {
+            ActionSheetIOS.showActionSheetWithOptions(
+                {
+                    options,
+                    destructiveButtonIndex,
+                    cancelButtonIndex,
+                },
+                (buttonIndex) => {
+                    if (buttonIndex === 0) {
+                        setReportModalVisible(true);
+                    }
+                }
+            );
+        } else {
+            // Android fallback
+            Alert.alert(
+                'Options',
+                '',
+                [
+                    { text: 'Annuler', style: 'cancel' },
+                    { text: 'Signaler', style: 'destructive', onPress: () => setReportModalVisible(true) },
+                ]
+            );
+        }
+    };
+
+    const handleReportSubmit = async (reason: ReportReason, details: string) => {
+        if (!currentUserId) {
+            Alert.alert('Erreur', 'Vous devez être connecté pour signaler un contenu.');
+            return;
+        }
+        try {
+            await ReportingService.submitReport(
+                currentUserId,
+                post.id,
+                'post',
+                reason,
+                details
+            );
+            Alert.alert('Merci', 'Votre signalement a été reçu et sera examiné.');
+        } catch (error) {
+            console.error(error);
+            Alert.alert('Erreur', "Impossible d'envoyer le signalement.");
+        }
+    };
+
     const mediaType = getMediaType(post.media_url || '');
 
     return (
@@ -139,7 +196,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                             <Text style={styles.timestamp}>{timeAgo(post.created_at)}</Text>
                         </View>
                     </TouchableOpacity >
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={handleOptions} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                         <Ionicons name="ellipsis-horizontal" size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
                 </View >
@@ -245,6 +302,13 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                 visible={lightboxVisible}
                 imageUrl={lightboxImageUrl || post.media_url || ''}
                 onClose={() => setLightboxVisible(false)}
+            />
+
+            {/* Report Modal */}
+            <ReportModal
+                isVisible={reportModalVisible}
+                onClose={() => setReportModalVisible(false)}
+                onSubmit={handleReportSubmit}
             />
         </View >
     );

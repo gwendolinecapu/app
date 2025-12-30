@@ -8,6 +8,7 @@ import {
     FlatList,
     KeyboardAvoidingView,
     Platform,
+    Image,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -18,6 +19,9 @@ import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../src/lib/firebase';
 
 export default function ConversationScreen() {
     const { id, internal } = useLocalSearchParams<{ id: string; internal?: string }>();
@@ -99,6 +103,58 @@ export default function ConversationScreen() {
         }
     };
 
+    const pickImage = async () => {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                quality: 0.8,
+            });
+
+            if (!result.canceled && result.assets[0].uri) {
+                await sendImage(result.assets[0].uri);
+            }
+        } catch (error) {
+            console.error('Error picking image:', error);
+            alert('Erreur lors de la sélection de l\'image');
+        }
+    };
+
+    const sendImage = async (uri: string) => {
+        if (!currentAlter || !id) return;
+        setLoading(true);
+
+        try {
+            const response = await fetch(uri);
+            const blob = await response.blob();
+            const filename = `chat/${Date.now()}_${Math.random().toString(36).substring(7)}`;
+            const storageRef = ref(storage, filename);
+
+            await uploadBytes(storageRef, blob);
+            const downloadURL = await getDownloadURL(storageRef);
+
+            const conversationId = getConversationId(currentAlter.id, id);
+            await addDoc(collection(db, 'messages'), {
+                sender_alter_id: currentAlter.id,
+                receiver_alter_id: id,
+                systemId: user?.uid,
+                conversation_id: conversationId,
+                content: '📷 Image',
+                imageUrl: downloadURL,
+                type: 'image',
+                is_internal: internal === 'true',
+                is_read: false,
+                created_at: new Date().toISOString(),
+                system_tag: null,
+            });
+        } catch (error) {
+            console.error('Error sending image:', error);
+            alert('Erreur lors de l\'envoi de l\'image');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const sendMessage = async () => {
         if (!newMessage.trim() || !currentAlter || !id) return;
 
@@ -114,7 +170,6 @@ export default function ConversationScreen() {
                 content: newMessage.trim(),
                 is_internal: internal === 'true',
                 is_read: false,
-                created_at: new Date().toISOString(),
                 created_at: new Date().toISOString(),
                 system_tag: null,
             });
@@ -178,7 +233,16 @@ export default function ConversationScreen() {
                             {senderAlter?.name} {item.system_tag && <Text style={styles.systemTag}>• {item.system_tag}</Text>}
                         </Text>
                     )}
-                    <Text style={styles.messageText}>{item.content}</Text>
+
+                    {item.type === 'image' && item.imageUrl ? (
+                        <Image
+                            source={{ uri: item.imageUrl }}
+                            style={{ width: 200, height: 200, borderRadius: 8, marginBottom: 4 }}
+                            resizeMode="cover"
+                        />
+                    ) : (
+                        <Text style={styles.messageText}>{item.content}</Text>
+                    )}
 
                     {item.reactions && item.reactions.length > 0 && (
                         <View style={styles.reactionsContainer}>
@@ -255,6 +319,22 @@ export default function ConversationScreen() {
             />
 
             <View style={styles.inputContainer}>
+                <TouchableOpacity
+                    style={styles.mediaButton}
+                    onPress={pickImage}
+                    disabled={loading}
+                >
+                    <Ionicons name="image-outline" size={24} color={colors.primary} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={styles.mediaButton}
+                    onPress={() => alert('Fonctionnalité GIF à venir !')}
+                    disabled={loading}
+                >
+                    <Ionicons name="happy-outline" size={24} color={colors.primary} />
+                </TouchableOpacity>
+
                 <TextInput
                     style={styles.input}
                     placeholder="Écrire un message..."
@@ -272,7 +352,7 @@ export default function ConversationScreen() {
                     onPress={sendMessage}
                     disabled={loading || !newMessage.trim()}
                 >
-                    <Text style={styles.sendButtonText}>→</Text>
+                    <Ionicons name="send" size={20} color={colors.text} />
                 </TouchableOpacity>
             </View>
         </KeyboardAvoidingView>
@@ -430,6 +510,12 @@ const styles = StyleSheet.create({
         color: colors.text,
         fontSize: 20,
         fontWeight: 'bold',
+    },
+    mediaButton: {
+        marginRight: spacing.sm,
+        padding: spacing.xs,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     systemTag: {
         fontWeight: 'normal',

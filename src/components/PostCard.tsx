@@ -9,14 +9,19 @@ import { triggerHaptic } from '../lib/haptics';
 import { VideoPlayer } from './ui/VideoPlayer';
 import { AudioPlayer } from './ui/AudioPlayer';
 import { ImageLightbox } from './ui/ImageLightbox';
+import { ImageCarousel } from './ui/ImageCarousel';
+import { FrontIndicator } from './ui/ActiveFrontBadge';
+import { ShareService } from '../services/share';
 
 // =====================================================
-// POST CARD
-// Composant de post réutilisable avec:
+// POST CARD V2
+// Composant de post complet avec:
 // - Double tap to like
 // - Navigation vers profil auteur
-// - Support vidéo/audio/image
+// - Support vidéo/audio/image/carousel
 // - Lightbox pour les images
+// - Badge "En Front" pour auteur actif
+// - Partage natif
 // =====================================================
 
 interface PostCardProps {
@@ -37,8 +42,17 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
 
     // Lightbox state for image zoom
     const [lightboxVisible, setLightboxVisible] = useState(false);
+    const [lightboxImageUrl, setLightboxImageUrl] = useState('');
 
     const isLiked = currentUserId && post.likes?.includes(currentUserId);
+
+    // Check if post has multiple images
+    const hasMultipleImages = post.media_urls && post.media_urls.length > 1;
+    const allImages = hasMultipleImages
+        ? post.media_urls
+        : post.media_url
+            ? [post.media_url]
+            : [];
 
     const onDoubleTap = (event: any) => {
         if (event.nativeEvent.state === State.ACTIVE) {
@@ -68,6 +82,23 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
         }
     };
 
+    // Handle share with native sharing
+    const handleShare = async () => {
+        triggerHaptic.selection();
+        if (onShare) {
+            onShare(post.id);
+        } else {
+            // Use native share if no custom handler
+            await ShareService.sharePost(post.id, post.content, post.author_name || 'Utilisateur');
+        }
+    };
+
+    // Handle image press from carousel
+    const handleImagePress = (index: number, imageUrl: string) => {
+        setLightboxImageUrl(imageUrl);
+        setLightboxVisible(true);
+    };
+
     // Determine media type from URL extension
     const getMediaType = (url: string) => {
         if (!url) return 'none';
@@ -85,15 +116,25 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
             {showAuthor && (
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.authorInfo} onPress={handleAuthorPress} activeOpacity={0.7}>
-                        {post.author_avatar ? (
-                            <Image source={{ uri: post.author_avatar }} style={styles.avatar} />
-                        ) : (
-                            <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
-                                <Text style={styles.avatarInitial}>{post.author_name?.charAt(0)}</Text>
-                            </View>
-                        )}
+                        {/* Avatar with Front Indicator */}
+                        <FrontIndicator isFronting={post.is_author_fronting || false}>
+                            {post.author_avatar ? (
+                                <Image source={{ uri: post.author_avatar }} style={styles.avatar} />
+                            ) : (
+                                <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
+                                    <Text style={styles.avatarInitial}>{post.author_name?.charAt(0)}</Text>
+                                </View>
+                            )}
+                        </FrontIndicator>
                         <View>
-                            <Text style={styles.authorName}>{post.author_name || 'Système'}</Text>
+                            <View style={styles.authorNameRow}>
+                                <Text style={styles.authorName}>{post.author_name || 'Système'}</Text>
+                                {post.is_author_fronting && (
+                                    <View style={styles.frontBadge}>
+                                        <Text style={styles.frontBadgeText}>En front</Text>
+                                    </View>
+                                )}
+                            </View>
                             <Text style={styles.timestamp}>{timeAgo(post.created_at)}</Text>
                         </View>
                     </TouchableOpacity>
@@ -109,38 +150,51 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
             )}
 
             {/* Media Section with Double Tap to Like */}
-            {post.media_url && (
+            {(post.media_url || hasMultipleImages) && (
                 <TapGestureHandler
                     ref={doubleTapRef}
                     numberOfTaps={2}
                     onHandlerStateChange={onDoubleTap}
                 >
                     <View style={styles.mediaContainer}>
-                        {/* Image - Tap to open lightbox */}
-                        {mediaType === 'image' && (
-                            <TouchableOpacity
-                                activeOpacity={0.95}
-                                onPress={() => setLightboxVisible(true)}
-                                style={styles.mediaWrapper}
-                            >
-                                <Image
-                                    source={{ uri: post.media_url }}
-                                    style={styles.media}
-                                    resizeMode="cover"
-                                />
-                            </TouchableOpacity>
-                        )}
+                        {/* Multi-Image Carousel */}
+                        {hasMultipleImages ? (
+                            <ImageCarousel
+                                images={post.media_urls!}
+                                onImagePress={handleImagePress}
+                            />
+                        ) : (
+                            <>
+                                {/* Single Image */}
+                                {mediaType === 'image' && (
+                                    <TouchableOpacity
+                                        activeOpacity={0.95}
+                                        onPress={() => {
+                                            setLightboxImageUrl(post.media_url || '');
+                                            setLightboxVisible(true);
+                                        }}
+                                        style={styles.mediaWrapper}
+                                    >
+                                        <Image
+                                            source={{ uri: post.media_url }}
+                                            style={styles.media}
+                                            resizeMode="cover"
+                                        />
+                                    </TouchableOpacity>
+                                )}
 
-                        {/* Video Player */}
-                        {mediaType === 'video' && (
-                            <VideoPlayer uri={post.media_url} autoPlay={false} />
-                        )}
+                                {/* Video Player */}
+                                {mediaType === 'video' && (
+                                    <VideoPlayer uri={post.media_url!} autoPlay={false} />
+                                )}
 
-                        {/* Audio Player */}
-                        {mediaType === 'audio' && (
-                            <View style={styles.audioWrapper}>
-                                <AudioPlayer uri={post.media_url} />
-                            </View>
+                                {/* Audio Player */}
+                                {mediaType === 'audio' && (
+                                    <View style={styles.audioWrapper}>
+                                        <AudioPlayer uri={post.media_url!} />
+                                    </View>
+                                )}
+                            </>
                         )}
 
                         {/* Animated Heart Overlay (shown on double tap) */}
@@ -174,8 +228,8 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                         )}
                     </TouchableOpacity>
 
-                    {/* Share Button */}
-                    <TouchableOpacity style={styles.actionButton} onPress={() => onShare && onShare(post.id)}>
+                    {/* Share Button - Now functional */}
+                    <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
                         <Ionicons name="share-social-outline" size={24} color={colors.textSecondary} />
                     </TouchableOpacity>
                 </View>
@@ -184,7 +238,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
             {/* Image Lightbox Modal */}
             <ImageLightbox
                 visible={lightboxVisible}
-                imageUrl={post.media_url || ''}
+                imageUrl={lightboxImageUrl || post.media_url || ''}
                 onClose={() => setLightboxVisible(false)}
             />
         </View>
@@ -227,9 +281,26 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 16,
     },
+    authorNameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
     authorName: {
         ...typography.body,
         fontWeight: '600',
+    },
+    frontBadge: {
+        backgroundColor: '#22C55E',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+    },
+    frontBadgeText: {
+        color: 'white',
+        fontSize: 10,
+        fontWeight: '700',
+        textTransform: 'uppercase',
     },
     timestamp: {
         ...typography.caption,

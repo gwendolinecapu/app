@@ -36,6 +36,25 @@
   - Upload vers Firebase Storage
   - Preview avant publication
 
+### Phase 5 : Polish Features
+- **`src/components/ui/ImageCarousel.tsx`** : Carrousel swipeable multi-images
+  - Pagination dots animés
+  - Support tap pour lightbox
+- **`src/services/share.ts`** : Service de partage natif
+  - `sharePost()` - Partage posts avec deep link
+  - `shareAlterProfile()` - Partage profils
+  - `shareStory()` - Partage stories
+  - Fallback clipboard
+- **`src/components/ui/ActiveFrontBadge.tsx`** : Badge "En Front"
+  - Indicateur vert pour auteurs actuellement en front
+  - `FrontIndicator` wrapper pour avatars
+
+### Améliorations PostCard V2
+- Support `media_urls[]` pour carrousel multi-images
+- Badge "En front" dans header si `is_author_fronting`
+- Bouton partage fonctionnel avec ShareService
+- Lightbox individuel pour chaque image du carrousel
+
 ### Intégration Dashboard
 - **`app/(tabs)/dashboard.tsx`** : StoriesBar + Feed + StoryViewer en mode "feed"
 

@@ -5,6 +5,16 @@
 - **Security**: Added missing Firestore security rules for `user_monetization` and `comments` collections.
 - **Monetization**: Fixed initialization failures in `PremiumService` and `CreditService` due to missing permissions.
 
+## [Unreleased] - UI Polish & Improvements
+### Added
+- **Foundational UI Components**:
+  - `Skeleton.tsx`: Advanced skeleton loader with reanimated variants (`rect`, `circle`, `text`) and compositions (`SkeletonFeed`, `SkeletonProfile`).
+  - `EmptyState.tsx`: Reusable component for empty states with illustrations and actions.
+  - `ScaleButton.tsx`: Interactive button with scale animation and haptic feedback.
+### Changed
+- Integrated new UI components into `Feed`, `Profile` (internal), and `ExternalProfile` screens for a smoother experience.
+- Improved loading states and empty data presentations across main tabs.
+
 ## [2025-12-30] Friend System & Search Overhaul
 ### Fixed
 - **Own-System Friends**: Removed limitation that prevented adding alters from the same system as friends.

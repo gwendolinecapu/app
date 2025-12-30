@@ -18,7 +18,8 @@ import { Post } from '../types';
 import { PostCard } from './PostCard';
 import { NativeAdCard } from './ads/NativeAdCard';
 import { CommentsModal } from './CommentsModal';
-import { Skeleton } from './ui/Skeleton';
+import { Skeleton, SkeletonFeed } from './ui/Skeleton';
+import { EmptyState } from './ui/EmptyState';
 import { colors, spacing, typography, borderRadius } from '../lib/theme';
 import { useAuth } from '../contexts/AuthContext';
 import { triggerHaptic } from '../lib/haptics';
@@ -274,7 +275,7 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent }
             <View style={styles.loadingContainer}>
                 {[1, 2, 3].map(i => (
                     <View key={i} style={{ marginBottom: spacing.md }}>
-                        <Skeleton height={300} borderRadius={12} />
+                        <SkeletonFeed />
                     </View>
                 ))}
             </View>
@@ -304,17 +305,17 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent }
                 onEndReachedThreshold={0.5}
                 ListFooterComponent={renderFooter}
                 ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <Ionicons name="newspaper-outline" size={48} color={colors.textMuted} />
-                        <Text style={styles.emptyText}>Rien à voir ici !</Text>
-                        <Text style={styles.emptySubtext}>
-                            {type === 'friends'
+                    <EmptyState
+                        icon="newspaper-outline"
+                        title="Rien à voir ici !"
+                        message={
+                            type === 'friends'
                                 ? "Suivez d'autres systèmes pour voir leurs posts ici."
                                 : type === 'system'
                                     ? "Ce système n'a pas encore posté."
-                                    : "Aucun post public pour le moment."}
-                        </Text>
-                    </View>
+                                    : "Aucun post public pour le moment."
+                        }
+                    />
                 }
                 contentContainerStyle={styles.listContent}
             />

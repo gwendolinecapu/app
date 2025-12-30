@@ -88,6 +88,17 @@ export interface Post {
     co_front_alters?: Alter[]; // Joined data for display
 }
 
+export interface Comment {
+    id: string;
+    post_id: string;
+    author_id: string;       // Alter ID or System ID
+    author_name: string;     // Denormalized for fast display
+    author_avatar?: string;
+    content: string;
+    created_at: string;
+    // Future: likes, replies
+}
+
 export interface Message {
     id: string;
     sender_alter_id: string;

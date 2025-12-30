@@ -291,6 +291,7 @@ export interface Follow {
 export interface PublicProfile {
     system_id: string;       // Référence vers systems
     display_name: string;    // Nom public du système
+    email?: string;          // Email pour la recherche (optionnel pour la vie privée)
     bio?: string;
     avatar_url?: string;
     is_public: boolean;      // Profil visible dans découverte (false par défaut)

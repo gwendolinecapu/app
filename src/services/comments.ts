@@ -122,3 +122,6 @@ export const CommentsService = {
     fetchComments,
     deleteComment,
 };
+
+// Alias for backward compatibility and easier imports
+export const CommentService = CommentsService;

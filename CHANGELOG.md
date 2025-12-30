@@ -1,7 +1,21 @@
 # Changelog
 
-## [2025-12-30]
-- **Profile 2.0 Enhancements**:
+## [2025-12-30] Friend System & Search Overhaul
+### Fixed
+- **Own-System Friends**: Removed limitation that prevented adding alters from the same system as friends.
+- **Search Logic**: Replaced the random 20 results with a more robust 50-result fetch and client-side filtering.
+- **Email Search**: Enabled email-based searching via `public_profiles` (requires profile updates).
+
+### Added
+- **System Following**: Integrated `FollowService` into the search screen. Users can now follow entire systems as well as add individual alters.
+- **Visual Feedback**: Added clear indicators in search results (type of entity, "Your system" tag).
+- **Navigation**: Search results now link directly to the correct profile or alter-space.
+- **Data Model**: Added `email` to `PublicProfile` for improved discoverability.
+
+- **Profile 2.0 Enhancements & Fixes**:
+    - Fixed crash in Post Detail view (service naming and parameter alignment).
+    - Removed redundant Expo Router header in Post Detail view.
+    - Improved header padding using `useSafeAreaInsets` for notched devices.
     - Redesigned the "Edit Profile" interface with "Identity" and "Appearance" sections.
     - Added `birthDate` and `arrivalDate` fields to the Alter profile.
     - Implemented visual "Cosmetic Cards" for equipped items (Theme, Frame, Bubble).
@@ -634,6 +648,18 @@ Ajouter les 7 receivers dans AndroidManifest.xml
 ### Intégration UX
 - **Alter Space** : Menu hamburger enrichi avec accès direct "Historique & Stats" (Badge "NOUVEAU").
 - **Visualisations** : Graphiques interactifs (LineChart, BarChart, PieChart) avec `react-native-chart-kit`.
+
+## [2025-12-30] Raffinement Esthétique & Clarté de la Boutique ✨
+
+### Améliorations de Visibilité
+- **Items Verrouillés** : Suppression de l'effet `BlurView` sur les objets verrouillés. Ils sont maintenant 100% nets pour permettre de mieux apprécier le produit avant achat.
+- **Échelle des Previews** : Augmentation drastique de la taille des prévisualisations pour tous les objets (Thèmes +25%, Cadres +30%, Bulles +50%).
+- **Clarté du Produit** : Ajout de la description de l'objet directement sur la carte pour donner plus de contexte à l'utilisateur.
+
+### Redesign "Premium"
+- **Boutons d'Action** : Refonte complète des pilules de prix et de possession. Utilisation de couleurs pleines (Or pour les crédits, Rose pour le Premium) avec ombres portées pour un aspect plus cliquable et luxueux.
+- **Glassmorphism** : Ajustement des bordures et des opacités pour un rendu plus cristallin et haut de gamme.
+- **Typographie** : Augmentation de la taille du titre des objets pour une meilleure lisibilité.
 
 ## [2025-12-30] Cosmétiques Animées & Boutique Premium 💎
 

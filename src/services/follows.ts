@@ -180,6 +180,7 @@ export async function createOrUpdatePublicProfile(
         await setDoc(profileRef, {
             system_id: systemId,
             display_name: data.display_name || 'Système',
+            email: data.email || null,
             bio: data.bio || null,
             avatar_url: data.avatar_url || null,
             is_public: data.is_public ?? false, // Privé par défaut
@@ -230,8 +231,11 @@ export async function searchUsers(searchQuery: string, maxResults: number = 20):
 
     snapshot.forEach(doc => {
         const profile = doc.data() as PublicProfile;
-        // Filtrer par nom (case insensitive)
-        if (profile.display_name.toLowerCase().includes(normalizedQuery)) {
+        // Filtrer par nom ou email (case insensitive)
+        const nameMatch = profile.display_name.toLowerCase().includes(normalizedQuery);
+        const emailMatch = profile.email?.toLowerCase().includes(normalizedQuery);
+
+        if (nameMatch || emailMatch) {
             profiles.push(profile);
         }
     });

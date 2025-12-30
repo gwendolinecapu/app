@@ -61,7 +61,26 @@ export interface Alter {
         theme?: string;
         bubble?: string;
     };
+
+    // Advanced Tools (Phase 11)
+    primers?: Primer[];
+    relationships?: Relationship[];
 }
+
+export interface Primer {
+    id: string;
+    label: string; // e.g. "Triggers", "Fronting Tips"
+    content: string;
+    color?: string;
+}
+
+export interface Relationship {
+    target_alter_id: string;
+    type: RelationshipType;
+    description?: string;
+}
+
+export type RelationshipType = 'friend' | 'partner' | 'family' | 'enemy' | 'work' | 'other';
 
 export interface Post {
     id: string;

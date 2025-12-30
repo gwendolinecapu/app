@@ -28,6 +28,7 @@ export const colors = {
     // États et feedback
     success: '#22C55E',       // Vert - succès, validation
     error: '#EF4444',         // Rouge - erreurs
+    errorBackground: '#391818', // Rouge foncé - fond erreurs / SOS
     warning: '#F59E0B',       // Orange - avertissements
     info: '#3B82F6',          // Bleu - informations
 

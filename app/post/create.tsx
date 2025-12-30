@@ -18,8 +18,11 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { PostService } from '../../src/services/posts';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
+import { VoiceNoteRecorder } from '../../src/components/ui/VoiceNoteRecorder';
+import { VideoPlayer } from '../../src/components/ui/VideoPlayer';
+import { AudioPlayer } from '../../src/components/ui/AudioPlayer';
 
-type PostType = 'text' | 'photo' | 'video';
+type PostType = 'text' | 'photo' | 'video' | 'audio';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -30,6 +33,7 @@ export default function CreatePostScreen() {
     const [postType, setPostType] = useState<PostType>('text');
     const [content, setContent] = useState('');
     const [mediaUri, setMediaUri] = useState<string | null>(null);
+    const [audioUri, setAudioUri] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [isDraftLoaded, setIsDraftLoaded] = useState(false);
 
@@ -39,11 +43,10 @@ export default function CreatePostScreen() {
 
     useEffect(() => {
         // Auto-save draft when content changes
-        // Only save if draft has been checked/loaded to avoid overwriting with empty state on init
         if (isDraftLoaded) {
             saveDraft();
         }
-    }, [content, mediaUri, postType, isDraftLoaded]);
+    }, [content, mediaUri, audioUri, postType, isDraftLoaded]);
 
     const checkDraft = async () => {
         try {
@@ -51,7 +54,7 @@ export default function CreatePostScreen() {
             if (draftJson) {
                 const draft = JSON.parse(draftJson);
                 // Check if draft has meaningful content
-                if (draft.content || draft.mediaUri) {
+                if (draft.content || draft.mediaUri || draft.audioUri) {
                     Alert.alert(
                         'Brouillon trouvé',
                         'Voulez-vous reprendre votre dernier post ?',
@@ -69,6 +72,7 @@ export default function CreatePostScreen() {
                                 onPress: () => {
                                     setContent(draft.content || '');
                                     setMediaUri(draft.mediaUri || null);
+                                    setAudioUri(draft.audioUri || null);
                                     setPostType(draft.postType || 'text');
                                     setIsDraftLoaded(true);
                                 }
@@ -87,15 +91,13 @@ export default function CreatePostScreen() {
 
     const saveDraft = async () => {
         try {
-            if (!content && !mediaUri) {
-                // If empty, maybe clear it? Or just ignore.
-                // Let's clear it if strictly empty to keep storage clean
-                // But normally we only clear on explicit action or post success
+            if (!content && !mediaUri && !audioUri) {
                 return;
             }
             const draft = {
                 content,
                 mediaUri,
+                audioUri,
                 postType,
                 timestamp: Date.now(),
             };
@@ -126,11 +128,13 @@ export default function CreatePostScreen() {
     }, []);
 
     const pickMedia = async (type: 'photo' | 'video') => {
+        // If we switch to photo/video, clear audio
+        setAudioUri(null);
+
         let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: type === 'photo' ? ['images'] : ['videos'],
-            allowsEditing: true,
-            aspect: type === 'photo' ? [4, 5] : undefined, // Portrait ratio for instagram feel
-            quality: 0.8,
+            mediaTypes: type === 'photo' ? ImagePicker.MediaTypeOptions.Images : ImagePicker.MediaTypeOptions.Videos,
+            allowsEditing: false, // Disabled to support GIFs and original aspect ratios
+            quality: 0.8, // Basic compression
         });
 
         if (!result.canceled) {
@@ -139,8 +143,18 @@ export default function CreatePostScreen() {
         }
     };
 
+    const handleVoiceRecording = (uri: string | null) => {
+        if (uri) {
+            setAudioUri(uri);
+            // Clear other media
+            setMediaUri(null);
+        } else {
+            setAudioUri(null);
+        }
+    };
+
     const handlePost = async () => {
-        if (!content.trim() && !mediaUri) {
+        if (!content.trim() && !mediaUri && !audioUri) {
             Alert.alert('Erreur', 'Ajoutez du contenu à votre post !');
             return;
         }
@@ -150,7 +164,7 @@ export default function CreatePostScreen() {
             return;
         }
 
-        // Validation check for active front, though it should be set
+        // Validation check for active front
         if (!activeFront) {
             Alert.alert('Erreur', 'Aucun alter actif détecté');
             return;
@@ -162,14 +176,12 @@ export default function CreatePostScreen() {
             let mediaUrl = undefined;
 
             if (mediaUri) {
-                // Use PostService for upload if implementing fully, or keep raw logic here but usually better to separate
-                // For now, let's keep using the service
                 mediaUrl = await PostService.uploadImage(mediaUri, system.id);
+            } else if (audioUri) {
+                mediaUrl = await PostService.uploadAudio(audioUri, system.id);
             }
 
             // Construct post data based on activeFront
-            // IMPORTANT: Firestore n'accepte pas les valeurs undefined
-            // On n'inclut media_url que si elle existe
             const postData: any = {
                 system_id: system.id,
                 content: content.trim(),
@@ -177,7 +189,7 @@ export default function CreatePostScreen() {
                 author_type: activeFront.type,
             };
 
-            // Ajouter media_url seulement si elle existe (Firestore rejette undefined)
+            // Ajouter media_url seulement si elle existe
             if (mediaUrl) {
                 postData.media_url = mediaUrl;
             }
@@ -186,7 +198,6 @@ export default function CreatePostScreen() {
                 postData.alter_id = activeFront.alters[0].id;
             } else if (activeFront.type === 'co-front') {
                 postData.co_front_alter_ids = activeFront.alters.map(a => a.id);
-                // Optionally set primary alter_id as the first one for indexing/display fallback
                 if (activeFront.alters.length > 0) postData.alter_id = activeFront.alters[0].id;
             } else if (activeFront.type === 'blurry') {
                 // No specific alter_id
@@ -210,7 +221,11 @@ export default function CreatePostScreen() {
         <View style={styles.typeSelector}>
             <TouchableOpacity
                 style={[styles.typeButton, postType === 'text' && styles.typeButtonActive]}
-                onPress={() => setPostType('text')}
+                onPress={() => {
+                    setPostType('text');
+                    setMediaUri(null);
+                    setAudioUri(null);
+                }}
             >
                 <Ionicons name="text" size={20} color={postType === 'text' ? colors.primary : colors.textSecondary} />
                 <Text style={[styles.typeText, postType === 'text' && styles.typeTextActive]}>Tweet</Text>
@@ -231,6 +246,17 @@ export default function CreatePostScreen() {
                 <Ionicons name="videocam" size={20} color={postType === 'video' ? colors.primary : colors.textSecondary} />
                 <Text style={[styles.typeText, postType === 'video' && styles.typeTextActive]}>Vidéo</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+                style={[styles.typeButton, postType === 'audio' && styles.typeButtonActive]}
+                onPress={() => {
+                    setPostType('audio');
+                    setMediaUri(null);
+                }}
+            >
+                <Ionicons name="mic" size={20} color={postType === 'audio' ? colors.primary : colors.textSecondary} />
+                <Text style={[styles.typeText, postType === 'audio' && styles.typeTextActive]}>Vocal</Text>
+            </TouchableOpacity>
         </View>
     );
 
@@ -246,11 +272,11 @@ export default function CreatePostScreen() {
                 <Text style={styles.headerTitle}>Nouveau post</Text>
                 <TouchableOpacity
                     onPress={handlePost}
-                    disabled={loading || (!content.trim() && !mediaUri)}
+                    disabled={loading || (!content.trim() && !mediaUri && !audioUri)}
                 >
                     <LinearGradient
                         colors={
-                            (content.trim() || mediaUri)
+                            (content.trim() || mediaUri || audioUri)
                                 ? [colors.gradientStart, colors.gradientEnd]
                                 : [colors.textMuted, colors.textMuted]
                         }
@@ -298,9 +324,32 @@ export default function CreatePostScreen() {
                 {renderTypeSelector()}
 
                 <View style={styles.contentContainer}>
+                    {/* Voice Note Recorder Section */}
+                    {postType === 'audio' && !mediaUri && (
+                        <View style={styles.recorderContainer}>
+                            <VoiceNoteRecorder
+                                onRecordingComplete={handleVoiceRecording}
+                                onCancel={() => setPostType('text')}
+                            />
+                        </View>
+                    )}
+
+                    {/* Preview Areas */}
+                    {audioUri && postType !== 'audio' && (
+                        <View style={styles.audioPreview}>
+                            <AudioPlayer uri={audioUri} />
+                            <TouchableOpacity
+                                style={styles.removeMedia}
+                                onPress={() => setAudioUri(null)}
+                            >
+                                <Ionicons name="close-circle" size={24} color={colors.text} />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
                     <TextInput
                         style={styles.input}
-                        placeholder={postType === 'text' ? "Quoi de neuf ?" : "Ajoutez une légende..."}
+                        placeholder={postType === 'audio' ? "Ajoutez une description..." : (postType === 'text' ? "Quoi de neuf ?" : "Ajoutez une légende...")}
                         placeholderTextColor={colors.textMuted}
                         value={content}
                         onChangeText={setContent}
@@ -310,7 +359,12 @@ export default function CreatePostScreen() {
 
                     {mediaUri && (
                         <View style={styles.mediaPreview}>
-                            <Image source={{ uri: mediaUri }} style={styles.mediaImage} />
+                            {postType === 'video' ? (
+                                <VideoPlayer uri={mediaUri} autoPlay={false} />
+                            ) : (
+                                <Image source={{ uri: mediaUri }} style={styles.mediaImage} />
+                            )}
+
                             <TouchableOpacity
                                 style={styles.removeMedia}
                                 onPress={() => {
@@ -320,11 +374,6 @@ export default function CreatePostScreen() {
                             >
                                 <Ionicons name="close-circle" size={24} color={colors.text} />
                             </TouchableOpacity>
-                            {postType === 'video' && (
-                                <View style={styles.videoBadge}>
-                                    <Ionicons name="play" size={20} color="#FFF" />
-                                </View>
-                            )}
                         </View>
                     )}
                 </View>
@@ -419,6 +468,7 @@ const styles = StyleSheet.create({
         ...typography.bodySmall,
         color: colors.textSecondary,
         fontWeight: '600',
+        fontSize: 11,
     },
     typeTextActive: {
         color: colors.text,
@@ -426,12 +476,16 @@ const styles = StyleSheet.create({
     contentContainer: {
         flex: 1,
     },
+    recorderContainer: {
+        marginBottom: spacing.md,
+    },
     input: {
         ...typography.body,
         fontSize: 18,
         textAlignVertical: 'top',
         minHeight: 100,
         marginBottom: spacing.md,
+        marginTop: spacing.md,
     },
     mediaPreview: {
         width: '100%',
@@ -446,12 +500,17 @@ const styles = StyleSheet.create({
         height: '100%',
         resizeMode: 'cover',
     },
+    audioPreview: {
+        marginBottom: spacing.md,
+        position: 'relative',
+    },
     removeMedia: {
         position: 'absolute',
         top: spacing.md,
         right: spacing.md,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(255,255,255,0.8)',
         borderRadius: 12,
+        zIndex: 10,
     },
     videoBadge: {
         position: 'absolute',

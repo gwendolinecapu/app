@@ -33,6 +33,9 @@ import { EmotionService } from '../../../src/services/emotions';
 import { useToast } from '../../../src/components/ui/Toast';
 import { triggerHaptic } from '../../../src/lib/haptics';
 import { timeAgo } from '../../../src/lib/date';
+import { SecureContainer } from '../../../src/components/security/SecureContainer';
+import { AlterPrimers } from '../../../src/components/AlterPrimers';
+import { SystemRelationships } from '../../../src/components/SystemRelationships';
 
 const { width } = Dimensions.get('window');
 const MAX_WIDTH = 430;
@@ -351,6 +354,12 @@ export default function AlterSpaceScreen() {
                     {alter.bio ? (
                         <Text style={styles.bioText}>{alter.bio || "Aucune biographie"}</Text>
                     ) : null}
+
+                    {/* Phase 11: Advanced Tools */}
+                    <View style={{ marginTop: spacing.md }}>
+                        <AlterPrimers alter={alter} editable={isOwner} />
+                        <SystemRelationships alter={alter} editable={isOwner} />
+                    </View>
                 </View>
 
                 {/* Action Buttons */}
@@ -498,17 +507,19 @@ export default function AlterSpaceScreen() {
     );
 
     const renderJournal = () => (
-        <ScrollView style={styles.tabContent}>
-            <Text style={styles.sectionTitle}>Journal de {alter.name}</Text>
-            <View style={styles.emptyState}>
-                <Ionicons name="book-outline" size={64} color={colors.textMuted} />
-                <Text style={styles.emptyTitle}>Journal personnel</Text>
-                <Text style={styles.emptySubtitle}>
-                    Les entrées du journal de {alter.name} apparaîtront ici.
-                    Ce journal est privé et indépendant des autres alters.
-                </Text>
-            </View>
-        </ScrollView>
+        <SecureContainer title="Journal Privé" subtitle="Authentification requise">
+            <ScrollView style={styles.tabContent}>
+                <Text style={styles.sectionTitle}>Journal de {alter.name}</Text>
+                <View style={styles.emptyState}>
+                    <Ionicons name="book-outline" size={64} color={colors.textMuted} />
+                    <Text style={styles.emptyTitle}>Journal personnel</Text>
+                    <Text style={styles.emptySubtitle}>
+                        Les entrées du journal de {alter.name} apparaîtront ici.
+                        Ce journal est privé et indépendant des autres alters.
+                    </Text>
+                </View>
+            </ScrollView>
+        </SecureContainer>
     );
 
     const renderMessages = () => (
@@ -534,85 +545,87 @@ export default function AlterSpaceScreen() {
 
 
     const renderGallery = () => (
-        <View style={styles.tabContent}>
-            {/* Header Galerie */}
-            <View style={styles.galleryHeader}>
-                <Text style={styles.sectionTitle}>Ma Galerie Privée</Text>
-                <TouchableOpacity
-                    style={styles.addPhotoButton}
-                    onPress={handleAddPhoto}
-                >
-                    <Ionicons name="add-circle" size={28} color={colors.primary} />
-                </TouchableOpacity>
-            </View>
-
-            {/* Info Stockage */}
-            <View style={styles.storageInfo}>
-                <Ionicons name="phone-portrait-outline" size={16} color={colors.textSecondary} />
-                <Text style={styles.storageText}>
-                    Stockage local uniquement
-                </Text>
-                <TouchableOpacity
-                    style={styles.cloudBadge}
-                    onPress={() => {
-                        toast.showToast('Option Cloud disponible avec Premium', 'info');
-                    }}
-                >
-                    <Ionicons name="cloud-outline" size={14} color={colors.textMuted} />
-                    <Text style={styles.cloudBadgeText}>Premium</Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* Grille de photos */}
-            {galleryImages.length > 0 ? (
-                <ScrollView showsVerticalScrollIndicator={false}>
-                    <View style={styles.galleryGrid}>
-                        {galleryImages.map((img, index) => (
-                            <TouchableOpacity
-                                key={img.id}
-                                style={styles.galleryItem}
-                                onPress={() => {
-                                    setFullScreenImage(img.uri);
-                                    triggerHaptic.selection();
-                                }}
-                            >
-                                <Image source={{ uri: img.uri }} style={styles.galleryImage} />
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </ScrollView>
-            ) : (
-                <View style={styles.emptyState}>
-                    <Ionicons name="images-outline" size={64} color={colors.textMuted} />
-                    <Text style={styles.emptyTitle}>Galerie Privée</Text>
-                    <Text style={styles.emptySubtitle}>
-                        Ajoutez des photos personnelles à la galerie de {alter.name}.{'\n'}
-                        Les photos sont stockées uniquement sur votre téléphone.
-                    </Text>
+        <SecureContainer title="Galerie Privée" subtitle="Authentification requise">
+            <View style={styles.tabContent}>
+                {/* Header Galerie */}
+                <View style={styles.galleryHeader}>
+                    <Text style={styles.sectionTitle}>Ma Galerie Privée</Text>
                     <TouchableOpacity
-                        style={styles.startChatButton}
+                        style={styles.addPhotoButton}
                         onPress={handleAddPhoto}
                     >
-                        <Ionicons name="add" size={20} color="#fff" />
-                        <Text style={styles.startChatText}>Ajouter une photo</Text>
+                        <Ionicons name="add-circle" size={28} color={colors.primary} />
                     </TouchableOpacity>
-
-                    {/* Section Premium Cloud */}
-                    <View style={styles.premiumSection}>
-                        <View style={styles.premiumHeader}>
-                            <Ionicons name="cloud" size={20} color={colors.primary} />
-                            <Text style={styles.premiumTitle}>Sauvegarde Cloud</Text>
-                            <View style={styles.premiumBadge}>
-                                <Text style={styles.premiumBadgeText}>Premium</Text>
-                            </View>
-                        </View>
-                        <Text style={styles.premiumDescription}>
-                            Synchronisez vos photos sur le cloud pour y accéder depuis tous vos appareils.
-                        </Text>
-                    </View>
                 </View>
-            )}
-        </View>
+
+                {/* Info Stockage */}
+                <View style={styles.storageInfo}>
+                    <Ionicons name="phone-portrait-outline" size={16} color={colors.textSecondary} />
+                    <Text style={styles.storageText}>
+                        Stockage local uniquement
+                    </Text>
+                    <TouchableOpacity
+                        style={styles.cloudBadge}
+                        onPress={() => {
+                            toast.showToast('Option Cloud disponible avec Premium', 'info');
+                        }}
+                    >
+                        <Ionicons name="cloud-outline" size={14} color={colors.textMuted} />
+                        <Text style={styles.cloudBadgeText}>Premium</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Grille de photos */}
+                {galleryImages.length > 0 ? (
+                    <ScrollView showsVerticalScrollIndicator={false}>
+                        <View style={styles.galleryGrid}>
+                            {galleryImages.map((img, index) => (
+                                <TouchableOpacity
+                                    key={img.id}
+                                    style={styles.galleryItem}
+                                    onPress={() => {
+                                        setFullScreenImage(img.uri);
+                                        triggerHaptic.selection();
+                                    }}
+                                >
+                                    <Image source={{ uri: img.uri }} style={styles.galleryImage} />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </ScrollView>
+                ) : (
+                    <View style={styles.emptyState}>
+                        <Ionicons name="images-outline" size={64} color={colors.textMuted} />
+                        <Text style={styles.emptyTitle}>Galerie Privée</Text>
+                        <Text style={styles.emptySubtitle}>
+                            Ajoutez des photos personnelles à la galerie de {alter.name}.{'\n'}
+                            Les photos sont stockées uniquement sur votre téléphone.
+                        </Text>
+                        <TouchableOpacity
+                            style={styles.startChatButton}
+                            onPress={handleAddPhoto}
+                        >
+                            <Ionicons name="add" size={20} color="#fff" />
+                            <Text style={styles.startChatText}>Ajouter une photo</Text>
+                        </TouchableOpacity>
+
+                        {/* Section Premium Cloud */}
+                        <View style={styles.premiumSection}>
+                            <View style={styles.premiumHeader}>
+                                <Ionicons name="cloud" size={20} color={colors.primary} />
+                                <Text style={styles.premiumTitle}>Sauvegarde Cloud</Text>
+                                <View style={styles.premiumBadge}>
+                                    <Text style={styles.premiumBadgeText}>Premium</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.premiumDescription}>
+                                Synchronisez vos photos sur le cloud pour y accéder depuis tous vos appareils.
+                            </Text>
+                        </View>
+                    </View>
+                )}
+            </View>
+        </SecureContainer>
     );
 
     const renderEmotions = () => {

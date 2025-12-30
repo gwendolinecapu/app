@@ -19,12 +19,20 @@ import { db } from '../../src/lib/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { triggerHaptic } from '../../src/lib/haptics';
 import * as Clipboard from 'expo-clipboard';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SettingsScreen() {
     const { signOut, system } = useAuth();
     const { isPremium, presentPaywall, presentCustomerCenter } = useMonetization();
     const [notifications, setNotifications] = useState(true);
     const [theme, setTheme] = useState('dark');
+    const [privacyBlurEnabled, setPrivacyBlurEnabled] = useState(true);
+
+    React.useEffect(() => {
+        AsyncStorage.getItem('privacy_blur_enabled').then(val => {
+            if (val !== null) setPrivacyBlurEnabled(val === 'true');
+        });
+    }, []);
 
     const handleSubscriptionAction = async () => {
         triggerHaptic.selection();
@@ -173,10 +181,10 @@ export default function SettingsScreen() {
                 <Text style={styles.sectionTitle}>Compte</Text>
                 <View style={styles.section}>
                     {renderSettingItem("Email", "mail-outline", () => { }, system?.email)}
-                    {renderSettingItem("Système", "planet-outline", () => { }, system?.username)}
+                    {renderSettingItem("Système", "planet-outline", () => router.push('/settings/edit-system' as any), system?.username)}
                     {renderSettingItem("Copier mon ID", "copy-outline", handleCopySystemId)}
                     {renderSettingItem("Utilisateurs bloqués", "shield-outline", () => router.push('/settings/blocked' as any))}
-                    {renderSettingItem("Mot de passe", "lock-closed-outline", () => Alert.alert("Info", "Modification bientôt disponible"))}
+                    {renderSettingItem("Sécurité et données", "lock-closed-outline", () => router.push('/settings/security' as any))}
                 </View>
 
                 {/* App Settings */}
@@ -186,6 +194,16 @@ export default function SettingsScreen() {
                         triggerHaptic.medium();
                         setNotifications(!notifications);
                     }, notifications)}
+                    {renderSettingItem("Protection écran (Flou)", "eye-off-outline", async () => {
+                        try {
+                            const newVal = !privacyBlurEnabled;
+                            setPrivacyBlurEnabled(newVal);
+                            await AsyncStorage.setItem('privacy_blur_enabled', String(newVal));
+                            triggerHaptic.medium();
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    }, privacyBlurEnabled)}
                     {renderSettingItem("Apparence", "moon-outline", () => Alert.alert("Info", "Thème sombre activé par défaut"), "Sombre")}
                     {renderSettingItem("Langue", "language-outline", () => { }, "Français")}
                 </View>

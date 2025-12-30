@@ -1,14 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { colors, borderRadius, spacing, typography } from '../lib/theme';
 import { EmotionService } from '../services/emotions';
-import { Emotion, EmotionType, EMOTION_EMOJIS, EMOTION_LABELS } from '../types';
+import { Emotion, EMOTION_EMOJIS, EMOTION_LABELS } from '../types';
 import { timeAgo } from '../lib/date';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const WEATHER_TYPES = [
+    { id: 'sunny', label: 'Ensoleillé', icon: 'sunny', color: '#F59E0B' },
+    { id: 'partly-sunny', label: 'Eclaircies', icon: 'partly-sunny', color: '#FCD34D' },
+    { id: 'cloudy', label: 'Nuageux', icon: 'cloudy', color: '#9CA3AF' },
+    { id: 'rainy', label: 'Pluvieux', icon: 'rainy', color: '#60A5FA' },
+    { id: 'thunderstorm', label: 'Orageux', icon: 'thunderstorm', color: '#7C3AED' },
+    { id: 'snow', label: 'Gelé', icon: 'snow', color: '#93C5FD' },
+];
 
 export function SystemWeather() {
-    const { system, alters } = useAuth();
+    const { system, alters, updateHeadspace } = useAuth();
     const [modalVisible, setModalVisible] = useState(false);
     const [alterEmotions, setAlterEmotions] = useState<Record<string, Emotion>>({});
 
@@ -24,19 +34,33 @@ export function SystemWeather() {
         return alters.find(a => a.id === alterId)?.name || 'Inconnu';
     };
 
+    const currentWeather = WEATHER_TYPES.find(w => w.id === system?.headspace) || WEATHER_TYPES[0];
+
+    const handleUpdateWeather = async (weatherId: string) => {
+        await updateHeadspace(weatherId);
+    };
+
     return (
         <>
             <TouchableOpacity
-                style={[styles.container, { borderColor: colors.primary }]}
+                style={[styles.container, { borderColor: currentWeather.color }]}
                 onPress={() => setModalVisible(true)}
                 activeOpacity={0.7}
             >
-                <View style={[styles.iconContainer, { backgroundColor: `${colors.primary}20` }]}>
-                    <Ionicons name="people" size={24} color={colors.primary} />
+                <LinearGradient
+                    colors={[`${currentWeather.color}20`, `${currentWeather.color}05`]}
+                    style={StyleSheet.absoluteFill}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                />
+
+                <View style={[styles.iconContainer, { backgroundColor: `${currentWeather.color}20` }]}>
+                    <Ionicons name={currentWeather.icon as any} size={24} color={currentWeather.color} />
                 </View>
+
                 <View style={styles.textContainer}>
                     <Text style={styles.label}>Météo du Système</Text>
-                    <Text style={styles.value}>Aperçu des émotions</Text>
+                    <Text style={styles.value}>{currentWeather.label}</Text>
 
                     {/* Mini preview of alter emotions (limit to 3) */}
                     <View style={styles.miniEmotions}>
@@ -62,14 +86,41 @@ export function SystemWeather() {
                     onPress={() => setModalVisible(false)}
                 >
                     <View style={styles.modalContent}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg }}>
-                            <Text style={styles.modalTitle}>Météo des Alters</Text>
-                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Météo du Système</Text>
+                            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
                                 <Ionicons name="close" size={24} color={colors.text} />
                             </TouchableOpacity>
                         </View>
 
-                        <ScrollView style={{ maxHeight: 400 }}>
+                        <Text style={styles.sectionTitle}>Ambiance générale</Text>
+                        <View style={styles.weatherGrid}>
+                            {WEATHER_TYPES.map((weather) => (
+                                <TouchableOpacity
+                                    key={weather.id}
+                                    style={[
+                                        styles.weatherOption,
+                                        system?.headspace === weather.id && styleWithBorder(weather.color)
+                                    ]}
+                                    onPress={() => handleUpdateWeather(weather.id)}
+                                >
+                                    <Ionicons
+                                        name={weather.icon as any}
+                                        size={32}
+                                        color={system?.headspace === weather.id ? weather.color : colors.textMuted}
+                                    />
+                                    <Text style={[
+                                        styles.weatherLabel,
+                                        system?.headspace === weather.id && { color: weather.color, fontWeight: 'bold' }
+                                    ]}>
+                                        {weather.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        <Text style={styles.sectionTitle}>Émotions récentes des alters</Text>
+                        <ScrollView style={{ maxHeight: 250 }} showsVerticalScrollIndicator={false}>
                             {Object.keys(alterEmotions).length === 0 ? (
                                 <Text style={styles.emptyText}>Aucune émotion enregistrée récemment.</Text>
                             ) : (
@@ -96,21 +147,27 @@ export function SystemWeather() {
     );
 }
 
+const styleWithBorder = (color: string) => ({
+    borderColor: color,
+    backgroundColor: `${color}10`,
+});
+
 const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.backgroundCard,
-        padding: spacing.sm,
-        paddingHorizontal: spacing.md,
+        padding: spacing.md,
         borderRadius: borderRadius.lg,
         borderWidth: 1,
         marginBottom: spacing.md,
+        overflow: 'hidden',
+        position: 'relative',
     },
     iconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 48,
+        height: 48,
+        borderRadius: 24,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: spacing.md,
@@ -121,25 +178,26 @@ const styles = StyleSheet.create({
     label: {
         ...typography.caption,
         color: colors.textMuted,
+        marginBottom: 2,
     },
     value: {
-        ...typography.bodySmall,
+        ...typography.body,
         color: colors.text,
-        fontWeight: '600',
+        fontWeight: 'bold',
     },
     miniEmotions: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: spacing.xs,
-        marginTop: 2,
+        gap: spacing.sm,
+        marginTop: 4,
     },
     miniEmotionText: {
-        fontSize: 10,
-        color: colors.textMuted,
+        fontSize: 11,
+        color: colors.textSecondary,
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(0,0,0,0.6)', // Darker overlay
         justifyContent: 'center',
         alignItems: 'center',
         padding: spacing.lg,
@@ -149,87 +207,99 @@ const styles = StyleSheet.create({
         backgroundColor: colors.backgroundCard,
         borderRadius: borderRadius.xl,
         padding: spacing.lg,
-        maxHeight: '80%',
+        maxHeight: '85%',
+        borderWidth: 1,
+        borderColor: colors.border,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 10,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.md,
     },
     modalTitle: {
-        ...typography.h3,
-        textAlign: 'center',
-        marginBottom: spacing.lg,
+        ...typography.h2,
+    },
+    closeButton: {
+        padding: 4,
     },
     sectionTitle: {
         ...typography.h3,
         marginTop: spacing.md,
         marginBottom: spacing.sm,
+        color: colors.textSecondary,
+        fontSize: 16,
     },
-    grid: {
+    weatherGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
-        gap: spacing.md,
+        gap: spacing.sm,
+        marginBottom: spacing.lg,
     },
-    option: {
-        width: '30%', // Roughly 3 per row
+    weatherOption: {
+        width: '31%',
         alignItems: 'center',
-        padding: spacing.sm,
-        borderRadius: borderRadius.md,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.xs,
+        borderRadius: borderRadius.lg,
         backgroundColor: colors.backgroundLight,
-        marginBottom: spacing.sm,
         borderWidth: 2,
         borderColor: 'transparent',
     },
-    optionSelected: {
-        borderColor: colors.primary,
-        backgroundColor: `${colors.primary}10`,
-    },
-    optionLabel: {
+    weatherLabel: {
         ...typography.caption,
-        textAlign: 'center',
         marginTop: spacing.xs,
-        color: colors.text,
-    },
-    divider: {
-        height: 1,
-        backgroundColor: colors.border,
-        marginVertical: spacing.md,
+        textAlign: 'center',
+        color: colors.textMuted,
+        fontWeight: '600',
     },
     alterEmotionRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: spacing.sm,
+        paddingVertical: spacing.md,
         borderBottomWidth: 1,
-        borderBottomColor: colors.border,
+        borderBottomColor: colors.borderLight, // Lighter border
     },
     alterName: {
         ...typography.body,
         fontWeight: '600',
     },
+    timestamp: {
+        fontSize: 12,
+        color: colors.textMuted,
+        marginTop: 2,
+    },
     emotionBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.backgroundLight,
-        paddingVertical: 4,
-        paddingHorizontal: 8,
+        paddingVertical: 6,
+        paddingHorizontal: 10,
         borderRadius: borderRadius.full,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     emoji: {
-        fontSize: 16,
-        marginRight: 4,
+        fontSize: 18,
+        marginRight: 6,
     },
     emotionLabel: {
         ...typography.caption,
         color: colors.text,
+        fontWeight: '500',
     },
     emptyText: {
-        ...typography.caption,
+        ...typography.bodySmall,
         color: colors.textMuted,
-        fontStyle: 'italic',
         textAlign: 'center',
-        padding: spacing.md,
+        padding: spacing.xl,
+        fontStyle: 'italic',
     },
-    timestamp: {
-        fontSize: 12,
-        color: colors.textSecondary,
-        marginTop: 2,
-    }
 });

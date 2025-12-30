@@ -14,22 +14,51 @@ import { AppState, AppStateStatus } from 'react-native'; // Import AppState
 import React, { useState, useEffect } from 'react'; // React hooks
 import { BlurView } from 'expo-blur'; // Privacy Blur
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function RootLayout() {
     const [isPrivacyActive, setIsPrivacyActive] = useState(false);
+    const [privacyEnabled, setPrivacyEnabled] = useState(true);
 
     useEffect(() => {
+        // Load preference
+        AsyncStorage.getItem('privacy_blur_enabled').then(value => {
+            if (value !== null) setPrivacyEnabled(value === 'true');
+        });
+
         const subscription = AppState.addEventListener('change', (nextAppState) => {
             if (nextAppState === 'active') {
                 setIsPrivacyActive(false);
-            } else if (nextAppState === 'inactive' || nextAppState === 'background') {
+            } else if ((nextAppState === 'inactive' || nextAppState === 'background') && privacyEnabled) {
                 setIsPrivacyActive(true);
             }
         });
 
+        // Event listener for settings change (simple event bus or specialized storage listener would be better, but poller/callback works)
+        // For simplicity, we rely on AppState to re-check, or we can export a context.
+        // Let's implement a simple polling or event listener if we need real-time update from settings without reload.
+        // Actually, let's use a simple FocusEffect or Context?
+        // Simpler: Just read AsyncStorage in the listener? No, it's async.
+        // Best: Add to specific Context. But RootLayout is outside contexts?
+        // Wait, RootLayout wraps Contexts. So we can't use useAuth/Theme.
+        // We will stick to basic AsyncStorage and maybe a global event emitter if needed.
+        // For now, let's read it every time we go to background?
+
         return () => {
             subscription.remove();
         };
+    }, [privacyEnabled]);
+
+    // Re-check preference when app state changes effectively
+    useEffect(() => {
+        const checkPref = async () => {
+            const val = await AsyncStorage.getItem('privacy_blur_enabled');
+            if (val !== null) setPrivacyEnabled(val === 'true');
+        };
+        checkPref();
+
+        // Poll every 5 seconds just in case changed in settings? Or accept restart needed?
+        // Better: Settings screen updates AsyncStorage AND emits an event or we just accept 'next launch' or 'next background'.
     }, []);
 
     return (

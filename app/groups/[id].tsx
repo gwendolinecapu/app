@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -14,7 +14,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { GroupService } from '../../src/services/groups';
 import { Group, Message } from '../../src/types';
-import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
+import { colors, spacing, typography } from '../../src/lib/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { MessageInput } from '../../src/components/messaging/MessageInput';
 import { MessageBubble } from '../../src/components/messaging/MessageBubble';
@@ -25,6 +25,8 @@ export default function GroupChatScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
     const { currentAlter, user, alters } = useAuth();
+    // Use a Ref to keep track of the subscription to avoid effect dependencies issues if any
+    const typingUnsubscribeRef = useRef<(() => void) | null>(null);
 
     const [group, setGroup] = useState<Group | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -33,6 +35,25 @@ export default function GroupChatScreen() {
     // Modals state
     const [pollModalVisible, setPollModalVisible] = useState(false);
     const [noteModalVisible, setNoteModalVisible] = useState(false);
+
+    // Typing state
+    const [typingUsers, setTypingUsers] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (id && GroupService.subscribeToTyping) {
+            typingUnsubscribeRef.current = GroupService.subscribeToTyping(id, (typers) => {
+                // Filter out myself if needed, though relying on name check for now
+                const othersTyping = typers.filter(name => name !== currentAlter?.name);
+                setTypingUsers(othersTyping);
+            });
+        }
+
+        return () => {
+            if (typingUnsubscribeRef.current) {
+                typingUnsubscribeRef.current();
+            }
+        };
+    }, [id, currentAlter?.name]);
 
     useEffect(() => {
         if (id) {
@@ -66,10 +87,9 @@ export default function GroupChatScreen() {
         if (!currentAlter || !user) return;
 
         try {
-            // IMPORTANT: senderId (user.uid) est requis par les règles Firestore
             await GroupService.sendGroupMessage(
                 id,
-                user.uid, // senderId requis par firestore.rules
+                user.uid,
                 currentAlter.id,
                 content,
                 type,
@@ -91,6 +111,11 @@ export default function GroupChatScreen() {
         setNoteModalVisible(false);
     };
 
+    const handleTyping = (isTyping: boolean) => {
+        if (!currentAlter || !user || !id) return;
+        GroupService.setTypingStatus(id, user.uid, isTyping, currentAlter.name);
+    };
+
     const renderMessage = ({ item }: { item: Message }) => {
         const isMine = item.sender_alter_id === currentAlter?.id;
         const senderAlter = alters.find(a => a.id === item.sender_alter_id);
@@ -100,7 +125,7 @@ export default function GroupChatScreen() {
                 message={item}
                 isMine={isMine}
                 senderAlter={senderAlter}
-                currentUserId={user?.uid} // Ou systemId selon ton implémentation de vote
+                currentUserId={user?.uid}
             />
         );
     };
@@ -140,11 +165,20 @@ export default function GroupChatScreen() {
                 inverted={false}
             />
 
+            {typingUsers.length > 0 && (
+                <View style={styles.typingContainer}>
+                    <Text style={styles.typingText}>
+                        {typingUsers.join(', ')} {typingUsers.length > 1 ? 'sont en train d\'écrire...' : 'est en train d\'écrire...'}
+                    </Text>
+                </View>
+            )}
+
             <MessageInput
                 onSend={(text) => handleSendMessage(text, 'text')}
                 onOpenPoll={() => setPollModalVisible(true)}
                 onOpenNote={() => setNoteModalVisible(true)}
                 onPickImage={() => Alert.alert("Bientôt", "Envoi d'images bientôt disponible !")}
+                onTyping={handleTyping}
             />
 
             <PollCreatorModal
@@ -203,4 +237,14 @@ const styles = StyleSheet.create({
         padding: spacing.md,
         paddingBottom: spacing.xl,
     },
+    typingContainer: {
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+        backgroundColor: colors.background,
+    },
+    typingText: {
+        fontSize: 12,
+        color: colors.textMuted,
+        fontStyle: 'italic',
+    }
 });

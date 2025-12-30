@@ -115,3 +115,6 @@ export const CommentsService = {
 
 // Alias for backward compatibility and easier imports
 export const CommentService = CommentsService;
+
+// Re-export Comment type for convenience
+export { Comment } from '../types';

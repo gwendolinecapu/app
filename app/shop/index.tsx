@@ -57,6 +57,7 @@ export default function ShopScreen() {
         purchaseIAP,
         restorePurchases,
         purchaseItem,
+        presentPaywall,
         loading
     } = useMonetization();
     const [activeCategory, setActiveCategory] = useState<ShopCategory>('premium');
@@ -74,8 +75,13 @@ export default function ShopScreen() {
     const handlePurchase = async (item: ShopItem) => {
         triggerHaptic.selection();
 
-        if (activeCategory === 'premium' || activeCategory === 'options') {
-            // Handle IAP
+        if (activeCategory === 'premium') {
+            await presentPaywall();
+            return;
+        }
+
+        if (activeCategory === 'options') {
+            // Handle IAP for Credits
             const iapId = item.revenueCatPackageId || item.priceIAP;
             if (iapId) {
                 const success = await purchaseIAP(iapId);
@@ -208,7 +214,26 @@ export default function ShopScreen() {
                 contentContainerStyle={styles.itemsGrid}
                 showsVerticalScrollIndicator={false}
             >
-                {getCategoryItems().map(renderItem)}
+                {activeCategory === 'premium' ? (
+                    <TouchableOpacity
+                        style={[styles.itemCard, { width: '100%', aspectRatio: 1.5, backgroundColor: colors.primary }]}
+                        onPress={() => presentPaywall()}
+                        activeOpacity={0.9}
+                    >
+                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10 }}>
+                            <Ionicons name="diamond" size={48} color="white" />
+                            <Text style={[styles.itemName, { color: 'white', fontSize: 20 }]}>Plural Connect Premium</Text>
+                            <Text style={[styles.priceText, { color: 'rgba(255,255,255,0.8)', fontWeight: 'normal' }]}>
+                                Débloquez toutes les fonctionnalités
+                            </Text>
+                            <View style={{ backgroundColor: 'white', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginTop: 10 }}>
+                                <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Voir les offres</Text>
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+                ) : (
+                    getCategoryItems().map(renderItem)
+                )}
             </ScrollView>
         </SafeAreaView>
     );

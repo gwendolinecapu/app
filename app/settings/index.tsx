@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { useMonetization } from '../../src/contexts/MonetizationContext';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
@@ -21,8 +22,18 @@ import * as Clipboard from 'expo-clipboard';
 
 export default function SettingsScreen() {
     const { signOut, system } = useAuth();
+    const { isPremium, presentPaywall, presentCustomerCenter } = useMonetization();
     const [notifications, setNotifications] = useState(true);
     const [theme, setTheme] = useState('dark');
+
+    const handleSubscriptionAction = async () => {
+        triggerHaptic.selection();
+        if (isPremium) {
+            await presentCustomerCenter();
+        } else {
+            await presentPaywall();
+        }
+    };
 
     const handleLogout = async () => {
         Alert.alert(
@@ -146,6 +157,17 @@ export default function SettingsScreen() {
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
+
+                {/* Subscription Section */}
+                <Text style={styles.sectionTitle}>Abonnement Premium</Text>
+                <View style={styles.section}>
+                    {renderSettingItem(
+                        isPremium ? "Gérer mon abonnement" : "Passer Premium",
+                        isPremium ? "star" : "star-outline",
+                        handleSubscriptionAction,
+                        isPremium ? "Actif" : "Gratuit"
+                    )}
+                </View>
 
                 {/* Account Section */}
                 <Text style={styles.sectionTitle}>Compte</Text>

@@ -4,6 +4,7 @@ import { getAuth, initializeAuth, getReactNativePersistence } from 'firebase/aut
 import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 // Configuration Firebase
 // TODO: Remplacer par les vraies clés après création du projet
@@ -26,9 +27,12 @@ if (getApps().length === 0) {
 }
 
 // Initialisation de l'Authentification avec persistance AsyncStorage pour React Native
-const auth = initializeAuth(app, {
-    persistence: getReactNativePersistence(AsyncStorage)
-});
+// Initialisation de l'Authentification (Web vs Native)
+const auth = Platform.OS === 'web'
+    ? getAuth(app)
+    : initializeAuth(app, {
+        persistence: getReactNativePersistence(AsyncStorage)
+    });
 
 // Initialisation de Firestore
 const db = getFirestore(app);

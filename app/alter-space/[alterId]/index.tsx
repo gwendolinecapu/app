@@ -13,6 +13,8 @@ import {
     Alert,
     TextInput,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 // import { Video, ResizeMode, Audio } from 'expo-av'; // TODO: Fix expo-av installation
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -93,11 +95,14 @@ export default function AlterSpaceScreen() {
     }, [alterId]);
 
     const loadGalleryFromLocal = async () => {
+        if (!alterId) return;
         try {
             setLoadingGallery(true);
-            // TODO: Implémenter le chargement depuis AsyncStorage
-            // const stored = await AsyncStorage.getItem(`gallery_${alterId}`);
-            // if (stored) setGalleryImages(JSON.parse(stored));
+            const stored = await AsyncStorage.getItem(`gallery_${alterId}`);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                setGalleryImages(parsed);
+            }
         } catch (e) {
             console.error('Erreur chargement galerie:', e);
         } finally {
@@ -108,10 +113,35 @@ export default function AlterSpaceScreen() {
     const handleAddPhoto = async () => {
         try {
             triggerHaptic.selection();
-            // TODO: Implémenter la sélection d'image avec expo-image-picker
-            toast.showToast('Sélection de photo à implémenter', 'info');
+
+            const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (permissionResult.granted === false) {
+                Alert.alert("Permission requise", "L'accès à la galerie est nécessaire pour ajouter des photos.");
+                return;
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                quality: 0.8,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const newImage = {
+                    id: Date.now().toString(),
+                    uri: result.assets[0].uri,
+                    createdAt: new Date()
+                };
+
+                const updatedGallery = [newImage, ...galleryImages];
+                setGalleryImages(updatedGallery);
+
+                await AsyncStorage.setItem(`gallery_${alterId}`, JSON.stringify(updatedGallery));
+                toast.showToast('Photo ajoutée', 'success');
+            }
         } catch (e) {
             console.error('Erreur ajout photo:', e);
+            toast.showToast("Erreur lors de l'ajout", 'error');
         }
     };
 

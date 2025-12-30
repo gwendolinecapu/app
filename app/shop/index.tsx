@@ -403,15 +403,16 @@ export default function ShopScreen() {
                 renderItem={({ item }) => {
                     const isOwned = currentAlter?.owned_items?.includes(item.id) || false;
 
-                    // Check equipped status safely
+                    // Check equipped status safely - use equipped_items object from Alter type
                     let isEquipped = false;
-                    if (isOwned && currentAlter) {
-                        if (item.type === 'frame') isEquipped = currentAlter.avatar_frame === item.id;
-                        if (item.type === 'theme') isEquipped = currentAlter.themeId === item.id;
-                        if (item.type === 'bubble') isEquipped = currentAlter.bubbleStyle === item.id;
+                    if (isOwned && currentAlter?.equipped_items) {
+                        if (item.type === 'frame') isEquipped = currentAlter.equipped_items.frame === item.id;
+                        if (item.type === 'theme') isEquipped = currentAlter.equipped_items.theme === item.id;
+                        if (item.type === 'bubble') isEquipped = currentAlter.equipped_items.bubble === item.id;
                     }
 
-                    const isLocked = item.isPremium && !isPremium && !isOwned;
+                    // Explicitly cast to boolean to avoid undefined
+                    const isLocked: boolean = !!(item.isPremium && !isPremium && !isOwned);
 
                     return (
                         <ShopItemCard
@@ -695,7 +696,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     adTitle: {
-        ...typography.h4,
+        ...typography.h3,
         color: '#FFF',
         fontSize: 15,
         marginBottom: 2,

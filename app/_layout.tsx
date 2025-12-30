@@ -98,6 +98,9 @@ export default function RootLayout() {
 
                                                 {/* Journal */}
                                                 <Stack.Screen name="journal/[id]" options={{ headerShown: false }} />
+
+                                                {/* Premium */}
+                                                <Stack.Screen name="premium/index" options={{ headerShown: false, presentation: 'modal' }} />
                                                 <Stack.Screen name="journal/create" options={{ headerShown: false }} />
 
                                                 {/* Tasks */}
@@ -121,12 +124,13 @@ export default function RootLayout() {
                                                 {/* Autres écrans */}
                                                 <Stack.Screen name="crisis/index" options={{ headerShown: false }} />
                                                 <Stack.Screen name="crisis/guide" options={{ headerShown: false }} />
-                                                <Stack.Screen name="emotions/history" options={{ headerShown: false }} />
-                                                <Stack.Screen name="fronting/history" options={{ headerShown: false }} />
-                                                <Stack.Screen name="stats" options={{ headerShown: false }} />
+
 
                                                 {/* Boutique */}
                                                 <Stack.Screen name="shop/index" options={{ headerShown: false }} />
+
+                                                {/* Historique unifié */}
+                                                <Stack.Screen name="history/index" options={{ headerShown: false }} />
                                             </Stack>
                                             <StatusBar style="auto" />
                                             {isPrivacyActive && (

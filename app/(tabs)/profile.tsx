@@ -250,7 +250,7 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.statsButton}
-                        onPress={() => router.push('/stats')}
+                        onPress={() => router.push('/history')}
                     >
                         <Ionicons name="bar-chart-outline" size={20} color={colors.text} />
                     </TouchableOpacity>

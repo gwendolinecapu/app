@@ -516,7 +516,7 @@ export default function DashboardScreen() {
                 <View style={styles.footerActions}>
                     <TouchableOpacity
                         style={styles.footerButton}
-                        onPress={() => router.push('/fronting/history' as any)}
+                        onPress={() => router.push({ pathname: '/history', params: { tab: 'front' } })}
                     >
                         <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
                         <Text style={styles.footerButtonText}>Historique</Text>

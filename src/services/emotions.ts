@@ -123,5 +123,297 @@ export const EmotionService = {
             }
             callback(latestEmotions);
         });
+    },
+
+    // ============================================
+    // STATISTIQUES AVANCÉES (ajoutées pour l'écran History)
+    // ============================================
+
+    /**
+     * Mapping des émotions vers une valeur numérique pour les calculs de tendance
+     * Plus la valeur est haute, plus l'émotion est "positive"
+     */
+    _emotionValence: {
+        happy: 5,
+        excited: 5,
+        calm: 4,
+        confused: 2,
+        tired: 2,
+        anxious: 1,
+        sad: 1,
+        angry: 1,
+    } as Record<EmotionType, number>,
+
+    /**
+     * Récupère l'historique des émotions avec filtre de période
+     */
+    getEmotionsHistory: async (alterId: string, days: number = 30): Promise<Emotion[]> => {
+        if (!auth.currentUser) return [];
+
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        startDate.setHours(0, 0, 0, 0);
+
+        const q = query(
+            collection(db, 'emotions'),
+            where('alter_id', '==', alterId),
+            where('system_id', '==', auth.currentUser.uid)
+        );
+
+        const snapshot = await getDocs(q);
+        const emotions = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        } as Emotion));
+
+        // Filtrer par date côté client (évite les index composites complexes)
+        return emotions.filter(e => {
+            const createdAt = (e.created_at as any)?.seconds
+                ? new Date((e.created_at as any).seconds * 1000)
+                : new Date(e.created_at);
+            return createdAt >= startDate;
+        }).sort((a, b) => {
+            const timeA = (a.created_at as any)?.seconds || new Date(a.created_at).getTime() / 1000;
+            const timeB = (b.created_at as any)?.seconds || new Date(b.created_at).getTime() / 1000;
+            return timeB - timeA;
+        });
+    },
+
+    /**
+     * Calcule la tendance émotionnelle (points par jour pour LineChart)
+     * Retourne une liste de { date, value, count } où value = intensité moyenne pondérée par valence
+     */
+    getEmotionsTrend: async function (alterId: string, days: number = 7): Promise<{ date: string; value: number; count: number }[]> {
+        const emotions = await this.getEmotionsHistory(alterId, days);
+
+        // Grouper par jour
+        const dailyMap = new Map<string, { total: number; count: number }>();
+
+        // Initialiser tous les jours
+        for (let i = days - 1; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const key = d.toISOString().split('T')[0]; // YYYY-MM-DD
+            dailyMap.set(key, { total: 0, count: 0 });
+        }
+
+        // Agréger les émotions par jour
+        emotions.forEach(emotion => {
+            const createdAt = (emotion.created_at as any)?.seconds
+                ? new Date((emotion.created_at as any).seconds * 1000)
+                : new Date(emotion.created_at);
+            const dateKey = createdAt.toISOString().split('T')[0];
+            if (dailyMap.has(dateKey)) {
+                const current = dailyMap.get(dateKey)!;
+                // Score = valence de l'émotion * intensité
+                const valence = this._emotionValence[emotion.emotion] || 3;
+                const score = valence * emotion.intensity;
+                dailyMap.set(dateKey, {
+                    total: current.total + score,
+                    count: current.count + 1
+                });
+            }
+        });
+
+        // Convertir en array pour le graphique
+        const result: { date: string; value: number; count: number }[] = [];
+        dailyMap.forEach((data, date) => {
+            result.push({
+                date,
+                value: data.count > 0 ? Math.round((data.total / data.count) * 10) / 10 : 0,
+                count: data.count
+            });
+        });
+
+        return result.sort((a, b) => a.date.localeCompare(b.date));
+    },
+
+    /**
+     * Distribution des émotions par type (pour PieChart)
+     */
+    getEmotionsDistribution: async function (alterId: string, days: number = 30): Promise<{ type: EmotionType; label: string; count: number; percentage: number }[]> {
+        const emotions = await this.getEmotionsHistory(alterId, days);
+
+        const EMOTION_LABELS: Record<EmotionType, string> = {
+            happy: 'Heureux·se',
+            sad: 'Triste',
+            anxious: 'Anxieux·se',
+            angry: 'En colère',
+            tired: 'Fatigué·e',
+            calm: 'Calme',
+            confused: 'Confus·e',
+            excited: 'Excité·e',
+        };
+
+        // Compter par type
+        const counts: Record<string, number> = {};
+        emotions.forEach(e => {
+            counts[e.emotion] = (counts[e.emotion] || 0) + 1;
+        });
+
+        const total = emotions.length || 1; // Éviter division par 0
+
+        // Convertir et trier par count décroissant
+        return Object.entries(counts)
+            .map(([type, count]) => ({
+                type: type as EmotionType,
+                label: EMOTION_LABELS[type as EmotionType] || type,
+                count,
+                percentage: Math.round((count / total) * 100)
+            }))
+            .sort((a, b) => b.count - a.count);
+    },
+
+    /**
+     * Calcule l'intensité moyenne sur une période avec comparaison période précédente
+     */
+    getMoodAverage: async function (alterId: string, days: number = 7): Promise<{ average: number; trend: 'up' | 'down' | 'stable'; previousAverage: number }> {
+        // Période actuelle
+        const currentEmotions = await this.getEmotionsHistory(alterId, days);
+
+        // Période précédente (on double les jours et filtre la première moitié)
+        const allEmotions = await this.getEmotionsHistory(alterId, days * 2);
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - days);
+
+        const previousEmotions = allEmotions.filter(e => {
+            const createdAt = (e.created_at as any)?.seconds
+                ? new Date((e.created_at as any).seconds * 1000)
+                : new Date(e.created_at);
+            return createdAt < cutoffDate;
+        });
+
+        // Calcul moyennes
+        const currentAvg = currentEmotions.length > 0
+            ? currentEmotions.reduce((sum, e) => sum + e.intensity, 0) / currentEmotions.length
+            : 0;
+
+        const previousAvg = previousEmotions.length > 0
+            ? previousEmotions.reduce((sum, e) => sum + e.intensity, 0) / previousEmotions.length
+            : 0;
+
+        // Déterminer la tendance
+        let trend: 'up' | 'down' | 'stable' = 'stable';
+        const diff = currentAvg - previousAvg;
+        if (diff > 0.3) trend = 'up';
+        else if (diff < -0.3) trend = 'down';
+
+        return {
+            average: Math.round(currentAvg * 10) / 10,
+            previousAverage: Math.round(previousAvg * 10) / 10,
+            trend
+        };
+    },
+
+    /**
+     * Détecte des patterns dans les émotions (ex: "Plus anxieux le lundi")
+     */
+    detectPatterns: async function (alterId: string): Promise<string[]> {
+        const emotions = await this.getEmotionsHistory(alterId, 30);
+        const insights: string[] = [];
+
+        if (emotions.length < 5) {
+            return ["Continue à enregistrer tes émotions pour découvrir des patterns !"];
+        }
+
+        const EMOTION_LABELS: Record<EmotionType, string> = {
+            happy: 'Heureux·se', sad: 'Triste', anxious: 'Anxieux·se', angry: 'En colère',
+            tired: 'Fatigué·e', calm: 'Calme', confused: 'Confus·e', excited: 'Excité·e',
+        };
+
+        // Pattern 1: Émotion dominante
+        const counts: Record<string, number> = {};
+        emotions.forEach(e => {
+            counts[e.emotion] = (counts[e.emotion] || 0) + 1;
+        });
+        const dominant = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+        if (dominant) {
+            const pct = Math.round((dominant[1] / emotions.length) * 100);
+            if (pct > 40) {
+                insights.push(`Tu ressens souvent "${EMOTION_LABELS[dominant[0] as EmotionType]}" (${pct}% du temps)`);
+            }
+        }
+
+        // Pattern 2: Jour de la semaine avec plus d'émotions négatives
+        const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+        const negativeEmotions: EmotionType[] = ['anxious', 'sad', 'angry'];
+        const dayNegativeCounts: number[] = [0, 0, 0, 0, 0, 0, 0];
+        const dayTotalCounts: number[] = [0, 0, 0, 0, 0, 0, 0];
+
+        emotions.forEach(e => {
+            const createdAt = (e.created_at as any)?.seconds
+                ? new Date((e.created_at as any).seconds * 1000)
+                : new Date(e.created_at);
+            const dayOfWeek = createdAt.getDay();
+            dayTotalCounts[dayOfWeek]++;
+            if (negativeEmotions.includes(e.emotion)) {
+                dayNegativeCounts[dayOfWeek]++;
+            }
+        });
+
+        // Trouver le jour le plus difficile
+        let maxNegativeRatio = 0;
+        let hardestDay = -1;
+        dayNegativeCounts.forEach((count, i) => {
+            if (dayTotalCounts[i] >= 3) {
+                const ratio = count / dayTotalCounts[i];
+                if (ratio > maxNegativeRatio && ratio > 0.5) {
+                    maxNegativeRatio = ratio;
+                    hardestDay = i;
+                }
+            }
+        });
+
+        if (hardestDay >= 0) {
+            insights.push(`Les ${days[hardestDay]}s semblent plus difficiles pour toi`);
+        }
+
+        // Pattern 3: Intensité moyenne
+        const avgIntensity = emotions.reduce((sum, e) => sum + e.intensity, 0) / emotions.length;
+        if (avgIntensity >= 4) {
+            insights.push("Tes émotions sont souvent intenses - pense à pratiquer des techniques de régulation");
+        } else if (avgIntensity <= 2) {
+            insights.push("Tes émotions restent douces - c'est une période calme pour toi");
+        }
+
+        return insights.length > 0 ? insights : ["Continue d'enregistrer tes émotions !"];
+    },
+
+    /**
+     * Statistiques récapitulatives pour l'onglet Résumé
+     */
+    getSummaryStats: async function (alterId: string, days: number = 7): Promise<{
+        totalEntries: number;
+        avgIntensity: number;
+        dominantEmotion: EmotionType | null;
+        moodScore: number;
+    }> {
+        const emotions = await this.getEmotionsHistory(alterId, days);
+
+        if (emotions.length === 0) {
+            return { totalEntries: 0, avgIntensity: 0, dominantEmotion: null, moodScore: 50 };
+        }
+
+        // Compter les émotions
+        const counts: Record<string, number> = {};
+        let totalIntensity = 0;
+        let totalValenceScore = 0;
+
+        emotions.forEach(e => {
+            counts[e.emotion] = (counts[e.emotion] || 0) + 1;
+            totalIntensity += e.intensity;
+            totalValenceScore += this._emotionValence[e.emotion] || 3;
+        });
+
+        const dominant = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+        const avgValence = totalValenceScore / emotions.length;
+        const moodScore = Math.round(((avgValence - 1) / 4) * 100);
+
+        return {
+            totalEntries: emotions.length,
+            avgIntensity: Math.round((totalIntensity / emotions.length) * 10) / 10,
+            dominantEmotion: dominant ? dominant[0] as EmotionType : null,
+            moodScore: Math.max(0, Math.min(100, moodScore))
+        };
     }
 };

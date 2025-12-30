@@ -16,6 +16,14 @@
 - **Components**: Added `ShopItemCard` and `PremiumBanner` as modular components.
 - **UX**: Improved visual feedback for equipping items and purchasing.
 
+### Fixed
+- **AdMediationService**: Fixed crash in Expo Go when `mobileAds` is null (now skips initialization gracefully).
+- **Shop Types**: Fixed TypeScript errors using `equipped_items` object instead of non-existent `avatar_frame`/`themeId`/`bubbleStyle` properties.
+- **Compilation**: Fixed critical JSX syntax errors in `app/(tabs)/alters.tsx` (unclosed `Modal` and `View` tags).
+- **Navigation**: Updated Alter Space navigation:
+    - **Bottom Bar**: Feed, Search (New), +, Profile (Moved from Menu), Menu.
+    - **Menu Drawer**: Journal, Gallery (Restored), Shop, Settings.
+
 
 ## [2025-12-30] Shop UI & Système d'Amis Corrigé 🛒🤝
 
@@ -32,10 +40,11 @@
 ### Navigation Alter Space (Refactoring) 🧭
 - **`app/alter-space/[alterId]/index.tsx`** : Nouvelle navigation simplifiée
   - 🏠 **Home** = Feed
+  - 📖 **Journal** = Accès direct (remplace Recherche)
   - ➕ **+** = Bouton gradient pour publier rapidement
-  - ☰ **Menu** = Drawer hamburger avec Journal, Galerie, Émotions, Boutique, Réglages
-  - Header: Bouton recherche remplacé par profil, bouton réglages supprimé
-  - Support du paramètre `?tab=profile` pour ouvrir un onglet spécifique
+  - 👤 **Profil** = Accès rapide au profil
+  - ☰ **Menu** = Drawer hamburger (Galerie, Historique, Boutique, Réglages)
+  - Header: Boutons 🔍 Recherche et ❤️ Notifications ajoutés en haut à droite
 
 ### Consolidation des Profils 🔄
 - **`app/(tabs)/profile.tsx`** : Redirige maintenant vers l'Alter Space
@@ -590,3 +599,67 @@ Ajouter les 7 receivers dans AndroidManifest.xml
 - **Boutique** : Nouvel onglet "Premium" et accès aux packs de crédits (IAP).
 - **Service** : `PremiumService` mis à jour pour vérifier RevenueCat + Silent Trial.
 - **Types** : `ShopItem` supporte `revenueCatPackageId`.
+
+## [2025-12-30] Historique & Statistiques Avancées 📊
+
+### Nouvel Écran Unifié
+- **`app/history/index.tsx`** : Consolidation de l'historique Front & Émotions en un seul écran puissant.
+- **Onglets Navigation** :
+  - **Résumé** : Vue d'ensemble avec cartes de stats clés, graphiques d'activité et insights personnalisés (style Spotify Wrapped).
+  - **Front** : Statistiques détaillées de fronting (Top alters, répartition journalière, switchs).
+  - **Émotions** : Analyse émotionnelle approfondie (Distribution, tendances d'humeur, patterns détectés).
+- **Filtres de Période** : 7j, 30j, 90j, Année, Tout.
+
+### Statistiques Avancées (Backend)
+- **`src/services/emotions.ts`** :
+  - `getEmotionsTrend` : Tendance d'humeur pondérée par valence.
+  - `getMoodAverage` : Comparaison intensité vs période précédente.
+  - `detectPatterns` : Détection intelligente de patterns (ex: "Souvent anxieux le Lundi").
+- **`src/services/fronting.ts`** :
+  - `getDailyBreakdown` : Granularité personnalisable pour graphiques.
+  - `getSwitchPatterns` : Analyse horaire des switchs.
+  - `getLongestSession` : Record de durée de front.
+
+### Intégration UX
+- **Alter Space** : Menu hamburger enrichi avec accès direct "Historique & Stats" (Badge "NOUVEAU").
+- **Visualisations** : Graphiques interactifs (LineChart, BarChart, PieChart) avec `react-native-chart-kit`.
+
+## [2025-12-30] Refonte Visuelle de la Boutique 🎨
+
+### Améliorations UI/UX
+- **Design Premium** : Adoption d'un arrière-plan dégradé et de cartes en glassmorphism pour moderniser l'interface.
+- **Shop UI** :
+  - **Onglets** : Utilisation de gradients pour l'onglet actif.
+  - **Cartes** : Nouveau style épuré avec dégradés subtils, ombres et typographie améliorée.
+  - **Badges** : Indicateurs visuels "Équipé" et "Premium" repensés avec des couleurs distinctives (Emerald, Pink).
+  - **Status Pills** : Remplacement des textes simples par des pilules de statut (point vert pour actif).
+- **Code** : Nettoyage et optimisation des styles dans `app/shop/index.tsx`.
+
+## [2025-12-30] Refonte UI Historique & Alter Space 🎨
+
+### Historique (`app/history/index.tsx`)
+- Remplacement systématique des emojis textuels par des **Ionicons** pour un rendu plus propre et professionnel.
+- Mise à jour des cartes de statistiques, des titres de section et des onglets pour utiliser des icônes vectorielles cohérentes.
+- Harmonisation du style visuel avec le reste de l'application.
+
+### Alter Space (`app/alter-space/[alterId]/index.tsx`)
+- **Sélecteur d'émotions** : Remplacement de la grille d'emojis par une grille d'icônes `Ionicons` colorées et stylisées.
+- **Affichage Émotion** : Mise à jour de l'affichage de la dernière émotion pour utiliser les nouvelles icônes et couleurs.
+- Ajout de styles manquants (`emotionLabel`, `emotionStatusIcon`) pour corriger les erreurs de linting et finaliser le design.
+
+## [2025-12-30] Fix Compilation Errors 🛠️
+
+### Corrections Critiques
+- **`app/alter-space/[alterId]/index.tsx`**:
+  - Résolu les conflits de duplication de propriété dans `StyleSheet` (`statLabel`).
+  - Mis à jour les références de style pour correspondre au nouveau design "Instagram" (`avatarContainer` -> `profileAvatarContainer`, `rightStatsContainer` -> `statsContainer`, etc.).
+  - Corrigé l'utilisation de `colors.surface` (remplacé par `colors.backgroundCard`).
+  - Ajouté les styles manquants (`bioDisplayName`).
+- **`app/premium/index.tsx`**:
+  - Corrigé l'objet `StyleSheet` malformé (clé `featuredBadge` manquante) qui causait des erreurs en cascade.
+  - Résolu les erreurs de syntaxe "Argument expression expected".
+- **`app/shop/index.tsx`**:
+  - Corrigé l'incompatibilité de type sur `borderStyle` en utilisant `as const` pour les littéraux ("dashed", "dotted").
+
+### Résultat
+✅ Compilation TypeScript restaurée et erreurs de style résolues.

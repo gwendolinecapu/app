@@ -724,8 +724,9 @@ export default function AlterSpaceScreen() {
 
             {/* ==================== NEW BOTTOM NAVIGATION ==================== */}
             {/* 3 buttons: Home (feed), + (create post), Menu (hamburger) */}
+            {/* ==================== RESTORED BOTTOM NAVIGATION ==================== */}
             <View style={styles.bottomTabs}>
-                {/* Home - Feed */}
+                {/* 1. Feed */}
                 <TouchableOpacity
                     style={styles.tab}
                     onPress={() => {
@@ -735,13 +736,29 @@ export default function AlterSpaceScreen() {
                 >
                     <Ionicons
                         name={activeTab === 'feed' ? 'home' : 'home-outline'}
-                        size={26}
+                        size={24}
                         color={activeTab === 'feed' ? colors.primary : colors.textMuted}
                     />
                     <Text style={[styles.tabLabel, activeTab === 'feed' && styles.tabLabelActive]}>Feed</Text>
                 </TouchableOpacity>
 
-                {/* + Create Post (bigger, centered) */}
+                {/* 2. Journal */}
+                <TouchableOpacity
+                    style={styles.tab}
+                    onPress={() => {
+                        triggerHaptic.selection();
+                        setActiveTab('journal');
+                    }}
+                >
+                    <Ionicons
+                        name={activeTab === 'journal' ? 'book' : 'book-outline'}
+                        size={24}
+                        color={activeTab === 'journal' ? colors.primary : colors.textMuted}
+                    />
+                    <Text style={[styles.tabLabel, activeTab === 'journal' && styles.tabLabelActive]}>Journal</Text>
+                </TouchableOpacity>
+
+                {/* 3. + Create (Middle) */}
                 <TouchableOpacity
                     style={styles.createButton}
                     onPress={() => {
@@ -754,155 +771,44 @@ export default function AlterSpaceScreen() {
                     </View>
                 </TouchableOpacity>
 
-                {/* Hamburger Menu */}
+                {/* 4. Gallery */}
                 <TouchableOpacity
                     style={styles.tab}
                     onPress={() => {
                         triggerHaptic.selection();
-                        setMenuVisible(true);
+                        setActiveTab('gallery');
                     }}
                 >
                     <Ionicons
-                        name="menu"
-                        size={26}
-                        color={menuVisible ? colors.primary : colors.textMuted}
+                        name={activeTab === 'gallery' ? 'images' : 'images-outline'}
+                        size={24}
+                        color={activeTab === 'gallery' ? colors.primary : colors.textMuted}
                     />
-                    <Text style={[styles.tabLabel, menuVisible && styles.tabLabelActive]}>Menu</Text>
+                    <Text style={[styles.tabLabel, activeTab === 'gallery' && styles.tabLabelActive]}>Galerie</Text>
+                </TouchableOpacity>
+
+                {/* 5. Profile */}
+                <TouchableOpacity
+                    style={styles.tab}
+                    onPress={() => {
+                        triggerHaptic.selection();
+                        setActiveTab('profile');
+                    }}
+                >
+                    <Ionicons
+                        name={activeTab === 'profile' ? 'person' : 'person-outline'}
+                        size={24}
+                        color={activeTab === 'profile' ? colors.primary : colors.textMuted}
+                    />
+                    <Text style={[styles.tabLabel, activeTab === 'profile' && styles.tabLabelActive]}>Profil</Text>
                 </TouchableOpacity>
             </View>
 
-            {/* ==================== HAMBURGER MENU DRAWER (Bottom Sheet) ==================== */}
-            <Modal
-                visible={menuVisible}
-                animationType="fade"
-                transparent={true}
-                onRequestClose={() => setMenuVisible(false)}
-                statusBarTranslucent
-            >
-                {/* Backdrop overlay */}
-                <View style={styles.menuOverlay}>
-                    <TouchableOpacity
-                        style={styles.menuBackdrop}
-                        activeOpacity={1}
-                        onPress={() => setMenuVisible(false)}
-                    />
 
-                    {/* Drawer Content */}
-                    <View style={styles.menuDrawer}>
-                        {/* Handle bar */}
-                        <View style={styles.menuHandle} />
-
-                        {/* Menu Header */}
-                        <View style={styles.menuHeader}>
-                            <Text style={styles.menuTitle}>Menu</Text>
-                            <TouchableOpacity
-                                style={styles.menuCloseBtn}
-                                onPress={() => setMenuVisible(false)}
-                            >
-                                <Ionicons name="close" size={22} color={colors.textMuted} />
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Menu Items - Only for owner */}
-                        {isOwner && (
-                            <>
-                                <TouchableOpacity
-                                    style={styles.menuItem}
-                                    onPress={() => {
-                                        setMenuVisible(false);
-                                        setActiveTab('profile');
-                                    }}
-                                >
-                                    <View style={[styles.menuIconBg, { backgroundColor: '#5865F230' }]}>
-                                        <Ionicons name="person-circle" size={22} color="#5865F2" />
-                                    </View>
-                                    <Text style={styles.menuItemText}>Mon Profil</Text>
-                                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={styles.menuItem}
-                                    onPress={() => {
-                                        setMenuVisible(false);
-                                        setActiveTab('journal');
-                                    }}
-                                >
-                                    <View style={[styles.menuIconBg, { backgroundColor: '#3BA55C30' }]}>
-                                        <Ionicons name="book" size={22} color="#3BA55C" />
-                                    </View>
-                                    <Text style={styles.menuItemText}>Journal</Text>
-                                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={styles.menuItem}
-                                    onPress={() => {
-                                        setMenuVisible(false);
-                                        setActiveTab('gallery');
-                                    }}
-                                >
-                                    <View style={[styles.menuIconBg, { backgroundColor: '#FAA61A30' }]}>
-                                        <Ionicons name="images" size={22} color="#FAA61A" />
-                                    </View>
-                                    <Text style={styles.menuItemText}>Galerie Privée</Text>
-                                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={styles.menuItem}
-                                    onPress={() => {
-                                        setMenuVisible(false);
-                                        setActiveTab('emotions');
-                                    }}
-                                >
-                                    <View style={[styles.menuIconBg, { backgroundColor: '#EB459E30' }]}>
-                                        <Ionicons name="happy" size={22} color="#EB459E" />
-                                    </View>
-                                    <Text style={styles.menuItemText}>Comment je me sens</Text>
-                                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-                                </TouchableOpacity>
-
-                                <View style={styles.menuDivider} />
-                            </>
-                        )}
-
-                        {/* Shop - Always visible */}
-                        <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={() => {
-                                setMenuVisible(false);
-                                router.push('/shop');
-                            }}
-                        >
-                            <View style={[styles.menuIconBg, { backgroundColor: `${colors.primary}30` }]}>
-                                <Ionicons name="storefront" size={22} color={colors.primary} />
-                            </View>
-                            <Text style={[styles.menuItemText, { color: colors.primary, fontWeight: '600' }]}>Boutique</Text>
-                            <View style={styles.menuBadge}>
-                                <Text style={styles.menuBadgeText}>✨</Text>
-                            </View>
-                        </TouchableOpacity>
-
-                        {/* Settings */}
-                        <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={() => {
-                                setMenuVisible(false);
-                                router.push('/settings');
-                            }}
-                        >
-                            <View style={[styles.menuIconBg, { backgroundColor: '#72767D30' }]}>
-                                <Ionicons name="settings" size={22} color="#72767D" />
-                            </View>
-                            <Text style={styles.menuItemText}>Réglages</Text>
-                            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
             {/* Full Screen Image Modal */}
-            <Modal
-                visible={!!fullScreenImage}
+            < Modal
+                visible={!!fullScreenImage
+                }
                 transparent={true}
                 onRequestClose={() => setFullScreenImage(null)}
                 animationType="fade"
@@ -920,8 +826,8 @@ export default function AlterSpaceScreen() {
                         resizeMode="contain"
                     />
                 </View>
-            </Modal>
-        </View>
+            </Modal >
+        </View >
     );
 }
 

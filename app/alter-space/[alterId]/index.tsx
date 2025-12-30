@@ -51,10 +51,11 @@ const getMediaType = (url: string) => {
 };
 
 export default function AlterSpaceScreen() {
-    const { alterId } = useLocalSearchParams<{ alterId: string }>();
+    const { alterId, tab } = useLocalSearchParams<{ alterId: string; tab?: string }>();
     const { alters, system } = useAuth();
     const [alter, setAlter] = useState<Alter | null>(null);
-    const [activeTab, setActiveTab] = useState<TabType>('feed');
+    // Si un onglet est passé en param (ex: ?tab=profile), l'utiliser comme initial
+    const [activeTab, setActiveTab] = useState<TabType>((tab as TabType) || 'feed');
     const [refreshing, setRefreshing] = useState(false);
     const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
     const [posts, setPosts] = useState<Post[]>([]); // Gallery posts
@@ -681,14 +682,14 @@ export default function AlterSpaceScreen() {
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{alter.name}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    {/* Recherche - naviguer vers l'écran de recherche */}
+                    {/* Profil - afficher le profil de l'alter dans l'alter space */}
                     <TouchableOpacity
                         style={styles.messageButton}
                         onPress={() => {
-                            router.push('/(tabs)/search' as any);
+                            setActiveTab('profile');
                         }}
                     >
-                        <Ionicons name="search-outline" size={24} color={colors.text} />
+                        <Ionicons name="person-circle-outline" size={26} color={colors.text} />
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.messageButton}
@@ -698,16 +699,6 @@ export default function AlterSpaceScreen() {
                         }}
                     >
                         <Ionicons name="chatbubble-ellipses-outline" size={26} color={colors.text} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.messageButton}
-                        onPress={() => {
-                            // Settings for this alter
-                            // Assuming we have a settings page or just general settings
-                            router.push('/settings');
-                        }}
-                    >
-                        <Ionicons name="settings-outline" size={26} color={colors.text} />
                     </TouchableOpacity>
                 </View>
             </View>

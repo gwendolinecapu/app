@@ -1,51 +1,53 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, ReactNode, useEffect } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     TouchableOpacity,
-    ScrollView,
     Alert,
     Dimensions,
     Animated,
     LayoutAnimation,
     Platform,
-    UIManager
+    UIManager,
+    FlatList,
+    Image,
+    StatusBar
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, spacing } from '../../src/lib/theme';
+import { BlurView } from 'expo-blur';
+import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { triggerHaptic } from '../../src/lib/haptics';
 import { useMonetization } from '../../src/contexts/MonetizationContext';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { ShopItem } from '../../src/services/MonetizationTypes';
 import { SHOP_ITEMS } from '../../src/services/ShopData';
+import Constants from 'expo-constants';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-// Types for shop categories - Added 'inventory'
+// Types for shop categories
 type ShopCategory = 'themes' | 'frames' | 'bubbles' | 'inventory';
 
 const { width } = Dimensions.get('window');
+const COLUMN_COUNT = 2;
+const ITEM_SPACING = spacing.md;
+const ITEM_WIDTH = (width - spacing.md * (COLUMN_COUNT + 1)) / COLUMN_COUNT;
 
-// ==================== ANIMATED CARD COMPONENT ====================
-// Provides scale animation on press for tactile feedback
-const AnimatedCard = ({ children, onPress, disabled, style }: {
-    children: React.ReactNode;
-    onPress: () => void;
-    disabled?: boolean;
-    style?: any;
-}) => {
-    const scaleAnim = useRef(new Animated.Value(1)).current;
+// ==================== ANIMATIONS ====================
+
+const AnimatedTouchable = ({ onPress, children, style, disabled }: { onPress: () => void, children: ReactNode, style?: any, disabled?: boolean }) => {
+    const scale = useRef(new Animated.Value(1)).current;
 
     const handlePressIn = () => {
-        Animated.spring(scaleAnim, {
-            toValue: 0.96,
+        Animated.spring(scale, {
+            toValue: 0.95,
             useNativeDriver: true,
             speed: 50,
             bounciness: 4,
@@ -53,11 +55,11 @@ const AnimatedCard = ({ children, onPress, disabled, style }: {
     };
 
     const handlePressOut = () => {
-        Animated.spring(scaleAnim, {
+        Animated.spring(scale, {
             toValue: 1,
             useNativeDriver: true,
             speed: 50,
-            bounciness: 8,
+            bounciness: 4,
         }).start();
     };
 
@@ -69,15 +71,149 @@ const AnimatedCard = ({ children, onPress, disabled, style }: {
             onPressOut={handlePressOut}
             disabled={disabled}
         >
-            <Animated.View style={[style, { transform: [{ scale: scaleAnim }] }]}>
+            <Animated.View style={[style, { transform: [{ scale }] }]}>
                 {children}
             </Animated.View>
         </TouchableOpacity>
     );
 };
 
+// ==================== COMPONENTS ====================
+
+const PremiumBanner = ({ onPress }: { onPress: () => void }) => (
+    <AnimatedTouchable onPress={onPress} style={styles.premiumBannerContainer}>
+        <LinearGradient
+            colors={['#6366f1', '#a855f7', '#ec4899']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.premiumBanner}
+        >
+            <View style={styles.premiumContent}>
+                <View style={styles.premiumTextContainer}>
+                    <Text style={styles.premiumTitle}>Plural Premium ✨</Text>
+                    <Text style={styles.premiumSubtitle}>Débloquez tout l'univers.</Text>
+                </View>
+                <View style={styles.premiumButton}>
+                    <Text style={styles.premiumButtonText}>Voir l'offre</Text>
+                    <Ionicons name="arrow-forward" size={16} color="#6366f1" />
+                </View>
+            </View>
+            <View style={styles.premiumShine} />
+        </LinearGradient>
+    </AnimatedTouchable>
+);
+
+const AdRewardCard = ({ onPress, loading, disabled }: { onPress: () => void, loading: boolean, disabled: boolean }) => (
+    <AnimatedTouchable onPress={onPress} disabled={disabled} style={[styles.adCard, disabled && { opacity: 0.6 }]}>
+        <LinearGradient
+            colors={['#1f2937', '#111827']}
+            style={styles.adGradient}
+        >
+            <View style={styles.adContent}>
+                <View style={styles.adIconContainer}>
+                    <Ionicons name={loading ? "hourglass" : "play-circle"} size={28} color="#fbbf24" />
+                </View>
+                <View style={styles.adTextContainer}>
+                    <Text style={styles.adTitle}>Crédits Gratuits</Text>
+                    <Text style={styles.adSubtitle}>Regarder une pub (+50 <Ionicons name="star" size={10} color="#fbbf24" />)</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </View>
+        </LinearGradient>
+    </AnimatedTouchable>
+);
+
+const CategoryTabs = ({ activeCategory, onSelect, counts }: { activeCategory: ShopCategory, onSelect: (c: ShopCategory) => void, counts?: any }) => {
+    const categories: { id: ShopCategory, label: string, icon: string }[] = [
+        { id: 'themes', label: 'Thèmes', icon: 'color-palette' },
+        { id: 'frames', label: 'Cadres', icon: 'image' },
+        { id: 'bubbles', label: 'Bulles', icon: 'chatbubble' },
+        { id: 'inventory', label: 'Moi', icon: 'person' },
+    ];
+
+    return (
+        <View style={styles.tabsContainer}>
+            <FlatList
+                horizontal
+                data={categories}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.tabsContent}
+                keyExtractor={item => item.id}
+                renderItem={({ item }) => {
+                    const isActive = activeCategory === item.id;
+                    return (
+                        <TouchableOpacity
+                            onPress={() => onSelect(item.id)}
+                            style={[styles.tabItem, isActive && styles.tabItemActive]}
+                        >
+                            <Ionicons name={item.icon as any} size={16} color={isActive ? '#FFF' : '#9ca3af'} />
+                            <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{item.label}</Text>
+                        </TouchableOpacity>
+                    );
+                }}
+            />
+        </View>
+    );
+};
+
+const ShopItemCard = ({ item, isOwned, isEquipped, isLocked, userCredits, onAction }: {
+    item: ShopItem,
+    isOwned: boolean,
+    isEquipped: boolean,
+    isLocked: boolean,
+    userCredits: number,
+    onAction: (item: ShopItem) => void
+}) => {
+    const canAfford = userCredits >= (item.priceCredits || 0);
+
+    const getPreview = () => {
+        if (item.preview?.startsWith('#')) {
+            return <View style={[styles.colorPreview, { backgroundColor: item.preview }]} />;
+        }
+        return <Text style={styles.emojiPreview}>{item.preview}</Text>;
+    };
+
+    return (
+        <AnimatedTouchable onPress={() => onAction(item)} style={styles.cardContainer}>
+            <View style={styles.cardPreviewContainer}>
+                {getPreview()}
+                {isEquipped && (
+                    <View style={styles.equippedIndicator}>
+                        <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+                    </View>
+                )}
+            </View>
+
+            <View style={styles.cardInfo}>
+                <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
+
+                <View style={styles.cardFooter}>
+                    {isOwned ? (
+                        <View style={[styles.statusBadge, isEquipped ? styles.statusEquipped : styles.statusOwned]}>
+                            <Text style={styles.statusText}>{isEquipped ? 'Équipé' : 'Possédé'}</Text>
+                        </View>
+                    ) : item.isPremium ? (
+                        <View style={[styles.priceTag, !isLocked && styles.priceTagUnlocked]}>
+                            <Ionicons name="diamond" size={12} color={!isLocked ? "#FFF" : "#ec4899"} />
+                            <Text style={[styles.priceText, !isLocked && { color: '#FFF' }]}>{!isLocked ? 'Inclus' : 'Premium'}</Text>
+                        </View>
+                    ) : (
+                        <View style={[styles.priceTag, !canAfford && styles.priceTagDisabled]}>
+                            <Ionicons name="star" size={12} color={canAfford ? "#fbbf24" : "#6b7280"} />
+                            <Text style={[styles.priceText, !canAfford && { color: "#6b7280" }]}>{item.priceCredits}</Text>
+                        </View>
+                    )}
+                </View>
+            </View>
+        </AnimatedTouchable>
+    );
+};
+
+// ==================== MAIN SCREEN ====================
+
 export default function ShopScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const {
         credits,
         isPremium,
@@ -90,638 +226,508 @@ export default function ShopScreen() {
     } = useMonetization();
     const { currentAlter } = useAuth();
 
+    // Create a local state that defaults to existing Shop Items if loading
+    const [items] = useState(SHOP_ITEMS);
+
     const [activeCategory, setActiveCategory] = useState<ShopCategory>('themes');
     const [adLoading, setAdLoading] = useState(false);
 
-    // ==================== DATA HELPERS ====================
+    // Re-render when category changes or ownership changes
+    const [filteredItems, setFilteredItems] = useState<ShopItem[]>([]);
 
-    // Get items for the active category
-    // For 'inventory', we filter all items owned by the current alter
-    const getCategoryItems = useCallback((): ShopItem[] => {
-        if (activeCategory === 'inventory') {
-            if (!currentAlter?.owned_items?.length) return [];
-            // Flatten all shop items and filter by ownership
-            const allItems = [
-                ...SHOP_ITEMS.themes,
-                ...SHOP_ITEMS.frames,
-                ...SHOP_ITEMS.bubbles
-            ];
-            return allItems.filter(item => currentAlter.owned_items?.includes(item.id));
-        }
-        return SHOP_ITEMS[activeCategory] || [];
-    }, [activeCategory, currentAlter?.owned_items]);
-
-    // Count items per category (owned for inventory, total for others)
-    const getInventoryCount = useCallback((): number => {
-        return currentAlter?.owned_items?.length || 0;
-    }, [currentAlter?.owned_items]);
-
-    // ==================== ACTIONS ====================
-
-    const handlePurchase = async (item: ShopItem) => {
-        triggerHaptic.selection();
-
-        // Decorations require an active alter
-        if (!currentAlter && item.type === 'decoration') {
-            Alert.alert("Mode Système", "Veuillez sélectionner un alter pour acheter des décorations.");
-            return;
-        }
-
-        // Premium-only items
-        if (item.isPremium && !isPremium) {
-            Alert.alert(
-                "Réservé au Premium",
-                "Cet objet est exclusif aux membres Plural Connect Premium.",
-                [
-                    { text: "Plus tard", style: "cancel" },
-                    { text: "Voir les offres", onPress: () => presentPaywall() }
-                ]
-            );
-            return;
-        }
-
-        // Already owned check
-        const isOwned = currentAlter?.owned_items?.includes(item.id);
-        if (isOwned) {
-            Alert.alert("Déjà possédé", "Vous avez déjà cet objet !");
-            return;
-        }
-
-        // Not enough credits check
-        if ((item.priceCredits ?? 0) > credits) {
-            Alert.alert("Crédits insuffisants", `Il vous manque ${(item.priceCredits ?? 0) - credits}★ pour acheter cet objet.`);
-            return;
-        }
-
-        // Proceed with purchase
-        const alterId = item.type === 'decoration' ? currentAlter?.id : undefined;
-        const success = await purchaseItem(item, alterId);
-
-        if (success) {
-            triggerHaptic.success();
-            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-            Alert.alert("🎉 Succès", `Vous avez obtenu : ${item.name}`);
-        } else {
-            triggerHaptic.error();
-            Alert.alert("Erreur", "L'achat a échoué. Veuillez réessayer.");
-        }
-    };
-
-    // Handle equipping an owned item
-    const handleEquip = async (item: ShopItem) => {
-        if (!currentAlter) {
-            Alert.alert("Mode Système", "Veuillez sélectionner un alter pour équiper.");
-            return;
-        }
-
-        triggerHaptic.selection();
-
-        // Map item type to decoration slot
-        const slotMap: { [key: string]: 'frame' | 'theme' | 'bubble' } = {
-            'frame': 'frame',
-            'theme': 'theme',
-            'bubble': 'bubble'
+    useEffect(() => {
+        const updateItems = () => {
+            if (activeCategory === 'inventory') {
+                if (!currentAlter?.owned_items?.length) {
+                    setFilteredItems([]);
+                    return;
+                }
+                const allDocs = [...items.themes, ...items.frames, ...items.bubbles];
+                setFilteredItems(allDocs.filter(i => currentAlter.owned_items?.includes(i.id)));
+            } else {
+                setFilteredItems(items[activeCategory] || []);
+            }
         };
-        const slot = slotMap[item.type];
-        if (!slot) return;
+        updateItems();
+    }, [activeCategory, items, currentAlter?.owned_items]);
 
-        const success = await equipDecoration(currentAlter.id, item.id, slot);
-        if (success) {
-            triggerHaptic.success();
-            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-            Alert.alert("✨ Équipé", `${item.name} est maintenant actif !`);
-        } else {
-            triggerHaptic.error();
-            Alert.alert("Erreur", "Impossible d'équiper cet objet.");
+    const handleCategorySelect = (category: ShopCategory) => {
+        if (activeCategory !== category) {
+            triggerHaptic.selection();
+            setActiveCategory(category);
         }
     };
 
-    const handleItemPress = async (item: ShopItem) => {
-        const isOwned = currentAlter?.owned_items?.includes(item.id);
+    const handleAction = async (item: ShopItem) => {
+        triggerHaptic.selection();
+
+        if (!currentAlter) {
+            Alert.alert("Mode Système", "Veuillez sélectionner un alter pour gérer les objets.");
+            return;
+        }
+
+        const isOwned = currentAlter.owned_items?.includes(item.id);
 
         if (isOwned) {
-            // Show equip options
-            const slotMap: { [key: string]: 'frame' | 'theme' | 'bubble' } = {
-                'frame': 'frame',
-                'theme': 'theme',
-                'bubble': 'bubble'
+            // Equip Logic
+            const slotMap: Record<string, 'frame' | 'theme' | 'bubble'> = {
+                'frame': 'frame', 'theme': 'theme', 'bubble': 'bubble'
             };
             const slot = slotMap[item.type];
-            const isEquipped = slot && getEquippedDecorationId(currentAlter, slot) === item.id;
+            if (!slot) return;
+
+            const isEquipped = getEquippedDecorationId(currentAlter, slot) === item.id;
 
             if (isEquipped) {
-                Alert.alert("Déjà équipé", "Cet objet est actuellement actif.");
-            } else {
-                Alert.alert(
-                    item.name,
-                    item.description,
-                    [
-                        { text: "Annuler", style: "cancel" },
-                        { text: "Équiper", onPress: () => handleEquip(item) }
-                    ]
-                );
+                Alert.alert("Déjà équipé", "Cet objet est déjà actif sur votre profil.");
+                return;
             }
+
+            Alert.alert(
+                "Équiper l'objet ?",
+                `Voulez-vous utiliser ${item.name} ?`,
+                [
+                    { text: "Annuler", style: "cancel" },
+                    {
+                        text: "Équiper",
+                        onPress: async () => {
+                            const success = await equipDecoration(currentAlter.id, item.id, slot);
+                            if (success) {
+                                triggerHaptic.success();
+                            } else {
+                                triggerHaptic.error();
+                            }
+                        }
+                    }
+                ]
+            );
         } else {
-            // Purchase flow
-            handlePurchase(item);
+            // Purchase Logic
+            if (item.isPremium && !isPremium) {
+                presentPaywall();
+                return;
+            }
+
+            if ((item.priceCredits || 0) > credits) {
+                Alert.alert("Pas assez de crédits", "Regardez une publicité pour en gagner plus !");
+                return;
+            }
+
+            Alert.alert(
+                "Confirmer l'achat",
+                `Acheter ${item.name} pour ${item.priceCredits} crédits ?`,
+                [
+                    { text: "Annuler", style: "cancel" },
+                    {
+                        text: "Acheter",
+                        onPress: async () => {
+                            const success = await purchaseItem(item, currentAlter.id);
+                            if (success) {
+                                triggerHaptic.success();
+                                Alert.alert("Félicitations ! 🎉", `Vous possédez maintenant ${item.name}.`);
+                            } else {
+                                triggerHaptic.error();
+                            }
+                        }
+                    }
+                ]
+            );
         }
     };
 
     const handleWatchAd = async () => {
-        if (!currentAlter) {
-            Alert.alert("Mode Système", "Veuillez sélectionner un alter pour recevoir la récompense.");
-            return;
-        }
-        triggerHaptic.selection();
+        if (!currentAlter) return;
         setAdLoading(true);
         try {
             await watchRewardAd(currentAlter.id);
-        } catch (e) {
-            console.error('Ad failed:', e);
         } finally {
             setAdLoading(false);
         }
     };
 
-    const handleCategoryChange = (category: ShopCategory) => {
-        if (category === activeCategory) return;
-        triggerHaptic.light();
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setActiveCategory(category);
-    };
-
-    // ==================== RENDER HELPERS ====================
-
-    const renderCategoryTab = (category: ShopCategory, label: string, icon?: string, count?: number) => {
-        const isActive = activeCategory === category;
-        return (
-            <TouchableOpacity
-                key={category}
-                style={[styles.categoryTab, isActive && styles.categoryTabActive]}
-                onPress={() => handleCategoryChange(category)}
-            >
-                {icon && <Text style={{ marginRight: 4 }}>{icon}</Text>}
-                <Text style={[styles.categoryTabText, isActive && styles.categoryTabTextActive]}>
-                    {label}
+    const renderHeader = () => (
+        <View style={styles.headerContainer}>
+            <PremiumBanner onPress={presentPaywall} />
+            <View style={styles.creditsBar}>
+                <Text style={styles.sectionTitle}>
+                    {activeCategory === 'inventory' ? `Inventaire de ${currentAlter?.name || 'Système'}` : 'Boutique'}
                 </Text>
-                {count !== undefined && count > 0 && (
-                    <View style={styles.countBadge}>
-                        <Text style={styles.countBadgeText}>{count}</Text>
-                    </View>
-                )}
-            </TouchableOpacity>
-        );
-    };
-
-    const renderItem = (item: ShopItem) => {
-        const isUnlocked = item.isPremium && isPremium;
-        const isOwned = currentAlter?.owned_items?.includes(item.id);
-
-        // Check if this item is currently equipped
-        const slotMap: { [key: string]: 'frame' | 'theme' | 'bubble' } = {
-            'frame': 'frame',
-            'theme': 'theme',
-            'bubble': 'bubble'
-        };
-        const slot = slotMap[item.type];
-        const isEquipped = isOwned && slot && getEquippedDecorationId(currentAlter, slot) === item.id;
-
-        return (
-            <AnimatedCard
-                key={item.id}
-                style={[styles.itemCard, isEquipped && styles.itemCardEquipped]}
-                onPress={() => handleItemPress(item)}
-                disabled={loading}
-            >
-                {/* Preview Section */}
-                <View style={[
-                    styles.itemPreview,
-                    { backgroundColor: item.preview?.startsWith('#') ? item.preview : '#333' }
-                ]}>
-                    {item.type === 'frame' && <Text style={styles.previewEmoji}>👤</Text>}
-                    {item.type === 'bubble' && <Text style={styles.previewEmoji}>💬</Text>}
-                    {item.type === 'theme' && <Text style={styles.previewEmoji}>🎨</Text>}
-                    {item.type === 'frame' && item.preview && (
-                        <Text style={styles.previewOverlay}>{item.preview}</Text>
-                    )}
-
-                    {/* Equipped Indicator */}
-                    {isEquipped && (
-                        <View style={styles.equippedBadge}>
-                            <Ionicons name="checkmark-circle" size={16} color="#3BA55C" />
-                        </View>
-                    )}
+                <View style={styles.creditsBubble}>
+                    <Ionicons name="star" size={14} color="#fbbf24" />
+                    <Text style={styles.creditsText}>{credits}</Text>
                 </View>
-
-                {/* Content Section */}
-                <View style={styles.itemContent}>
-                    <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-                    <Text style={styles.itemDesc} numberOfLines={1}>{item.description}</Text>
-
-                    <View style={styles.priceRow}>
-                        {isOwned ? (
-                            <View style={[styles.badge, isEquipped ? styles.badgeEquipped : styles.badgeOwned]}>
-                                <Ionicons name={isEquipped ? "checkmark" : "bag-check"} size={10} color="white" />
-                                <Text style={styles.badgeText}>{isEquipped ? "Équipé" : "Possédé"}</Text>
-                            </View>
-                        ) : item.isPremium ? (
-                            <View style={[styles.badge, isUnlocked ? styles.badgeOwned : styles.badgePremium]}>
-                                <Ionicons name="diamond" size={10} color="white" />
-                                <Text style={styles.badgeText}>{isUnlocked ? "Inclus" : "Premium"}</Text>
-                            </View>
-                        ) : (
-                            <View style={styles.badge}>
-                                <Ionicons name="star" size={10} color={colors.primary} />
-                                <Text style={[styles.badgeText, { color: colors.primary }]}>{item.priceCredits}</Text>
-                            </View>
-                        )}
-                    </View>
-                </View>
-            </AnimatedCard>
-        );
-    };
-
-    const renderEmptyInventory = () => (
-        <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>🎒</Text>
-            <Text style={styles.emptyTitle}>Inventaire vide</Text>
-            <Text style={styles.emptySubtitle}>
-                {currentAlter
-                    ? `${currentAlter.name} n'a pas encore de décorations.`
-                    : "Sélectionnez un alter pour voir son inventaire."
-                }
-            </Text>
-            <TouchableOpacity
-                style={styles.emptyButton}
-                onPress={() => handleCategoryChange('themes')}
-            >
-                <Text style={styles.emptyButtonText}>Explorer la boutique</Text>
-            </TouchableOpacity>
+            </View>
+            <CategoryTabs activeCategory={activeCategory} onSelect={handleCategorySelect} />
         </View>
     );
 
-    // ==================== MAIN RENDER ====================
+    const renderFooter = () => (
+        <View style={styles.listFooter}>
+            <AdRewardCard onPress={handleWatchAd} loading={adLoading} disabled={adLoading || !currentAlter} />
+        </View>
+    );
 
-    const items = getCategoryItems();
-    const inventoryCount = getInventoryCount();
+    const renderEmpty = () => (
+        <View style={styles.emptyContainer}>
+            <Text style={styles.emptyEmoji}>🕸️</Text>
+            <Text style={styles.emptyText}>Rien à voir ici pour l'instant.</Text>
+            {activeCategory === 'inventory' && (
+                <TouchableOpacity onPress={() => handleCategorySelect('themes')} style={styles.emptyButton}>
+                    <Text style={styles.emptyButtonText}>Aller à la boutique</Text>
+                </TouchableOpacity>
+            )}
+        </View>
+    );
 
     return (
         <View style={styles.container}>
-            <ScrollView style={styles.scrollContainer} contentContainerStyle={{ paddingBottom: 100 }}>
+            <StatusBar barStyle="light-content" />
 
-                {/* Header */}
-                <SafeAreaView edges={['top']} style={styles.header}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={24} color="#FFF" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Boutique</Text>
-                    <View style={styles.creditsPill}>
-                        <Ionicons name="star" size={14} color="#FFD700" />
-                        <Text style={styles.creditsText}>{credits}</Text>
-                    </View>
-                </SafeAreaView>
-
-                {/* Premium Banner (Nitro Style) */}
-                <TouchableOpacity onPress={() => presentPaywall()} activeOpacity={0.9}>
-                    <LinearGradient
-                        colors={['#5865F2', '#EB459E']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles.premiumBanner}
-                    >
-                        <View style={styles.bannerContent}>
-                            <View>
-                                <Text style={styles.bannerTitle}>Plural Premium</Text>
-                                <Text style={styles.bannerSubtitle}>Débloquez tout. Exprimez-vous.</Text>
-                            </View>
-                            <View style={styles.bannerButton}>
-                                <Text style={styles.bannerButtonText}>Voir les offres</Text>
-                            </View>
-                        </View>
-                        {/* Abstract Shapes */}
-                        <View style={[styles.shape, { width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(255,255,255,0.1)', top: -20, right: -20 }]} />
-                        <View style={[styles.shape, { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.1)', bottom: 10, left: 20 }]} />
-                    </LinearGradient>
+            {/* Custom Header Bar */}
+            <View style={[styles.topBar, { paddingTop: insets.top }]}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <Ionicons name="arrow-back" size={24} color="#FFF" />
                 </TouchableOpacity>
+                <Text style={styles.screenTitle}>Boutique</Text>
+                <View style={{ width: 40 }} />
+            </View>
 
-                {/* Current Alter Info */}
-                <View style={styles.alterInfo}>
-                    <Text style={styles.alterInfoText}>
-                        Pour : <Text style={styles.alterName}>{currentAlter?.name || 'Système'}</Text>
-                    </Text>
-                </View>
+            <FlatList
+                data={filteredItems}
+                keyExtractor={(item) => item.id}
+                numColumns={COLUMN_COUNT}
+                contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
+                ListHeaderComponent={renderHeader}
+                ListFooterComponent={renderFooter}
+                ListEmptyComponent={renderEmpty}
+                renderItem={({ item }) => {
+                    const isOwned = currentAlter?.owned_items?.includes(item.id) || false;
 
-                {/* Categories */}
-                <View style={styles.tabsContainer}>
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.tabsScroll}
-                    >
-                        {renderCategoryTab('themes', 'Thèmes', '🎨')}
-                        {renderCategoryTab('frames', 'Cadres', '🖼️')}
-                        {renderCategoryTab('bubbles', 'Bulles', '💬')}
-                        {renderCategoryTab('inventory', 'Inventaire', '🎒', inventoryCount)}
-                    </ScrollView>
-                </View>
+                    // Check equipped status safely
+                    let isEquipped = false;
+                    if (isOwned && currentAlter) {
+                        if (item.type === 'frame') isEquipped = currentAlter.avatar_frame === item.id;
+                        if (item.type === 'theme') isEquipped = currentAlter.themeId === item.id;
+                        if (item.type === 'bubble') isEquipped = currentAlter.bubbleStyle === item.id;
+                    }
 
-                {/* Items Grid or Empty State */}
-                {activeCategory === 'inventory' && items.length === 0 ? (
-                    renderEmptyInventory()
-                ) : (
-                    <View style={styles.grid}>
-                        {items.map(renderItem)}
-                    </View>
-                )}
+                    const isLocked = item.isPremium && !isPremium && !isOwned;
 
-                {/* Rewarded Ad CTA */}
-                <TouchableOpacity
-                    style={[styles.adCard, !currentAlter && { opacity: 0.5 }]}
-                    onPress={handleWatchAd}
-                    disabled={adLoading || !currentAlter}
-                >
-                    <LinearGradient colors={['#23272A', '#2C2F33']} style={styles.adGradient}>
-                        <View style={styles.adIcon}>
-                            <Ionicons name={adLoading ? "hourglass" : "videocam"} size={24} color={colors.textMuted} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.adTitle}>Besoin de crédits ?</Text>
-                            <Text style={styles.adSubtitle}>Regarder une pub pour +50★</Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-                    </LinearGradient>
-                </TouchableOpacity>
-
-            </ScrollView>
+                    return (
+                        <ShopItemCard
+                            item={item}
+                            isOwned={isOwned}
+                            isEquipped={isEquipped}
+                            isLocked={isLocked}
+                            userCredits={credits}
+                            onAction={handleAction}
+                        />
+                    );
+                }}
+                columnWrapperStyle={styles.columnWrapper}
+            />
         </View>
     );
 }
 
-// ==================== STYLES ====================
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#202225',
+        backgroundColor: '#0f172a', // Slate 900
     },
-    scrollContainer: {
-        flex: 1,
-    },
-    header: {
+    topBar: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        justifyContent: 'space-between',
         paddingHorizontal: spacing.md,
-        paddingBottom: spacing.sm,
-    },
-    headerTitle: {
-        color: '#FFF',
-        fontSize: 18,
-        fontWeight: 'bold',
+        paddingBottom: spacing.md,
+        backgroundColor: '#0f172a',
+        zIndex: 10,
     },
     backButton: {
         width: 40,
         height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.1)',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    creditsPill: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.4)',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
-        gap: 6,
-    },
-    creditsText: {
+    screenTitle: {
+        ...typography.h3,
         color: '#FFF',
-        fontWeight: 'bold',
+    },
+    headerContainer: {
+        marginBottom: spacing.md,
+    },
+    listContent: {
+        paddingHorizontal: spacing.md,
+    },
+    columnWrapper: {
+        justifyContent: 'space-between',
+        marginBottom: spacing.md,
+    },
+    listFooter: {
+        marginTop: spacing.md,
+        marginBottom: spacing.xl,
+    },
+    // Premium Banner
+    premiumBannerContainer: {
+        marginBottom: spacing.lg,
+        borderRadius: borderRadius.xl,
+        shadowColor: '#a855f7',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 16,
+        elevation: 8,
     },
     premiumBanner: {
-        margin: spacing.md,
-        height: 120,
-        borderRadius: 16,
         padding: spacing.lg,
-        justifyContent: 'center',
+        borderRadius: borderRadius.xl,
+        position: 'relative',
         overflow: 'hidden',
     },
-    bannerContent: {
+    premiumContent: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        zIndex: 10,
+        zIndex: 1,
     },
-    bannerTitle: {
-        fontSize: 22,
-        fontWeight: '900',
+    premiumTextContainer: {
+        flex: 1,
+    },
+    premiumTitle: {
+        ...typography.h2,
         color: '#FFF',
+        fontSize: 20,
         marginBottom: 4,
     },
-    bannerSubtitle: {
+    premiumSubtitle: {
+        ...typography.body,
         color: 'rgba(255,255,255,0.9)',
-        fontSize: 12,
+        fontSize: 13,
     },
-    bannerButton: {
+    premiumButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: '#FFF',
-        paddingHorizontal: 14,
+        paddingHorizontal: 12,
         paddingVertical: 8,
         borderRadius: 20,
+        gap: 4,
     },
-    bannerButtonText: {
-        color: '#5865F2',
+    premiumButtonText: {
+        ...typography.caption,
         fontWeight: 'bold',
-        fontSize: 12,
+        color: '#6366f1',
     },
-    shape: {
+    premiumShine: {
         position: 'absolute',
+        top: -50,
+        right: -50,
+        width: 150,
+        height: 150,
+        borderRadius: 75,
+        backgroundColor: 'rgba(255,255,255,0.1)',
     },
-    alterInfo: {
-        paddingHorizontal: spacing.md,
-        marginBottom: spacing.sm,
+    // Sections & Credits
+    creditsBar: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.md,
     },
-    alterInfoText: {
-        color: '#72767D',
-        fontSize: 12,
-    },
-    alterName: {
+    sectionTitle: {
+        ...typography.h3,
         color: '#FFF',
-        fontWeight: 'bold',
+        fontSize: 18,
     },
+    creditsBubble: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 16,
+        gap: 6,
+    },
+    creditsText: {
+        ...typography.body,
+        fontWeight: 'bold',
+        color: '#fbbf24',
+    },
+    // Tabs
     tabsContainer: {
         marginBottom: spacing.md,
     },
-    tabsScroll: {
-        paddingHorizontal: spacing.md,
-        gap: spacing.sm,
+    tabsContent: {
+
     },
-    categoryTab: {
+    tabItem: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 20,
-        backgroundColor: '#2F3136',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        marginRight: spacing.sm,
+        gap: 6,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
     },
-    categoryTabActive: {
-        backgroundColor: '#5865F2',
+    tabItemActive: {
+        backgroundColor: 'rgba(99, 102, 241, 0.2)', // Indigo tint
+        borderColor: '#6366f1',
     },
-    categoryTabText: {
-        color: '#B9BBBE',
+    tabText: {
+        ...typography.caption,
         fontWeight: '600',
-        fontSize: 13,
+        color: '#9ca3af',
     },
-    categoryTabTextActive: {
+    tabTextActive: {
         color: '#FFF',
     },
-    countBadge: {
-        marginLeft: 6,
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 10,
-    },
-    countBadgeText: {
-        color: '#FFF',
-        fontSize: 10,
-        fontWeight: 'bold',
-    },
-    grid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        paddingHorizontal: spacing.md,
-        gap: spacing.md,
-    },
-    itemCard: {
-        width: (width - spacing.md * 3) / 2,
-        backgroundColor: '#2F3136',
-        borderRadius: 12,
+    // Item Card
+    cardContainer: {
+        width: ITEM_WIDTH,
+        backgroundColor: '#1e293b', // Slate 800
+        borderRadius: borderRadius.lg,
         overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
     },
-    itemCardEquipped: {
-        borderWidth: 2,
-        borderColor: '#3BA55C',
-    },
-    itemPreview: {
-        height: 90,
+    cardPreviewContainer: {
+        height: 100,
         justifyContent: 'center',
         alignItems: 'center',
-        position: 'relative',
+        backgroundColor: '#0f172a',
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.05)',
     },
-    previewEmoji: {
-        fontSize: 32,
+    colorPreview: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        borderWidth: 2,
+        borderColor: '#FFF',
     },
-    previewOverlay: {
+    emojiPreview: {
+        fontSize: 40,
+    },
+    equippedIndicator: {
         position: 'absolute',
-        fontSize: 50,
+        top: 8,
+        right: 8,
     },
-    equippedBadge: {
-        position: 'absolute',
-        top: 6,
-        right: 6,
-        backgroundColor: '#2F3136',
-        borderRadius: 10,
-        padding: 2,
-    },
-    itemContent: {
+    cardInfo: {
         padding: spacing.sm,
     },
-    itemName: {
+    cardTitle: {
+        ...typography.body,
         color: '#FFF',
-        fontWeight: 'bold',
-        fontSize: 13,
-        marginBottom: 2,
-    },
-    itemDesc: {
-        color: '#72767D',
-        fontSize: 10,
+        fontWeight: '600',
         marginBottom: 8,
+        fontSize: 13,
     },
-    priceRow: {
+    cardFooter: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        justifyContent: 'flex-start',
     },
-    badge: {
+    priceTag: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.2)',
+        backgroundColor: 'rgba(255,255,255,0.1)',
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 8,
         gap: 4,
     },
-    badgePremium: {
-        backgroundColor: '#EB459E',
+    priceTagUnlocked: {
+        backgroundColor: '#10b981', // Emerald
     },
-    badgeOwned: {
-        backgroundColor: '#5865F2',
+    priceTagDisabled: {
+        opacity: 0.5,
     },
-    badgeEquipped: {
-        backgroundColor: '#3BA55C',
-    },
-    badgeText: {
-        color: '#FFF',
+    priceText: {
+        ...typography.caption,
         fontWeight: 'bold',
-        fontSize: 10,
+        color: '#fbbf24',
+        fontSize: 11,
     },
-    emptyState: {
+    statusBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    statusOwned: {
+        backgroundColor: 'rgba(99, 102, 241, 0.2)',
+    },
+    statusEquipped: {
+        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+    },
+    statusText: {
+        ...typography.caption,
+        fontWeight: 'bold',
+        color: '#a5b4fc',
+        fontSize: 11,
+    },
+    // Ad Card
+    adCard: {
+        borderRadius: borderRadius.lg,
+        overflow: 'hidden',
+    },
+    adGradient: {
+        padding: spacing.md,
+    },
+    adContent: {
+        flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: spacing.xl * 2,
-        paddingHorizontal: spacing.lg,
+        gap: spacing.md,
+    },
+    adIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(251, 191, 36, 0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    adTextContainer: {
+        flex: 1,
+    },
+    adTitle: {
+        ...typography.h4,
+        color: '#FFF',
+        fontSize: 15,
+        marginBottom: 2,
+    },
+    adSubtitle: {
+        ...typography.caption,
+        color: '#9ca3af',
+    },
+    // Empty State
+    emptyContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 40,
     },
     emptyEmoji: {
         fontSize: 48,
         marginBottom: spacing.md,
     },
-    emptyTitle: {
-        color: '#FFF',
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: spacing.xs,
-    },
-    emptySubtitle: {
-        color: '#72767D',
-        fontSize: 14,
+    emptyText: {
+        ...typography.body,
+        color: '#9ca3af',
         textAlign: 'center',
         marginBottom: spacing.lg,
     },
     emptyButton: {
-        backgroundColor: '#5865F2',
         paddingHorizontal: 20,
         paddingVertical: 10,
+        backgroundColor: '#6366f1',
         borderRadius: 20,
     },
     emptyButtonText: {
         color: '#FFF',
         fontWeight: 'bold',
-    },
-    adCard: {
-        margin: spacing.md,
-        borderRadius: 12,
-        overflow: 'hidden',
-        marginTop: spacing.xl,
-    },
-    adGradient: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: spacing.md,
-        gap: spacing.md,
-    },
-    adIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#202225',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    adTitle: {
-        color: '#FFF',
-        fontWeight: 'bold',
-        fontSize: 14,
-    },
-    adSubtitle: {
-        color: '#B9BBBE',
-        fontSize: 12,
     },
 });

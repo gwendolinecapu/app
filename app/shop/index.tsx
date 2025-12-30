@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
     View,
     Text,
@@ -6,7 +6,11 @@ import {
     TouchableOpacity,
     ScrollView,
     Alert,
-    Dimensions
+    Dimensions,
+    Animated,
+    LayoutAnimation,
+    Platform,
+    UIManager
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -19,43 +23,115 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { ShopItem } from '../../src/services/MonetizationTypes';
 import { SHOP_ITEMS } from '../../src/services/ShopData';
 
-// Types for shop items
-type ShopCategory = 'themes' | 'frames' | 'bubbles';
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+// Types for shop categories - Added 'inventory'
+type ShopCategory = 'themes' | 'frames' | 'bubbles' | 'inventory';
 
 const { width } = Dimensions.get('window');
+
+// ==================== ANIMATED CARD COMPONENT ====================
+// Provides scale animation on press for tactile feedback
+const AnimatedCard = ({ children, onPress, disabled, style }: {
+    children: React.ReactNode;
+    onPress: () => void;
+    disabled?: boolean;
+    style?: any;
+}) => {
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+
+    const handlePressIn = () => {
+        Animated.spring(scaleAnim, {
+            toValue: 0.96,
+            useNativeDriver: true,
+            speed: 50,
+            bounciness: 4,
+        }).start();
+    };
+
+    const handlePressOut = () => {
+        Animated.spring(scaleAnim, {
+            toValue: 1,
+            useNativeDriver: true,
+            speed: 50,
+            bounciness: 8,
+        }).start();
+    };
+
+    return (
+        <TouchableOpacity
+            activeOpacity={1}
+            onPress={onPress}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+            disabled={disabled}
+        >
+            <Animated.View style={[style, { transform: [{ scale: scaleAnim }] }]}>
+                {children}
+            </Animated.View>
+        </TouchableOpacity>
+    );
+};
 
 export default function ShopScreen() {
     const router = useRouter();
     const {
         credits,
-        addCredits, // Not used directly, reward ad handles it
         isPremium,
         purchaseItem,
         presentPaywall,
         loading,
-        watchRewardAd
+        watchRewardAd,
+        equipDecoration,
+        getEquippedDecorationId
     } = useMonetization();
     const { currentAlter } = useAuth();
 
     const [activeCategory, setActiveCategory] = useState<ShopCategory>('themes');
     const [adLoading, setAdLoading] = useState(false);
 
-    const getCategoryItems = (): ShopItem[] => {
+    // ==================== DATA HELPERS ====================
+
+    // Get items for the active category
+    // For 'inventory', we filter all items owned by the current alter
+    const getCategoryItems = useCallback((): ShopItem[] => {
+        if (activeCategory === 'inventory') {
+            if (!currentAlter?.owned_items?.length) return [];
+            // Flatten all shop items and filter by ownership
+            const allItems = [
+                ...SHOP_ITEMS.themes,
+                ...SHOP_ITEMS.frames,
+                ...SHOP_ITEMS.bubbles
+            ];
+            return allItems.filter(item => currentAlter.owned_items?.includes(item.id));
+        }
         return SHOP_ITEMS[activeCategory] || [];
-    };
+    }, [activeCategory, currentAlter?.owned_items]);
+
+    // Count items per category (owned for inventory, total for others)
+    const getInventoryCount = useCallback((): number => {
+        return currentAlter?.owned_items?.length || 0;
+    }, [currentAlter?.owned_items]);
+
+    // ==================== ACTIONS ====================
 
     const handlePurchase = async (item: ShopItem) => {
         triggerHaptic.selection();
 
+        // Decorations require an active alter
         if (!currentAlter && item.type === 'decoration') {
             Alert.alert("Mode Système", "Veuillez sélectionner un alter pour acheter des décorations.");
             return;
         }
 
+        // Premium-only items
         if (item.isPremium && !isPremium) {
             Alert.alert(
                 "Réservé au Premium",
-                "Cet objet est exclusif aux membres Plural Connect Premium. Profitez-en pour passer au niveau supérieur !",
+                "Cet objet est exclusif aux membres Plural Connect Premium.",
                 [
                     { text: "Plus tard", style: "cancel" },
                     { text: "Voir les offres", onPress: () => presentPaywall() }
@@ -64,31 +140,90 @@ export default function ShopScreen() {
             return;
         }
 
-        if (item.isPremium && isPremium) {
-            // Already owned/unlocked by premium logic check logic below
-            // Logic to equip would go here or just say "Inclus".
-            // If it's a decoration, we might still "claim" it for 0 cost so it shows in owned_items?
-            // Or just consider it owned always.
-            // For now, let's treat it as purchase required (price 0 or skipped).
-        }
-
-        // Credit Purchase
-        const alterId = item.type === 'decoration' ? currentAlter?.id : undefined;
-
-        // Check if already owned logic is handled in service, but we can check here too
+        // Already owned check
         const isOwned = currentAlter?.owned_items?.includes(item.id);
         if (isOwned) {
             Alert.alert("Déjà possédé", "Vous avez déjà cet objet !");
             return;
         }
 
+        // Not enough credits check
+        if ((item.priceCredits ?? 0) > credits) {
+            Alert.alert("Crédits insuffisants", `Il vous manque ${(item.priceCredits ?? 0) - credits}★ pour acheter cet objet.`);
+            return;
+        }
+
+        // Proceed with purchase
+        const alterId = item.type === 'decoration' ? currentAlter?.id : undefined;
         const success = await purchaseItem(item, alterId);
+
         if (success) {
             triggerHaptic.success();
-            Alert.alert("Succès", `Vous avez obtenu : ${item.name}`);
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            Alert.alert("🎉 Succès", `Vous avez obtenu : ${item.name}`);
         } else {
             triggerHaptic.error();
-            // Alert handled by context usually, but safety check
+            Alert.alert("Erreur", "L'achat a échoué. Veuillez réessayer.");
+        }
+    };
+
+    // Handle equipping an owned item
+    const handleEquip = async (item: ShopItem) => {
+        if (!currentAlter) {
+            Alert.alert("Mode Système", "Veuillez sélectionner un alter pour équiper.");
+            return;
+        }
+
+        triggerHaptic.selection();
+
+        // Map item type to decoration slot
+        const slotMap: { [key: string]: 'frame' | 'theme' | 'bubble' } = {
+            'frame': 'frame',
+            'theme': 'theme',
+            'bubble': 'bubble'
+        };
+        const slot = slotMap[item.type];
+        if (!slot) return;
+
+        const success = await equipDecoration(currentAlter.id, item.id, slot);
+        if (success) {
+            triggerHaptic.success();
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            Alert.alert("✨ Équipé", `${item.name} est maintenant actif !`);
+        } else {
+            triggerHaptic.error();
+            Alert.alert("Erreur", "Impossible d'équiper cet objet.");
+        }
+    };
+
+    const handleItemPress = async (item: ShopItem) => {
+        const isOwned = currentAlter?.owned_items?.includes(item.id);
+
+        if (isOwned) {
+            // Show equip options
+            const slotMap: { [key: string]: 'frame' | 'theme' | 'bubble' } = {
+                'frame': 'frame',
+                'theme': 'theme',
+                'bubble': 'bubble'
+            };
+            const slot = slotMap[item.type];
+            const isEquipped = slot && getEquippedDecorationId(currentAlter, slot) === item.id;
+
+            if (isEquipped) {
+                Alert.alert("Déjà équipé", "Cet objet est actuellement actif.");
+            } else {
+                Alert.alert(
+                    item.name,
+                    item.description,
+                    [
+                        { text: "Annuler", style: "cancel" },
+                        { text: "Équiper", onPress: () => handleEquip(item) }
+                    ]
+                );
+            }
+        } else {
+            // Purchase flow
+            handlePurchase(item);
         }
     };
 
@@ -101,83 +236,134 @@ export default function ShopScreen() {
         setAdLoading(true);
         try {
             await watchRewardAd(currentAlter.id);
-            // Result handled in context (alerts etc)
         } catch (e) {
-            // Error logged
+            console.error('Ad failed:', e);
         } finally {
             setAdLoading(false);
         }
     };
 
-    const renderCategoryTab = (category: ShopCategory, label: string) => (
-        <TouchableOpacity
-            style={[styles.categoryTab, activeCategory === category && styles.categoryTabActive]}
-            onPress={() => {
-                triggerHaptic.light();
-                setActiveCategory(category);
-            }}
-        >
-            <Text style={[
-                styles.categoryTabText,
-                activeCategory === category && styles.categoryTabTextActive
-            ]}>
-                {label}
-            </Text>
-        </TouchableOpacity>
-    );
+    const handleCategoryChange = (category: ShopCategory) => {
+        if (category === activeCategory) return;
+        triggerHaptic.light();
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setActiveCategory(category);
+    };
+
+    // ==================== RENDER HELPERS ====================
+
+    const renderCategoryTab = (category: ShopCategory, label: string, icon?: string, count?: number) => {
+        const isActive = activeCategory === category;
+        return (
+            <TouchableOpacity
+                key={category}
+                style={[styles.categoryTab, isActive && styles.categoryTabActive]}
+                onPress={() => handleCategoryChange(category)}
+            >
+                {icon && <Text style={{ marginRight: 4 }}>{icon}</Text>}
+                <Text style={[styles.categoryTabText, isActive && styles.categoryTabTextActive]}>
+                    {label}
+                </Text>
+                {count !== undefined && count > 0 && (
+                    <View style={styles.countBadge}>
+                        <Text style={styles.countBadgeText}>{count}</Text>
+                    </View>
+                )}
+            </TouchableOpacity>
+        );
+    };
 
     const renderItem = (item: ShopItem) => {
         const isUnlocked = item.isPremium && isPremium;
         const isOwned = currentAlter?.owned_items?.includes(item.id);
-        const showAsOwned = isOwned || (item.isPremium && isPremium); // If premium, maybe always show accessible? Or need claim?
-        // Let's assume need claim for now for consistency, or if simple model, premium = access.
-        // Given Requirements "uniquely owned... by specific Alter", premium status is system-wide.
-        // If item is premium, maybe it bypasses cost but still needs "add to inventory"?
-        // Or if it's strictly premium, maybe no inventory needed.
-        // Let's stick to "owned" check.
+
+        // Check if this item is currently equipped
+        const slotMap: { [key: string]: 'frame' | 'theme' | 'bubble' } = {
+            'frame': 'frame',
+            'theme': 'theme',
+            'bubble': 'bubble'
+        };
+        const slot = slotMap[item.type];
+        const isEquipped = isOwned && slot && getEquippedDecorationId(currentAlter, slot) === item.id;
 
         return (
-            <TouchableOpacity
+            <AnimatedCard
                 key={item.id}
-                style={styles.itemCard}
-                onPress={() => handlePurchase(item)}
-                activeOpacity={0.9}
+                style={[styles.itemCard, isEquipped && styles.itemCardEquipped]}
+                onPress={() => handleItemPress(item)}
                 disabled={loading}
             >
-                <View style={[styles.itemPreview, { backgroundColor: item.preview?.startsWith('#') ? item.preview : '#333' }]}>
-                    {item.type === 'frame' && <Text style={{ fontSize: 40 }}>👤</Text>}
-                    {item.type === 'bubble' && <Text style={{ fontSize: 30 }}>💬</Text>}
-                    {/* Overlay Frame/Preview if needed */}
-                    {item.type === 'frame' && <Text style={{ position: 'absolute', fontSize: 60 }}>{item.preview}</Text>}
-                    {item.type === 'bubble' && <Text style={{ position: 'absolute', fontSize: 20 }}>{item.preview}</Text>}
+                {/* Preview Section */}
+                <View style={[
+                    styles.itemPreview,
+                    { backgroundColor: item.preview?.startsWith('#') ? item.preview : '#333' }
+                ]}>
+                    {item.type === 'frame' && <Text style={styles.previewEmoji}>👤</Text>}
+                    {item.type === 'bubble' && <Text style={styles.previewEmoji}>💬</Text>}
+                    {item.type === 'theme' && <Text style={styles.previewEmoji}>🎨</Text>}
+                    {item.type === 'frame' && item.preview && (
+                        <Text style={styles.previewOverlay}>{item.preview}</Text>
+                    )}
+
+                    {/* Equipped Indicator */}
+                    {isEquipped && (
+                        <View style={styles.equippedBadge}>
+                            <Ionicons name="checkmark-circle" size={16} color="#3BA55C" />
+                        </View>
+                    )}
                 </View>
 
+                {/* Content Section */}
                 <View style={styles.itemContent}>
-                    <Text style={styles.itemName}>{item.name}</Text>
+                    <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
                     <Text style={styles.itemDesc} numberOfLines={1}>{item.description}</Text>
 
                     <View style={styles.priceRow}>
-                        {item.isPremium ? (
+                        {isOwned ? (
+                            <View style={[styles.badge, isEquipped ? styles.badgeEquipped : styles.badgeOwned]}>
+                                <Ionicons name={isEquipped ? "checkmark" : "bag-check"} size={10} color="white" />
+                                <Text style={styles.badgeText}>{isEquipped ? "Équipé" : "Possédé"}</Text>
+                            </View>
+                        ) : item.isPremium ? (
                             <View style={[styles.badge, isUnlocked ? styles.badgeOwned : styles.badgePremium]}>
                                 <Ionicons name="diamond" size={10} color="white" />
                                 <Text style={styles.badgeText}>{isUnlocked ? "Inclus" : "Premium"}</Text>
                             </View>
                         ) : (
-                            <View style={[styles.badge, isOwned && styles.badgeOwned]}>
-                                <Ionicons name={isOwned ? "checkmark" : "star"} size={10} color={isOwned ? "white" : colors.primary} />
-                                <Text style={[styles.badgeText, !isOwned && { color: colors.primary }]}>
-                                    {isOwned ? "Possédé" : item.priceCredits}
-                                </Text>
+                            <View style={styles.badge}>
+                                <Ionicons name="star" size={10} color={colors.primary} />
+                                <Text style={[styles.badgeText, { color: colors.primary }]}>{item.priceCredits}</Text>
                             </View>
-                        )}
-                        {item.isPremium && !isPremium && (
-                            <Text style={styles.priceSub}>ou {(item.priceCredits || 0) * 2}★</Text>
                         )}
                     </View>
                 </View>
-            </TouchableOpacity>
+            </AnimatedCard>
         );
     };
+
+    const renderEmptyInventory = () => (
+        <View style={styles.emptyState}>
+            <Text style={styles.emptyEmoji}>🎒</Text>
+            <Text style={styles.emptyTitle}>Inventaire vide</Text>
+            <Text style={styles.emptySubtitle}>
+                {currentAlter
+                    ? `${currentAlter.name} n'a pas encore de décorations.`
+                    : "Sélectionnez un alter pour voir son inventaire."
+                }
+            </Text>
+            <TouchableOpacity
+                style={styles.emptyButton}
+                onPress={() => handleCategoryChange('themes')}
+            >
+                <Text style={styles.emptyButtonText}>Explorer la boutique</Text>
+            </TouchableOpacity>
+        </View>
+    );
+
+    // ==================== MAIN RENDER ====================
+
+    const items = getCategoryItems();
+    const inventoryCount = getInventoryCount();
 
     return (
         <View style={styles.container}>
@@ -188,6 +374,7 @@ export default function ShopScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={24} color="#FFF" />
                     </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Boutique</Text>
                     <View style={styles.creditsPill}>
                         <Ionicons name="star" size={14} color="#FFD700" />
                         <Text style={styles.creditsText}>{credits}</Text>
@@ -211,39 +398,49 @@ export default function ShopScreen() {
                                 <Text style={styles.bannerButtonText}>Voir les offres</Text>
                             </View>
                         </View>
-                        {/* Abstract Shapes (Circles) */}
+                        {/* Abstract Shapes */}
                         <View style={[styles.shape, { width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(255,255,255,0.1)', top: -20, right: -20 }]} />
                         <View style={[styles.shape, { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.1)', bottom: 10, left: 20 }]} />
                     </LinearGradient>
                 </TouchableOpacity>
 
                 {/* Current Alter Info */}
-                <View style={{ paddingHorizontal: spacing.md, marginBottom: spacing.sm }}>
-                    <Text style={{ color: '#aaa', fontSize: 12 }}>
-                        Achats pour : <Text style={{ color: '#fff', fontWeight: 'bold' }}>{currentAlter?.name || 'Système (Aucun alter sélectionné)'}</Text>
+                <View style={styles.alterInfo}>
+                    <Text style={styles.alterInfoText}>
+                        Pour : <Text style={styles.alterName}>{currentAlter?.name || 'Système'}</Text>
                     </Text>
                 </View>
 
                 {/* Categories */}
                 <View style={styles.tabsContainer}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.sm }}>
-                        {renderCategoryTab('themes', 'Thèmes')}
-                        {renderCategoryTab('frames', 'Cadres')}
-                        {renderCategoryTab('bubbles', 'Bulles')}
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.tabsScroll}
+                    >
+                        {renderCategoryTab('themes', 'Thèmes', '🎨')}
+                        {renderCategoryTab('frames', 'Cadres', '🖼️')}
+                        {renderCategoryTab('bubbles', 'Bulles', '💬')}
+                        {renderCategoryTab('inventory', 'Inventaire', '🎒', inventoryCount)}
                     </ScrollView>
                 </View>
 
-                {/* Items Grid */}
-                <View style={styles.grid}>
-                    {getCategoryItems().map(renderItem)}
-                </View>
+                {/* Items Grid or Empty State */}
+                {activeCategory === 'inventory' && items.length === 0 ? (
+                    renderEmptyInventory()
+                ) : (
+                    <View style={styles.grid}>
+                        {items.map(renderItem)}
+                    </View>
+                )}
 
                 {/* Rewarded Ad CTA */}
-                <TouchableOpacity style={[styles.adCard, !currentAlter && { opacity: 0.5 }]} onPress={handleWatchAd} disabled={adLoading || !currentAlter}>
-                    <LinearGradient
-                        colors={['#23272A', '#2C2F33']}
-                        style={styles.adGradient}
-                    >
+                <TouchableOpacity
+                    style={[styles.adCard, !currentAlter && { opacity: 0.5 }]}
+                    onPress={handleWatchAd}
+                    disabled={adLoading || !currentAlter}
+                >
+                    <LinearGradient colors={['#23272A', '#2C2F33']} style={styles.adGradient}>
                         <View style={styles.adIcon}>
                             <Ionicons name={adLoading ? "hourglass" : "videocam"} size={24} color={colors.textMuted} />
                         </View>
@@ -260,10 +457,11 @@ export default function ShopScreen() {
     );
 }
 
+// ==================== STYLES ====================
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#202225', // Discord Dark
+        backgroundColor: '#202225',
     },
     scrollContainer: {
         flex: 1,
@@ -274,6 +472,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: spacing.md,
         paddingBottom: spacing.sm,
+    },
+    headerTitle: {
+        color: '#FFF',
+        fontSize: 18,
+        fontWeight: 'bold',
     },
     backButton: {
         width: 40,
@@ -296,7 +499,7 @@ const styles = StyleSheet.create({
     },
     premiumBanner: {
         margin: spacing.md,
-        height: 140,
+        height: 120,
         borderRadius: 16,
         padding: spacing.lg,
         justifyContent: 'center',
@@ -309,7 +512,7 @@ const styles = StyleSheet.create({
         zIndex: 10,
     },
     bannerTitle: {
-        fontSize: 24,
+        fontSize: 22,
         fontWeight: '900',
         color: '#FFF',
         marginBottom: 4,
@@ -320,10 +523,9 @@ const styles = StyleSheet.create({
     },
     bannerButton: {
         backgroundColor: '#FFF',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
         borderRadius: 20,
-        elevation: 5,
     },
     bannerButtonText: {
         color: '#5865F2',
@@ -333,11 +535,29 @@ const styles = StyleSheet.create({
     shape: {
         position: 'absolute',
     },
+    alterInfo: {
+        paddingHorizontal: spacing.md,
+        marginBottom: spacing.sm,
+    },
+    alterInfoText: {
+        color: '#72767D',
+        fontSize: 12,
+    },
+    alterName: {
+        color: '#FFF',
+        fontWeight: 'bold',
+    },
     tabsContainer: {
         marginBottom: spacing.md,
     },
+    tabsScroll: {
+        paddingHorizontal: spacing.md,
+        gap: spacing.sm,
+    },
     categoryTab: {
-        paddingHorizontal: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 20,
         backgroundColor: '#2F3136',
@@ -348,9 +568,22 @@ const styles = StyleSheet.create({
     categoryTabText: {
         color: '#B9BBBE',
         fontWeight: '600',
+        fontSize: 13,
     },
     categoryTabTextActive: {
         color: '#FFF',
+    },
+    countBadge: {
+        marginLeft: 6,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 10,
+    },
+    countBadgeText: {
+        color: '#FFF',
+        fontSize: 10,
+        fontWeight: 'bold',
     },
     grid: {
         flexDirection: 'row',
@@ -359,15 +592,35 @@ const styles = StyleSheet.create({
         gap: spacing.md,
     },
     itemCard: {
-        width: (width - spacing.md * 3) / 2, // 2 columns
+        width: (width - spacing.md * 3) / 2,
         backgroundColor: '#2F3136',
         borderRadius: 12,
         overflow: 'hidden',
     },
+    itemCardEquipped: {
+        borderWidth: 2,
+        borderColor: '#3BA55C',
+    },
     itemPreview: {
-        height: 100,
+        height: 90,
         justifyContent: 'center',
         alignItems: 'center',
+        position: 'relative',
+    },
+    previewEmoji: {
+        fontSize: 32,
+    },
+    previewOverlay: {
+        position: 'absolute',
+        fontSize: 50,
+    },
+    equippedBadge: {
+        position: 'absolute',
+        top: 6,
+        right: 6,
+        backgroundColor: '#2F3136',
+        borderRadius: 10,
+        padding: 2,
     },
     itemContent: {
         padding: spacing.sm,
@@ -375,7 +628,7 @@ const styles = StyleSheet.create({
     itemName: {
         color: '#FFF',
         fontWeight: 'bold',
-        fontSize: 14,
+        fontSize: 13,
         marginBottom: 2,
     },
     itemDesc: {
@@ -401,6 +654,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#EB459E',
     },
     badgeOwned: {
+        backgroundColor: '#5865F2',
+    },
+    badgeEquipped: {
         backgroundColor: '#3BA55C',
     },
     badgeText: {
@@ -408,9 +664,36 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 10,
     },
-    priceSub: {
+    emptyState: {
+        alignItems: 'center',
+        paddingVertical: spacing.xl * 2,
+        paddingHorizontal: spacing.lg,
+    },
+    emptyEmoji: {
+        fontSize: 48,
+        marginBottom: spacing.md,
+    },
+    emptyTitle: {
+        color: '#FFF',
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: spacing.xs,
+    },
+    emptySubtitle: {
         color: '#72767D',
-        fontSize: 10,
+        fontSize: 14,
+        textAlign: 'center',
+        marginBottom: spacing.lg,
+    },
+    emptyButton: {
+        backgroundColor: '#5865F2',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 20,
+    },
+    emptyButtonText: {
+        color: '#FFF',
+        fontWeight: 'bold',
     },
     adCard: {
         margin: spacing.md,
@@ -442,4 +725,3 @@ const styles = StyleSheet.create({
         fontSize: 12,
     },
 });
-

@@ -127,17 +127,20 @@ class AdMediationService {
             await this.loadState();
             this.checkDailyReset();
 
-            // Initialiser Google Mobile Ads
-            await mobileAds().initialize();
+            // Initialiser Google Mobile Ads (skip in Expo Go where mobileAds is null)
+            if (mobileAds) {
+                await mobileAds().initialize();
+                // Précharger les pubs reward AdMob (only if SDK is available)
+                this.preloadRewardedAds();
+            } else {
+                console.log('[AdMediation] Running in Expo Go - AdMob disabled, using mocks');
+            }
 
             // Initialiser les autres réseaux (placeholders pour l'instant)
             await Promise.all([
                 this.initUnityAds(),
                 this.initAppLovin(),
             ]);
-
-            // Précharger les pubs reward AdMob
-            this.preloadRewardedAds();
 
             this.initialized = true;
         } catch (error) {
@@ -157,8 +160,15 @@ class AdMediationService {
 
     /**
      * Précharge les pubs reward
+     * NOTE: Only call this if mobileAds/RewardedAd are available (native build)
      */
     private async preloadRewardedAds(): Promise<void> {
+        // Guard: Skip if AdMob SDK not available (Expo Go)
+        if (!RewardedAd) {
+            console.log('[AdMediation] RewardedAd not available, skipping preload');
+            return;
+        }
+
         // Créer l'instance AdMob
         const adUnitId = __DEV__
             ? TestIds.REWARDED

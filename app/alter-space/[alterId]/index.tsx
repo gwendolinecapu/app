@@ -320,11 +320,11 @@ export default function AlterSpaceScreen() {
                         </View>
                         <View style={styles.statBox}>
                             <Text style={styles.statValue}>{friendCount}</Text>
-                            <Text style={styles.statLabel}>Amis</Text>
+                            <Text style={styles.statLabel}>Abonnés</Text>
                         </View>
                         <View style={styles.statBox}>
                             <Text style={styles.statValue}>0</Text>
-                            <Text style={styles.statLabel}>Suivs</Text>
+                            <Text style={styles.statLabel}>Suivis</Text>
                         </View>
                     </View>
                 </View>
@@ -377,8 +377,8 @@ export default function AlterSpaceScreen() {
                                 onPress={() => handleFriendAction(alter.id)}
                             >
                                 <Text style={[styles.profileActionButtonText, styles.primaryActionButtonText]}>
-                                    {friendStatuses[alter.id] === 'friends' ? 'Amis' :
-                                        friendStatuses[alter.id] === 'pending' ? 'Demande envoyée' : 'Suivre'}
+                                    {friendStatuses[alter.id] === 'friends' ? 'Abonnés' :
+                                        friendStatuses[alter.id] === 'pending' ? 'Demande envoyée' : 'S\'abonner'}
                                 </Text>
                             </TouchableOpacity>
                             <TouchableOpacity
@@ -684,19 +684,18 @@ export default function AlterSpaceScreen() {
 
     const renderSearch = () => (
         <View style={styles.tabContent}>
-            <View style={styles.searchContainer}>
+            <TouchableOpacity
+                style={styles.searchContainer}
+                onPress={() => router.push('/(tabs)/search')}
+            >
                 <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
-                <TextInput
-                    style={styles.searchInputPlaceholder}
-                    placeholder="Rechercher..."
-                    placeholderTextColor={colors.textSecondary}
-                />
-            </View>
+                <Text style={styles.searchInputPlaceholder}>Rechercher des profils...</Text>
+            </TouchableOpacity>
             <View style={styles.emptyState}>
                 <Ionicons name="search-outline" size={64} color={colors.textMuted} />
                 <Text style={styles.emptyTitle}>Recherche</Text>
                 <Text style={styles.emptySubtitle}>
-                    Recherchez parmi les posts, le journal et la galerie de {alter.name}.
+                    Appuyez sur la barre de recherche pour trouver des amis, d'autres alters ou des personnes extérieures.
                 </Text>
             </View>
         </View>
@@ -732,7 +731,7 @@ export default function AlterSpaceScreen() {
                 <Text style={styles.settingSectionTitle}>Interactions</Text>
                 <TouchableOpacity style={styles.settingItem}>
                     <Ionicons name="people-outline" size={24} color={colors.text} />
-                    <Text style={styles.settingText}>Amis proches</Text>
+                    <Text style={styles.settingText}>Abonnés proches</Text>
                     <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.settingItem}>

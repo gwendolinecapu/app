@@ -14,6 +14,7 @@ interface NativeAdCardProps {
 
 export function NativeAdCard({ onClose }: NativeAdCardProps) {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     // Safely get monetization context - returns null if provider is missing
     let getNativeAd: (() => NativeAdData | null) | null = null;
     let isAdFree = false;
@@ -121,6 +122,11 @@ export function NativeAdCard({ onClose }: NativeAdCardProps) {
             </View>
         </View>
     );
+=======
+    // MonetizationContext et les pubs sont désactivés pour l'instant
+    // Nécessite un development build pour fonctionner
+    return null;
+>>>>>>> Stashed changes
 =======
     // MonetizationContext et les pubs sont désactivés pour l'instant
     // Nécessite un development build pour fonctionner

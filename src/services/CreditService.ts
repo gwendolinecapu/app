@@ -110,33 +110,60 @@ class CreditService {
 
     // ==================== GAINS ====================
 
+    // ==================== GAINS ====================
+
     /**
-     * Vérifie si le bonus quotidien est disponible
+     * Vérifie si le bonus quotidien est disponible pour un alter
      */
-    canClaimDailyLogin(): boolean {
-        const today = new Date().toISOString().split('T')[0];
-        return this.lastDailyClaimDate !== today;
+    async canClaimDailyLogin(alterId: string): Promise<boolean> {
+        try {
+            const alterRef = doc(db, 'alters', alterId);
+            const snap = await getDoc(alterRef);
+            if (!snap.exists()) return true; // New alter can claim? Or verify system policy. Assuming yes.
+
+            const data = snap.data();
+            const lastClaim = data.last_daily_reward;
+            if (!lastClaim) return true;
+
+            const today = new Date().toISOString().split('T')[0];
+            return lastClaim !== today;
+        } catch (e) {
+            console.error('Error checking daily login:', e);
+            return false;
+        }
     }
 
     /**
-     * Réclame le bonus de connexion quotidienne
+     * Réclame le bonus de connexion quotidienne pour un alter
      */
-    async claimDailyLogin(): Promise<{ amount: number; streak: number; streakBonus: number }> {
-        if (!this.canClaimDailyLogin()) {
-            return { amount: 0, streak: this.currentStreak, streakBonus: 0 };
+    async claimDailyLogin(alterId: string): Promise<{ amount: number; streak: number; streakBonus: number }> {
+        if (!this.userId) throw new Error("User not initialized");
+
+        const canClaim = await this.canClaimDailyLogin(alterId);
+        if (!canClaim) {
+            // Retrieve current streak from alter to return it? 
+            // For now return 0s
+            return { amount: 0, streak: 0, streakBonus: 0 };
         }
 
         const today = new Date().toISOString().split('T')[0];
         const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
+        const alterRef = doc(db, 'alters', alterId);
+        const alterSnap = await getDoc(alterRef);
+        const alterData = alterSnap.data() || {};
+
+        const lastClaim = alterData.last_daily_reward;
+        let currentStreak = alterData.daily_reward_streak || 0;
+
         // Calculer le streak
-        if (this.lastDailyClaimDate === yesterday) {
-            this.currentStreak++;
+        if (lastClaim === yesterday) {
+            currentStreak++;
         } else {
-            this.currentStreak = 1;
+            currentStreak = 1;
         }
 
-        // Bonus quotidien (premium donne plus)
+        // Bonus quotidien (premium system-wide influence)
         const isPremium = PremiumService.isPremium();
         const dailyAmount = isPremium
             ? CREDIT_REWARDS.DAILY_LOGIN_PREMIUM
@@ -144,40 +171,50 @@ class CreditService {
 
         // Bonus streak
         let streakBonus = 0;
-        if (this.currentStreak === 7) {
+        if (currentStreak === 7) {
             streakBonus = CREDIT_REWARDS.STREAK_7_DAYS;
-        } else if (this.currentStreak === 30) {
+        } else if (currentStreak === 30) {
             streakBonus = CREDIT_REWARDS.STREAK_30_DAYS;
         }
 
         const totalAmount = dailyAmount + streakBonus;
 
-        // Ajouter les crédits
+        // Ajouter les crédits (Wallet Système)
         await this.addCredits(
             totalAmount,
             isPremium ? 'daily_login_premium' : 'daily_login',
-            `Connexion jour ${this.currentStreak}`
+            `Connexion jour ${currentStreak} (${alterData.name || 'Alter'})`
         );
 
-        // Mettre à jour la date
-        this.lastDailyClaimDate = today;
-        await this.saveToFirestore({
-            lastDailyLogin: Date.now(),
-            loginStreak: this.currentStreak,
+        // Mettre à jour l'alter
+        await updateDoc(alterRef, {
+            last_daily_reward: today,
+            daily_reward_streak: currentStreak
         });
+
+        // We don't update System lastDailyClaimDate anymore, as it is per-alter.
 
         return {
             amount: dailyAmount,
-            streak: this.currentStreak,
+            streak: currentStreak,
             streakBonus,
         };
     }
 
     /**
-     * Ajoute des crédits pour une reward ad
+     * Ajoute des crédits pour une reward ad (Alter specific tracking?)
+     * User said: "Daily rewards... tracking should be per Alter... allowing each to claim/watch independently"
      */
-    async claimRewardAd(): Promise<number> {
+    async claimRewardAd(alterId: string): Promise<number> {
+        // We could track "last_reward_ad" on alter to implement cooldowns if needed.
+        // For now, just grant the credits.
         const amount = CREDIT_REWARDS.REWARD_AD;
+
+        const alterRef = doc(db, 'alters', alterId);
+        await updateDoc(alterRef, {
+            last_reward_ad: Date.now()
+        });
+
         await this.addCredits(amount, 'reward_ad', 'Vidéo publicitaire');
         return amount;
     }
@@ -193,11 +230,15 @@ class CreditService {
 
     /**
      * Achète un item de la boutique
+     * @param applyEffect If true, triggers business logic (granting rights). If false, just deducts money.
      */
-    async purchaseItem(item: ShopItem): Promise<boolean> {
+    async purchaseItem(item: ShopItem, applyEffect: boolean = true): Promise<boolean> {
         if (!item.priceCredits) {
-            console.error('[CreditService] Item has no credit price:', item.id);
-            return false;
+            // Free items should be handled by caller usually, but if 0 cost passed here:
+            if (applyEffect) {
+                return this.applyItemEffect(item);
+            }
+            return true;
         }
 
         if (!this.hasEnoughCredits(item.priceCredits)) {
@@ -213,7 +254,14 @@ class CreditService {
             item.id
         );
 
-        // Appliquer l'effet selon le type
+        if (applyEffect) {
+            return this.applyItemEffect(item);
+        }
+
+        return true;
+    }
+
+    private async applyItemEffect(item: ShopItem): Promise<boolean> {
         switch (item.type) {
             case 'ad_free':
                 await PremiumService.grantAdFreeDays(item.duration || 1);
@@ -222,10 +270,13 @@ class CreditService {
                 await PremiumService.grantPremiumDays(item.duration || 1);
                 break;
             case 'decoration':
-                // Géré par DecorationService
-                break;
+                // If called with applyEffect=true, it means we want to grant it.
+                // But decoration granting requires an Alter ID!
+                // Shop usually supplies the context.
+                // If this is called without alter context, we can't grant to an alter.
+                console.warn("Cannot grant decoration without Alter context. Use DeviceService.purchaseDecoration instead.");
+                return false;
         }
-
         return true;
     }
 

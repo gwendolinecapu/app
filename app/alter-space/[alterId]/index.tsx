@@ -60,6 +60,7 @@ export default function AlterSpaceScreen() {
     const [posts, setPosts] = useState<Post[]>([]); // Gallery posts
     const [loading, setLoading] = useState(true);
     const [latestEmotion, setLatestEmotion] = useState<Emotion | null>(null);
+    const [menuVisible, setMenuVisible] = useState(false); // Hamburger menu drawer
 
     const toast = useToast();
 
@@ -188,8 +189,17 @@ export default function AlterSpaceScreen() {
     useEffect(() => {
         if (alter) {
             fetchPosts();
+
+            // Check friend status if viewing someone else's profile
+            if (!isOwner && alters.length > 0) {
+                // Use the first of our alters to check friendship status
+                const myAlter = alters[0];
+                FriendService.checkStatus(myAlter.id, alter.id).then(status => {
+                    setFriendStatuses(prev => ({ ...prev, [alter.id]: status }));
+                }).catch(console.error);
+            }
         }
-    }, [alter]);
+    }, [alter, isOwner]);
 
     useEffect(() => {
         if (searchQuery.length > 0 && alter) {
@@ -207,22 +217,30 @@ export default function AlterSpaceScreen() {
     }, [searchQuery, alter]);
 
     const handleFriendAction = async (targetId: string) => {
-        if (!alter) return;
+        // Use the user's own alter (first alter in their system) as the sender
+        const myAlter = alters[0];
+        if (!myAlter) {
+            Alert.alert('Erreur', 'Vous devez avoir un alter pour ajouter des amis');
+            return;
+        }
+
         const currentStatus = friendStatuses[targetId] || 'none';
 
         try {
             if (currentStatus === 'none') {
-                await FriendService.sendRequest(alter.id, targetId);
+                console.log('[DEBUG] Sending friend request from', myAlter.id, 'to', targetId);
+                await FriendService.sendRequest(myAlter.id, targetId);
                 setFriendStatuses(prev => ({ ...prev, [targetId]: 'pending' }));
+                triggerHaptic.success();
                 Alert.alert('Succès', 'Demande envoyée !');
             } else if (currentStatus === 'friends') {
                 router.push(`/alter-space/${targetId}`);
             } else if (currentStatus === 'pending') {
                 Alert.alert('Info', 'Demande déjà envoyée');
             }
-        } catch (error) {
-            console.error(error);
-            Alert.alert('Erreur', "Une erreur est survenue");
+        } catch (error: any) {
+            console.error('[DEBUG] Friend request error:', error);
+            Alert.alert('Erreur', error.message || "Une erreur est survenue");
         }
     };
 
@@ -704,76 +722,184 @@ export default function AlterSpaceScreen() {
                 {activeTab === 'settings' && renderSettings()}
             </View>
 
-            {/* Bottom Tab Navigation */}
+            {/* ==================== NEW BOTTOM NAVIGATION ==================== */}
+            {/* 3 buttons: Home (feed), + (create post), Menu (hamburger) */}
             <View style={styles.bottomTabs}>
+                {/* Home - Feed */}
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'feed' && styles.tabActive]}
-                    onPress={() => setActiveTab('feed')}
+                    style={styles.tab}
+                    onPress={() => {
+                        triggerHaptic.selection();
+                        setActiveTab('feed');
+                    }}
                 >
                     <Ionicons
                         name={activeTab === 'feed' ? 'home' : 'home-outline'}
-                        size={24}
+                        size={26}
                         color={activeTab === 'feed' ? colors.primary : colors.textMuted}
                     />
+                    <Text style={[styles.tabLabel, activeTab === 'feed' && styles.tabLabelActive]}>Feed</Text>
                 </TouchableOpacity>
 
-                {isOwner && (
-                    <>
-                        <TouchableOpacity
-                            style={[styles.tab, activeTab === 'gallery' && styles.tabActive]}
-                            onPress={() => setActiveTab('gallery')}
-                        >
-                            <Ionicons
-                                name={activeTab === 'gallery' ? 'images' : 'images-outline'}
-                                size={24}
-                                color={activeTab === 'gallery' ? colors.primary : colors.textMuted}
-                            />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.tab, activeTab === 'journal' && styles.tabActive]}
-                            onPress={() => setActiveTab('journal')}
-                        >
-                            <Ionicons
-                                name={activeTab === 'journal' ? 'book' : 'book-outline'}
-                                size={24}
-                                color={activeTab === 'journal' ? colors.primary : colors.textMuted}
-                            />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.tab, activeTab === 'emotions' && styles.tabActive]}
-                            onPress={() => setActiveTab('emotions')}
-                        >
-                            <Ionicons
-                                name={activeTab === 'emotions' ? 'happy' : 'happy-outline'}
-                                size={24}
-                                color={activeTab === 'emotions' ? colors.primary : colors.textMuted}
-                            />
-                        </TouchableOpacity>
-                    </>
-                )}
-
-                {/* Profile tab at the end (right side) */}
+                {/* + Create Post (bigger, centered) */}
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'profile' && styles.tabActive]}
-                    onPress={() => setActiveTab('profile')}
+                    style={styles.createButton}
+                    onPress={() => {
+                        triggerHaptic.medium();
+                        router.push('/post/create');
+                    }}
+                >
+                    <View style={styles.createButtonGradient}>
+                        <Ionicons name="add" size={32} color="#FFF" />
+                    </View>
+                </TouchableOpacity>
+
+                {/* Hamburger Menu */}
+                <TouchableOpacity
+                    style={styles.tab}
+                    onPress={() => {
+                        triggerHaptic.selection();
+                        setMenuVisible(true);
+                    }}
                 >
                     <Ionicons
-                        name={activeTab === 'profile' ? 'person-circle' : 'person-circle-outline'}
-                        size={24}
-                        color={activeTab === 'profile' ? colors.primary : colors.textMuted}
+                        name="menu"
+                        size={26}
+                        color={menuVisible ? colors.primary : colors.textMuted}
                     />
+                    <Text style={[styles.tabLabel, menuVisible && styles.tabLabelActive]}>Menu</Text>
                 </TouchableOpacity>
             </View>
 
-            {/* Floating Action Button (Only on Gallery or Journal) */}
-            {(activeTab === 'profile' || activeTab === 'journal') && (
-                <TouchableOpacity
-                    style={styles.fab}
-                    onPress={() => router.push('/post/create')}
-                >
-                    <Ionicons name="add" size={30} color="#FFF" />
-                </TouchableOpacity>
-            )}
+            {/* ==================== HAMBURGER MENU DRAWER (Bottom Sheet) ==================== */}
+            <Modal
+                visible={menuVisible}
+                animationType="fade"
+                transparent={true}
+                onRequestClose={() => setMenuVisible(false)}
+                statusBarTranslucent
+            >
+                {/* Backdrop overlay */}
+                <View style={styles.menuOverlay}>
+                    <TouchableOpacity
+                        style={styles.menuBackdrop}
+                        activeOpacity={1}
+                        onPress={() => setMenuVisible(false)}
+                    />
+
+                    {/* Drawer Content */}
+                    <View style={styles.menuDrawer}>
+                        {/* Handle bar */}
+                        <View style={styles.menuHandle} />
+
+                        {/* Menu Header */}
+                        <View style={styles.menuHeader}>
+                            <Text style={styles.menuTitle}>Menu</Text>
+                            <TouchableOpacity
+                                style={styles.menuCloseBtn}
+                                onPress={() => setMenuVisible(false)}
+                            >
+                                <Ionicons name="close" size={22} color={colors.textMuted} />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Menu Items - Only for owner */}
+                        {isOwner && (
+                            <>
+                                <TouchableOpacity
+                                    style={styles.menuItem}
+                                    onPress={() => {
+                                        setMenuVisible(false);
+                                        setActiveTab('profile');
+                                    }}
+                                >
+                                    <View style={[styles.menuIconBg, { backgroundColor: '#5865F230' }]}>
+                                        <Ionicons name="person-circle" size={22} color="#5865F2" />
+                                    </View>
+                                    <Text style={styles.menuItemText}>Mon Profil</Text>
+                                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={styles.menuItem}
+                                    onPress={() => {
+                                        setMenuVisible(false);
+                                        setActiveTab('journal');
+                                    }}
+                                >
+                                    <View style={[styles.menuIconBg, { backgroundColor: '#3BA55C30' }]}>
+                                        <Ionicons name="book" size={22} color="#3BA55C" />
+                                    </View>
+                                    <Text style={styles.menuItemText}>Journal</Text>
+                                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={styles.menuItem}
+                                    onPress={() => {
+                                        setMenuVisible(false);
+                                        setActiveTab('gallery');
+                                    }}
+                                >
+                                    <View style={[styles.menuIconBg, { backgroundColor: '#FAA61A30' }]}>
+                                        <Ionicons name="images" size={22} color="#FAA61A" />
+                                    </View>
+                                    <Text style={styles.menuItemText}>Galerie Privée</Text>
+                                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={styles.menuItem}
+                                    onPress={() => {
+                                        setMenuVisible(false);
+                                        setActiveTab('emotions');
+                                    }}
+                                >
+                                    <View style={[styles.menuIconBg, { backgroundColor: '#EB459E30' }]}>
+                                        <Ionicons name="happy" size={22} color="#EB459E" />
+                                    </View>
+                                    <Text style={styles.menuItemText}>Comment je me sens</Text>
+                                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                                </TouchableOpacity>
+
+                                <View style={styles.menuDivider} />
+                            </>
+                        )}
+
+                        {/* Shop - Always visible */}
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => {
+                                setMenuVisible(false);
+                                router.push('/shop');
+                            }}
+                        >
+                            <View style={[styles.menuIconBg, { backgroundColor: `${colors.primary}30` }]}>
+                                <Ionicons name="storefront" size={22} color={colors.primary} />
+                            </View>
+                            <Text style={[styles.menuItemText, { color: colors.primary, fontWeight: '600' }]}>Boutique</Text>
+                            <View style={styles.menuBadge}>
+                                <Text style={styles.menuBadgeText}>✨</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        {/* Settings */}
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => {
+                                setMenuVisible(false);
+                                router.push('/settings');
+                            }}
+                        >
+                            <View style={[styles.menuIconBg, { backgroundColor: '#72767D30' }]}>
+                                <Ionicons name="settings" size={22} color="#72767D" />
+                            </View>
+                            <Text style={styles.menuItemText}>Réglages</Text>
+                            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
             {/* Full Screen Image Modal */}
             <Modal
                 visible={!!fullScreenImage}
@@ -1323,5 +1449,105 @@ const styles = StyleSheet.create({
         ...typography.bodySmall,
         color: colors.textSecondary,
         lineHeight: 18,
+    },
+    // ==================== NEW NAVIGATION STYLES ====================
+    tabLabel: {
+        fontSize: 10,
+        color: colors.textMuted,
+        marginTop: 2,
+    },
+    tabLabelActive: {
+        color: colors.primary,
+        fontWeight: '600',
+    },
+    createButton: {
+        marginTop: -20,
+    },
+    createButtonGradient: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: colors.primary,
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+        elevation: 8,
+    },
+    // ==================== MENU DRAWER STYLES ====================
+    menuOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        justifyContent: 'flex-end',
+    },
+    menuBackdrop: {
+        flex: 1,
+    },
+    menuDrawer: {
+        backgroundColor: colors.backgroundCard,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        paddingBottom: 40,
+        paddingHorizontal: spacing.lg,
+    },
+    menuHandle: {
+        width: 40,
+        height: 4,
+        backgroundColor: colors.border,
+        borderRadius: 2,
+        alignSelf: 'center',
+        marginTop: spacing.sm,
+        marginBottom: spacing.md,
+    },
+    menuHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.md,
+    },
+    menuTitle: {
+        ...typography.h3,
+        color: colors.text,
+        fontWeight: '700',
+    },
+    menuCloseBtn: {
+        padding: 8,
+        backgroundColor: `${colors.textMuted}20`,
+        borderRadius: 20,
+    },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 14,
+        gap: 14,
+    },
+    menuIconBg: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    menuItemText: {
+        ...typography.body,
+        color: colors.text,
+        flex: 1,
+        fontSize: 16,
+    },
+    menuDivider: {
+        height: 1,
+        backgroundColor: colors.border,
+        marginVertical: spacing.sm,
+    },
+    menuBadge: {
+        backgroundColor: `${colors.primary}20`,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    menuBadgeText: {
+        fontSize: 14,
     },
 });

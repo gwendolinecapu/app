@@ -62,6 +62,7 @@ export interface MonetizationStatus {
     rewardAdsForPremium: number;        // Progression vers 7j premium (0-15)
     hasUsedFreeMonth: boolean;          // A déjà utilisé les 30j offerts
     decorations: string[];              // IDs des décorations possédées
+    silentTrialStartDate: number | null;// Début du trial silencieux (sans CB)
 }
 
 /** Configuration premium par défaut */
@@ -77,6 +78,7 @@ export const DEFAULT_MONETIZATION_STATUS: MonetizationStatus = {
     rewardAdsForPremium: 0,
     hasUsedFreeMonth: false,
     decorations: [],
+    silentTrialStartDate: null,
 };
 
 // ==================== CRÉDITS ====================
@@ -130,7 +132,8 @@ export interface ShopItem {
     name: string;
     description: string;
     priceCredits?: number;      // Prix en crédits (null si IAP)
-    priceIAP?: string;          // ID produit IAP (null si crédits)
+    priceIAP?: string;          // ID produit IAP (legacy/placeholder)
+    revenueCatPackageId?: string; // ID Package RevenueCat (e.g. 'premium_monthly', 'credits_500')
     priceFiat?: number;         // Prix en € pour affichage
     duration?: number;          // Durée en jours (pour ad_free/premium)
     decorationId?: string;      // ID décoration (pour type decoration)
@@ -165,6 +168,43 @@ export const CREDIT_PACKS: ShopItem[] = [
         priceIAP: 'com.pluralconnect.credits.5000',
         priceFiat: 6.99,
         discount: 30,
+    },
+];
+
+/** Packs Premium IAP */
+export const PREMIUM_PACKS: ShopItem[] = [
+    {
+        id: 'premium_monthly',
+        type: 'premium_days',
+        name: 'Premium Mensuel',
+        description: '3.49€ / mois',
+        priceIAP: 'com.pluralconnect.premium.monthly',
+        revenueCatPackageId: '$rc_monthly', // RevenueCat Identifier usually maps simple names
+        priceFiat: 3.49,
+        duration: 30,
+    },
+    {
+        id: 'premium_yearly',
+        type: 'premium_days',
+        name: 'Premium Annuel',
+        description: '24.99€ / an (Economisez 40%)',
+        priceIAP: 'com.pluralconnect.premium.yearly',
+        revenueCatPackageId: '$rc_annual',
+        priceFiat: 24.99,
+        duration: 365,
+        discount: 40,
+        featured: true,
+    },
+    {
+        id: 'premium_lifetime',
+        type: 'premium_days',
+        name: 'Premium à Vie',
+        description: '49.99€ une seule fois',
+        priceIAP: 'com.pluralconnect.premium.lifetime',
+        revenueCatPackageId: '$rc_lifetime',
+        priceFiat: 49.99,
+        duration: 36500, // ~100 ans
+        discount: 0,
     },
 ];
 

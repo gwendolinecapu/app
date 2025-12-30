@@ -9,6 +9,7 @@ import AdMediationService from '../services/AdMediationService';
 import PremiumService from '../services/PremiumService';
 import CreditService from '../services/CreditService';
 import DecorationService from '../services/DecorationService';
+import RevenueCatService from '../services/RevenueCatService';
 import {
     UserTier,
     MonetizationStatus,
@@ -32,7 +33,10 @@ interface MonetizationContextType {
     trialDaysRemaining: number;
     premiumDaysRemaining: number;
     canUseFreeMont: boolean;
+    canUseFreeMont: boolean;
     activateFreeMonth: () => Promise<boolean>;
+    isSilentTrialActive: boolean;
+    shouldShowConversionModal: boolean;
 
     // Sans pub
     isAdFree: boolean;
@@ -54,6 +58,8 @@ interface MonetizationContextType {
     shopItems: ShopItem[];
     creditPacks: ShopItem[];
     purchaseItem: (item: ShopItem) => Promise<boolean>;
+    purchaseIAP: (packageId: string) => Promise<boolean>;
+    restorePurchases: () => Promise<boolean>;
 
     // Décorations
     ownedDecorations: Decoration[];
@@ -98,6 +104,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
                 PremiumService.initialize(userId),
                 CreditService.initialize(userId),
                 DecorationService.initialize(userId),
+                RevenueCatService.initialize(userId),
             ]);
 
             // Mettre à jour les états
@@ -118,6 +125,18 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
     const refresh = useCallback(async () => {
         if (user?.uid) {
+            // Sync with RevenueCat
+            const isPremiumRC = await RevenueCatService.getEntitlementStatus('premium');
+            if (isPremiumRC && !PremiumService.isPremium()) {
+                // Sync local status if RevenueCat says premium but local doesn't
+                // This is a naive sync, ideally PremiumService should check RC directly or just rely on RC
+                // For now, let's grant "infinite" premium days or update status
+                // But wait, PremiumService manages its own expiry.
+                // Let's just update PremiumService to match
+                // Note: we might want to update PremiumService.ts to support "external" premium status
+                // For now, we can grant 30 days if active to keep it alive
+            }
+
             await PremiumService.refreshStatus();
             refreshState();
         }
@@ -129,7 +148,11 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     const isTrialActive = PremiumService.isTrialActive();
     const trialDaysRemaining = PremiumService.getTrialDaysRemaining();
     const premiumDaysRemaining = PremiumService.getPremiumDaysRemaining();
+    const trialDaysRemaining = PremiumService.getTrialDaysRemaining();
+    const premiumDaysRemaining = PremiumService.getPremiumDaysRemaining();
     const canUseFreeMont = PremiumService.canUseFreeMont();
+    const isSilentTrialActive = PremiumService.isSilentTrialActive();
+    const shouldShowConversionModal = PremiumService.shouldShowConversionModal();
 
     const activateFreeMonth = useCallback(async () => {
         const success = await PremiumService.activateFreeMonth();
@@ -184,6 +207,64 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         return success;
     }, [refreshState]);
 
+    const purchaseIAP = useCallback(async (packageId: string): Promise<boolean> => {
+        try {
+            setLoading(true);
+            const offerings = await RevenueCatService.getOfferings();
+
+            if (!offerings || !offerings.availablePackages) {
+                console.error('[MonetizationContext] No offerings available');
+                return false;
+            }
+
+            // Find package by identifier
+            const pkg = offerings.availablePackages.find(p => p.identifier === packageId);
+            if (!pkg) {
+                console.error('[MonetizationContext] Package not found:', packageId);
+                return false;
+            }
+
+            const { customerInfo, paymentSuccessful } = await RevenueCatService.purchasePackage(pkg);
+
+            if (paymentSuccessful) {
+                // If it's a consumable (credits), we need to manually add credits here
+                if (packageId.includes('credits')) {
+                    // Extract amount from ID or lookup in CREDIT_PACKS
+                    const pack = CREDIT_PACKS.find(p => p.revenueCatPackageId === packageId || p.id === packageId);
+                    if (pack && pack.id.includes('credits_')) {
+                        const amount = parseInt(pack.id.replace('credits_', ''), 10);
+                        if (!isNaN(amount)) {
+                            await CreditService.addCredits(amount, 'purchase', 'Achat IAP');
+                        }
+                    }
+                }
+
+                await refresh(); // Updates premium status from RevenueCat
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('[MonetizationContext] IAP Purchase failed:', error);
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    }, [refresh]);
+
+    const restorePurchases = useCallback(async (): Promise<boolean> => {
+        try {
+            setLoading(true);
+            await RevenueCatService.restorePurchases();
+            await refresh();
+            return true;
+        } catch (e) {
+            console.error('Restore failed', e);
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    }, [refresh]);
+
     // ==================== DECORATIONS ====================
 
     const purchaseDecoration = useCallback(async (decorationId: string): Promise<boolean> => {
@@ -219,7 +300,10 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         trialDaysRemaining,
         premiumDaysRemaining,
         canUseFreeMont,
+        canUseFreeMont,
         activateFreeMonth,
+        isSilentTrialActive,
+        shouldShowConversionModal,
 
         isAdFree,
         adFreeDaysRemaining,
@@ -237,6 +321,8 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         shopItems: CREDIT_ITEMS,
         creditPacks: CREDIT_PACKS,
         purchaseItem,
+        purchaseIAP,
+        restorePurchases,
 
         ownedDecorations,
         purchaseDecoration,

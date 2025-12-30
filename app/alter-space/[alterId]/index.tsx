@@ -23,6 +23,8 @@ import { Alter, Post, Emotion, EmotionType, EMOTION_EMOJIS, EMOTION_LABELS } fro
 import { colors, spacing, borderRadius, typography } from '../../../src/lib/theme';
 import { PostService } from '../../../src/services/posts';
 import { FriendService } from '../../../src/services/friends';
+import { Feed } from '../../../src/components/Feed';
+import { StoriesBar } from '../../../src/components/StoriesBar';
 import { SYSTEM_TIPS, SystemTip } from '../../../src/data/tips';
 import { EmotionService } from '../../../src/services/emotions';
 import { useToast } from '../../../src/components/ui/Toast';
@@ -50,9 +52,8 @@ export default function AlterSpaceScreen() {
     const { alters, system } = useAuth();
     const [alter, setAlter] = useState<Alter | null>(null);
     const [activeTab, setActiveTab] = useState<TabType>('feed');
-    const [posts, setPosts] = useState<Post[]>([]); // Gallery posts
-    const [feedItems, setFeedItems] = useState<FeedItem[]>([]); // Global feed items
     const [refreshing, setRefreshing] = useState(false);
+    const [posts, setPosts] = useState<Post[]>([]); // Gallery posts
     const [loading, setLoading] = useState(true);
     const [latestEmotion, setLatestEmotion] = useState<Emotion | null>(null);
 
@@ -116,7 +117,6 @@ export default function AlterSpaceScreen() {
     useEffect(() => {
         if (alter) {
             fetchPosts();
-            fetchGlobalFeed();
         }
     }, [alter]);
 
@@ -155,40 +155,7 @@ export default function AlterSpaceScreen() {
         }
     };
 
-    const fetchGlobalFeed = async () => {
-        try {
-            let items: FeedItem[] = [];
 
-            if (alter) {
-                // Fetch friends first to mix in feed
-                const friends = await FriendService.getFriends(alter.id);
-                // If we have friends, show their posts.
-                // Note: user said "posts in our feed".
-                const feedData = await PostService.fetchFeed(friends);
-                items = feedData.posts ? [...feedData.posts] : [];
-            } else {
-                const globalPosts = await PostService.fetchGlobalFeed();
-                items = globalPosts.posts ? [...globalPosts.posts] : [];
-            }
-
-            // Integrer les tips systeme
-            // Ajouter un tip tous les 5 posts
-            SYSTEM_TIPS.forEach((tip, index) => {
-                const position = (index + 1) * 5;
-                if (items.length >= position) {
-                    items.splice(position, 0, tip);
-                } else {
-                    items.push(tip); // Si pas assez de posts, ajouter a la fin
-                }
-            });
-
-            setFeedItems(items);
-        } catch (error) {
-            console.error('Error fetching global feed:', error);
-        } finally {
-            setRefreshing(false); // Ensure this is not forgotten if stuck
-        }
-    };
 
     const fetchPosts = async () => {
         if (!alter) return;
@@ -216,9 +183,9 @@ export default function AlterSpaceScreen() {
     };
 
     const onRefresh = async () => {
-        setRefreshing(true);
-        await Promise.all([fetchPosts(), fetchGlobalFeed()]);
-        setRefreshing(false);
+        setLoading(true);
+        await fetchPosts();
+        setLoading(false);
     };
 
     const formatTime = (dateString: string) => {
@@ -352,132 +319,25 @@ export default function AlterSpaceScreen() {
         );
     };
 
-    const renderFeedItem = ({ item }: { item: FeedItem }) => {
-        if ('type' in item && item.type === 'tip') {
-            let iconName = 'bulb-outline';
-            let title = 'Conseil Système';
 
-            if (item.category === 'management') {
-                iconName = 'list-outline';
-                title = 'Organisation';
-            } else if (item.category === 'wellness') {
-                iconName = 'leaf-outline';
-                title = 'Bien-être';
-            } else if (item.category === 'communication') {
-                iconName = 'chatbubbles-outline';
-                title = 'Communication';
-            }
 
-            return (
-                <View style={styles.tipCard}>
-                    <View style={styles.tipHeader}>
-                        <Ionicons name={iconName as any} size={24} color={colors.primary} />
-                        <Text style={styles.tipTitle}>{title}</Text>
-                    </View>
-                    <Text style={styles.tipContent}>{item.content}</Text>
-                </View>
-            );
-        }
-
-        const post = item as Post;
-        return (
-            <View style={styles.postCard}>
-                <View style={styles.postHeader}>
-                    <View style={styles.postAuthorInfo}>
-                        <View style={styles.postAvatar}>
-                            {alter?.avatar ? (
-                                <Image source={{ uri: alter.avatar }} style={styles.postAvatarImage} />
-                            ) : (
-                                <Text style={styles.postAvatarText}>{alter?.name?.charAt(0)}</Text>
-                            )}
-                        </View>
-                        <View>
-                            <Text style={styles.postAuthorName}>{alter?.name}</Text>
-                            <Text style={styles.postTime}>{formatTime(post.created_at)}</Text>
-                        </View>
-                    </View>
-                    <TouchableOpacity>
-                        <Ionicons name="ellipsis-horizontal" size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                </View>
-
-                <Text style={styles.postContent}>{post.content}</Text>
-
-                {post.media_url && (
-                    <View style={styles.mediaContainer}>
-                        {getMediaType(post.media_url) === 'image' && (
-                            <Image source={{ uri: post.media_url }} style={styles.postImage} resizeMode="cover" />
-                        )}
-                        {getMediaType(post.media_url) === 'video' && (
-                            <View style={{
-                                width: '100%',
-                                height: 200,
-                                borderRadius: borderRadius.md,
-                                backgroundColor: colors.backgroundLight,
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                            }}>
-                                <Ionicons name="videocam" size={40} color={colors.primary} />
-                                <Text style={{ color: colors.textSecondary, marginTop: spacing.sm }}>Vidéo (lecteur bientôt disponible)</Text>
-                            </View>
-                        )}
-                        {getMediaType(post.media_url) === 'audio' && (
-                            <View style={{
-                                backgroundColor: colors.backgroundLight,
-                                padding: spacing.md,
-                                borderRadius: borderRadius.md,
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                gap: spacing.sm,
-                                marginTop: spacing.sm
-                            }}>
-                                <Ionicons name="musical-note" size={24} color={colors.primary} />
-                                <Text style={{ color: colors.text }}>Fichier Audio (Lecture bientôt disponible)</Text>
-                            </View>
-                        )}
-                    </View>
-                )}
-
-                <View style={styles.postActions}>
-                    <TouchableOpacity style={styles.postAction}>
-                        <Ionicons name="heart-outline" size={20} color={colors.textSecondary} />
-                        <Text style={styles.postActionText}>{post.likes || 0}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.postAction}>
-                        <Ionicons name="chatbubble-outline" size={20} color={colors.textSecondary} />
-                        <Text style={styles.postActionText}>{post.comments_count || 0}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.postAction}>
-                        <Ionicons name="share-social-outline" size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                </View>
-            </View>
-        );
+    const handleStoryPress = (authorId: string, stories: any[]) => {
+        router.push({
+            pathname: '/story/view',
+            params: { authorId }
+        });
     };
 
     const renderFeed = () => (
         <View style={styles.tabContent}>
-            <FlatList
-                data={feedItems}
-                renderItem={renderFeedItem}
-                keyExtractor={(item) => item.id}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={onRefresh}
-                        tintColor={colors.primary}
+            <Feed
+                type="friends"
+                alterId={alterId}
+                ListHeaderComponent={
+                    <StoriesBar
+                        onStoryPress={handleStoryPress}
                     />
                 }
-                ListEmptyComponent={
-                    <View style={styles.emptyState}>
-                        <Ionicons name="newspaper-outline" size={64} color={colors.textMuted} />
-                        <Text style={styles.emptyTitle}>Fil d'actualité</Text>
-                        <Text style={styles.emptySubtitle}>
-                            Aucune publication récente.
-                        </Text>
-                    </View>
-                }
-                contentContainerStyle={{ paddingBottom: 100 }}
             />
         </View>
     );

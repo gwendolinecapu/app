@@ -132,6 +132,43 @@ export async function fetchActiveStories(
 }
 
 /**
+ * Récupère les stories actives d'un auteur spécifique
+ */
+export async function fetchAuthorStories(authorId: string): Promise<Story[]> {
+    const now = new Date();
+    const storiesRef = collection(db, 'stories');
+    const q = query(
+        storiesRef,
+        where('author_id', '==', authorId),
+        where('expires_at', '>', Timestamp.fromDate(now)),
+        orderBy('expires_at', 'asc'),
+        orderBy('created_at', 'desc')
+    );
+
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            author_id: data.author_id,
+            author_name: data.author_name,
+            author_avatar: data.author_avatar,
+            system_id: data.system_id,
+            media_url: data.media_url,
+            media_type: data.media_type,
+            created_at: data.created_at instanceof Timestamp
+                ? data.created_at.toDate().toISOString()
+                : data.created_at,
+            expires_at: data.expires_at instanceof Timestamp
+                ? data.expires_at.toDate().toISOString()
+                : data.expires_at,
+            viewers: data.viewers || [],
+        };
+    });
+}
+
+/**
  * Marque une story comme vue par un utilisateur
  */
 export async function markStoryAsViewed(storyId: string, viewerId: string): Promise<void> {
@@ -189,6 +226,7 @@ export function groupStoriesByAuthor(stories: Story[]): {
 export const StoriesService = {
     createStory,
     fetchActiveStories,
+    fetchAuthorStories,
     markStoryAsViewed,
     deleteStory,
     groupStoriesByAuthor,

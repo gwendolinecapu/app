@@ -22,12 +22,25 @@ interface NativeAdCardProps {
 }
 
 export function NativeAdCard({ onClose }: NativeAdCardProps) {
-    const { getNativeAd, isAdFree } = useMonetization();
+    // Safely get monetization context - returns null if provider is missing
+    let getNativeAd: (() => NativeAdData | null) | null = null;
+    let isAdFree = false;
+
+    try {
+        const monetization = useMonetization();
+        getNativeAd = monetization.getNativeAd;
+        isAdFree = monetization.isAdFree;
+    } catch (error) {
+        // MonetizationProvider is missing - don't show ads
+        console.log('[NativeAdCard] MonetizationProvider not found, hiding ad');
+        return null;
+    }
+
     const [adData, setAdData] = useState<NativeAdData | null>(null);
     const [dismissed, setDismissed] = useState(false);
 
     useEffect(() => {
-        if (!isAdFree) {
+        if (!isAdFree && getNativeAd) {
             const ad = getNativeAd();
             setAdData(ad);
         }

@@ -282,9 +282,13 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent }
                 data={postsWithAds}
                 renderItem={renderItem}
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 keyExtractor={(item: any) => item.id || `item-${Math.random()}`}
                 ListHeaderComponent={renderHeader}
                 stickyHeaderIndices={[0]}
+=======
+                keyExtractor={(item: any, index: number) => item.id || `item-${index}`}
+>>>>>>> Stashed changes
 =======
                 keyExtractor={(item: any, index: number) => item.id || `item-${index}`}
 >>>>>>> Stashed changes

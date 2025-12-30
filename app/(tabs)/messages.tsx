@@ -11,6 +11,7 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { Alter } from '../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { GroupService } from '../../src/services/groups';
 import { FriendService } from '../../src/services/friends';
 import { Ionicons } from '@expo/vector-icons';
@@ -193,7 +194,7 @@ export default function MessagesScreen() {
     );
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header with current alter */}
             <View style={styles.header}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -217,7 +218,7 @@ export default function MessagesScreen() {
                         {alters.slice(0, 6).map((alter) => (
                             <TouchableOpacity
                                 key={alter.id}
-                                onPress={() => router.push(`/conversation/${alter.id}?internal=true`)}
+                                onPress={() => router.push(`/alter/${alter.id}`)}
                             >
                                 <View
                                     style={[
@@ -282,7 +283,7 @@ export default function MessagesScreen() {
                 refreshing={activeTab === 'groups' ? loadingGroups : activeTab === 'requests' ? loadingRequests : false}
                 onRefresh={activeTab === 'groups' ? loadGroups : activeTab === 'requests' ? loadRequests : undefined}
             />
-        </View>
+        </SafeAreaView >
     );
 }
 
@@ -293,7 +294,6 @@ const styles = StyleSheet.create({
     },
     header: {
         padding: spacing.lg,
-        paddingTop: spacing.xl,
     },
     title: {
         ...typography.h2,

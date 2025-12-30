@@ -7,6 +7,8 @@ import {
     ScrollView,
     Image,
     Dimensions,
+    Modal,
+    FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -17,6 +19,10 @@ import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { Post } from '../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { FollowService } from '../../src/services/follows';
+import { PostService } from '../../src/services/posts';
+import { PostCard } from '../../src/components/PostCard';
+import { CommentsModal } from '../../src/components/CommentsModal';
+import { triggerHaptic } from '../../src/lib/haptics';
 
 const { width } = Dimensions.get('window');
 const GRID_SIZE = (width - 4) / 3;
@@ -26,6 +32,12 @@ export default function ProfileScreen() {
     const [posts, setPosts] = useState<Post[]>([]);
     const [stats, setStats] = useState({ posts: 0, followers: 0, following: 0 });
     const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
+
+    // Feed View State
+    const [selectedPostIndex, setSelectedPostIndex] = useState<number | null>(null);
+    const [commentsModalVisible, setCommentsModalVisible] = useState(false);
+    const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+    const flatListRef = React.useRef<FlatList>(null);
 
     useEffect(() => {
         if (currentAlter && user) {
@@ -111,6 +123,37 @@ export default function ProfileScreen() {
                 console.error('Error fetching follow stats:', error);
             }
         }
+    };
+
+    const handleLike = async (postId: string) => {
+        if (!user) return;
+        try {
+            // Optimistic update
+            setPosts(prev => prev.map(post => {
+                if (post.id === postId) {
+                    const likes = post.likes || [];
+                    const isLiked = likes.includes(user.uid);
+                    return {
+                        ...post,
+                        likes: isLiked ? likes.filter(id => id !== user.uid) : [...likes, user.uid]
+                    };
+                }
+                return post;
+            }));
+            triggerHaptic.selection();
+            await PostService.toggleLike(postId, user.uid);
+        } catch (error) {
+            console.error('Like failed', error);
+        }
+    };
+
+    const handleComment = (postId: string) => {
+        setSelectedPostId(postId);
+        setCommentsModalVisible(true);
+    };
+
+    const handleCloseModal = () => {
+        setSelectedPostIndex(null);
     };
 
     if (!currentAlter) {
@@ -251,8 +294,15 @@ export default function ProfileScreen() {
                             </TouchableOpacity>
                         </View>
                     ) : (
-                        posts.map((post) => (
-                            <TouchableOpacity key={post.id} style={styles.gridItem}>
+                        posts.map((post, index) => (
+                            <TouchableOpacity
+                                key={post.id}
+                                style={styles.gridItem}
+                                onPress={() => {
+                                    triggerHaptic.selection();
+                                    setSelectedPostIndex(index);
+                                }}
+                            >
                                 {post.media_url ? (
                                     <Image
                                         source={{ uri: post.media_url }}
@@ -270,6 +320,58 @@ export default function ProfileScreen() {
                     )}
                 </View>
             </ScrollView>
+
+            {/* Post Detail Modal */}
+            <Modal
+                visible={selectedPostIndex !== null}
+                animationType="slide"
+                onRequestClose={handleCloseModal}
+            >
+                <SafeAreaView style={styles.modalContainer}>
+                    <View style={styles.modalHeader}>
+                        <TouchableOpacity onPress={handleCloseModal}>
+                            <Ionicons name="arrow-back" size={24} color={colors.text} />
+                        </TouchableOpacity>
+                        <Text style={styles.modalTitle}>Publications</Text>
+                        <View style={{ width: 24 }} />
+                    </View>
+
+                    {selectedPostIndex !== null && (
+                        <FlatList
+                            ref={flatListRef}
+                            data={posts}
+                            renderItem={({ item }) => (
+                                <PostCard
+                                    post={item}
+                                    onLike={handleLike}
+                                    onComment={handleComment}
+                                    onAuthorPress={() => { }} // Already on profile
+                                    currentUserId={user?.uid}
+                                />
+                            )}
+                            keyExtractor={item => item.id}
+                            initialScrollIndex={selectedPostIndex}
+                            onScrollToIndexFailed={info => {
+                                const wait = new Promise(resolve => setTimeout(resolve, 500));
+                                wait.then(() => {
+                                    flatListRef.current?.scrollToIndex({ index: info.index, animated: false });
+                                });
+                            }}
+                            showsVerticalScrollIndicator={false}
+                        />
+                    )}
+                </SafeAreaView>
+            </Modal>
+
+            {/* Comments Modal */}
+            <CommentsModal
+                visible={commentsModalVisible}
+                postId={selectedPostId}
+                onClose={() => {
+                    setCommentsModalVisible(false);
+                    setSelectedPostId(null);
+                }}
+            />
         </SafeAreaView>
     );
 }
@@ -465,5 +567,21 @@ const styles = StyleSheet.create({
     buttonText: {
         color: 'white',
         fontWeight: '600',
+    },
+    modalContainer: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+    },
+    modalTitle: {
+        ...typography.h3,
+        color: colors.text,
     },
 });

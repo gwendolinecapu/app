@@ -54,6 +54,11 @@ class CreditService {
      * Initialise le service pour un utilisateur
      */
     async initialize(userId: string): Promise<void> {
+        if (!userId) {
+            console.warn('[CreditService] No userId provided, skipping initialization');
+            return;
+        }
+
         this.userId = userId;
 
         try {

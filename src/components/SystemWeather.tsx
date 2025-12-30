@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { colors, borderRadius, spacing, typography } from '../lib/theme';
 import { EmotionService } from '../services/emotions';
 import { Emotion, EmotionType, EMOTION_EMOJIS, EMOTION_LABELS } from '../types';
-import { formatTimeSince } from '../lib/date';
+import { timeAgo } from '../lib/date';
 
 export function SystemWeather() {
     const { system, alters } = useAuth();
@@ -78,7 +78,7 @@ export function SystemWeather() {
                                         <View>
                                             <Text style={styles.alterName}>{getAlterName(alterId)}</Text>
                                             <Text style={styles.timestamp}>
-                                                {formatTimeSince(emotion.created_at)}
+                                                {timeAgo(emotion.created_at)}
                                             </Text>
                                         </View>
                                         <View style={styles.emotionBadge}>

@@ -227,7 +227,7 @@ export default function AlterSpaceScreen() {
         const myAlter = currentAlter;
 
         // Check friend status if viewing someone else's profile
-        if (!isOwner && currentAlter) {
+        if (!isOwner && currentAlter && alter) {
             FriendService.checkStatus(currentAlter.id, alter.id).then(status => {
                 setFriendStatuses(prev => ({ ...prev, [alter.id]: status }));
             }).catch(console.error);
@@ -998,9 +998,8 @@ export default function AlterSpaceScreen() {
             </Modal>
 
             {/* Full Screen Image Modal */}
-            < Modal
-                visible={!!fullScreenImage
-                }
+            <Modal
+                visible={!!fullScreenImage}
                 transparent={true}
                 onRequestClose={() => setFullScreenImage(null)}
                 animationType="fade"

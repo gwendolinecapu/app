@@ -442,278 +442,282 @@ export default function AltersScreen() {
                                 <Text style={styles.createButtonText}>
                                     {loading ? 'Création...' : 'Enreg.'}
                                 </Text>
-                            </Modal>
-                        </SafeAreaView >
-                        );
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+        </SafeAreaView>
+    );
 }
 
-                        const styles = StyleSheet.create({
-                            container: {
-                            flex: 1,
-                        backgroundColor: colors.background,
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: colors.background,
     },
-                        header: {
-                            flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: spacing.lg,
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: spacing.lg,
     },
-                        headerIcon: {
-                            fontSize: 24,
+    headerIcon: {
+        fontSize: 24,
     },
-                        title: {
-                            ...typography.h2,
+    title: {
+        ...typography.h2,
     },
-                        // Filter & Search Styles
-                        filterContainer: {
-                            flexDirection: 'row',
-                        paddingHorizontal: spacing.md,
-                        marginBottom: spacing.md,
+    // Filter & Search Styles
+    filterContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: spacing.md,
+        marginBottom: spacing.md,
     },
-                        filterButton: {
-                            width: 44,
-                        height: 44,
-                        borderRadius: borderRadius.lg,
-                        backgroundColor: colors.backgroundLight,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        borderWidth: 1,
-                        borderColor: colors.border,
+    filterButton: {
+        width: 44,
+        height: 44,
+        borderRadius: borderRadius.lg,
+        backgroundColor: colors.backgroundLight,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.border,
     },
-                        filterButtonActive: {
-                            backgroundColor: colors.backgroundCard,
-                        borderColor: colors.primary,
+    filterButtonActive: {
+        backgroundColor: colors.backgroundCard,
+        borderColor: colors.primary,
     },
-                        pinBadge: {
-                            position: 'absolute',
-                        top: 0,
-                        right: 0,
-                        zIndex: 10,
-                        backgroundColor: colors.primary,
-                        width: 20,
-                        height: 20,
-                        borderRadius: 10,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        borderWidth: 1.5,
-                        borderColor: colors.background,
+    pinBadge: {
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        zIndex: 10,
+        backgroundColor: colors.primary,
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1.5,
+        borderColor: colors.background,
     },
-                        gridContent: {
-                            padding: spacing.md,
-                        paddingBottom: 100, // Space for bottom bar
+    gridContent: {
+        padding: spacing.md,
+        paddingBottom: 100, // Space for bottom bar
     },
-                        gridItem: {
-                            flex: 1,
-                        alignItems: 'center',
-                        marginBottom: spacing.lg,
+    gridItem: {
+        flex: 1,
+        alignItems: 'center',
+        marginBottom: spacing.lg,
     },
-                        addBubbleContainer: {
-                            width: BUBBLE_SIZE + 10,
-                        alignItems: 'center',
-                        marginBottom: spacing.md,
-                        marginHorizontal: spacing.xs,
+    addBubbleContainer: {
+        width: BUBBLE_SIZE + 10,
+        alignItems: 'center',
+        marginBottom: spacing.md,
+        marginHorizontal: spacing.xs,
     },
-                        bubble: {
-                            width: BUBBLE_SIZE,
-                        height: BUBBLE_SIZE,
-                        borderRadius: BUBBLE_SIZE / 2,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        borderWidth: 2,
-                        borderColor: 'transparent',
-                        overflow: 'hidden',
+    bubble: {
+        width: BUBBLE_SIZE,
+        height: BUBBLE_SIZE,
+        borderRadius: BUBBLE_SIZE / 2,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: 'transparent',
+        overflow: 'hidden',
     },
-                        addBubble: {
-                            backgroundColor: colors.backgroundCard,
-                        borderWidth: 2,
-                        borderColor: colors.border,
-                        borderStyle: 'dashed',
+    addBubble: {
+        backgroundColor: colors.backgroundCard,
+        borderWidth: 2,
+        borderColor: colors.border,
+        borderStyle: 'dashed',
     },
-                        addIcon: {
-                            fontSize: 40,
-                        color: colors.textMuted,
+    addIcon: {
+        fontSize: 40,
+        color: colors.textMuted,
     },
-                        bubbleName: {
-                            ...typography.bodySmall,
-                            marginTop: spacing.xs,
-                        textAlign: 'center',
+    bubbleName: {
+        ...typography.bodySmall,
+        marginTop: spacing.xs,
+        textAlign: 'center',
     },
-                        currentAlterBar: {
-                            position: 'absolute',
-                        bottom: 80,
-                        left: spacing.md,
-                        right: spacing.md,
-                        backgroundColor: colors.backgroundCard,
-                        borderRadius: borderRadius.lg,
-                        padding: spacing.md,
-                        flexDirection: 'row',
-                        alignItems: 'center',
+    currentAlterBar: {
+        position: 'absolute',
+        bottom: 80,
+        left: spacing.md,
+        right: spacing.md,
+        backgroundColor: colors.backgroundCard,
+        borderRadius: borderRadius.lg,
+        padding: spacing.md,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
-                        miniAvatar: {
-                            width: 44,
-                        height: 44,
-                        borderRadius: 22,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        overflow: 'hidden',
+    miniAvatar: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
     },
-                        miniAvatarImage: {
-                            width: '100%',
-                        height: '100%',
+    miniAvatarImage: {
+        width: '100%',
+        height: '100%',
     },
-                        miniAvatarText: {
-                            color: colors.text,
-                        fontSize: 18,
-                        fontWeight: 'bold',
+    miniAvatarText: {
+        color: colors.text,
+        fontSize: 18,
+        fontWeight: 'bold',
     },
-                        currentAlterInfo: {
-                            marginLeft: spacing.md,
+    currentAlterInfo: {
+        marginLeft: spacing.md,
     },
-                        currentAlterName: {
-                            ...typography.body,
-                            fontWeight: 'bold',
+    currentAlterName: {
+        ...typography.body,
+        fontWeight: 'bold',
     },
-                        currentAlterStatus: {
-                            ...typography.caption,
-                            color: colors.success,
+    currentAlterStatus: {
+        ...typography.caption,
+        color: colors.success,
     },
-                        modalOverlay: {
-                            flex: 1,
-                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                        justifyContent: 'flex-end',
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        justifyContent: 'flex-end',
     },
-                        modalContent: {
-                            backgroundColor: colors.backgroundCard,
-                        borderTopLeftRadius: borderRadius.xl,
-                        borderTopRightRadius: borderRadius.xl,
-                        padding: spacing.lg,
-                        maxHeight: '85%',
+    modalContent: {
+        backgroundColor: colors.backgroundCard,
+        borderTopLeftRadius: borderRadius.xl,
+        borderTopRightRadius: borderRadius.xl,
+        padding: spacing.lg,
+        maxHeight: '85%',
     },
-                        modalTitle: {
-                            ...typography.h2,
-                            textAlign: 'center',
-                        marginBottom: spacing.md,
+    modalTitle: {
+        ...typography.h2,
+        textAlign: 'center',
+        marginBottom: spacing.md,
     },
-                        avatarPickerContainer: {
-                            alignItems: 'center',
-                        marginBottom: spacing.lg,
+    avatarPickerContainer: {
+        alignItems: 'center',
+        marginBottom: spacing.lg,
     },
-                        avatarPicker: {
-                            position: 'relative',
+    avatarPicker: {
+        position: 'relative',
     },
-                        avatarPreview: {
-                            width: 100,
-                        height: 100,
-                        borderRadius: 50,
+    avatarPreview: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
     },
-                        avatarPlaceholder: {
-                            width: 100,
-                        height: 100,
-                        borderRadius: 50,
-                        justifyContent: 'center',
-                        alignItems: 'center',
+    avatarPlaceholder: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-                        avatarPlaceholderText: {
-                            fontSize: 40,
-                        fontWeight: 'bold',
-                        color: colors.text,
+    avatarPlaceholderText: {
+        fontSize: 40,
+        fontWeight: 'bold',
+        color: colors.text,
     },
-                        cameraIcon: {
-                            position: 'absolute',
-                        bottom: 0,
-                        right: 0,
-                        backgroundColor: colors.primary,
-                        width: 32,
-                        height: 32,
-                        borderRadius: 16,
-                        justifyContent: 'center',
-                        alignItems: 'center',
+    cameraIcon: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        backgroundColor: colors.primary,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-                        avatarHint: {
-                            ...typography.caption,
-                            color: colors.textSecondary,
-                        marginTop: spacing.sm,
+    avatarHint: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        marginTop: spacing.sm,
     },
-                        inputContainer: {
-                            marginBottom: spacing.md,
+    inputContainer: {
+        marginBottom: spacing.md,
     },
-                        label: {
-                            ...typography.bodySmall,
-                            color: colors.textSecondary,
-                        marginBottom: spacing.xs,
+    label: {
+        ...typography.bodySmall,
+        color: colors.textSecondary,
+        marginBottom: spacing.xs,
     },
-                        input: {
-                            backgroundColor: colors.backgroundLight,
-                        borderRadius: borderRadius.md,
-                        padding: spacing.md,
-                        color: colors.text,
-                        fontSize: 16,
-                        borderWidth: 1,
-                        borderColor: colors.border,
+    input: {
+        backgroundColor: colors.backgroundLight,
+        borderRadius: borderRadius.md,
+        padding: spacing.md,
+        color: colors.text,
+        fontSize: 16,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
-                        inputMultiline: {
-                            height: 80,
-                        textAlignVertical: 'top',
+    inputMultiline: {
+        height: 80,
+        textAlignVertical: 'top',
     },
-                        colorPicker: {
-                            flexDirection: 'row',
-                        flexWrap: 'wrap',
-                        gap: spacing.sm,
+    colorPicker: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.sm,
     },
-                        colorOption: {
-                            width: 36,
-                        height: 36,
-                        borderRadius: 18,
-                        borderWidth: 3,
-                        borderColor: 'transparent',
+    colorOption: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        borderWidth: 3,
+        borderColor: 'transparent',
     },
-                        colorOptionSelected: {
-                            borderColor: colors.text,
+    colorOptionSelected: {
+        borderColor: colors.text,
     },
-                        modalActions: {
-                            flexDirection: 'row',
-                        gap: spacing.md,
-                        marginTop: spacing.lg,
+    modalActions: {
+        flexDirection: 'row',
+        gap: spacing.md,
+        marginTop: spacing.lg,
     },
-                        cancelButton: {
-                            flex: 1,
-                        padding: spacing.md,
-                        alignItems: 'center',
-                        backgroundColor: colors.backgroundLight,
-                        borderRadius: borderRadius.md,
+    cancelButton: {
+        flex: 1,
+        padding: spacing.md,
+        alignItems: 'center',
+        backgroundColor: colors.backgroundLight,
+        borderRadius: borderRadius.md,
     },
-                        cancelButtonText: {
-                            color: colors.textSecondary,
-                        fontWeight: 'bold',
+    cancelButtonText: {
+        color: colors.textSecondary,
+        fontWeight: 'bold',
     },
-                        createButton: {
-                            flex: 1,
-                        padding: spacing.md,
-                        alignItems: 'center',
-                        backgroundColor: colors.primary,
-                        borderRadius: borderRadius.md,
+    createButton: {
+        flex: 1,
+        padding: spacing.md,
+        alignItems: 'center',
+        backgroundColor: colors.primary,
+        borderRadius: borderRadius.md,
     },
-                        createButtonDisabled: {
-                            opacity: 0.6,
+    createButtonDisabled: {
+        opacity: 0.6,
     },
-                        createButtonText: {
-                            color: colors.text,
-                        fontWeight: 'bold',
+    createButtonText: {
+        color: colors.text,
+        fontWeight: 'bold',
     },
-                        statusBanner: {
-                            backgroundColor: colors.backgroundCard,
-                        marginHorizontal: spacing.md,
-                        padding: spacing.sm,
-                        borderRadius: borderRadius.lg,
-                        alignItems: 'center',
-                        marginBottom: spacing.sm,
-                        borderWidth: 1,
-                        borderColor: colors.primary, // or a soft color
-                        flexDirection: 'row',
-                        justifyContent: 'center'
+    statusBanner: {
+        backgroundColor: colors.backgroundCard,
+        marginHorizontal: spacing.md,
+        padding: spacing.sm,
+        borderRadius: borderRadius.lg,
+        alignItems: 'center',
+        marginBottom: spacing.sm,
+        borderWidth: 1,
+        borderColor: colors.primary, // or a soft color
+        flexDirection: 'row',
+        justifyContent: 'center'
     },
-                        statusText: {
-                            ...typography.body,
-                            color: colors.text,
+    statusText: {
+        ...typography.body,
+        color: colors.text,
     }
 });

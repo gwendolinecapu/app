@@ -30,7 +30,7 @@ export default function LoginScreen() {
         const trimmedEmail = email.trim();
         const trimmedPassword = password.trim();
 
-        console.log('Attempting login with:', trimmedEmail); // Debug log
+
 
         setLoading(true);
         const { error } = await signIn(trimmedEmail, trimmedPassword);

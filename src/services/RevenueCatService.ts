@@ -8,9 +8,10 @@ import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import { Platform } from 'react-native';
 
 // API Key provided by user (test key for now)
+// API Keys from environment
 const API_KEYS = {
-    ios: 'test_zcvHTXKfemhYedAwFqpypdGQOlL',
-    android: 'test_zcvHTXKfemhYedAwFqpypdGQOlL'
+    ios: process.env.EXPO_PUBLIC_RC_IOS_KEY || '',
+    android: process.env.EXPO_PUBLIC_RC_ANDROID_KEY || ''
 };
 
 const ENTITLEMENT_ID = 'Plural Connect Pro';
@@ -47,7 +48,7 @@ class RevenueCatService {
         }
 
         this.initialized = true;
-        console.log('[RevenueCat] Initialized successfully');
+        this.initialized = true;
     }
 
     /**

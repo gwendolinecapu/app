@@ -18,6 +18,11 @@
   - ➕ **+** = Bouton gradient pour publier rapidement
   - ☰ **Menu** = Drawer hamburger avec Journal, Galerie, Émotions, Boutique, Réglages
   - Header: Bouton recherche remplacé par profil, bouton réglages supprimé
+  - Support du paramètre `?tab=profile` pour ouvrir un onglet spécifique
+
+### Consolidation des Profils 🔄
+- **`app/(tabs)/profile.tsx`** : Redirige maintenant vers l'Alter Space
+- Un seul profil dans l'application (celui de l'Alter Space)
 
 ---
 

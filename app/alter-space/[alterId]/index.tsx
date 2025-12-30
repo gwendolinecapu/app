@@ -19,7 +19,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { Video, ResizeMode, Audio } from 'expo-av';
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { db } from '../../../src/lib/firebase';
 import { collection, query, where, getDocs, orderBy, doc, getDoc } from 'firebase/firestore';
@@ -750,12 +749,9 @@ export default function AlterSpaceScreen() {
                         router.push('/post/create');
                     }}
                 >
-                    <LinearGradient
-                        colors={[colors.primary, '#7B4BFF']}
-                        style={styles.createButtonGradient}
-                    >
+                    <View style={styles.createButtonGradient}>
                         <Ionicons name="add" size={32} color="#FFF" />
-                    </LinearGradient>
+                    </View>
                 </TouchableOpacity>
 
                 {/* Hamburger Menu */}
@@ -775,24 +771,35 @@ export default function AlterSpaceScreen() {
                 </TouchableOpacity>
             </View>
 
-            {/* ==================== HAMBURGER MENU DRAWER ==================== */}
+            {/* ==================== HAMBURGER MENU DRAWER (Bottom Sheet) ==================== */}
             <Modal
                 visible={menuVisible}
-                animationType="slide"
+                animationType="fade"
                 transparent={true}
                 onRequestClose={() => setMenuVisible(false)}
+                statusBarTranslucent
             >
-                <TouchableOpacity
-                    style={styles.menuOverlay}
-                    activeOpacity={1}
-                    onPress={() => setMenuVisible(false)}
-                >
+                {/* Backdrop overlay */}
+                <View style={styles.menuOverlay}>
+                    <TouchableOpacity
+                        style={styles.menuBackdrop}
+                        activeOpacity={1}
+                        onPress={() => setMenuVisible(false)}
+                    />
+
+                    {/* Drawer Content */}
                     <View style={styles.menuDrawer}>
+                        {/* Handle bar */}
+                        <View style={styles.menuHandle} />
+
                         {/* Menu Header */}
                         <View style={styles.menuHeader}>
                             <Text style={styles.menuTitle}>Menu</Text>
-                            <TouchableOpacity onPress={() => setMenuVisible(false)}>
-                                <Ionicons name="close" size={24} color={colors.text} />
+                            <TouchableOpacity
+                                style={styles.menuCloseBtn}
+                                onPress={() => setMenuVisible(false)}
+                            >
+                                <Ionicons name="close" size={22} color={colors.textMuted} />
                             </TouchableOpacity>
                         </View>
 
@@ -806,8 +813,11 @@ export default function AlterSpaceScreen() {
                                         setActiveTab('profile');
                                     }}
                                 >
-                                    <Ionicons name="person-circle-outline" size={24} color={colors.text} />
+                                    <View style={[styles.menuIconBg, { backgroundColor: '#5865F230' }]}>
+                                        <Ionicons name="person-circle" size={22} color="#5865F2" />
+                                    </View>
                                     <Text style={styles.menuItemText}>Mon Profil</Text>
+                                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
@@ -817,8 +827,11 @@ export default function AlterSpaceScreen() {
                                         setActiveTab('journal');
                                     }}
                                 >
-                                    <Ionicons name="book-outline" size={24} color={colors.text} />
+                                    <View style={[styles.menuIconBg, { backgroundColor: '#3BA55C30' }]}>
+                                        <Ionicons name="book" size={22} color="#3BA55C" />
+                                    </View>
                                     <Text style={styles.menuItemText}>Journal</Text>
+                                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
@@ -828,8 +841,11 @@ export default function AlterSpaceScreen() {
                                         setActiveTab('gallery');
                                     }}
                                 >
-                                    <Ionicons name="images-outline" size={24} color={colors.text} />
+                                    <View style={[styles.menuIconBg, { backgroundColor: '#FAA61A30' }]}>
+                                        <Ionicons name="images" size={22} color="#FAA61A" />
+                                    </View>
                                     <Text style={styles.menuItemText}>Galerie Privée</Text>
+                                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
@@ -839,8 +855,11 @@ export default function AlterSpaceScreen() {
                                         setActiveTab('emotions');
                                     }}
                                 >
-                                    <Ionicons name="happy-outline" size={24} color={colors.text} />
+                                    <View style={[styles.menuIconBg, { backgroundColor: '#EB459E30' }]}>
+                                        <Ionicons name="happy" size={22} color="#EB459E" />
+                                    </View>
                                     <Text style={styles.menuItemText}>Comment je me sens</Text>
+                                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                                 </TouchableOpacity>
 
                                 <View style={styles.menuDivider} />
@@ -855,8 +874,10 @@ export default function AlterSpaceScreen() {
                                 router.push('/shop');
                             }}
                         >
-                            <Ionicons name="storefront-outline" size={24} color={colors.primary} />
-                            <Text style={[styles.menuItemText, { color: colors.primary }]}>Boutique</Text>
+                            <View style={[styles.menuIconBg, { backgroundColor: `${colors.primary}30` }]}>
+                                <Ionicons name="storefront" size={22} color={colors.primary} />
+                            </View>
+                            <Text style={[styles.menuItemText, { color: colors.primary, fontWeight: '600' }]}>Boutique</Text>
                             <View style={styles.menuBadge}>
                                 <Text style={styles.menuBadgeText}>✨</Text>
                             </View>
@@ -870,11 +891,14 @@ export default function AlterSpaceScreen() {
                                 router.push('/settings');
                             }}
                         >
-                            <Ionicons name="settings-outline" size={24} color={colors.text} />
+                            <View style={[styles.menuIconBg, { backgroundColor: '#72767D30' }]}>
+                                <Ionicons name="settings" size={22} color="#72767D" />
+                            </View>
                             <Text style={styles.menuItemText}>Réglages</Text>
+                            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                         </TouchableOpacity>
                     </View>
-                </TouchableOpacity>
+                </View>
             </Modal>
             {/* Full Screen Image Modal */}
             <Modal
@@ -1445,6 +1469,7 @@ const styles = StyleSheet.create({
         borderRadius: 28,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: colors.primary,
         shadowColor: colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.4,
@@ -1454,40 +1479,62 @@ const styles = StyleSheet.create({
     // ==================== MENU DRAWER STYLES ====================
     menuOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(0,0,0,0.6)',
         justifyContent: 'flex-end',
+    },
+    menuBackdrop: {
+        flex: 1,
     },
     menuDrawer: {
         backgroundColor: colors.backgroundCard,
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
-        paddingTop: spacing.md,
         paddingBottom: 40,
         paddingHorizontal: spacing.lg,
+    },
+    menuHandle: {
+        width: 40,
+        height: 4,
+        backgroundColor: colors.border,
+        borderRadius: 2,
+        alignSelf: 'center',
+        marginTop: spacing.sm,
+        marginBottom: spacing.md,
     },
     menuHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: spacing.lg,
-        paddingBottom: spacing.sm,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
+        marginBottom: spacing.md,
     },
     menuTitle: {
         ...typography.h3,
         color: colors.text,
+        fontWeight: '700',
+    },
+    menuCloseBtn: {
+        padding: 8,
+        backgroundColor: `${colors.textMuted}20`,
+        borderRadius: 20,
     },
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: spacing.md,
-        gap: spacing.md,
+        paddingVertical: 14,
+        gap: 14,
+    },
+    menuIconBg: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     menuItemText: {
         ...typography.body,
         color: colors.text,
         flex: 1,
+        fontSize: 16,
     },
     menuDivider: {
         height: 1,
@@ -1496,11 +1543,11 @@ const styles = StyleSheet.create({
     },
     menuBadge: {
         backgroundColor: `${colors.primary}20`,
-        paddingHorizontal: 8,
-        paddingVertical: 2,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
         borderRadius: 12,
     },
     menuBadgeText: {
-        fontSize: 12,
+        fontSize: 14,
     },
 });

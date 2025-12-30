@@ -97,9 +97,7 @@ export const ImageCarousel = ({ images, onImagePress, aspectRatio = 1 }: ImageCa
             {/* Image Counter */}
             <View style={styles.counter}>
                 <View style={styles.counterBg}>
-                    <View style={styles.counterText}>
-                        {/* Using Text component causes issues, using counter as visual only */}
-                    </View>
+                    {/* Counter text handled via Text component in parent if needed */}
                 </View>
             </View>
         </View>

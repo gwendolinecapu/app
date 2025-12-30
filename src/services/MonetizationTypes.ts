@@ -120,10 +120,13 @@ export const CREDIT_REWARDS = {
 
 /** Type de produit en boutique */
 export type ShopItemType =
-    | 'decoration'      // Décoration cosmétique
+    | 'decoration'      // Décoration cosmétique (Legacy)
     | 'ad_free'         // Sans pub temporaire
     | 'premium_days'    // Premium temporaire
-    | 'credit_pack';    // Pack de crédits (IAP)
+    | 'credit_pack'     // Pack de crédits (IAP)
+    | 'theme'           // Thème d'application
+    | 'frame'           // Cadre d'avatar
+    | 'bubble';         // Bulle de chat
 
 /** Produit en boutique */
 export interface ShopItem {
@@ -139,6 +142,9 @@ export interface ShopItem {
     decorationId?: string;      // ID décoration (pour type decoration)
     featured?: boolean;         // Mis en avant
     discount?: number;          // % de réduction
+    // Visuals
+    preview?: string;           // Hex color, emoji, or preview string
+    isPremium?: boolean;        // Inclus dans le premium
 }
 
 /** Packs de crédits IAP */

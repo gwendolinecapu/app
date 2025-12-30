@@ -155,11 +155,16 @@ export default function EmotionsScreen() {
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 {/* Header */}
                 <View style={[styles.header, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }]}>
-                    <View>
-                        <Text style={styles.title}>Comment te sens-tu ?</Text>
-                        <Text style={styles.subtitle}>
-                            En tant que {currentAlter.name}
-                        </Text>
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                        <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 5 }}>
+                            <Ionicons name="arrow-back" size={24} color={colors.text} />
+                        </TouchableOpacity>
+                        <View>
+                            <Text style={styles.title}>Comment te sens-tu ?</Text>
+                            <Text style={styles.subtitle}>
+                                En tant que {currentAlter.name}
+                            </Text>
+                        </View>
                     </View>
                     <TouchableOpacity onPress={() => router.push('/crisis/index' as any)}>
                         <Ionicons name="warning-outline" size={28} color={colors.error || '#FF4444'} />

@@ -81,7 +81,7 @@ class NotificationService {
             await this.scheduleAllNotifications();
         }
 
-        console.log('[NotificationService] Initialized');
+
     }
 
     async requestPermissions(): Promise<boolean> {
@@ -176,7 +176,7 @@ class NotificationService {
             }
         }
 
-        console.log('[NotificationService] All notifications scheduled');
+
     }
 
     private async scheduleNotification(pref: NotificationPreference): Promise<void> {
@@ -311,7 +311,6 @@ class NotificationService {
 
         // Vérifier les heures calmes
         if (this.isQuietHours()) {
-            console.log('[NotificationService] Quiet hours - skipping notification');
             return null;
         }
 

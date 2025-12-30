@@ -34,8 +34,6 @@ export function useWidgetSync() {
 
         const widgetAlters = convertAltersForWidget(alters);
         WidgetBridge.updateAlters(widgetAlters);
-
-        console.log('[WidgetSync] Updated alters for widgets:', widgetAlters.length);
     }, [alters, convertAltersForWidget]);
 
     // Sync front quand il change
@@ -49,8 +47,6 @@ export function useWidgetSync() {
         };
 
         WidgetBridge.updateFront(front);
-
-        console.log('[WidgetSync] Updated front for widgets:', front);
     }, [activeFront]);
 
     // Fonction pour mettre à jour l'humeur manuellement
@@ -64,14 +60,12 @@ export function useWidgetSync() {
         };
 
         WidgetBridge.updateMood(mood);
-        console.log('[WidgetSync] Updated mood for widgets:', mood);
     }, []);
 
     // Fonction pour définir les alters favoris
     const setFavoriteAltersForWidget = useCallback((alterIds: string[]) => {
         if (!WidgetBridge.isAvailable()) return;
         WidgetBridge.setFavoriteAlters(alterIds);
-        console.log('[WidgetSync] Set favorite alters:', alterIds);
     }, []);
 
     // Fonction pour mettre à jour les stats
@@ -86,7 +80,6 @@ export function useWidgetSync() {
             ...stats,
             date: Date.now(),
         });
-        console.log('[WidgetSync] Updated stats for widgets');
     }, []);
 
     // Fonction pour mettre à jour le message bien-être
@@ -98,7 +91,6 @@ export function useWidgetSync() {
             fromAlterName,
             timestamp: Date.now(),
         });
-        console.log('[WidgetSync] Updated wellness message');
     }, []);
 
     return {

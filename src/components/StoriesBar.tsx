@@ -63,7 +63,7 @@ export const StoriesBar = ({ onStoryPress, friendIds = [] }: StoriesBarProps) =>
             // Gérer silencieusement les erreurs de permissions Firestore
             // Ces erreurs sont normales quand les règles de sécurité bloquent l'accès
             if (error?.code === 'permission-denied') {
-                console.log('[Stories] Permissions non configurées - stories désactivées');
+                // Ignore permissions error
             } else {
                 console.warn('[Stories] Erreur de chargement:', error?.message || error);
             }

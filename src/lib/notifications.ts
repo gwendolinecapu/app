@@ -50,7 +50,7 @@ export async function registerForPushNotificationsAsync() {
         }
 
         if (finalStatus !== 'granted') {
-            console.log('Permission not granted for notifications');
+
             return false; // Changed return type to boolean
         }
     } else {

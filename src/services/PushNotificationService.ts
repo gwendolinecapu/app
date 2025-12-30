@@ -75,7 +75,6 @@ class PushNotificationService {
             // Sauvegarder le token dans Firestore
             await this.saveTokenToFirestore(userId, this.expoPushToken);
 
-            console.log('[PushService] Registered with token:', this.expoPushToken);
             return this.expoPushToken;
 
         } catch (error) {
@@ -111,7 +110,7 @@ class PushNotificationService {
                 await setDoc(tokenRef, tokenData);
             }
 
-            console.log('[PushService] Token saved to Firestore');
+
         } catch (error) {
             console.error('[PushService] Failed to save token:', error);
         }
@@ -135,7 +134,7 @@ class PushNotificationService {
             this.expoPushToken = null;
             this.currentUserId = null;
 
-            console.log('[PushService] Unregistered push notifications');
+            this.currentUserId = null;
         } catch (error) {
             console.error('[PushService] Failed to unregister:', error);
         }
@@ -181,8 +180,6 @@ class PushNotificationService {
                 body: JSON.stringify(messages),
             });
 
-            const result = await response.json();
-            console.log('[PushService] Push sent:', result);
             return true;
 
         } catch (error) {

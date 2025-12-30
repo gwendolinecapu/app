@@ -233,7 +233,7 @@ class DecorationService {
                 );
             }
 
-            console.log('[DecorationService] Initialized with', this.ownedDecorations.length, 'decorations');
+
 
         } catch (error) {
             console.error('[DecorationService] Initialization failed:', error);
@@ -325,7 +325,7 @@ class DecorationService {
         this.ownedDecorations.push(decorationId);
         await this.saveToFirestore();
 
-        console.log('[DecorationService] Purchased:', decorationId);
+        await this.saveToFirestore();
         return true;
     }
 
@@ -340,7 +340,7 @@ class DecorationService {
         this.ownedDecorations.push(decorationId);
         await this.saveToFirestore();
 
-        console.log('[DecorationService] Unlocked:', decorationId);
+        await this.saveToFirestore();
         return true;
     }
 
@@ -358,7 +358,7 @@ class DecorationService {
         this.equippedDecorations.set(alterId, decorationId);
         await this.saveToFirestore();
 
-        console.log('[DecorationService] Equipped', decorationId, 'on alter', alterId);
+        await this.saveToFirestore();
         return true;
     }
 

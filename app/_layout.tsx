@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from '../src/contexts/AuthContext';
 import { ThemeProvider } from '../src/contexts/ThemeContext';
 import { NotificationProvider } from '../src/contexts/NotificationContext';
-// import { MonetizationProvider } from '../src/contexts/MonetizationContext'; // Disabled - requires development build
+import { MonetizationProvider } from '../src/contexts/MonetizationContext';
 import { colors, typography } from '../src/lib/theme';
 import { View, StyleSheet, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,108 +40,108 @@ export default function RootLayout() {
                         <AuthProvider>
                             <ThemeProvider>
                                 <NotificationProvider>
-                                    {/* <MonetizationProvider> */}
-                                    <View style={styles.container}>
-                                        <Stack
-                                            screenOptions={{
-                                                headerStyle: {
-                                                    backgroundColor: colors.background,
-                                                },
-                                                headerTintColor: colors.text,
-                                                headerTitleStyle: {
-                                                    fontWeight: 'bold',
-                                                },
-                                                contentStyle: {
-                                                    backgroundColor: colors.background,
-                                                },
-                                            }}
-                                        >
-                                            <Stack.Screen name="index" options={{ headerShown: false }} />
-                                            <Stack.Screen name="alter-space" options={{ headerShown: false }} />
-                                            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                                            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                                            <Stack.Screen
-                                                name="alter/[id]"
-                                                options={{
-                                                    title: 'Profil Alter',
-                                                    presentation: 'modal',
-                                                    headerShown: false,
+                                    <MonetizationProvider>
+                                        <View style={styles.container}>
+                                            <Stack
+                                                screenOptions={{
+                                                    headerStyle: {
+                                                        backgroundColor: colors.background,
+                                                    },
+                                                    headerTintColor: colors.text,
+                                                    headerTitleStyle: {
+                                                        fontWeight: 'bold',
+                                                    },
+                                                    contentStyle: {
+                                                        backgroundColor: colors.background,
+                                                    },
                                                 }}
-                                            />
-                                            <Stack.Screen
-                                                name="conversation/[id]"
-                                                options={{
-                                                    title: 'Conversation',
-                                                    headerShown: false,
-                                                }}
-                                            />
-                                            <Stack.Screen
-                                                name="post/create"
-                                                options={{
-                                                    title: 'Nouvelle Publication',
-                                                    presentation: 'modal',
-                                                    headerShown: false,
-                                                }}
-                                            />
-                                            {/* Settings et sous-écrans */}
-                                            <Stack.Screen name="settings/index" options={{ headerShown: false }} />
-                                            <Stack.Screen name="settings/import" options={{ headerShown: false }} />
-                                            <Stack.Screen name="settings/notifications" options={{ headerShown: false }} />
+                                            >
+                                                <Stack.Screen name="index" options={{ headerShown: false }} />
+                                                <Stack.Screen name="alter-space" options={{ headerShown: false }} />
+                                                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                                                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                                                <Stack.Screen
+                                                    name="alter/[id]"
+                                                    options={{
+                                                        title: 'Profil Alter',
+                                                        presentation: 'modal',
+                                                        headerShown: false,
+                                                    }}
+                                                />
+                                                <Stack.Screen
+                                                    name="conversation/[id]"
+                                                    options={{
+                                                        title: 'Conversation',
+                                                        headerShown: false,
+                                                    }}
+                                                />
+                                                <Stack.Screen
+                                                    name="post/create"
+                                                    options={{
+                                                        title: 'Nouvelle Publication',
+                                                        presentation: 'modal',
+                                                        headerShown: false,
+                                                    }}
+                                                />
+                                                {/* Settings et sous-écrans */}
+                                                <Stack.Screen name="settings/index" options={{ headerShown: false }} />
+                                                <Stack.Screen name="settings/import" options={{ headerShown: false }} />
+                                                <Stack.Screen name="settings/notifications" options={{ headerShown: false }} />
 
-                                            {/* Roles */}
-                                            <Stack.Screen name="roles/index" options={{ headerShown: false }} />
-                                            <Stack.Screen name="roles/create" options={{ headerShown: false }} />
+                                                {/* Roles */}
+                                                <Stack.Screen name="roles/index" options={{ headerShown: false }} />
+                                                <Stack.Screen name="roles/create" options={{ headerShown: false }} />
 
-                                            {/* Help/Demandes d'aide */}
-                                            <Stack.Screen name="help/index" options={{ headerShown: false }} />
-                                            <Stack.Screen name="help/create" options={{ headerShown: false }} />
+                                                {/* Help/Demandes d'aide */}
+                                                <Stack.Screen name="help/index" options={{ headerShown: false }} />
+                                                <Stack.Screen name="help/create" options={{ headerShown: false }} />
 
-                                            {/* Journal */}
-                                            <Stack.Screen name="journal/[id]" options={{ headerShown: false }} />
-                                            <Stack.Screen name="journal/create" options={{ headerShown: false }} />
+                                                {/* Journal */}
+                                                <Stack.Screen name="journal/[id]" options={{ headerShown: false }} />
+                                                <Stack.Screen name="journal/create" options={{ headerShown: false }} />
 
-                                            {/* Tasks */}
-                                            <Stack.Screen name="tasks/index" options={{ headerShown: false }} />
-                                            <Stack.Screen name="tasks/create" options={{ headerShown: false }} />
+                                                {/* Tasks */}
+                                                <Stack.Screen name="tasks/index" options={{ headerShown: false }} />
+                                                <Stack.Screen name="tasks/create" options={{ headerShown: false }} />
 
-                                            {/* Groups */}
-                                            <Stack.Screen name="groups/[id]" options={{ headerShown: false }} />
-                                            <Stack.Screen name="groups/create" options={{ headerShown: false }} />
+                                                {/* Groups */}
+                                                <Stack.Screen name="groups/[id]" options={{ headerShown: false }} />
+                                                <Stack.Screen name="groups/create" options={{ headerShown: false }} />
 
-                                            {/* Découverte et profils externes (Social) */}
-                                            <Stack.Screen name="discover/index" options={{ headerShown: false }} />
-                                            <Stack.Screen
-                                                name="profile/[systemId]"
-                                                options={{
-                                                    headerShown: false,
-                                                    presentation: 'modal',
-                                                }}
-                                            />
+                                                {/* Découverte et profils externes (Social) */}
+                                                <Stack.Screen name="discover/index" options={{ headerShown: false }} />
+                                                <Stack.Screen
+                                                    name="profile/[systemId]"
+                                                    options={{
+                                                        headerShown: false,
+                                                        presentation: 'modal',
+                                                    }}
+                                                />
 
-                                            {/* Autres écrans */}
-                                            <Stack.Screen name="crisis/index" options={{ headerShown: false }} />
-                                            <Stack.Screen name="crisis/guide" options={{ headerShown: false }} />
-                                            <Stack.Screen name="emotions/history" options={{ headerShown: false }} />
-                                            <Stack.Screen name="fronting/history" options={{ headerShown: false }} />
-                                            <Stack.Screen name="stats" options={{ headerShown: false }} />
+                                                {/* Autres écrans */}
+                                                <Stack.Screen name="crisis/index" options={{ headerShown: false }} />
+                                                <Stack.Screen name="crisis/guide" options={{ headerShown: false }} />
+                                                <Stack.Screen name="emotions/history" options={{ headerShown: false }} />
+                                                <Stack.Screen name="fronting/history" options={{ headerShown: false }} />
+                                                <Stack.Screen name="stats" options={{ headerShown: false }} />
 
-                                            {/* Boutique */}
-                                            <Stack.Screen name="shop/index" options={{ headerShown: false }} />
-                                        </Stack>
-                                        <StatusBar style="auto" />
-                                        {isPrivacyActive && (
-                                            <View style={styles.privacyScreen}>
-                                                <View style={styles.privacyContent}>
-                                                    <Ionicons name="lock-closed" size={48} color={colors.primary} />
-                                                    <Text style={styles.privacyTitle}>App en pause</Text>
-                                                    <Text style={styles.privacySubtitle}>
-                                                        Touchez pour revenir
-                                                    </Text>
+                                                {/* Boutique */}
+                                                <Stack.Screen name="shop/index" options={{ headerShown: false }} />
+                                            </Stack>
+                                            <StatusBar style="auto" />
+                                            {isPrivacyActive && (
+                                                <View style={styles.privacyScreen}>
+                                                    <View style={styles.privacyContent}>
+                                                        <Ionicons name="lock-closed" size={48} color={colors.primary} />
+                                                        <Text style={styles.privacyTitle}>App en pause</Text>
+                                                        <Text style={styles.privacySubtitle}>
+                                                            Touchez pour revenir
+                                                        </Text>
+                                                    </View>
                                                 </View>
-                                            </View>
-                                        )}
-                                    </View>
-                                    {/* </MonetizationProvider> */}
+                                            )}
+                                        </View>
+                                    </MonetizationProvider>
                                 </NotificationProvider>
                             </ThemeProvider>
                         </AuthProvider>

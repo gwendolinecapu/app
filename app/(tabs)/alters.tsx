@@ -241,6 +241,10 @@ export default function AltersScreen() {
                     onPress: () => toggleArchive(alter.id),
                     style: 'destructive'
                 },
+                {
+                    text: 'Modifier',
+                    onPress: () => router.push(`/alter/${alter.id}`)
+                },
                 { text: 'Annuler', style: 'cancel' }
             ]
         );
@@ -250,7 +254,7 @@ export default function AltersScreen() {
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.push('/settings/index' as any)}>
+                <TouchableOpacity onPress={() => router.push('/settings')}>
                     <Text style={styles.headerIcon}>⚙️</Text>
                 </TouchableOpacity>
                 <Text style={styles.title}>Mes Alters</Text>
@@ -331,6 +335,12 @@ export default function AltersScreen() {
                         <Text style={styles.currentAlterName}>{currentAlter.name}</Text>
                         <Text style={styles.currentAlterStatus}>En front</Text>
                     </View>
+                    <TouchableOpacity
+                        style={{ padding: 10 }}
+                        onPress={() => router.push(`/alter/${currentAlter.id}`)}
+                    >
+                        <Ionicons name="settings-outline" size={24} color={colors.textSecondary} />
+                    </TouchableOpacity>
                 </View>
             )}
 

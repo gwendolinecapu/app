@@ -29,7 +29,7 @@ import { Badge } from '../../src/components/ui/Badge';
 import { SearchBar } from '../../src/components/ui/SearchBar';
 import { EmotionService } from '../../src/services/emotions';
 import { Emotion, EMOTION_LABELS, EMOTION_EMOJIS } from '../../src/types';
-import { formatTimeSince } from '../../src/lib/date';
+import { timeAgo } from '../../src/lib/date';
 
 const { width } = Dimensions.get('window');
 const MAX_WIDTH = 430;
@@ -274,7 +274,7 @@ export default function AltersScreen() {
             {latestSystemEmotion && (
                 <View style={styles.statusBanner}>
                     <Text style={styles.statusText}>
-                        <Text style={{ fontWeight: 'bold' }}>{getAlterName(latestSystemEmotion.alter_id)}</Text> est {EMOTION_LABELS[latestSystemEmotion.emotion]?.toLowerCase() || '...'} {EMOTION_EMOJIS[latestSystemEmotion.emotion]} {formatTimeSince(latestSystemEmotion.created_at)}
+                        <Text style={{ fontWeight: 'bold' }}>{getAlterName(latestSystemEmotion.alter_id)}</Text> est {EMOTION_LABELS[latestSystemEmotion.emotion]?.toLowerCase() || '...'} {EMOTION_EMOJIS[latestSystemEmotion.emotion]} {timeAgo(latestSystemEmotion.created_at)}
                     </Text>
                 </View>
             )}

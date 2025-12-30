@@ -306,8 +306,14 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent }
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
                         <Ionicons name="newspaper-outline" size={48} color={colors.textMuted} />
-                        <Text style={styles.emptyText}>Aucun post pour le moment</Text>
-                        <Text style={styles.emptySubtext}>Suivez des personnes pour voir leurs posts</Text>
+                        <Text style={styles.emptyText}>Rien à voir ici !</Text>
+                        <Text style={styles.emptySubtext}>
+                            {type === 'friends'
+                                ? "Suivez d'autres systèmes pour voir leurs posts ici."
+                                : type === 'system'
+                                    ? "Ce système n'a pas encore posté."
+                                    : "Aucun post public pour le moment."}
+                        </Text>
                     </View>
                 }
                 contentContainerStyle={styles.listContent}

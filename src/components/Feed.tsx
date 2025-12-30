@@ -12,6 +12,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, FlatList, StyleSheet, ActivityIndicator, Text, RefreshControl, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { FriendService } from '../services/friends';
 import { PostService } from '../services/posts';
 import { Post } from '../types';
 import { PostCard } from './PostCard';
@@ -28,12 +29,14 @@ type SortOption = 'recent' | 'oldest' | 'popular';
 interface FeedProps {
     type?: 'global' | 'friends' | 'system';
     systemId?: string;
+    alterId?: string;
+    ListHeaderComponent?: React.ReactElement;
 }
 
 // Constante pour l'intervalle d'injection des publicités
 const AD_INTERVAL = 5; // Une pub tous les 5 posts
 
-export const Feed = ({ type = 'global', systemId }: FeedProps) => {
+export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent }: FeedProps) => {
     const { user } = useAuth();
     const [rawPosts, setRawPosts] = useState<Post[]>([]); // Posts bruts sans ads
     const [loading, setLoading] = useState(true);
@@ -99,34 +102,37 @@ export const Feed = ({ type = 'global', systemId }: FeedProps) => {
                 setLoadingMore(true);
             }
 
-            const result = await PostService.fetchGlobalFeed(
-                refresh ? null : lastVisible,
-                10
-            );
+            let response;
 
-            const newPosts = result.posts;
-            const updatedLastVisible = result.lastVisible;
-
-            if (newPosts.length < 10) {
-                setHasMore(false);
+            if (type === 'friends' && alterId) {
+                // Fetch friends first to get their IDs
+                const friends = await FriendService.getFriends(alterId);
+                // Fetch feed based on friends IDs
+                response = await PostService.fetchFeed(friends, refresh ? null : lastVisible);
+            } else if (type === 'global') {
+                response = await PostService.fetchGlobalFeed(refresh ? null : lastVisible);
+            } else {
+                // Fallback to global
+                response = await PostService.fetchGlobalFeed(refresh ? null : lastVisible);
             }
-
-            setLastVisible(updatedLastVisible);
 
             if (refresh) {
-                setRawPosts(newPosts);
+                setRawPosts(response.posts);
             } else {
-                setRawPosts(prev => [...prev, ...newPosts]);
+                setRawPosts(prev => [...prev, ...response.posts]);
             }
 
+            setLastVisible(response.lastVisible);
+            setHasMore(response.posts.length > 0);
+
         } catch (error) {
-            console.error('[Feed] Error loading posts:', error);
+            console.error('Error loading posts:', error);
         } finally {
             setLoading(false);
             setRefreshing(false);
             setLoadingMore(false);
         }
-    }, [lastVisible, loadingMore]);
+    }, [lastVisible, loadingMore, type, alterId]);
 
     useEffect(() => {
         loadPosts(true);

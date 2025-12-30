@@ -85,6 +85,7 @@ export interface Message {
     created_at: string;
     system_tag?: string; // Tag optionnel (ex: "[Leo]")
     media_url?: string; // URL de l'image/média si type === 'image'
+    imageUrl?: string; // Alias for media_url or specific for photos
 
     // Enrichissements
     poll_options?: { label: string; id: string }[];

@@ -15,6 +15,9 @@ import { db } from '../../src/lib/firebase';
 import { collection, addDoc, query, where, getDocs, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { Message, Alter } from '../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function ConversationScreen() {
     const { id, internal } = useLocalSearchParams<{ id: string; internal?: string }>();
@@ -23,7 +26,10 @@ export default function ConversationScreen() {
     const [newMessage, setNewMessage] = useState('');
     const [otherAlter, setOtherAlter] = useState<Alter | null>(null);
     const [loading, setLoading] = useState(false);
-    const [useSystemTag, setUseSystemTag] = useState(false); // Toggle for System Tag
+
+    // Hooks
+    const insets = useSafeAreaInsets();
+    const router = useRouter();
 
     const getConversationId = (id1: string, id2: string) => {
         return [id1, id2].sort().join('_');
@@ -41,8 +47,7 @@ export default function ConversationScreen() {
         const conversationId = getConversationId(currentAlter.id, id);
         const q = query(
             collection(db, 'messages'),
-            where('conversation_id', '==', conversationId),
-            orderBy('created_at', 'asc')
+            where('conversation_id', '==', conversationId)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -56,6 +61,8 @@ export default function ConversationScreen() {
                     markMessageAsRead(docSnap.id);
                 }
             });
+            // Client-side sort to fix missing index error
+            data.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
             setMessages(data);
         });
 
@@ -108,7 +115,8 @@ export default function ConversationScreen() {
                 is_internal: internal === 'true',
                 is_read: false,
                 created_at: new Date().toISOString(),
-                system_tag: useSystemTag ? currentAlter.name : null,
+                created_at: new Date().toISOString(),
+                system_tag: null,
             });
 
             setNewMessage('');
@@ -211,7 +219,14 @@ export default function ConversationScreen() {
             style={styles.container}
             keyboardVerticalOffset={100}
         >
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: insets.top + spacing.xs }]}>
+                <TouchableOpacity
+                    onPress={() => router.back()}
+                    style={styles.backButton}
+                >
+                    <Ionicons name="arrow-back" size={24} color={colors.text} />
+                </TouchableOpacity>
+
                 <View
                     style={[
                         styles.avatar,
@@ -228,16 +243,6 @@ export default function ConversationScreen() {
                         {internal === 'true' ? '💜 Discussion interne' : '🌐 Discussion externe'}
                     </Text>
                 </View>
-                <TouchableOpacity
-                    style={[styles.tagButton, useSystemTag && styles.tagButtonActive]}
-                    onPress={() => {
-                        const { triggerHaptic } = require('../../src/lib/haptics');
-                        triggerHaptic.selection();
-                        setUseSystemTag(!useSystemTag);
-                    }}
-                >
-                    <Text style={[styles.tagButtonText, useSystemTag && styles.tagButtonTextActive]}># Tag</Text>
-                </TouchableOpacity>
             </View>
 
             <FlatList
@@ -310,18 +315,12 @@ const styles = StyleSheet.create({
         ...typography.caption,
         marginTop: 2,
     },
-    tagButton: {
-        marginLeft: 'auto',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 16,
-        backgroundColor: colors.background,
-        borderWidth: 1,
-        borderColor: colors.border,
-    },
-    tagButtonActive: {
-        backgroundColor: colors.primary,
-        borderColor: colors.primary,
+    backButton: {
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: spacing.xs,
     },
     tagButtonText: {
         ...typography.caption,

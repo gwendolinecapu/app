@@ -31,7 +31,7 @@ export function useNotifications() {
                 const { actionIdentifier, notification } = response;
                 const category = notification.request.content.categoryIdentifier;
 
-                console.log('[useNotifications] Response:', actionIdentifier, category);
+
 
                 // Router vers l'écran approprié
                 switch (actionIdentifier) {

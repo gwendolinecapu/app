@@ -231,8 +231,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             // 2. Log history using FrontingService
             // Future improvement: Support batch logging
-            if (type !== 'blurry' && frontAlters.length > 0) {
-                await FrontingService.switchAlter(user.uid, frontAlters[0].id);
+            try {
+                if (type !== 'blurry' && frontAlters.length > 0) {
+                    await FrontingService.switchAlter(user.uid, frontAlters[0].id);
+                }
+            } catch (historyError) {
+                console.error('Error logging fronting history:', historyError);
+                // Don't revert UI/DB for history failure, just log it.
+                // We might want to show a warning toast specifically for this?
+                // showToast('Front updated but history failed', 'warning');
             }
 
             triggerHaptic.success();
@@ -242,7 +249,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.error('Error switching front:', error);
             triggerHaptic.error();
             showToast('Failed to update active front', 'error');
-            setActiveFront(previousFront); // Revert optimistic update
+            setActiveFront(previousFront); // Revert optimistic update only if DB update failed
         }
     };
 

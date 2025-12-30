@@ -77,7 +77,6 @@ class CreditService {
             }));
 
             this.initialized = true;
-            console.log('[CreditService] Initialized with balance:', this.balance);
 
         } catch (error) {
             console.error('[CreditService] Initialization failed:', error);

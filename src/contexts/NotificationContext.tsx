@@ -102,7 +102,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         const category = notification.request.content.categoryIdentifier;
         const data = notification.request.content.data;
 
-        console.log('[NotificationProvider] Response:', actionIdentifier, category);
+
 
         // Vérifier si c'est une action de la notification persistante
         const alterId = PersistentNotificationService.handleAction(actionIdentifier);

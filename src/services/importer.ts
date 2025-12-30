@@ -25,7 +25,7 @@ export const ImportService = {
             const members = jsonData.members || []; // Ajuster selon le format réel
             const spIdToFirebaseId: Record<string, string> = {};
 
-            console.log(`Début import: ${members.length} membres détectés`);
+
 
             // Récupérer les alters existants pour éviter les doublons de noms
             const existingAltersQuery = query(collection(db, 'alters'), where('system_id', '==', systemId));
@@ -75,7 +75,6 @@ export const ImportService = {
 
             // 2. Import de l'Historique (Front History)
             const history = jsonData.frontHistory || jsonData.history || [];
-            console.log(`Historique: ${history.length} entrées détectées`);
 
             for (const entry of history) {
                 const memberIdSP = entry.content?.member || entry.member;

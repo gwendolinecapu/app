@@ -25,15 +25,14 @@ interface Props {
 }
 
 export const PremiumConversionModal = ({ visible, onClose }: Props) => {
-    const { purchaseIAP, loading } = useMonetization();
-    const [selectedPackId, setSelectedPackId] = useState<string>('premium_yearly'); // Default to Yearly (Featured)
+    const { presentPaywall, loading } = useMonetization();
 
     const handlePurchase = async () => {
         triggerHaptic.selection();
-        const pack = PREMIUM_PACKS.find(p => p.id === selectedPackId);
-        if (!pack) return;
 
-        const success = await purchaseIAP(pack.revenueCatPackageId || pack.priceIAP || '');
+        // Use RevenueCat Native Paywall
+        const success = await presentPaywall();
+
         if (success) {
             triggerHaptic.success();
             onClose();
@@ -54,47 +53,7 @@ export const PremiumConversionModal = ({ visible, onClose }: Props) => {
         </View>
     );
 
-    const renderPlanCard = (pack: typeof PREMIUM_PACKS[0]) => {
-        const isSelected = selectedPackId === pack.id;
-        return (
-            <TouchableOpacity
-                key={pack.id}
-                style={[
-                    styles.planCard,
-                    isSelected && styles.planCardSelected,
-                    pack.featured && !isSelected && styles.planCardFeaturedNotSelected
-                ]}
-                onPress={() => {
-                    triggerHaptic.light();
-                    setSelectedPackId(pack.id);
-                }}
-                activeOpacity={0.9}
-            >
-                {pack.featured && (
-                    <View style={styles.bestValueBadge}>
-                        <Text style={styles.bestValueText}>Meilleure Offre</Text>
-                    </View>
-                )}
-                <View style={styles.planHeader}>
-                    <View style={styles.radioButton}>
-                        {isSelected && <View style={styles.radioButtonSelected} />}
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={[styles.planName, isSelected && styles.planNameSelected]}>{pack.name}</Text>
-                        {pack.discount ? (
-                            <Text style={styles.planDiscount}>Economisez {pack.discount}%</Text>
-                        ) : null}
-                    </View>
-                    <View style={styles.priceContainer}>
-                        <Text style={[styles.planPrice, isSelected && styles.planPriceSelected]}>{pack.priceFiat}€</Text>
-                        <Text style={styles.planPeriod}>
-                            {pack.id.includes('monthly') ? '/mois' : pack.id.includes('yearly') ? '/an' : ''}
-                        </Text>
-                    </View>
-                </View>
-            </TouchableOpacity>
-        );
-    };
+
 
     return (
         <Modal
@@ -131,10 +90,6 @@ export const PremiumConversionModal = ({ visible, onClose }: Props) => {
                         {renderFeature('stats-chart', 'Statistiques Détaillées', 'Analysez votre fronting et vos habitudes')}
                     </View>
 
-                    <View style={styles.plansContainer}>
-                        {PREMIUM_PACKS.map(renderPlanCard)}
-                    </View>
-
                     <TouchableOpacity
                         style={styles.ctaButton}
                         onPress={handlePurchase}
@@ -143,9 +98,9 @@ export const PremiumConversionModal = ({ visible, onClose }: Props) => {
                         {loading ? (
                             <Text style={styles.ctaButtonText}>Chargement...</Text>
                         ) : (
-                            <Text style={styles.ctaButtonText}>Continuer l'expérience Premium</Text>
+                            <Text style={styles.ctaButtonText}>Voir les offres Premium</Text>
                         )}
-                        <Text style={styles.ctaSubText}>Annulable à tout moment (sauf à vie)</Text>
+                        <Text style={styles.ctaSubText}>Via App Store / Google Play</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.closeLink} onPress={onClose}>

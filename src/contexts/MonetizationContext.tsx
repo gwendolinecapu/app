@@ -60,6 +60,8 @@ interface MonetizationContextType {
     purchaseItem: (item: ShopItem) => Promise<boolean>;
     purchaseIAP: (packageId: string) => Promise<boolean>;
     restorePurchases: () => Promise<boolean>;
+    presentPaywall: () => Promise<boolean>;
+    presentCustomerCenter: () => Promise<void>;
 
     // Décorations
     ownedDecorations: Decoration[];
@@ -126,7 +128,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     const refresh = useCallback(async () => {
         if (user?.uid) {
             // Sync with RevenueCat
-            const isPremiumRC = await RevenueCatService.getEntitlementStatus('premium');
+            const isPremiumRC = await RevenueCatService.isPro();
             if (isPremiumRC && !PremiumService.isPremium()) {
                 // Sync local status if RevenueCat says premium but local doesn't
                 // This is a naive sync, ideally PremiumService should check RC directly or just rely on RC
@@ -264,6 +266,16 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         }
     }, [refresh]);
 
+    const presentPaywall = useCallback(async (): Promise<boolean> => {
+        const result = await RevenueCatService.presentPaywall();
+        if (result) await refresh();
+        return result;
+    }, [refresh]);
+
+    const presentCustomerCenter = useCallback(async (): Promise<void> => {
+        await RevenueCatService.presentCustomerCenter();
+    }, []);
+
     // ==================== DECORATIONS ====================
 
     const purchaseDecoration = useCallback(async (decorationId: string): Promise<boolean> => {
@@ -322,6 +334,8 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         purchaseItem,
         purchaseIAP,
         restorePurchases,
+        presentPaywall,
+        presentCustomerCenter,
 
         ownedDecorations,
         purchaseDecoration,

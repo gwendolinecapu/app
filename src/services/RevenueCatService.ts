@@ -2,15 +2,18 @@ import Purchases, {
     PurchasesOffering,
     PurchasesPackage,
     CustomerInfo,
-    PurchasesError
+    LOG_LEVEL
 } from 'react-native-purchases';
+import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import { Platform } from 'react-native';
 
-// Keys should be in .env in production, but defined here for now as requested by user plan context or placeholders
+// API Key provided by user (test key for now)
 const API_KEYS = {
-    ios: 'appl_REVENUECAT_PUBLIC_KEY_IOS', // Placeholder
-    android: 'goog_REVENUECAT_PUBLIC_KEY_ANDROID', // Placeholder
+    ios: 'test_zcvHTXKfemhYedAwFqpypdGQOlL',
+    android: 'test_zcvHTXKfemhYedAwFqpypdGQOlL'
 };
+
+const ENTITLEMENT_ID = 'Plural Connect Pro';
 
 class RevenueCatService {
     private static instance: RevenueCatService;
@@ -31,6 +34,8 @@ class RevenueCatService {
     async initialize(userId?: string): Promise<void> {
         if (this.initialized) return;
 
+        Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
+
         if (Platform.OS === 'ios') {
             Purchases.configure({ apiKey: API_KEYS.ios });
         } else if (Platform.OS === 'android') {
@@ -42,6 +47,7 @@ class RevenueCatService {
         }
 
         this.initialized = true;
+        console.log('[RevenueCat] Initialized successfully');
     }
 
     /**
@@ -77,7 +83,7 @@ class RevenueCatService {
     }
 
     /**
-     * Purchase a package
+     * Purchase a package manually
      */
     async purchasePackage(
         packageToPurchase: PurchasesPackage
@@ -94,6 +100,40 @@ class RevenueCatService {
     }
 
     /**
+     * Present the native RevenueCat Paywall
+     */
+    async presentPaywall(): Promise<boolean> {
+        try {
+            const paywallResult: PAYWALL_RESULT = await RevenueCatUI.presentPaywall();
+
+            switch (paywallResult) {
+                case PAYWALL_RESULT.PURCHASED:
+                case PAYWALL_RESULT.RESTORED:
+                    return true;
+                case PAYWALL_RESULT.NOT_PRESENTED:
+                case PAYWALL_RESULT.ERROR:
+                case PAYWALL_RESULT.CANCELLED:
+                default:
+                    return false;
+            }
+        } catch (error) {
+            console.error('[RevenueCat] Paywall error:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Present the Customer Center
+     */
+    async presentCustomerCenter(): Promise<void> {
+        try {
+            await RevenueCatUI.presentCustomerCenter();
+        } catch (error) {
+            console.error('[RevenueCat] Customer Center error:', error);
+        }
+    }
+
+    /**
      * Restore purchases
      */
     async restorePurchases(): Promise<CustomerInfo> {
@@ -101,16 +141,23 @@ class RevenueCatService {
     }
 
     /**
-     * Check if user has active entitlement (e.g. "premium")
+     * Check if user has active entitlement
      */
-    async getEntitlementStatus(entitlementId: string = 'premium'): Promise<boolean> {
+    async isPro(customerInfo?: CustomerInfo): Promise<boolean> {
         try {
-            const customerInfo = await Purchases.getCustomerInfo();
-            return customerInfo.entitlements.active[entitlementId] !== undefined;
+            const info = customerInfo || await Purchases.getCustomerInfo();
+            return typeof info.entitlements.active[ENTITLEMENT_ID] !== "undefined";
         } catch (e) {
-            console.error('[RevenueCat] Error getting entitlement:', e);
+            console.error('[RevenueCat] Error checking entitlement:', e);
             return false;
         }
+    }
+
+    /**
+     * Get generic generic raw customer info
+     */
+    async getCustomerInfo(): Promise<CustomerInfo> {
+        return await Purchases.getCustomerInfo();
     }
 }
 

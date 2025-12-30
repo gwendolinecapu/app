@@ -75,7 +75,21 @@ export default function TabLayout() {
                 }}
             />
 
-            {/* Onglet 4: Profil */}
+            {/* Onglet 4: Notifications (Style Instagram) */}
+            <Tabs.Screen
+                name="notifications"
+                options={{
+                    title: 'Notifs',
+                    tabBarIcon: ({ focused, color, size }) => (
+                        <Ionicons name={focused ? 'heart' : 'heart-outline'} size={size} color={color} />
+                    ),
+                }}
+                listeners={{
+                    tabPress: () => triggerHaptic.selection(),
+                }}
+            />
+
+            {/* Onglet 5: Profil */}
             <Tabs.Screen
                 name="profile"
                 options={{

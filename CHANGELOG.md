@@ -1,5 +1,34 @@
 # Changelog
 
+## [2025-12-30] Onglet Notifications (Style Instagram) 🔔
+
+### Nouvel Écran Notifications
+- **`app/(tabs)/notifications.tsx`** : Écran dédié aux notifications
+  - Section "Demandes d'amis" avec boutons Accepter/Refuser
+  - Section "Activité récente" pour likes, commentaires, follows
+  - Design Instagram-like avec icônes colorées
+  - Pull-to-refresh pour actualiser
+
+### Navigation
+- **`app/(tabs)/_layout.tsx`** : 5ème onglet ajouté (icône ❤️)
+
+---
+
+## [2025-12-30] Corrections Firebase Permissions 🔒
+
+### Firestore Rules
+- **`friend_requests`** : Lecture ouverte aux utilisateurs authentifiés (senderId/receiverId sont des Alter IDs, pas des UIDs)
+- **`friendships`** : Lecture ouverte pour les vérifications bilatérales d'amitié
+- **`public_profiles`** : Vérification propriété via `profileId == auth.uid`
+
+### Conversation Messages
+- **`app/conversation/[id].tsx`** : Corrigé `system_tag: undefined` → `null` (Firestore n'accepte pas undefined)
+
+### Profile Screen
+- **`app/(tabs)/profile.tsx`** : Gestion gracieuse des erreurs de permission lors du chargement des stats
+
+---
+
 ## [2025-12-30] Feed V2 - Expérience Sociale Complète 📱
 
 ### Phase 1 : Navigation Profil

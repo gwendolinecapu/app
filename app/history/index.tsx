@@ -55,12 +55,13 @@ const PERIOD_LABELS: Record<PeriodType, string> = {
     'all': 'Tout',
 };
 
+// ... (imports remain the same)
+
 export default function HistoryScreen() {
     const { system, alters, currentAlter } = useAuth();
-
     const params = useLocalSearchParams<{ tab: TabType }>();
 
-    // États UI
+    // ... (state remains same until renderStatCard)
     const [activeTab, setActiveTab] = useState<TabType>(params.tab || 'summary');
     const [period, setPeriod] = useState<PeriodType>('7d');
     const [loading, setLoading] = useState(true);
@@ -79,20 +80,15 @@ export default function HistoryScreen() {
     const [patterns, setPatterns] = useState<string[]>([]);
     const [emotionSummary, setEmotionSummary] = useState<{ totalEntries: number; avgIntensity: number; dominantEmotion: EmotionType | null; moodScore: number }>({ totalEntries: 0, avgIntensity: 0, dominantEmotion: null, moodScore: 50 });
 
-    // Animation pour les onglets
     const [tabAnimation] = useState(new Animated.Value(0));
 
-    // Charger les données
     const loadData = useCallback(async () => {
         if (!system) return;
-
         try {
             const days = PERIOD_DAYS[period];
-
-            // Charger données Front
             const [statsData, breakdownData, switchData, topData] = await Promise.all([
                 FrontingService.getStatsForPeriod(system.id, days),
-                FrontingService.getDailyBreakdown(system.id, Math.min(days, 30)), // Max 30 points pour le graphique
+                FrontingService.getDailyBreakdown(system.id, Math.min(days, 30)),
                 FrontingService.getSwitchCount(system.id, days),
                 FrontingService.getTopAlters(system.id, days, 5)
             ]);
@@ -102,7 +98,6 @@ export default function HistoryScreen() {
             setSwitchCount(switchData);
             setTopAlters(topData);
 
-            // Charger données Émotions (si alter sélectionné)
             if (currentAlter) {
                 const [trendData, distData, moodData, patternData, summaryData] = await Promise.all([
                     EmotionService.getEmotionsTrend(currentAlter.id, Math.min(days, 30)),
@@ -136,7 +131,6 @@ export default function HistoryScreen() {
         loadData();
     };
 
-    // Animation tab switch
     const switchTab = (tab: TabType) => {
         const tabIndex = tab === 'summary' ? 0 : tab === 'front' ? 1 : 2;
         Animated.spring(tabAnimation, {
@@ -147,13 +141,11 @@ export default function HistoryScreen() {
         setActiveTab(tab);
     };
 
-    // Calculer les heures totales de front
     const totalHours = useMemo(() => {
         const totalSeconds = Object.values(frontStats).reduce((a, b) => a + b, 0);
         return parseFloat((totalSeconds / 3600).toFixed(1));
     }, [frontStats]);
 
-    // Préparer données pour le LineChart
     const lineChartData = useMemo(() => ({
         labels: dailyBreakdown.slice(-7).map(d => {
             const date = new Date(d.date);
@@ -165,7 +157,6 @@ export default function HistoryScreen() {
         }]
     }), [dailyBreakdown]);
 
-    // Préparer données PieChart pour les émotions
     const emotionPieData = useMemo(() => {
         const emotionColors: Record<EmotionType, string> = {
             happy: '#FFD93D',
@@ -179,7 +170,7 @@ export default function HistoryScreen() {
         };
 
         return emotionDistribution.slice(0, 5).map(e => ({
-            name: EMOTION_EMOJIS[e.type],
+            name: e.label,
             population: e.count,
             color: emotionColors[e.type] || colors.primary,
             legendFontColor: colors.textSecondary,
@@ -187,11 +178,10 @@ export default function HistoryScreen() {
         }));
     }, [emotionDistribution]);
 
-    // Render stat card
-    const renderStatCard = (icon: string, value: string | number, label: string, trend?: 'up' | 'down' | 'stable', color?: string) => (
+    const renderStatCard = (icon: keyof typeof Ionicons.glyphMap, value: string | number, label: string, trend?: 'up' | 'down' | 'stable', color?: string) => (
         <View style={styles.statCard}>
             <View style={styles.statCardHeader}>
-                <Text style={styles.statIcon}>{icon}</Text>
+                <Ionicons name={icon} size={24} color={color || colors.primary} />
                 {trend && (
                     <Ionicons
                         name={trend === 'up' ? 'trending-up' : trend === 'down' ? 'trending-down' : 'remove'}
@@ -205,7 +195,6 @@ export default function HistoryScreen() {
         </View>
     );
 
-    // Render insight card (style Spotify Wrapped)
     const renderInsightCard = (insight: string, index: number) => (
         <LinearGradient
             key={index}
@@ -214,33 +203,37 @@ export default function HistoryScreen() {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
         >
-            <Ionicons name="bulb" size={20} color={colors.primary} />
+            <Ionicons name="bulb-outline" size={20} color={colors.primary} />
             <Text style={styles.insightText}>{insight}</Text>
         </LinearGradient>
     );
 
-    // Render l'onglet Résumé
+    const renderSectionTitle = (title: string, icon: keyof typeof Ionicons.glyphMap) => (
+        <View style={styles.sectionTitleContainer}>
+            <Ionicons name={icon} size={20} color={colors.text} style={{ marginRight: 8 }} />
+            <Text style={styles.sectionTitle}>{title}</Text>
+        </View>
+    );
+
     const renderSummaryTab = () => (
         <View style={styles.tabContent}>
-            {/* Cartes de stats principales */}
             <View style={styles.statsRow}>
-                {renderStatCard('⏱️', `${totalHours}h`, 'Temps Front', undefined, colors.primary)}
-                {renderStatCard('🔄', switchCount.current, 'Switchs', switchCount.trend)}
+                {renderStatCard('time-outline', `${totalHours}h`, 'Temps Front', undefined, colors.primary)}
+                {renderStatCard('sync-outline', switchCount.current, 'Switchs', switchCount.trend)}
             </View>
 
             <View style={styles.statsRow}>
                 {renderStatCard(
-                    emotionSummary.dominantEmotion ? EMOTION_EMOJIS[emotionSummary.dominantEmotion] : '💜',
+                    'heart-outline',
                     emotionSummary.moodScore,
                     'Score Humeur',
                     moodAverage.trend
                 )}
-                {renderStatCard('📝', emotionSummary.totalEntries, 'Entrées', undefined)}
+                {renderStatCard('document-text-outline', emotionSummary.totalEntries, 'Entrées', undefined)}
             </View>
 
-            {/* Graphique d'activité */}
             <View style={styles.chartSection}>
-                <Text style={styles.sectionTitle}>📈 Activité</Text>
+                {renderSectionTitle('Activité', 'bar-chart-outline')}
                 {dailyBreakdown.length > 0 ? (
                     <LineChart
                         data={lineChartData}
@@ -271,22 +264,19 @@ export default function HistoryScreen() {
                 )}
             </View>
 
-            {/* Insights */}
             {patterns.length > 0 && (
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>💡 Insights</Text>
+                    {renderSectionTitle('Insights', 'bulb-outline')}
                     {patterns.map((insight, i) => renderInsightCard(insight, i))}
                 </View>
             )}
         </View>
     );
 
-    // Render l'onglet Front
     const renderFrontTab = () => (
         <View style={styles.tabContent}>
-            {/* Top Alters */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>🏆 Top Alters</Text>
+                {renderSectionTitle('Top Alters', 'trophy-outline')}
                 {topAlters.map((alter, index) => {
                     const alterData = alters.find(a => a.id === alter.alterId);
                     return (
@@ -315,9 +305,8 @@ export default function HistoryScreen() {
                 )}
             </View>
 
-            {/* Graphique journalier */}
             <View style={styles.chartSection}>
-                <Text style={styles.sectionTitle}>📊 Heures par jour</Text>
+                {renderSectionTitle('Heures par jour', 'stats-chart-outline')}
                 {dailyBreakdown.length > 0 ? (
                     <BarChart
                         data={{
@@ -354,22 +343,19 @@ export default function HistoryScreen() {
         </View>
     );
 
-    // Render l'onglet Émotions
     const renderEmotionsTab = () => (
         <View style={styles.tabContent}>
-            {/* Stats émotionnelles */}
             <View style={styles.statsRow}>
                 {renderStatCard(
-                    emotionSummary.dominantEmotion ? EMOTION_EMOJIS[emotionSummary.dominantEmotion] : '💜',
+                    'star-outline',
                     emotionSummary.dominantEmotion ? EMOTION_LABELS[emotionSummary.dominantEmotion] : '-',
                     'Dominante'
                 )}
-                {renderStatCard('📊', moodAverage.average.toFixed(1), 'Intensité moy.', moodAverage.trend)}
+                {renderStatCard('pulse-outline', moodAverage.average.toFixed(1), 'Intensité moy.', moodAverage.trend)}
             </View>
 
-            {/* Distribution */}
             <View style={styles.chartSection}>
-                <Text style={styles.sectionTitle}>🎯 Distribution</Text>
+                {renderSectionTitle('Distribution', 'pie-chart-outline')}
                 {emotionPieData.length > 0 ? (
                     <PieChart
                         data={emotionPieData}
@@ -388,12 +374,11 @@ export default function HistoryScreen() {
                 )}
             </View>
 
-            {/* Liste des émotions */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>📈 Répartition</Text>
+                {renderSectionTitle('Répartition', 'options-outline')}
                 {emotionDistribution.map(emotion => (
                     <View key={emotion.type} style={styles.emotionRow}>
-                        <Text style={styles.emotionEmoji}>{EMOTION_EMOJIS[emotion.type]}</Text>
+                        <Ionicons name="ellipse" size={12} color={colors.primary} style={{ marginRight: spacing.sm }} />
                         <View style={styles.emotionInfo}>
                             <Text style={styles.emotionLabel}>{emotion.label}</Text>
                             <View style={styles.emotionProgressBar}>
@@ -408,10 +393,9 @@ export default function HistoryScreen() {
                 )}
             </View>
 
-            {/* Insights émotionnels */}
             {patterns.length > 0 && (
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>💡 Patterns détectés</Text>
+                    {renderSectionTitle('Patterns détectés', 'bulb-outline')}
                     {patterns.map((insight, i) => renderInsightCard(insight, i))}
                 </View>
             )}
@@ -429,7 +413,6 @@ export default function HistoryScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
@@ -440,7 +423,6 @@ export default function HistoryScreen() {
                 </TouchableOpacity>
             </View>
 
-            {/* Onglets */}
             <View style={styles.tabsContainer}>
                 {(['summary', 'front', 'emotions'] as TabType[]).map((tab) => (
                     <TouchableOpacity
@@ -448,14 +430,19 @@ export default function HistoryScreen() {
                         style={[styles.tab, activeTab === tab && styles.tabActive]}
                         onPress={() => switchTab(tab)}
                     >
+                        <Ionicons
+                            name={tab === 'summary' ? 'bar-chart-outline' : tab === 'front' ? 'people-outline' : 'heart-outline'}
+                            size={16}
+                            color={activeTab === tab ? '#FFF' : colors.textSecondary}
+                            style={{ marginRight: 6 }}
+                        />
                         <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                            {tab === 'summary' ? '📊 Résumé' : tab === 'front' ? '🔄 Front' : '💜 Émotions'}
+                            {tab === 'summary' ? 'Résumé' : tab === 'front' ? 'Front' : 'Émotions'}
                         </Text>
                     </TouchableOpacity>
                 ))}
             </View>
 
-            {/* Filtres de période */}
             <View style={styles.periodFilters}>
                 {(['7d', '30d', '90d', '1y', 'all'] as PeriodType[]).map((p) => (
                     <TouchableOpacity
@@ -470,7 +457,6 @@ export default function HistoryScreen() {
                 ))}
             </View>
 
-            {/* Contenu */}
             <ScrollView
                 style={styles.content}
                 contentContainerStyle={styles.scrollContent}
@@ -615,9 +601,13 @@ const styles = StyleSheet.create({
         borderRadius: borderRadius.lg,
         marginBottom: spacing.lg,
     },
+    sectionTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: spacing.md,
+    },
     sectionTitle: {
         ...typography.h3,
-        marginBottom: spacing.md,
     },
     chart: {
         borderRadius: borderRadius.md,

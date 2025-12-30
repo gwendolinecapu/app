@@ -132,7 +132,7 @@ const getFrameStyle = (id: string, isPreview = false) => {
 
     if (id.includes('basic')) return { ...base, borderWidth: 1, borderColor: '#cbd5e1' };
     if (id.includes('double')) return { ...base, borderWidth: 4, borderColor: '#fff' };
-    if (id.includes('dashed')) return { ...base, borderStyle: 'dashed', borderColor: '#fff' };
+    if (id.includes('dashed')) return { ...base, borderStyle: 'dashed' as const, borderColor: '#fff' };
     if (id.includes('square')) return { ...base, borderRadius: 12, borderColor: '#fff' };
 
     // Colorful Frames
@@ -141,12 +141,12 @@ const getFrameStyle = (id: string, isPreview = false) => {
         shadowColor: '#0ff', shadowOpacity: 0.8, shadowRadius: 10, elevation: 10, borderWidth: 2
     };
     if (id.includes('gold')) return { ...base, borderColor: '#ffd700', borderWidth: 2 };
-    if (id.includes('leaves') || id.includes('floral')) return { ...base, borderColor: '#4ade80', borderStyle: 'dashed' };
+    if (id.includes('leaves') || id.includes('floral')) return { ...base, borderColor: '#4ade80', borderStyle: 'dashed' as const };
     if (id.includes('flames')) return { ...base, borderColor: '#f87171', borderWidth: 3 };
     if (id.includes('ice')) return { ...base, borderColor: '#a5f3fc', borderWidth: 2 };
     if (id.includes('water')) return { ...base, borderColor: '#38bdf8' };
     if (id.includes('rainbow')) return { ...base, borderColor: '#c084fc', borderWidth: 3 };
-    if (id.includes('glitch')) return { ...base, borderColor: '#a78bfa', borderWidth: 2, borderStyle: 'dotted' };
+    if (id.includes('glitch')) return { ...base, borderColor: '#a78bfa', borderWidth: 2, borderStyle: 'dotted' as const };
     if (id.includes('crown')) return { ...base, borderColor: '#fbbf24', borderWidth: 3 };
 
     return base;
@@ -297,9 +297,22 @@ const CategoryTabs = ({ activeCategory, onSelect }: { activeCategory: ShopCatego
                     return (
                         <TouchableOpacity
                             onPress={() => onSelect(item.id)}
-                            style={[styles.tabItem, isActive && styles.tabItemActive]}
+                            activeOpacity={0.8}
                         >
-                            <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{item.label}</Text>
+                            {isActive ? (
+                                <LinearGradient
+                                    colors={['#8b5cf6', '#6366f1']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={[styles.tabItem, styles.tabItemActive]}
+                                >
+                                    <Text style={[styles.tabText, styles.tabTextActive]}>{item.label}</Text>
+                                </LinearGradient>
+                            ) : (
+                                <View style={styles.tabItem}>
+                                    <Text style={styles.tabText}>{item.label}</Text>
+                                </View>
+                            )}
                         </TouchableOpacity>
                     );
                 }}
@@ -321,48 +334,59 @@ const ShopItemCard = ({ item, isOwned, isEquipped, isLocked, userCredits, onActi
 
     return (
         <FadeInView delay={index * 50}>
-            <AnimatedTouchable onPress={() => onAction(item)} style={styles.cardContainer}>
-                <View style={styles.cardPreviewContainer}>
-                    <ItemPreview item={item} />
+            <AnimatedTouchable onPress={() => onAction(item)}>
+                <LinearGradient
+                    colors={['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.01)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0.5, y: 1 }}
+                    style={styles.cardContainer}
+                >
+                    <View style={styles.cardPreviewContainer}>
+                        <ItemPreview item={item} />
 
-                    {isEquipped && (
-                        <View style={styles.equippedBadge}>
-                            <Ionicons name="checkmark" size={12} color="#FFF" />
-                            <Text style={styles.equippedText}>ACTIF</Text>
-                        </View>
-                    )}
-                </View>
-
-                <View style={styles.cardInfo}>
-                    <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
-
-                    <View style={styles.cardActionRow}>
-                        {isOwned ? (
-                            <Text style={styles.labelOwned}>{isEquipped ? 'Équipé' : 'Possédé'}</Text>
-                        ) : item.isPremium ? (
-                            <View style={styles.priceRow}>
-                                <Ionicons name="diamond" size={12} color={isLocked ? "#db2777" : "#10b981"} />
-                                <Text style={[styles.priceText, { color: isLocked ? "#db2777" : "#10b981" }]}>
-                                    {isLocked ? 'Premium' : 'Inclus'}
-                                </Text>
-                            </View>
-                        ) : (
-                            <View style={styles.priceRow}>
-                                <Ionicons name="star" size={12} color={canAfford ? "#fbbf24" : "#64748b"} />
-                                <Text style={[styles.priceText, { color: canAfford ? "#fbbf24" : "#64748b" }]}>
-                                    {item.priceCredits}
-                                </Text>
-                            </View>
+                        {isEquipped && (
+                            <BlurView intensity={20} style={styles.equippedBadge}>
+                                <Ionicons name="checkmark" size={10} color="#FFF" />
+                                <Text style={styles.equippedText}>ACTIF</Text>
+                            </BlurView>
                         )}
                     </View>
-                </View>
 
-                {/* Overlay for Locked Items */}
-                {isLocked && (
-                    <View style={styles.lockedOverlay}>
-                        <Ionicons name="lock-closed" size={20} color="rgba(255,255,255,0.6)" />
+                    <View style={styles.cardInfo}>
+                        <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
+
+                        <View style={styles.cardActionRow}>
+                            {isOwned ? (
+                                <View style={styles.statusPill}>
+                                    <View style={[styles.statusDot, { backgroundColor: isEquipped ? '#4ade80' : '#94a3b8' }]} />
+                                    <Text style={[styles.labelOwned, { color: isEquipped ? '#4ade80' : '#94a3b8' }]}>{isEquipped ? 'Équipé' : 'Acquis'}</Text>
+                                </View>
+                            ) : item.isPremium ? (
+                                <View style={[styles.priceRow, styles.priceRowPremium]}>
+                                    <Ionicons name="diamond" size={10} color={isLocked ? "#db2777" : "#FFF"} />
+                                    <Text style={[styles.priceText, { color: isLocked ? "#db2777" : "#FFF" }]}>
+                                        {isLocked ? 'Premium' : 'Inclus'}
+                                    </Text>
+                                </View>
+                            ) : (
+                                <View style={styles.priceRow}>
+                                    <Ionicons name="star" size={10} color={canAfford ? "#fbbf24" : "#64748b"} />
+                                    <Text style={[styles.priceText, { color: canAfford ? "#fbbf24" : "#64748b" }]}>
+                                        {item.priceCredits}
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
                     </View>
-                )}
+
+                    {/* Overlay for Locked Items */}
+                    {isLocked && (
+                        <View style={styles.lockedOverlay}>
+                            <BlurView intensity={10} style={StyleSheet.absoluteFill} />
+                            <Ionicons name="lock-closed" size={24} color="rgba(255,255,255,0.8)" />
+                        </View>
+                    )}
+                </LinearGradient>
             </AnimatedTouchable>
         </FadeInView>
     );
@@ -524,7 +548,12 @@ export default function ShopScreen() {
     );
 
     return (
-        <View style={styles.container}>
+        <LinearGradient
+            colors={['#1e1b4b', '#020617']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.container}
+        >
             <StatusBar barStyle="light-content" />
 
             <View style={[styles.topBar, { paddingTop: insets.top }]}>
@@ -533,6 +562,10 @@ export default function ShopScreen() {
                 </TouchableOpacity>
                 <View style={styles.topBarActions}>
                     <TouchableOpacity onPress={presentPaywall} style={styles.iconButton}>
+                        <LinearGradient
+                            colors={['rgba(236, 72, 153, 0.2)', 'rgba(236, 72, 153, 0.05)']}
+                            style={[StyleSheet.absoluteFillObject, { borderRadius: 20 }]}
+                        />
                         <Ionicons name="diamond-outline" size={22} color="#ec4899" />
                     </TouchableOpacity>
                 </View>
@@ -579,14 +612,13 @@ export default function ShopScreen() {
                     );
                 }}
             />
-        </View>
+        </LinearGradient>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#020617', // Slate 950 - Darker background
     },
     topBar: {
         flexDirection: 'row',
@@ -624,9 +656,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         alignSelf: 'flex-start',
-        backgroundColor: 'rgba(251, 191, 36, 0.1)',
-        paddingHorizontal: 10,
-        paddingVertical: 4,
+        borderWidth: 1,
+        borderColor: 'rgba(251, 191, 36, 0.3)', // Gold border
+        backgroundColor: 'rgba(251, 191, 36, 0.05)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
         borderRadius: 20,
         gap: 6,
         marginBottom: spacing.md,
@@ -635,6 +669,9 @@ const styles = StyleSheet.create({
         ...typography.body,
         fontWeight: 'bold',
         color: '#fbbf24',
+        textShadowColor: 'rgba(251, 191, 36, 0.3)',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 8,
     },
     spacingMd: { height: spacing.md },
     spacingSm: { height: spacing.sm },
@@ -679,32 +716,40 @@ const styles = StyleSheet.create({
 
     // Tabs
     tabsContainer: {
-        marginHorizontal: -spacing.md, // Full width bleed
+        marginHorizontal: -spacing.md,
         paddingHorizontal: spacing.md,
     },
     tabsContent: {
         gap: 8,
         paddingRight: spacing.md,
+        paddingVertical: 4,
     },
     tabItem: {
         paddingVertical: 8,
         paddingHorizontal: 16,
         borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.05)',
+        backgroundColor: 'rgba(255,255,255,0.03)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
+        borderColor: 'rgba(255,255,255,0.1)',
     },
     tabItemActive: {
-        backgroundColor: '#FFF',
-        borderColor: '#FFF',
+        backgroundColor: 'transparent', // Gradient handles bg
+        borderWidth: 0,
+        paddingVertical: 9, // Adjust for lack of border
+        paddingHorizontal: 17,
+        shadowColor: '#8b5cf6',
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+        elevation: 4,
     },
     tabText: {
         ...typography.caption,
         fontWeight: '600',
-        color: 'rgba(255,255,255,0.6)',
+        color: 'rgba(255,255,255,0.5)',
     },
     tabTextActive: {
-        color: '#000',
+        color: '#FFF',
+        fontWeight: '700',
     },
 
     // Card
@@ -714,17 +759,21 @@ const styles = StyleSheet.create({
     },
     cardContainer: {
         width: ITEM_WIDTH,
-        backgroundColor: 'rgba(30, 41, 59, 0.5)', // Slate 800 with opacity
-        borderRadius: borderRadius.xl,
+        borderRadius: 20,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
+        borderColor: 'rgba(255,255,255,0.1)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 4,
     },
     cardPreviewContainer: {
-        height: 110,
+        height: 100,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'rgba(0,0,0,0.2)',
+        backgroundColor: 'rgba(0,0,0,0.2)', // Slightly darker for contrast
     },
     previewBase: {
         width: 64,
@@ -776,33 +825,55 @@ const styles = StyleSheet.create({
         borderRadius: 1.5,
     },
     cardInfo: {
-        padding: spacing.sm,
+        padding: 10,
     },
     cardTitle: {
         ...typography.caption,
-        color: '#FFF',
-        fontWeight: 'bold',
-        marginBottom: 6,
+        color: '#e2e8f0',
+        fontWeight: '600',
+        marginBottom: 8,
+        fontSize: 12,
     },
     cardActionRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        height: 24,
+    },
+    statusPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 8,
+    },
+    statusDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
     },
     labelOwned: {
         ...typography.caption,
         fontSize: 10,
-        color: '#94a3b8',
         fontWeight: '600',
     },
     priceRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor: 'rgba(251, 191, 36, 0.1)',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 12,
         gap: 4,
+    },
+    priceRowPremium: {
+        backgroundColor: 'rgba(236, 72, 153, 0.15)',
     },
     priceText: {
         ...typography.caption,
-        fontWeight: 'bold',
+        fontWeight: '700',
         fontSize: 11,
     },
     equippedBadge: {
@@ -811,16 +882,18 @@ const styles = StyleSheet.create({
         right: 8,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#10b981',
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 10,
-        gap: 2,
+        backgroundColor: 'rgba(16, 185, 129, 0.9)', // Emerald 500
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+        gap: 3,
+        overflow: 'hidden',
     },
     equippedText: {
-        fontSize: 8,
-        fontWeight: 'bold',
+        fontSize: 9,
+        fontWeight: '800',
         color: '#FFF',
+        letterSpacing: 0.5,
     },
     lockedOverlay: {
         ...StyleSheet.absoluteFillObject,

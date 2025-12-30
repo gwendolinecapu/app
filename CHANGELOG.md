@@ -1,5 +1,10 @@
 # Changelog
 
+## [2025-12-30] - Compilation & Permission Fixes
+- **Fix**: Resolved `ReferenceError: Property 'useState' doesn't exist` in `app/post/[id].tsx` by adding missing imports.
+- **Security**: Added missing Firestore security rules for `user_monetization` and `comments` collections.
+- **Monetization**: Fixed initialization failures in `PremiumService` and `CreditService` due to missing permissions.
+
 ## [2025-12-30] Friend System & Search Overhaul
 ### Fixed
 - **Own-System Friends**: Removed limitation that prevented adding alters from the same system as friends.

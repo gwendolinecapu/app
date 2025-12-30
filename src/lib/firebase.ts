@@ -1,7 +1,7 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import 'firebase/auth';
 // @ts-ignore - getReactNativePersistence is resolved via metro.config.js to RN bundle
-import { getAuth, initializeAuth, getReactNativePersistence, browserLocalPersistence } from 'firebase/auth';
+import { getAuth, initializeAuth, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -29,11 +29,15 @@ if (getApps().length === 0) {
 
 // Initialisation de l'Authentification avec persistance AsyncStorage pour React Native
 // Initialisation de l'Authentification (Web vs Native)
-const auth = initializeAuth(app, {
-    persistence: Platform.OS === 'web'
-        ? browserLocalPersistence
-        : getReactNativePersistence(AsyncStorage)
-});
+let auth;
+if (Platform.OS === 'web') {
+    auth = getAuth(app);
+} else {
+    const { getReactNativePersistence } = require('firebase/auth');
+    auth = initializeAuth(app, {
+        persistence: getReactNativePersistence(AsyncStorage)
+    });
+}
 
 // Initialisation de Firestore
 const db = getFirestore(app);

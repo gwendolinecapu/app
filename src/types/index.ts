@@ -45,6 +45,18 @@ export interface Alter {
     likes?: string[];
     dislikes?: string[];
     custom_fields?: { label: string; value: string }[];
+
+    // Monetization & Inventory (Alter-specific)
+    owned_items?: string[]; // IDs of items owned by this alter
+    last_daily_reward?: string; // Date (YYYY-MM-DD) of last claim
+    last_reward_ad?: number; // Timestamp of last ad watch
+
+    // Equipped Cosmetics
+    equipped_items?: {
+        frame?: string;
+        theme?: string;
+        bubble?: string;
+    };
 }
 
 export interface Post {

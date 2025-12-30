@@ -36,7 +36,8 @@ const AD_CONFIG_KEYS = {
     // Blocs d'annonces partagés iOS/Android
     ADMOB_BANNER_ID_IOS: 'ca-app-pub-7014088517639318/7961420846', // Bannière iOS
     ADMOB_BANNER_ID_ANDROID: 'ca-app-pub-7014088517639318/8064706081', // Bannière Android
-    ADMOB_REWARDED_ID: 'ca-app-pub-7014088517639318/6129464424', // Récompense 50 crédits
+    ADMOB_REWARDED_ID_IOS: 'ca-app-pub-7014088517639318/1623243206', // Récompense iOS 50 crédits
+    ADMOB_REWARDED_ID_ANDROID: 'ca-app-pub-7014088517639318/6129464424', // Récompense Android 50 crédits
 
     // Unity Ads (placeholder - à configurer si utilisé)
     UNITY_GAME_ID_IOS: '4XXXXX',
@@ -136,7 +137,7 @@ class AdMediationService {
         // Créer l'instance AdMob
         const adUnitId = __DEV__
             ? TestIds.REWARDED
-            : (Platform.OS === 'ios' ? AD_CONFIG_KEYS.ADMOB_REWARDED_ID : AD_CONFIG_KEYS.ADMOB_REWARDED_ID);
+            : (Platform.OS === 'ios' ? AD_CONFIG_KEYS.ADMOB_REWARDED_ID_IOS : AD_CONFIG_KEYS.ADMOB_REWARDED_ID_ANDROID);
 
         this.rewardedAd = RewardedAd.createForAdRequest(adUnitId, {
             requestNonPersonalizedAdsOnly: true,

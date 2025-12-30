@@ -54,7 +54,6 @@ export async function registerForPushNotificationsAsync() {
             return false; // Changed return type to boolean
         }
     } else {
-        // console.log('Must use physical device for Push Notifications'); 
         // Local notifications might still work on Android emulator depending on config, but mostly robust on device.
         finalStatus = 'granted'; // Set finalStatus for non-device scenarios
     }

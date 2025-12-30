@@ -68,7 +68,7 @@ export const SystemRelationships = ({ alter, editable = false }: Props) => {
             });
             await refreshAlters();
         } catch (e) {
-            console.error(e);
+            Alert.alert('Erreur', "Échec de la suppression.");
         }
     }
 

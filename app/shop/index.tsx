@@ -145,7 +145,7 @@ export default function ShopScreen() {
                             </View>
                         )}
                         {item.isPremium && !isPremium && (
-                            <Text style={styles.priceSub}>ou {item.priceCredits * 2}★</Text>
+                            <Text style={styles.priceSub}>ou {(item.priceCredits || 0) * 2}★</Text>
                         )}
                     </View>
                 </View>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image as RNImage } from 'react-native';
 import { Message, Alter } from '../../types';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -95,7 +95,17 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         switch (message.type) {
             case 'poll': return renderPoll();
             case 'note': return renderNote();
-            case 'image': return <Text>Image (TODO)</Text>;
+            case 'image': return (
+                <View>
+                    <RNImage
+                        source={{ uri: message.media_url || message.content }}
+                        style={{ width: 200, height: 200, borderRadius: 8, resizeMode: 'cover' }}
+                    />
+                    {message.media_url && message.content ? (
+                        <Text style={{ marginTop: 4, color: isMine ? '#fff' : '#000' }}>{message.content}</Text>
+                    ) : null}
+                </View>
+            );
             default: return renderText();
         }
     };

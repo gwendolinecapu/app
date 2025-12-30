@@ -48,7 +48,7 @@ if (!isExpoGo) {
         console.warn('[AdMediationService] AdMob module not available:', e);
     }
 } else {
-    console.log('[AdMediationService] Running in Expo Go - ads are mocked');
+
 }
 
 // Configuration des App IDs (Production AdMob)
@@ -140,7 +140,6 @@ class AdMediationService {
             this.preloadRewardedAds();
 
             this.initialized = true;
-            console.log('[AdMediation] Initialized successfully');
         } catch (error) {
             console.error('[AdMediation] Initialization failed:', error);
         }
@@ -148,12 +147,10 @@ class AdMediationService {
 
     private async initUnityAds(): Promise<void> {
         // Placeholder Unity Ads
-        console.log('[AdMediation] Unity Ads initialized (stub)');
     }
 
     private async initAppLovin(): Promise<void> {
         // Placeholder AppLovin
-        console.log('[AdMediation] AppLovin MAX initialized (stub)');
     }
 
     // ==================== REWARDED ADS ====================
@@ -179,11 +176,9 @@ class AdMediationService {
             } else {
                 this.preloadedRewarded[index].loaded = true;
             }
-            console.log('[AdMediation] AdMob Rewarded Loaded');
         });
 
         this.rewardedAd.addAdEventListener(RewardedAdEventType.EARNED_REWARD, (reward: { type: string; amount: number }) => {
-            console.log('[AdMediation] User earned reward:', reward);
         });
 
         // Charger
@@ -278,7 +273,6 @@ class AdMediationService {
     }
 
     private async displayRewardedAd(network: AdNetwork): Promise<boolean> {
-        console.log(`[AdMediation] Displaying rewarded ad from ${network}`);
 
         if (network === 'admob' && this.rewardedAd && this.rewardedAd.loaded) {
             return new Promise((resolve) => {
@@ -397,7 +391,6 @@ class AdMediationService {
 
         try {
             // Placeholder - à remplacer par les vrais SDKs
-            console.log('[AdMediation] Showing interstitial');
             this.state.lastInterstitialTime = Date.now();
             await this.saveState();
             return true;

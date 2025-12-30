@@ -84,6 +84,7 @@ export interface Message {
     is_read: boolean;
     created_at: string;
     system_tag?: string; // Tag optionnel (ex: "[Leo]")
+    media_url?: string; // URL de l'image/média si type === 'image'
 
     // Enrichissements
     poll_options?: { label: string; id: string }[];

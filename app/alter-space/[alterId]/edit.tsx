@@ -23,8 +23,8 @@ import { Alter } from '../../../src/types';
 import { alterColors, freeAlterColors, premiumAlterColors, colors, spacing, borderRadius, typography } from '../../../src/lib/theme';
 import PremiumService from '../../../src/services/PremiumService';
 
-// TODO: Replace with actual premium check from user context
-// const isPremium = false; // Simulated - change to true to test all colors
+// Check premium status
+const [isPremium, setIsPremium] = useState(PremiumService.isPremium());
 
 export default function EditAlterProfileScreen() {
     const { alterId } = useLocalSearchParams<{ alterId: string }>();

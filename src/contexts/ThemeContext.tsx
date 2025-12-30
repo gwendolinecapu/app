@@ -31,8 +31,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
                 currentPrimary = alter.color;
                 isDynamic = true;
             }
+        } else if (activeFront.type === 'co-front' && activeFront.alters.length > 0) {
+            // For co-fronting, we use the first alter's color as the primary theme color for now
+            const alter = activeFront.alters[0];
+            if (alter.color) {
+                currentPrimary = alter.color;
+                isDynamic = true;
+            }
         }
-        // TODO: Handle co-fronting colors (maybe gradient or split?) - for now fallback to default
 
         return {
             colors: {

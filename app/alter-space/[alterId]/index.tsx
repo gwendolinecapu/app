@@ -52,7 +52,7 @@ const getMediaType = (url: string) => {
 
 export default function AlterSpaceScreen() {
     const { alterId, tab } = useLocalSearchParams<{ alterId: string; tab?: string }>();
-    const { alters, system } = useAuth();
+    const { alters, system, currentAlter } = useAuth();
     const [alter, setAlter] = useState<Alter | null>(null);
     // Si un onglet est passé en param (ex: ?tab=profile), l'utiliser comme initial
     const [activeTab, setActiveTab] = useState<TabType>((tab as TabType) || 'feed');
@@ -192,10 +192,8 @@ export default function AlterSpaceScreen() {
             fetchPosts();
 
             // Check friend status if viewing someone else's profile
-            if (!isOwner && alters.length > 0) {
-                // Use the first of our alters to check friendship status
-                const myAlter = alters[0];
-                FriendService.checkStatus(myAlter.id, alter.id).then(status => {
+            if (!isOwner && currentAlter) { // Updated to use currentAlter
+                FriendService.checkStatus(currentAlter.id, alter.id).then(status => {
                     setFriendStatuses(prev => ({ ...prev, [alter.id]: status }));
                 }).catch(console.error);
             }
@@ -217,14 +215,23 @@ export default function AlterSpaceScreen() {
         }
     }, [searchQuery, alter]);
 
+    // ...
+
     const handleFriendAction = async (targetId: string) => {
-        // Use the user's own alter (first alter in their system) as the sender
-        const myAlter = alters[0];
-        if (!myAlter) {
-            Alert.alert('Erreur', 'Vous devez avoir un alter pour ajouter des amis');
+        // Use the currently active alter (if any) or fallback to alert
+        if (!currentAlter) {
+            Alert.alert('Action impossible', 'Vous devez sélectionner un alter actif (Front) pour ajouter des amis.');
             return;
         }
 
+        const myAlter = currentAlter;
+
+        // Check friend status if viewing someone else's profile
+        if (!isOwner && currentAlter) {
+            FriendService.checkStatus(currentAlter.id, alter.id).then(status => {
+                setFriendStatuses(prev => ({ ...prev, [alter.id]: status }));
+            }).catch(console.error);
+        }
         const currentStatus = friendStatuses[targetId] || 'none';
 
         try {

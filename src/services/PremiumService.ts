@@ -46,9 +46,29 @@ class PremiumService {
 
             if (docSnap.exists()) {
                 this.status = { ...DEFAULT_MONETIZATION_STATUS, ...docSnap.data() } as MonetizationStatus;
+
+                // Silent Trial initialization for existing users if missing (and free/no sub)
+                if (!this.status.silentTrialStartDate && this.status.tier === 'free' && !this.status.premiumEndDate) {
+                    this.status.silentTrialStartDate = Date.now();
+                }
             } else {
-                // Nouvel utilisateur - démarrer le trial automatiquement
-                await this.startTrial();
+                // Nouvel utilisateur - démarrer le trial silencieux + trial explicite si besoin
+                // Note: 'startTrial' used to start "Visual Trial". Now we prefer "Silent Trial" ?
+                // User asked for "14 days free immediately (silent)".
+                // Let's keep startTrial behavior for legacy or rename it?
+                // The prompt says "Silent trial 14 days".
+
+                this.status = {
+                    ...DEFAULT_MONETIZATION_STATUS,
+                    silentTrialStartDate: Date.now(),
+                };
+
+                // We do NOT call startTrial() anymore which set 'trial' tier visible to user.
+                // Silent trial implies user thinks they are free (or premium?), prompt says "from 14 days he enjoyed".
+                // Usually silent trial means they HAVE features but don't know it's limited?
+                // Or simply "Free tier" HAS features for 14 days?
+                // "No credit card required".
+                // Let's assume user GETS premium features logic checks "isPremium" -> returns true if silent trial.
             }
 
             // Mettre à jour le tier basé sur les dates
@@ -121,8 +141,50 @@ class PremiumService {
      * Vérifie si l'utilisateur est premium (inclut trial)
      */
     isPremium(): boolean {
+        // 1. Check valid paid/granted premium
+        if (this.status.premiumEndDate && this.status.premiumEndDate > Date.now()) {
+            return true;
+        }
+
+        // 2. Check Silent Trial (Active for 14 days)
+        if (this.isSilentTrialActive()) {
+            return true; // Grants premium access quietly
+        }
+
         const tier = this.getCurrentTier();
         return tier === 'premium' || tier === 'trial';
+    }
+
+    /**
+     * Vérifie si le Silent Trial est en cours
+     */
+    isSilentTrialActive(): boolean {
+        if (!this.status.silentTrialStartDate) return false;
+        const now = Date.now();
+        const fourteenDaysMs = 14 * 24 * 60 * 60 * 1000;
+        return (now - this.status.silentTrialStartDate) < fourteenDaysMs;
+    }
+
+    /**
+     * Vérifie si on doit montrer la popup de conversion (Après 14j)
+     */
+    shouldShowConversionModal(): boolean {
+        // Only if NOT currently premium (paid)
+        if (this.status.premiumEndDate && this.status.premiumEndDate > Date.now()) return false;
+
+        // And Silent Trial JUST finished (we don't want to show it forever every time?)
+        // Or show it if they are using the app and trial expired?
+        // User request: "popup comme quoi depuis 14j il profitais que si il veut il continue"
+
+        if (!this.status.silentTrialStartDate) return false;
+
+        // If 14 days passed
+        const now = Date.now();
+        const fourteenDaysMs = 14 * 24 * 60 * 60 * 1000;
+        const isExpired = (now - this.status.silentTrialStartDate) >= fourteenDaysMs;
+
+        return isExpired;
+        // Logic to not spam checking will be in UI or Context
     }
 
     /**

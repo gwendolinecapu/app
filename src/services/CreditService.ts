@@ -243,7 +243,7 @@ class CreditService {
     /**
      * Ajoute des crédits avec transaction
      */
-    private async addCredits(
+    public async addCredits(
         amount: number,
         type: CreditTransactionType,
         description?: string

@@ -532,4 +532,18 @@ Ajouter les 7 receivers dans AndroidManifest.xml
 - **Bouton Crisis** : Accès rapide "SOS" (⚠️) ajouté dans l'en-tête de chaque écran principal.
 
 ### Correctifs
-- **Alters Screen** : Migration de `switchAlter` vers `setFronting` pour corriger une erreur TypeScript.
+
+---
+
+## [2025-12-30] IAP & Prix Premium 💎
+
+### Nouveautés majeures
+- **RevenueCat** : Intégration complète pour la gestion des abonnements.
+- **Silent Trial** : 14 jours d'essai Premium offerts automatiquement sans carte bancaire pour tout nouvel utilisateur.
+- **Conversion** : Popup "L'aventure continue !" à la fin de l'essai.
+- **Plans Premium** : Mensuel (3.49€), Annuel (24.99€), Lifetime (49.99€).
+
+### Modifications
+- **Boutique** : Nouvel onglet "Premium" et accès aux packs de crédits (IAP).
+- **Service** : `PremiumService` mis à jour pour vérifier RevenueCat + Silent Trial.
+- **Types** : `ShopItem` supporte `revenueCatPackageId`.

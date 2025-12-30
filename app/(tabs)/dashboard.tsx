@@ -224,9 +224,6 @@ export default function DashboardScreen() {
     };
 
     const handleCreateAlter = async () => {
-        console.log('[DEBUG] handleCreateAlter called');
-        console.log('[DEBUG] newAlterName:', newAlterName);
-        console.log('[DEBUG] user:', user?.uid);
 
         if (!newAlterName.trim()) {
             Alert.alert('Erreur', 'Le nom est requis');
@@ -271,9 +268,7 @@ export default function DashboardScreen() {
                 created_at: new Date().toISOString(),
             };
 
-            console.log('[DEBUG] Creating alter with data:', newAlter);
             await addDoc(collection(db, 'alters'), newAlter);
-            console.log('[DEBUG] Alter created successfully!');
 
             await refreshAlters();
             setModalVisible(false);

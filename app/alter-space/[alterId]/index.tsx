@@ -236,7 +236,6 @@ export default function AlterSpaceScreen() {
 
         try {
             if (currentStatus === 'none') {
-                console.log('[DEBUG] Sending friend request from', myAlter.id, 'to', targetId);
                 await FriendService.sendRequest(myAlter.id, targetId);
                 setFriendStatuses(prev => ({ ...prev, [targetId]: 'pending' }));
                 triggerHaptic.success();

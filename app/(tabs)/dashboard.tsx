@@ -388,6 +388,11 @@ export default function DashboardScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            {/* System Weather Widget */}
+            <View style={{ paddingHorizontal: 16, marginBottom: 8, marginTop: 16 }}>
+                <SystemWeather />
+            </View>
+
             {/* Header */}
             <View style={styles.header}>
                 <View>
@@ -400,11 +405,6 @@ export default function DashboardScreen() {
                 >
                     <Ionicons name="settings-outline" size={24} color={colors.textSecondary} />
                 </TouchableOpacity>
-            </View>
-
-            {/* System Weather Widget */}
-            <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
-                <SystemWeather />
             </View>
 
             {/* Mode Switcher */}

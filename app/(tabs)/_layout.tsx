@@ -20,6 +20,7 @@ export default function TabLayout() {
                         tabBarInactiveTintColor: colors.textMuted,
                         tabBarStyle: {
                             backgroundColor: colors.backgroundLight,
+                            display: 'none', // Hide tab bar completely as requested ("useless functionality")
                             borderTopColor: colors.border,
                             borderTopWidth: 1,
                             paddingTop: 10,

@@ -42,15 +42,21 @@ export const EmotionService = {
         const q = query(
             collection(db, 'emotions'),
             where('alter_id', '==', alterId),
-            where('system_id', '==', auth.currentUser.uid),
-            orderBy('created_at', 'desc'),
-            limit(1)
+            where('system_id', '==', auth.currentUser.uid)
+            // orderBy removed to avoid index error
         );
         const snapshot = await getDocs(q);
         if (snapshot.empty) return null;
 
-        const doc = snapshot.docs[0];
-        return { id: doc.id, ...doc.data() } as Emotion;
+        // Sort client-side
+        const emotions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Emotion));
+        emotions.sort((a, b) => {
+            const timeA = (a.created_at as any)?.seconds || new Date(a.created_at).getTime() / 1000;
+            const timeB = (b.created_at as any)?.seconds || new Date(b.created_at).getTime() / 1000;
+            return timeB - timeA;
+        });
+
+        return emotions[0];
     },
 
     /**

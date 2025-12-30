@@ -4,10 +4,14 @@
  * 
  * Supporte: Google AdMob, Unity Ads, AppLovin MAX
  * Stratégie waterfall pour maximiser les revenus
+ * 
+ * NOTE: En mode Expo Go, les publicités sont mockées car
+ * react-native-google-mobile-ads nécessite un build natif
  */
 
 import { Platform, NativeModules } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import {
     AdType,
     AdNetwork,
@@ -16,12 +20,36 @@ import {
     BannerPlacement,
     AD_CONFIG,
 } from './MonetizationTypes';
-import mobileAds, {
-    RewardedAd,
-    TestIds,
-    RewardedAdEventType,
-    AdEventType,
-} from 'react-native-google-mobile-ads';
+
+// =====================================================
+// SAFE IMPORT FOR EXPO GO
+// En Expo Go, les modules natifs AdMob ne sont pas disponibles
+// On utilise des mocks pour éviter les crashes
+// =====================================================
+const isExpoGo = Constants.appOwnership === 'expo';
+
+// Declare types for AdMob to avoid TS errors
+let mobileAds: any = null;
+let RewardedAd: any = null;
+let TestIds: any = { BANNER: '', REWARDED: '' };
+let RewardedAdEventType: any = { LOADED: '', EARNED_REWARD: '' };
+let AdEventType: any = { ERROR: '' };
+
+if (!isExpoGo) {
+    try {
+        // Only import in native builds
+        const AdMobModule = require('react-native-google-mobile-ads');
+        mobileAds = AdMobModule.default;
+        RewardedAd = AdMobModule.RewardedAd;
+        TestIds = AdMobModule.TestIds;
+        RewardedAdEventType = AdMobModule.RewardedAdEventType;
+        AdEventType = AdMobModule.AdEventType;
+    } catch (e) {
+        console.warn('[AdMediationService] AdMob module not available:', e);
+    }
+} else {
+    console.log('[AdMediationService] Running in Expo Go - ads are mocked');
+}
 
 // Configuration des App IDs (Production AdMob)
 const AD_CONFIG_KEYS = {
@@ -75,7 +103,7 @@ class AdMediationService {
     private preloadedRewarded: { network: AdNetwork; loaded: boolean }[] = [];
     private preloadedNative: NativeAdData | null = null;
 
-    private rewardedAd: RewardedAd | null = null;
+    private rewardedAd: any = null; // Type varies based on Expo Go vs native build
     private nativeAd: any = null; // Placeholder pour native
 
     private constructor() { }
@@ -154,7 +182,7 @@ class AdMediationService {
             console.log('[AdMediation] AdMob Rewarded Loaded');
         });
 
-        this.rewardedAd.addAdEventListener(RewardedAdEventType.EARNED_REWARD, (reward) => {
+        this.rewardedAd.addAdEventListener(RewardedAdEventType.EARNED_REWARD, (reward: { type: string; amount: number }) => {
             console.log('[AdMediation] User earned reward:', reward);
         });
 

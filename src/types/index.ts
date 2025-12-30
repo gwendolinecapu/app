@@ -55,6 +55,7 @@ export interface Post {
     co_front_alter_ids?: string[]; // For co-front mode
     content: string;
     media_url?: string;
+    media_urls?: string[]; // Support for multi-image carousel
     visibility: 'private' | 'system' | 'friends' | 'public';
     created_at: string;
     updated_at: string;
@@ -62,6 +63,7 @@ export interface Post {
     author_id?: string;      // = alter_id or system_id as fallback
     author_name?: string;    // Alter name or System username
     author_avatar?: string;  // Alter avatar or System avatar
+    is_author_fronting?: boolean; // True if author is currently fronting
     // Metrics
     likes: string[]; // Array of user/system IDs
     comments_count: number;

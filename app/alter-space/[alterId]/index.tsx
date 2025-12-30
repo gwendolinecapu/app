@@ -35,7 +35,7 @@ const { width } = Dimensions.get('window');
 const MAX_WIDTH = 430;
 const GALLERY_ITEM_SIZE = (Math.min(width, MAX_WIDTH) - spacing.md * 4) / 3;
 
-type TabType = 'feed' | 'profile' | 'journal' | 'search' | 'emotions' | 'settings';
+type TabType = 'feed' | 'profile' | 'journal' | 'gallery' | 'emotions' | 'settings';
 type FeedItem = Post | SystemTip;
 
 // Helper for media type
@@ -376,88 +376,116 @@ export default function AlterSpaceScreen() {
         </View>
     );
 
-    const renderSearch = () => (
+    // État pour la galerie privée
+    const [galleryImages, setGalleryImages] = useState<Array<{ id: string, uri: string, createdAt: Date }>>([]);
+    const [isCloudEnabled, setIsCloudEnabled] = useState(false);
+    const [loadingGallery, setLoadingGallery] = useState(false);
+
+    // Charger la galerie depuis le stockage local (AsyncStorage)
+    useEffect(() => {
+        loadGalleryFromLocal();
+    }, [alterId]);
+
+    const loadGalleryFromLocal = async () => {
+        try {
+            setLoadingGallery(true);
+            // TODO: Implémenter le chargement depuis AsyncStorage
+            // const stored = await AsyncStorage.getItem(`gallery_${alterId}`);
+            // if (stored) setGalleryImages(JSON.parse(stored));
+        } catch (e) {
+            console.error('Erreur chargement galerie:', e);
+        } finally {
+            setLoadingGallery(false);
+        }
+    };
+
+    const handleAddPhoto = async () => {
+        try {
+            triggerHaptic.selection();
+            // TODO: Implémenter la sélection d'image avec expo-image-picker
+            toast.showToast('Sélection de photo à implémenter', 'info');
+        } catch (e) {
+            console.error('Erreur ajout photo:', e);
+        }
+    };
+
+    const renderGallery = () => (
         <View style={styles.tabContent}>
-            <View style={styles.searchContainer}>
-                <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
-                <TextInput
-                    style={{ flex: 1, color: colors.text, height: 40 }}
-                    placeholder="Rechercher des amis..."
-                    placeholderTextColor={colors.textSecondary}
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                />
+            {/* Header Galerie */}
+            <View style={styles.galleryHeader}>
+                <Text style={styles.sectionTitle}>Ma Galerie Privée</Text>
+                <TouchableOpacity
+                    style={styles.addPhotoButton}
+                    onPress={handleAddPhoto}
+                >
+                    <Ionicons name="add-circle" size={28} color={colors.primary} />
+                </TouchableOpacity>
             </View>
-            {searchQuery.length > 0 ? (
-                <View style={{ padding: spacing.md }}>
-                    <Text style={{ ...typography.body, color: colors.textSecondary, textAlign: 'center' }}>
-                        Recherche de "{searchQuery}"...
-                    </Text>
-                    {/* Search Results */}
-                    <View style={{ marginTop: 20 }}>
-                        {alters.filter(a =>
-                            a.id !== alter.id && // Don't show self
-                            (a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                (a.role_ids && a.role_ids.some((r: string) => r.toLowerCase().includes(searchQuery.toLowerCase()))) ||
-                                (a.custom_fields && a.custom_fields.some((f: any) => f.value.toLowerCase().includes(searchQuery.toLowerCase()))))
-                        ).length > 0 ? (
-                            alters.filter(a =>
-                                a.id !== alter.id &&
-                                (a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                    (a.role_ids && a.role_ids.some((r: string) => r.toLowerCase().includes(searchQuery.toLowerCase()))) ||
-                                    (a.custom_fields && a.custom_fields.some((f: any) => f.value.toLowerCase().includes(searchQuery.toLowerCase()))))
-                            ).map((result, index) => (
-                                <TouchableOpacity
-                                    key={index}
-                                    style={{
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        padding: spacing.sm,
-                                        backgroundColor: colors.backgroundCard,
-                                        marginBottom: spacing.xs,
-                                        borderRadius: borderRadius.md
-                                    }}
-                                    onPress={() => handleFriendAction(result.id)}
-                                >
-                                    <View style={{
-                                        width: 40, height: 40, borderRadius: 20,
-                                        backgroundColor: result.color || colors.primary,
-                                        justifyContent: 'center', alignItems: 'center', marginRight: spacing.sm
-                                    }}>
-                                        {result.avatar_url ? (
-                                            <Image source={{ uri: result.avatar_url }} style={{ width: 40, height: 40, borderRadius: 20 }} />
-                                        ) : (
-                                            <Text style={{ color: 'white', fontWeight: 'bold' }}>{result.name.charAt(0)}</Text>
-                                        )}
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={{ ...typography.body, fontWeight: 'bold' }}>{result.name}</Text>
-                                        <Text style={{ ...typography.caption, color: colors.textSecondary }}>
-                                            {result.custom_fields?.find((f: any) => f.label === 'Role')?.value || 'Membre du système'}
-                                        </Text>
-                                    </View>
-                                    <View>
-                                        {(friendStatuses[result.id] === 'friends') && <Ionicons name="checkmark-circle" size={24} color={colors.primary} />}
-                                        {(friendStatuses[result.id] === 'pending') && <Ionicons name="time" size={24} color={colors.textSecondary} />}
-                                        {(!friendStatuses[result.id] || friendStatuses[result.id] === 'none') && <Ionicons name="person-add" size={24} color={colors.primary} />}
-                                    </View>
-                                </TouchableOpacity>
-                            ))
-                        ) : (
-                            <View style={{ alignItems: 'center' }}>
-                                <Text style={{ ...typography.caption, color: colors.textMuted }}>
-                                    Aucun résultat trouvé pour "{searchQuery}".
-                                </Text>
-                            </View>
-                        )}
+
+            {/* Info Stockage */}
+            <View style={styles.storageInfo}>
+                <Ionicons name="phone-portrait-outline" size={16} color={colors.textSecondary} />
+                <Text style={styles.storageText}>
+                    Stockage local uniquement
+                </Text>
+                <TouchableOpacity
+                    style={styles.cloudBadge}
+                    onPress={() => {
+                        toast.showToast('Option Cloud disponible avec Premium', 'info');
+                    }}
+                >
+                    <Ionicons name="cloud-outline" size={14} color={colors.textMuted} />
+                    <Text style={styles.cloudBadgeText}>Premium</Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* Grille de photos */}
+            {galleryImages.length > 0 ? (
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <View style={styles.galleryGrid}>
+                        {galleryImages.map((img, index) => (
+                            <TouchableOpacity
+                                key={img.id}
+                                style={styles.galleryItem}
+                                onPress={() => {
+                                    // TODO: Ouvrir en plein écran
+                                    triggerHaptic.selection();
+                                }}
+                            >
+                                <Image source={{ uri: img.uri }} style={styles.galleryImage} />
+                            </TouchableOpacity>
+                        ))}
                     </View>
-                </View>
+                </ScrollView>
             ) : (
                 <View style={styles.emptyState}>
-                    <Text style={styles.emptyTitle}>Recherche</Text>
+                    <Ionicons name="images-outline" size={64} color={colors.textMuted} />
+                    <Text style={styles.emptyTitle}>Galerie Privée</Text>
                     <Text style={styles.emptySubtitle}>
-                        Taper pour rechercher des amis ou du contenu.
+                        Ajoutez des photos personnelles à la galerie de {alter.name}.{'\n'}
+                        Les photos sont stockées uniquement sur votre téléphone.
                     </Text>
+                    <TouchableOpacity
+                        style={styles.startChatButton}
+                        onPress={handleAddPhoto}
+                    >
+                        <Ionicons name="add" size={20} color="#fff" />
+                        <Text style={styles.startChatText}>Ajouter une photo</Text>
+                    </TouchableOpacity>
+
+                    {/* Section Premium Cloud */}
+                    <View style={styles.premiumSection}>
+                        <View style={styles.premiumHeader}>
+                            <Ionicons name="cloud" size={20} color={colors.primary} />
+                            <Text style={styles.premiumTitle}>Sauvegarde Cloud</Text>
+                            <View style={styles.premiumBadge}>
+                                <Text style={styles.premiumBadgeText}>Premium</Text>
+                            </View>
+                        </View>
+                        <Text style={styles.premiumDescription}>
+                            Synchronisez vos photos sur le cloud pour y accéder depuis tous vos appareils.
+                        </Text>
+                    </View>
                 </View>
             )}
         </View>
@@ -594,6 +622,15 @@ export default function AlterSpaceScreen() {
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{alter.name}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    {/* Recherche - naviguer vers l'écran de recherche */}
+                    <TouchableOpacity
+                        style={styles.messageButton}
+                        onPress={() => {
+                            router.push('/(tabs)/search' as any);
+                        }}
+                    >
+                        <Ionicons name="search-outline" size={24} color={colors.text} />
+                    </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.messageButton}
                         onPress={() => {
@@ -621,7 +658,7 @@ export default function AlterSpaceScreen() {
                 {activeTab === 'feed' && renderFeed()}
                 {activeTab === 'profile' && renderProfile()}
                 {activeTab === 'journal' && renderJournal()}
-                {activeTab === 'search' && renderSearch()}
+                {activeTab === 'gallery' && renderGallery()}
                 {activeTab === 'emotions' && renderEmotions()}
                 {activeTab === 'settings' && renderSettings()}
             </View>
@@ -642,13 +679,13 @@ export default function AlterSpaceScreen() {
                 {isOwner && (
                     <>
                         <TouchableOpacity
-                            style={[styles.tab, activeTab === 'search' && styles.tabActive]}
-                            onPress={() => setActiveTab('search')}
+                            style={[styles.tab, activeTab === 'gallery' && styles.tabActive]}
+                            onPress={() => setActiveTab('gallery')}
                         >
                             <Ionicons
-                                name={activeTab === 'search' ? 'search' : 'search-outline'}
+                                name={activeTab === 'gallery' ? 'images' : 'images-outline'}
                                 size={24}
-                                color={activeTab === 'search' ? colors.primary : colors.textMuted}
+                                color={activeTab === 'gallery' ? colors.primary : colors.textMuted}
                             />
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -1141,5 +1178,88 @@ const styles = StyleSheet.create({
     emotionStatusTime: {
         ...typography.bodySmall,
         color: colors.textSecondary,
-    }
+    },
+    // Styles pour la Galerie Privée
+    galleryHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+    },
+    addPhotoButton: {
+        padding: spacing.xs,
+    },
+    storageInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.backgroundCard,
+        marginHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
+        borderRadius: borderRadius.md,
+        gap: spacing.xs,
+        marginBottom: spacing.md,
+    },
+    storageText: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        flex: 1,
+    },
+    cloudBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: `${colors.primary}20`,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 4,
+        borderRadius: borderRadius.full,
+        gap: 4,
+    },
+    cloudBadgeText: {
+        fontSize: 10,
+        fontWeight: '600',
+        color: colors.primary,
+    },
+    galleryGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        padding: spacing.md,
+        gap: spacing.xs,
+    },
+    premiumSection: {
+        marginTop: spacing.xl,
+        backgroundColor: colors.backgroundCard,
+        borderRadius: borderRadius.lg,
+        padding: spacing.md,
+        borderWidth: 1,
+        borderColor: `${colors.primary}40`,
+    },
+    premiumHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        marginBottom: spacing.sm,
+    },
+    premiumTitle: {
+        ...typography.body,
+        fontWeight: '600',
+        color: colors.text,
+        flex: 1,
+    },
+    premiumBadge: {
+        backgroundColor: colors.primary,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 2,
+        borderRadius: borderRadius.full,
+    },
+    premiumBadgeText: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#fff',
+    },
+    premiumDescription: {
+        ...typography.bodySmall,
+        color: colors.textSecondary,
+        lineHeight: 18,
+    },
 });

@@ -1,27 +1,19 @@
 /**
  * NativeAdCard.tsx
  * Pub native style Instagram intégrée dans le feed
+ * 
+ * TEMPORAIREMENT DÉSACTIVÉ
+ * Les publicités nécessitent un development build avec react-native-google-mobile-ads
  */
 
-import React, { useEffect, useState } from 'react';
-import {
-    View,
-    Text,
-    Image,
-    TouchableOpacity,
-    StyleSheet,
-    Linking,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, borderRadius, typography } from '../../lib/theme';
-import { NativeAdData } from '../../services/MonetizationTypes';
-import { useMonetization } from '../../contexts/MonetizationContext';
+import React from 'react';
 
 interface NativeAdCardProps {
     onClose?: () => void;
 }
 
 export function NativeAdCard({ onClose }: NativeAdCardProps) {
+<<<<<<< Updated upstream
     // Safely get monetization context - returns null if provider is missing
     let getNativeAd: (() => NativeAdData | null) | null = null;
     let isAdFree = false;
@@ -129,104 +121,11 @@ export function NativeAdCard({ onClose }: NativeAdCardProps) {
             </View>
         </View>
     );
+=======
+    // MonetizationContext et les pubs sont désactivés pour l'instant
+    // Nécessite un development build pour fonctionner
+    return null;
+>>>>>>> Stashed changes
 }
-
-const styles = StyleSheet.create({
-    container: {
-        backgroundColor: colors.backgroundCard,
-        borderRadius: borderRadius.lg,
-        marginVertical: spacing.sm,
-        marginHorizontal: spacing.md,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: colors.border,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: spacing.sm,
-    },
-    advertiserRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    icon: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        marginRight: spacing.sm,
-    },
-    advertiserInfo: {
-        justifyContent: 'center',
-    },
-    advertiserName: {
-        ...typography.bodySmall,
-        fontWeight: '600',
-        color: colors.text,
-    },
-    sponsoredLabel: {
-        fontSize: 11,
-        color: colors.textSecondary,
-    },
-    closeButton: {
-        padding: spacing.xs,
-    },
-    image: {
-        width: '100%',
-        height: 200,
-        backgroundColor: colors.backgroundLight,
-    },
-    content: {
-        padding: spacing.md,
-    },
-    headline: {
-        ...typography.body,
-        fontWeight: '600',
-        marginBottom: spacing.xs,
-    },
-    body: {
-        ...typography.bodySmall,
-        color: colors.textSecondary,
-        marginBottom: spacing.sm,
-    },
-    ratingRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: spacing.sm,
-    },
-    ratingText: {
-        fontSize: 12,
-        color: colors.textSecondary,
-        marginLeft: spacing.xs,
-    },
-    ctaButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colors.primary,
-        paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.md,
-        borderRadius: borderRadius.md,
-        gap: 8,
-    },
-    ctaText: {
-        color: '#fff',
-        fontWeight: '600',
-        fontSize: 14,
-    },
-    footer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        padding: spacing.xs,
-        paddingHorizontal: spacing.sm,
-        gap: 4,
-    },
-    footerText: {
-        fontSize: 10,
-        color: colors.textMuted,
-    },
-});
 
 export default NativeAdCard;

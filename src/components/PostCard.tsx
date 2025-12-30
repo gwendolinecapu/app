@@ -282,9 +282,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     avatarInitial: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 16,
+        ...typography.h3,
+        fontSize: 16, // Override to fit circle
     },
     authorNameRow: {
         flexDirection: 'row',
@@ -302,9 +301,8 @@ const styles = StyleSheet.create({
         borderRadius: 4,
     },
     frontBadgeText: {
+        ...typography.tiny,
         color: 'white',
-        fontSize: 10,
-        fontWeight: '700',
         textTransform: 'uppercase',
     },
     timestamp: {

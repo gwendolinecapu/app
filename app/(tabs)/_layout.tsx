@@ -1,143 +1,112 @@
-import { Tabs, router } from 'expo-router';
-import { View, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
+import { Tabs } from 'expo-router';
+import { View, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors as defaultColors } from '../../src/lib/theme';
 import { useTheme } from '../../src/contexts/ThemeContext';
-
-const { width } = Dimensions.get('window');
-const MAX_WIDTH = 430; // iPhone 14 Pro Max width
+import { triggerHaptic } from '../../src/lib/haptics';
 
 export default function TabLayout() {
     const { colors } = useTheme();
 
     return (
-        <View style={styles.phoneContainer}>
-            <View style={styles.phoneFrame}>
-                <Tabs
-                    screenOptions={{
-                        headerShown: false,
-                        tabBarActiveTintColor: colors.primary,
-                        tabBarInactiveTintColor: colors.textMuted,
-                        tabBarStyle: {
-                            backgroundColor: colors.backgroundLight,
-                            display: 'none', // Hide tab bar completely as requested ("useless functionality")
-                            borderTopColor: colors.border,
-                            borderTopWidth: 1,
-                            paddingTop: 10,
-                            paddingBottom: 10,
-                            height: 65,
-                        },
-                        tabBarShowLabel: false,
-                        headerStyle: {
-                            backgroundColor: colors.background,
-                        },
-                        headerTintColor: colors.text,
-                    }}
-                    initialRouteName="dashboard"
-                >
-                    {/* Journal - Masqué car déplacé dans chaque profil d'alter */}
-                    <Tabs.Screen
-                        name="journal"
-                        options={{
-                            href: null, // Masqué - accessible via Alter Space
-                        }}
-                    />
-                    {/* Onglet 3: Dashboard - Accueil Système (Central) */}
-                    <Tabs.Screen
-                        name="dashboard"
-                        options={{
-                            title: 'Système',
-                            tabBarIcon: ({ focused, color }) => (
-                                <View style={styles.addButton}>
-                                    <Ionicons
-                                        name="planet"
-                                        size={32}
-                                        color="white"
-                                        style={{ marginLeft: 1 }} // Optical adjustment
-                                    />
-                                </View>
-                            ),
-                            tabBarLabel: () => null, // Hide label for center button
-                        }}
-                        listeners={{
-                            tabPress: () => {
-                                const { triggerHaptic } = require('../../src/lib/haptics');
-                                triggerHaptic.selection();
-                            },
-                        }}
-                    />
-                    {/* Émotions - Masqué car déplacé dans chaque profil d'alter */}
-                    <Tabs.Screen
-                        name="emotions"
-                        options={{
-                            href: null, // Masqué - accessible via Alter Space
-                        }}
-                    />
-                    {/* Messages - Masqué car chaque alter a sa messagerie dans son espace */}
-                    <Tabs.Screen
-                        name="messages"
-                        options={{
-                            href: null, // Masqué - accessible via Alter Space
-                        }}
-                    />
+        <Tabs
+            screenOptions={{
+                headerShown: false,
+                tabBarActiveTintColor: colors.primary,
+                tabBarInactiveTintColor: colors.textMuted,
+                tabBarStyle: {
+                    backgroundColor: colors.backgroundLight,
+                    borderTopColor: colors.border,
+                    borderTopWidth: 1,
+                    paddingTop: 8,
+                    paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+                    height: Platform.OS === 'ios' ? 85 : 60,
+                },
+                tabBarLabelStyle: {
+                    fontSize: 11,
+                    fontWeight: '500',
+                },
+                headerStyle: {
+                    backgroundColor: colors.background,
+                },
+                headerTintColor: colors.text,
+            }}
+            initialRouteName="dashboard"
+        >
+            {/* Onglet 1: Dashboard - Accueil Système */}
+            <Tabs.Screen
+                name="dashboard"
+                options={{
+                    title: 'Système',
+                    tabBarIcon: ({ focused, color, size }) => (
+                        <Ionicons name={focused ? 'planet' : 'planet-outline'} size={size} color={color} />
+                    ),
+                }}
+                listeners={{
+                    tabPress: () => triggerHaptic.selection(),
+                }}
+            />
 
-                    {/* Écrans cachés ou secondaires */}
-                    <Tabs.Screen
-                        name="alters"
-                        options={{
-                            href: null, // Accessible via Dashboard
-                        }}
-                    />
-                    <Tabs.Screen
-                        name="profile"
-                        options={{
-                            href: null,
-                        }}
-                    />
-                    <Tabs.Screen
-                        name="search"
-                        options={{
-                            href: null,
-                        }}
-                    />
-                    <Tabs.Screen
-                        name="create"
-                        options={{
-                            href: null,
-                        }}
-                    />
-                </Tabs>
-            </View>
-        </View>
+            {/* Onglet 2: Journal */}
+            <Tabs.Screen
+                name="journal"
+                options={{
+                    title: 'Journal',
+                    tabBarIcon: ({ focused, color, size }) => (
+                        <Ionicons name={focused ? 'book' : 'book-outline'} size={size} color={color} />
+                    ),
+                }}
+                listeners={{
+                    tabPress: () => triggerHaptic.selection(),
+                }}
+            />
+
+            {/* Onglet 3: Messages */}
+            <Tabs.Screen
+                name="messages"
+                options={{
+                    title: 'Messages',
+                    tabBarIcon: ({ focused, color, size }) => (
+                        <Ionicons name={focused ? 'chatbubbles' : 'chatbubbles-outline'} size={size} color={color} />
+                    ),
+                }}
+                listeners={{
+                    tabPress: () => triggerHaptic.selection(),
+                }}
+            />
+
+            {/* Onglet 4: Profil */}
+            <Tabs.Screen
+                name="profile"
+                options={{
+                    title: 'Profil',
+                    tabBarIcon: ({ focused, color, size }) => (
+                        <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
+                    ),
+                }}
+                listeners={{
+                    tabPress: () => triggerHaptic.selection(),
+                }}
+            />
+
+            {/* Écrans cachés - accessibles via navigation mais pas dans la tab bar */}
+            <Tabs.Screen
+                name="alters"
+                options={{ href: null }}
+            />
+            <Tabs.Screen
+                name="emotions"
+                options={{ href: null }}
+            />
+            <Tabs.Screen
+                name="search"
+                options={{ href: null }}
+            />
+            <Tabs.Screen
+                name="create"
+                options={{ href: null }}
+            />
+        </Tabs>
     );
 }
 
-const styles = StyleSheet.create({
-    phoneContainer: {
-        flex: 1,
-        backgroundColor: '#000',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    phoneFrame: {
-        width: width > MAX_WIDTH ? MAX_WIDTH : '100%',
-        height: '100%',
-        maxWidth: MAX_WIDTH,
-        backgroundColor: defaultColors.background,
-        overflow: 'hidden',
-    },
-    addButton: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        backgroundColor: defaultColors.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: -15,
-        shadowColor: defaultColors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 8,
-    },
-});

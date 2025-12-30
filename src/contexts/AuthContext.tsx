@@ -120,9 +120,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 } else if (activeAlters.length > 1) {
                     setActiveFront({ type: 'co-front', alters: activeAlters });
                 } else {
-                    // Fallback to host or empty
-                    const host = altersData.find(a => a.is_host) || altersData[0];
-                    setActiveFront({ type: 'single', alters: host ? [host] : [] });
+                    // Fallback : chercher l'hôte, sinon premier alter, sinon "Mode Système" virtuel
+                    const host = altersData.find(a => a.is_host);
+                    const firstAlter = altersData[0];
+
+                    if (host) {
+                        setActiveFront({ type: 'single', alters: [host] });
+                    } else if (firstAlter) {
+                        setActiveFront({ type: 'single', alters: [firstAlter] });
+                    } else {
+                        // Aucun alter : mode "Système" (blurry avec message explicatif)
+                        // L'UI devra gérer ce cas en affichant le profil système
+                        setActiveFront({
+                            type: 'blurry',
+                            alters: [],
+                            customStatus: 'Mode Système'
+                        });
+                    }
                 }
             }
         } catch (error) {

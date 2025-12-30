@@ -1,5 +1,19 @@
 # Changelog
 
+## [2025-12-30] Réorganisation Feed & Recherche 🔄
+
+### Feed V2 amélioré
+- **`src/components/Feed.tsx`** : Refonte complète
+  - Tri par 📅 Récent / 📆 Ancien / 🔥 Populaire
+  - Publicités intercalées tous les 5 posts (pas à la fin)
+  - Header sticky avec menu déroulant
+
+### Recherche déplacée
+- **`app/(tabs)/profile.tsx`** : Bouton 🔍 ajouté dans le header
+- Recherche accessible depuis Profil → 🔍
+
+---
+
 ## [2025-12-30] Onglet Notifications (Style Instagram) 🔔
 
 ### Nouvel Écran Notifications

@@ -140,6 +140,9 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
                     <Text style={styles.username}>@{currentAlter.name.toLowerCase().replace(/\s/g, '_')}</Text>
                     <View style={{ flexDirection: 'row', gap: 16 }}>
+                        <TouchableOpacity onPress={() => router.push('/(tabs)/search')}>
+                            <Ionicons name="search-outline" size={24} color={colors.text} />
+                        </TouchableOpacity>
                         <TouchableOpacity onPress={() => router.push('/settings/index' as any)}>
                             <Ionicons name="settings-outline" size={24} color={colors.text} />
                         </TouchableOpacity>

@@ -17,65 +17,86 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { triggerHaptic } from '../../src/lib/haptics';
+import { useMonetization } from '../../src/contexts/MonetizationContext';
+import { PREMIUM_PACKS, CREDIT_PACKS } from '../../src/services/MonetizationTypes';
+import { ShopItem } from '../../src/services/MonetizationTypes';
 
 // Types for shop items
-type ShopCategory = 'themes' | 'frames' | 'bubbles';
+type ShopCategory = 'premium' | 'options' | 'themes' | 'frames' | 'bubbles';
 
-interface ShopItem {
-    id: string;
-    name: string;
-    price: number;
-    preview: string; // Color or emoji for preview
-    isPremium?: boolean;
-}
+// Helper to fix type issues with hardcoded data
+const createItem = (data: any): ShopItem => data as ShopItem;
 
 // Sample data - would come from Firestore in production
 const THEMES: ShopItem[] = [
-    { id: 'theme_midnight', name: 'Minuit', price: 0, preview: '#1a1a2e' },
-    { id: 'theme_pastel', name: 'Pastel Dream', price: 150, preview: '#ffeef2', isPremium: true },
-    { id: 'theme_neon', name: 'Néon City', price: 200, preview: '#0ff0fc', isPremium: true },
-    { id: 'theme_forest', name: 'Forêt', price: 100, preview: '#2d5a27' },
+    createItem({ id: 'theme_midnight', name: 'Minuit', priceCredits: 0, preview: '#1a1a2e', type: 'theme' }),
+    createItem({ id: 'theme_pastel', name: 'Pastel Dream', priceCredits: 150, preview: '#ffeef2', isPremium: true, type: 'theme' }),
+    createItem({ id: 'theme_neon', name: 'Néon City', priceCredits: 200, preview: '#0ff0fc', isPremium: true, type: 'theme' }),
+    createItem({ id: 'theme_forest', name: 'Forêt', priceCredits: 100, preview: '#2d5a27', type: 'theme' }),
 ];
 
 const FRAMES: ShopItem[] = [
-    { id: 'frame_none', name: 'Classique', price: 0, preview: '⭕' },
-    { id: 'frame_rainbow', name: 'Arc-en-ciel', price: 100, preview: '🌈' },
-    { id: 'frame_stars', name: 'Étoiles', price: 150, preview: '✨', isPremium: true },
-    { id: 'frame_hearts', name: 'Cœurs', price: 75, preview: '💕' },
+    createItem({ id: 'frame_none', name: 'Classique', priceCredits: 0, preview: '⭕', type: 'frame' }),
+    createItem({ id: 'frame_rainbow', name: 'Arc-en-ciel', priceCredits: 100, preview: '🌈', type: 'frame' }),
+    createItem({ id: 'frame_stars', name: 'Étoiles', priceCredits: 150, preview: '✨', isPremium: true, type: 'frame' }),
+    createItem({ id: 'frame_hearts', name: 'Cœurs', priceCredits: 75, preview: '💕', type: 'frame' }),
 ];
 
 const BUBBLES: ShopItem[] = [
-    { id: 'bubble_default', name: 'Standard', price: 0, preview: '💬' },
-    { id: 'bubble_cloud', name: 'Nuage', price: 50, preview: '☁️' },
-    { id: 'bubble_pixel', name: 'Pixel Art', price: 120, preview: '🎮', isPremium: true },
-    { id: 'bubble_glow', name: 'Lumineux', price: 180, preview: '💡', isPremium: true },
+    createItem({ id: 'bubble_default', name: 'Standard', priceCredits: 0, preview: '💬', type: 'bubble' }),
+    createItem({ id: 'bubble_cloud', name: 'Nuage', priceCredits: 50, preview: '☁️', type: 'bubble' }),
+    createItem({ id: 'bubble_pixel', name: 'Pixel Art', priceCredits: 120, preview: '🎮', isPremium: true, type: 'bubble' }),
+    createItem({ id: 'bubble_glow', name: 'Lumineux', priceCredits: 180, preview: '💡', isPremium: true, type: 'bubble' }),
 ];
 
 export default function ShopScreen() {
     const router = useRouter();
-    const [activeCategory, setActiveCategory] = useState<ShopCategory>('themes');
-    const [userCredits] = useState(250); // Would come from user data
+    const {
+        credits,
+        isPremium,
+        purchaseIAP,
+        restorePurchases,
+        purchaseItem,
+        loading
+    } = useMonetization();
+    const [activeCategory, setActiveCategory] = useState<ShopCategory>('premium');
 
-    const getCategoryItems = (): ShopItem[] => {
+    const getCategoryItems = (): any[] => {
         switch (activeCategory) {
+            case 'premium': return PREMIUM_PACKS;
+            case 'options': return CREDIT_PACKS;
             case 'themes': return THEMES;
             case 'frames': return FRAMES;
             case 'bubbles': return BUBBLES;
         }
     };
 
-    const handlePurchase = (item: ShopItem) => {
+    const handlePurchase = async (item: ShopItem) => {
         triggerHaptic.selection();
-        if (item.price === 0) {
-            // Free item - apply immediately
-            triggerHaptic.success();
-        } else if (userCredits >= item.price) {
-            // Purchase logic would go here
+
+        if (activeCategory === 'premium' || activeCategory === 'options') {
+            // Handle IAP
+            const iapId = item.revenueCatPackageId || item.priceIAP;
+            if (iapId) {
+                const success = await purchaseIAP(iapId);
+                if (success) triggerHaptic.success();
+                else triggerHaptic.error();
+            }
+            return;
+        }
+
+        // Handle Credit Purchase (Decorations)
+        const success = await purchaseItem(item);
+        if (success) {
             triggerHaptic.success();
         } else {
-            // Not enough credits
             triggerHaptic.error();
         }
+    };
+
+    const handleRestore = async () => {
+        triggerHaptic.selection();
+        await restorePurchases();
     };
 
     const renderCategoryTab = (category: ShopCategory, icon: string, label: string) => (
@@ -100,36 +121,44 @@ export default function ShopScreen() {
         </TouchableOpacity>
     );
 
-    const renderItem = (item: ShopItem) => (
-        <TouchableOpacity
-            key={item.id}
-            style={styles.itemCard}
-            onPress={() => handlePurchase(item)}
-            activeOpacity={0.8}
-        >
-            <View style={[styles.itemPreview, { backgroundColor: item.preview.startsWith('#') ? item.preview : colors.backgroundLight }]}>
-                {!item.preview.startsWith('#') && (
-                    <Text style={styles.itemPreviewEmoji}>{item.preview}</Text>
-                )}
-                {item.isPremium && (
-                    <View style={styles.premiumBadge}>
-                        <Ionicons name="diamond" size={12} color="#FFD700" />
-                    </View>
-                )}
-            </View>
-            <Text style={styles.itemName}>{item.name}</Text>
-            <View style={styles.priceContainer}>
-                {item.price === 0 ? (
-                    <Text style={styles.freeText}>Gratuit</Text>
-                ) : (
-                    <>
-                        <Ionicons name="star" size={14} color={colors.primary} />
-                        <Text style={styles.priceText}>{item.price}</Text>
-                    </>
-                )}
-            </View>
-        </TouchableOpacity>
-    );
+    const renderItem = (item: any) => {
+        // Adapt display based on category
+        const isIAP = activeCategory === 'premium' || activeCategory === 'options';
+        const priceDisplay = isIAP ? `${item.priceFiat}€` : item.price === 0 ? 'Gratuit' : item.price;
+        const iconName = isIAP ? (activeCategory === 'premium' ? 'diamond' : 'star') : 'brush'; // naive
+
+        return (
+            <TouchableOpacity
+                key={item.id}
+                style={[styles.itemCard, item.featured && styles.itemCardFeatured]}
+                onPress={() => handlePurchase(item as ShopItem)}
+                activeOpacity={0.8}
+                disabled={loading}
+            >
+                {item.featured && <View style={styles.featuredBadge}><Text style={styles.featuredText}>Top</Text></View>}
+
+                <View style={[styles.itemPreview, { backgroundColor: item.preview?.startsWith('#') ? item.preview : colors.backgroundLight }]}>
+                    {/* Naive preview logic */}
+                    {activeCategory === 'premium' ?
+                        <Ionicons name="diamond" size={32} color={colors.primary} /> :
+                        activeCategory === 'options' ?
+                            <Ionicons name="star" size={32} color="#FFD700" /> :
+                            (!item.preview?.startsWith('#') && <Text style={styles.itemPreviewEmoji}>{item.preview}</Text>)
+                    }
+                </View>
+
+                <Text style={styles.itemName}>{item.name}</Text>
+
+                <View style={styles.priceContainer}>
+                    {!isIAP && item.price > 0 && <Ionicons name="star" size={14} color={colors.primary} />}
+                    <Text style={[styles.priceText, isIAP && { fontSize: 14 }]}>
+                        {priceDisplay}
+                    </Text>
+                    {item.duration === 30 && <Text style={{ fontSize: 10, color: colors.textMuted }}>/mois</Text>}
+                </View>
+            </TouchableOpacity>
+        );
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -138,10 +167,15 @@ export default function ShopScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Atelier</Text>
-                <View style={styles.creditsContainer}>
-                    <Ionicons name="star" size={16} color={colors.primary} />
-                    <Text style={styles.creditsText}>{userCredits}</Text>
+                <Text style={styles.title}>Boutique</Text>
+                <View style={styles.headerButtons}>
+                    <TouchableOpacity onPress={handleRestore} style={styles.restoreButton}>
+                        <Text style={styles.restoreButtonText}>Restaurer</Text>
+                    </TouchableOpacity>
+                    <View style={styles.creditsContainer}>
+                        <Ionicons name="star" size={16} color={colors.primary} />
+                        <Text style={styles.creditsText}>{credits}</Text>
+                    </View>
                 </View>
             </View>
 
@@ -159,9 +193,13 @@ export default function ShopScreen() {
 
             {/* Category Tabs */}
             <View style={styles.categoryTabs}>
-                {renderCategoryTab('themes', 'color-palette-outline', 'Thèmes')}
-                {renderCategoryTab('frames', 'image-outline', 'Cadres')}
-                {renderCategoryTab('bubbles', 'chatbubble-outline', 'Bulles')}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.xs }}>
+                    {renderCategoryTab('premium', 'diamond', 'Premium')}
+                    {renderCategoryTab('options', 'add-circle', 'Crédits')}
+                    {renderCategoryTab('themes', 'color-palette-outline', 'Thèmes')}
+                    {renderCategoryTab('frames', 'image-outline', 'Cadres')}
+                    {renderCategoryTab('bubbles', 'chatbubble-outline', 'Bulles')}
+                </ScrollView>
             </View>
 
             {/* Items Grid */}
@@ -325,6 +363,40 @@ const styles = StyleSheet.create({
         ...typography.caption,
         fontWeight: '600',
         color: colors.text,
+    },
+    headerButtons: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+    },
+    restoreButton: {
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 4,
+    },
+    restoreButtonText: {
+        ...typography.caption,
+        color: colors.textMuted,
+        textDecorationLine: 'underline',
+    },
+    itemCardFeatured: {
+        borderColor: colors.primary,
+        borderWidth: 1.5,
+        backgroundColor: colors.backgroundCard,
+    },
+    featuredBadge: {
+        position: 'absolute',
+        top: -8,
+        backgroundColor: colors.primary,
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 10,
+        zIndex: 10,
+    },
+    featuredText: {
+        ...typography.caption,
+        color: '#FFFFFF',
+        fontSize: 10,
+        fontWeight: 'bold',
     },
 });
 

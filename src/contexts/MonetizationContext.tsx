@@ -33,7 +33,7 @@ interface MonetizationContextType {
     trialDaysRemaining: number;
     premiumDaysRemaining: number;
     canUseFreeMont: boolean;
-    canUseFreeMont: boolean;
+
     activateFreeMonth: () => Promise<boolean>;
     isSilentTrialActive: boolean;
     shouldShowConversionModal: boolean;
@@ -148,8 +148,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     const isTrialActive = PremiumService.isTrialActive();
     const trialDaysRemaining = PremiumService.getTrialDaysRemaining();
     const premiumDaysRemaining = PremiumService.getPremiumDaysRemaining();
-    const trialDaysRemaining = PremiumService.getTrialDaysRemaining();
-    const premiumDaysRemaining = PremiumService.getPremiumDaysRemaining();
+
     const canUseFreeMont = PremiumService.canUseFreeMont();
     const isSilentTrialActive = PremiumService.isSilentTrialActive();
     const shouldShowConversionModal = PremiumService.shouldShowConversionModal();
@@ -300,7 +299,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         trialDaysRemaining,
         premiumDaysRemaining,
         canUseFreeMont,
-        canUseFreeMont,
+
         activateFreeMonth,
         isSilentTrialActive,
         shouldShowConversionModal,

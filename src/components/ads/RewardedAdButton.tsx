@@ -26,12 +26,15 @@ interface RewardedAdButtonProps {
     compact?: boolean;
     /** Callback après visionnage réussi */
     onRewarded?: (amount: number) => void;
+    /** ID de l'alter qui regarde la pub */
+    alterId: string;
 }
 
 export function RewardedAdButton({
     rewardType = 'credits',
     compact = false,
     onRewarded,
+    alterId,
 }: RewardedAdButtonProps) {
     const {
         canWatchRewardAd,
@@ -49,7 +52,7 @@ export function RewardedAdButton({
 
         setLoading(true);
         try {
-            const result = await watchRewardAd();
+            const result = await watchRewardAd(alterId);
 
             if (result.completed) {
                 onRewarded?.(result.rewardAmount);

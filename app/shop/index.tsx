@@ -252,6 +252,7 @@ const ItemPreview = ({ item }: { item: ShopItem }) => {
                     <View style={styles.themePreviewHeader} />
                     <View style={styles.themePreviewBody}>
                         <View style={styles.themePreviewRow} />
+                        <View style={styles.themePreviewRow} />
                         <View style={[styles.themePreviewRow, { width: '60%' }]} />
                     </View>
                 </View>
@@ -531,6 +532,7 @@ const ShopItemCard = ({ item, isOwned, isEquipped, isLocked, userCredits, onActi
 
                     <View style={styles.cardInfo}>
                         <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
+                        <Text style={styles.cardDescription} numberOfLines={2}>{item.description}</Text>
 
                         <View style={styles.cardActionRow}>
                             {isOwned ? (
@@ -556,11 +558,10 @@ const ShopItemCard = ({ item, isOwned, isEquipped, isLocked, userCredits, onActi
                         </View>
                     </View>
 
-                    {/* Overlay for Locked Items */}
+                    {/* Overlay for Locked Items - REMOVED BLUR FOR BETTER VISIBILITY */}
                     {isLocked && (
                         <View style={styles.lockedOverlay}>
-                            <BlurView intensity={10} style={StyleSheet.absoluteFill} />
-                            <Ionicons name="lock-closed" size={24} color="rgba(255,255,255,0.8)" />
+                            <Ionicons name="lock-closed" size={24} color="rgba(255,255,255,0.6)" />
                         </View>
                     )}
                 </LinearGradient>
@@ -947,111 +948,125 @@ const styles = StyleSheet.create({
         elevation: 6,
     },
     cardPreviewContainer: {
-        height: 110,
+        height: 140,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: 'rgba(15, 23, 42, 0.4)', // Slate 900 with opacity
     },
     previewBase: {
-        width: 64,
-        height: 64,
+        width: 80,
+        height: 80,
         alignItems: 'center',
         justifyContent: 'center',
     },
     themePreviewCard: {
-        width: 48,
-        height: 80, // Aspect ratio phone
-        borderRadius: 6,
-        padding: 4,
+        width: 60,
+        height: 100, // Aspect ratio phone
+        borderRadius: 8,
+        padding: 6,
         justifyContent: 'flex-start',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(255,255,255,0.2)',
         overflow: 'hidden',
     },
     themePreviewHeader: {
-        height: 8,
+        height: 10,
         width: '100%',
         backgroundColor: 'rgba(255,255,255,0.2)',
         borderRadius: 2,
-        marginBottom: 6,
+        marginBottom: 8,
     },
     themePreviewBody: {
-        gap: 4,
+        gap: 6,
     },
     themePreviewRow: {
-        height: 6,
+        height: 8,
         width: '80%',
         backgroundColor: 'rgba(255,255,255,0.1)',
         borderRadius: 2,
     },
     framePreviewAvatar: {
-        width: 48,
-        height: 48,
+        width: 64,
+        height: 64,
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#1e293b',
     },
     bubblePreviewContainer: {
-        minWidth: 40,
-        minHeight: 30,
+        minWidth: 60,
+        minHeight: 40,
         justifyContent: 'center',
         alignItems: 'flex-start',
+        padding: 10,
     },
     bubbleLine: {
-        height: 3,
-        borderRadius: 1.5,
+        height: 4,
+        borderRadius: 2,
     },
     cardInfo: {
         padding: 10,
     },
     cardTitle: {
+        ...typography.body,
+        color: '#FFF',
+        fontWeight: '700',
+        marginBottom: 4,
+        fontSize: 14,
+    },
+    cardDescription: {
         ...typography.caption,
-        color: '#e2e8f0',
-        fontWeight: '600',
-        marginBottom: 8,
-        fontSize: 12,
+        color: 'rgba(255,255,255,0.5)',
+        fontSize: 10,
+        marginBottom: 10,
+        lineHeight: 12,
     },
     cardActionRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        height: 24,
+        height: 30,
     },
     statusPill: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        paddingHorizontal: 8,
-        paddingVertical: 3,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
         borderRadius: 8,
     },
     statusDot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
+        width: 8,
+        height: 8,
+        borderRadius: 4,
     },
     labelOwned: {
         ...typography.caption,
-        fontSize: 10,
-        fontWeight: '600',
+        fontSize: 11,
+        fontWeight: '700',
     },
     priceRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(251, 191, 36, 0.1)',
-        paddingHorizontal: 8,
-        paddingVertical: 3,
+        backgroundColor: '#fbbf24',
+        paddingHorizontal: 12,
+        paddingVertical: 5,
         borderRadius: 12,
-        gap: 4,
+        gap: 6,
+        shadowColor: '#fbbf24',
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 2,
     },
     priceRowPremium: {
-        backgroundColor: 'rgba(236, 72, 153, 0.15)',
+        backgroundColor: '#ec4899',
+        shadowColor: '#ec4899',
     },
     priceText: {
         ...typography.caption,
-        fontWeight: '700',
-        fontSize: 11,
+        fontWeight: '800',
+        fontSize: 12,
+        color: '#FFF',
     },
     equippedBadge: {
         position: 'absolute',
@@ -1074,7 +1089,7 @@ const styles = StyleSheet.create({
     },
     lockedOverlay: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(15, 23, 42, 0.3)', // Semi-transparent slate
         alignItems: 'center',
         justifyContent: 'center',
     },

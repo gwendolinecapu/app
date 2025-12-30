@@ -1,17 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    ActivityIndicator,
-    ScrollView,
-    TouchableOpacity,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    TextInput
-} from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, TextInput } from 'react-native';
+import { useLocalSearchParams, router, Stack } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PostCard } from '../../src/components/PostCard';
 import { PostService } from '../../src/services/posts';
@@ -24,6 +13,7 @@ import { triggerHaptic } from '../../src/lib/haptics';
 export default function PostDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const { user } = useAuth();
+    const insets = useSafeAreaInsets();
     const [post, setPost] = useState<Post | null>(null);
     const [comments, setComments] = useState<Comment[]>([]);
     const [loading, setLoading] = useState(true);
@@ -77,7 +67,13 @@ export default function PostDetailScreen() {
 
         try {
             setSubmittingComment(true);
-            await CommentService.addComment(post.id, user.uid, commentText.trim());
+            await CommentService.addComment({
+                postId: post.id,
+                authorId: user.uid,
+                authorName: user.displayName || 'Système',
+                authorAvatar: user.photoURL || undefined,
+                content: commentText.trim()
+            });
             setCommentText('');
             // Refresh comments
             const commentsData = await CommentService.fetchComments(post.id);
@@ -106,11 +102,13 @@ export default function PostDetailScreen() {
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.container}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
-            <View style={styles.header}>
+            <Stack.Screen options={{ headerShown: false }} />
+
+            <View style={[styles.header, { paddingTop: insets.top || 16 }]}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={colors.text} />
+                    <Ionicons name="chevron-back" size={28} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Publications</Text>
                 <View style={{ width: 40 }} />
@@ -191,7 +189,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingTop: 60,
         paddingBottom: 16,
         paddingHorizontal: 16,
         borderBottomWidth: 1,

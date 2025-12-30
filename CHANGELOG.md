@@ -623,3 +623,43 @@ Ajouter les 7 receivers dans AndroidManifest.xml
 ### Intégration UX
 - **Alter Space** : Menu hamburger enrichi avec accès direct "Historique & Stats" (Badge "NOUVEAU").
 - **Visualisations** : Graphiques interactifs (LineChart, BarChart, PieChart) avec `react-native-chart-kit`.
+
+## [2025-12-30] Refonte Visuelle de la Boutique 🎨
+
+### Améliorations UI/UX
+- **Design Premium** : Adoption d'un arrière-plan dégradé et de cartes en glassmorphism pour moderniser l'interface.
+- **Shop UI** :
+  - **Onglets** : Utilisation de gradients pour l'onglet actif.
+  - **Cartes** : Nouveau style épuré avec dégradés subtils, ombres et typographie améliorée.
+  - **Badges** : Indicateurs visuels "Équipé" et "Premium" repensés avec des couleurs distinctives (Emerald, Pink).
+  - **Status Pills** : Remplacement des textes simples par des pilules de statut (point vert pour actif).
+- **Code** : Nettoyage et optimisation des styles dans `app/shop/index.tsx`.
+
+## [2025-12-30] Refonte UI Historique & Alter Space 🎨
+
+### Historique (`app/history/index.tsx`)
+- Remplacement systématique des emojis textuels par des **Ionicons** pour un rendu plus propre et professionnel.
+- Mise à jour des cartes de statistiques, des titres de section et des onglets pour utiliser des icônes vectorielles cohérentes.
+- Harmonisation du style visuel avec le reste de l'application.
+
+### Alter Space (`app/alter-space/[alterId]/index.tsx`)
+- **Sélecteur d'émotions** : Remplacement de la grille d'emojis par une grille d'icônes `Ionicons` colorées et stylisées.
+- **Affichage Émotion** : Mise à jour de l'affichage de la dernière émotion pour utiliser les nouvelles icônes et couleurs.
+- Ajout de styles manquants (`emotionLabel`, `emotionStatusIcon`) pour corriger les erreurs de linting et finaliser le design.
+
+## [2025-12-30] Fix Compilation Errors 🛠️
+
+### Corrections Critiques
+- **`app/alter-space/[alterId]/index.tsx`**:
+  - Résolu les conflits de duplication de propriété dans `StyleSheet` (`statLabel`).
+  - Mis à jour les références de style pour correspondre au nouveau design "Instagram" (`avatarContainer` -> `profileAvatarContainer`, `rightStatsContainer` -> `statsContainer`, etc.).
+  - Corrigé l'utilisation de `colors.surface` (remplacé par `colors.backgroundCard`).
+  - Ajouté les styles manquants (`bioDisplayName`).
+- **`app/premium/index.tsx`**:
+  - Corrigé l'objet `StyleSheet` malformé (clé `featuredBadge` manquante) qui causait des erreurs en cascade.
+  - Résolu les erreurs de syntaxe "Argument expression expected".
+- **`app/shop/index.tsx`**:
+  - Corrigé l'incompatibilité de type sur `borderStyle` en utilisant `as const` pour les littéraux ("dashed", "dotted").
+
+### Résultat
+✅ Compilation TypeScript restaurée et erreurs de style résolues.

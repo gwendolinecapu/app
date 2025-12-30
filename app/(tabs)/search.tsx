@@ -10,6 +10,7 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -166,7 +167,7 @@ export default function SearchScreen() {
                 });
                 setSuggestions(sugg.slice(0, 5));
             } catch (e) {
-                console.log('[Search] No public alters found');
+
             }
         };
         loadSuggestions();
@@ -303,7 +304,12 @@ export default function SearchScreen() {
         <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header */}
             <View style={styles.header}>
-                <Text style={styles.title}>Recherche</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <TouchableOpacity onPress={() => router.back()}>
+                        <Ionicons name="arrow-back" size={24} color={colors.text} />
+                    </TouchableOpacity>
+                    <Text style={styles.title}>Recherche</Text>
+                </View>
             </View>
 
             {/* Search Input - Design Canva avec "Email ou pseudo" */}

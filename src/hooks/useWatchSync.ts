@@ -59,7 +59,7 @@ export function useWatchSync() {
 
         // Quand la montre sélectionne un alter
         const unsubAlter = WatchBridge.onAlterSelected((event) => {
-            console.log('[Watch] Alter selected:', event.alterId, 'isCoFront:', event.isCoFront);
+
 
             // Trouver l'alter correspondant
             const selectedAlter = alters?.find(a => a.id === event.alterId);
@@ -71,7 +71,7 @@ export function useWatchSync() {
 
         // Quand la montre sélectionne une humeur
         const unsubMood = WatchBridge.onMoodSelected(async (event) => {
-            console.log('[Watch] Mood selected:', event.mood, 'intensity:', event.intensity);
+
 
             // Trouver qui est au front pour enregistrer l'émotion
             const currentAlter = activeFront?.alters[0];
@@ -97,7 +97,7 @@ export function useWatchSync() {
 
         // Écouter les changements de connectivité
         const unsubReachability = WatchBridge.onReachabilityChanged((event) => {
-            console.log('[Watch] Reachability changed:', event.isReachable);
+
             if (event.isReachable && altersForWatch.length > 0) {
                 // Renvoyer les données quand la montre se reconnecte
                 WatchBridge.sendAltersToWatch(altersForWatch);

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
     View,
@@ -9,6 +10,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     Image,
+    Alert,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -114,20 +116,21 @@ export default function ConversationScreen() {
             if (!result.canceled && result.assets[0].uri) {
                 await sendImage(result.assets[0].uri);
             }
-        } catch (error) {
+        } catch (error: any) { // Explicitly type error as any for Alert.alert
             console.error('Error picking image:', error);
-            alert('Erreur lors de la sélection de l\'image');
+            Alert.alert('Erreur', `Erreur lors de la sélection de l'image: ${error.message}`);
         }
     };
 
     const sendImage = async (uri: string) => {
-        if (!currentAlter || !id) return;
+        if (!currentAlter || !id || !user?.uid) return; // Ensure user.uid is available
         setLoading(true);
 
         try {
             const response = await fetch(uri);
             const blob = await response.blob();
-            const filename = `chat/${Date.now()}_${Math.random().toString(36).substring(7)}`;
+            // Use a path that is likely to be allowed logic: chat/{userId}/{filename}
+            const filename = `chat/${user.uid}/${Date.now()}.jpg`;
             const storageRef = ref(storage, filename);
 
             await uploadBytes(storageRef, blob);

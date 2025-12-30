@@ -248,7 +248,7 @@ export default function DashboardScreen() {
                     await uploadBytes(storageRef, blob);
                     avatarUrl = await getDownloadURL(storageRef);
                 } catch (uploadErr) {
-                    console.log('Image upload failed:', uploadErr);
+
                 }
             }
 

@@ -179,8 +179,73 @@ const getBubbleStyle = (id: string) => {
 // ==================== COMPONENTS ====================
 
 const ItemPreview = ({ item }: { item: ShopItem }) => {
-    // 1. THEMES: Mini Application Preview
+    const anim = useRef(new Animated.Value(0)).current;
+    const pulse = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        const isAnimated = item.id.includes('anim') || item.id.includes('neon') || item.id.includes('magic') || item.id.includes('lava') || item.id.includes('galaxy');
+
+        if (isAnimated) {
+            const isRotation = item.id.includes('galaxy');
+            const duration = isRotation ? 6000 : 2000;
+
+            const mainAnim = Animated.loop(
+                isRotation
+                    ? Animated.timing(anim, {
+                        toValue: 1,
+                        duration,
+                        easing: Easing.linear,
+                        useNativeDriver: true
+                    })
+                    : Animated.sequence([
+                        Animated.timing(anim, { toValue: 1, duration, easing: Easing.sin, useNativeDriver: false }),
+                        Animated.timing(anim, { toValue: 0, duration, easing: Easing.sin, useNativeDriver: false })
+                    ])
+            );
+
+            const pulseAnim = Animated.loop(
+                Animated.sequence([
+                    Animated.timing(pulse, { toValue: 1, duration: 1000, easing: Easing.sin, useNativeDriver: true }),
+                    Animated.timing(pulse, { toValue: 0, duration: 1000, easing: Easing.sin, useNativeDriver: true })
+                ])
+            );
+
+            mainAnim.start();
+            pulseAnim.start();
+            return () => {
+                mainAnim.stop();
+                pulseAnim.stop();
+            };
+        }
+    }, [item.id]);
+
+    // 1. THEMES
     if (item.type === 'theme') {
+        const isAurora = item.id.includes('aurora');
+
+        if (isAurora) {
+            const displayColor = anim.interpolate({
+                inputRange: [0, 0.33, 0.66, 1],
+                outputRange: ['#3b82f6', '#10b981', '#8b5cf6', '#3b82f6']
+            });
+
+            return (
+                <View style={styles.previewBase}>
+                    <Animated.View style={[styles.themePreviewCard, { backgroundColor: displayColor, borderColor: 'rgba(255,255,255,0.3)' }]}>
+                        <View style={styles.themePreviewHeader} />
+                        <View style={styles.themePreviewBody}>
+                            <View style={styles.themePreviewRow} />
+                            <View style={[styles.themePreviewRow, { width: '60%' }]} />
+                        </View>
+                        <LinearGradient
+                            colors={['transparent', 'rgba(255,255,255,0.1)', 'transparent']}
+                            style={[StyleSheet.absoluteFill, { transform: [{ rotate: '45deg' }, { translateY: -40 }] }]}
+                        />
+                    </Animated.View>
+                </View>
+            );
+        }
+
         return (
             <View style={styles.previewBase}>
                 <View style={[styles.themePreviewCard, { backgroundColor: item.preview || '#0f172a' }]}>
@@ -194,9 +259,54 @@ const ItemPreview = ({ item }: { item: ShopItem }) => {
         );
     }
 
-    // 2. FRAMES: Avatar with Border
+    // 2. FRAMES
     if (item.type === 'frame') {
         const frameStyle = getFrameStyle(item.id, true);
+        const isNeon = item.id.includes('neon_pulse');
+        const isGalaxy = item.id.includes('galaxy');
+
+        if (isNeon) {
+            const glowSize = pulse.interpolate({ inputRange: [0, 1], outputRange: [4, 12] });
+            const glowOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.8] });
+
+            return (
+                <View style={styles.previewBase}>
+                    <Animated.View style={[
+                        styles.framePreviewAvatar,
+                        frameStyle,
+                        {
+                            borderColor: '#00f2ff',
+                            shadowColor: '#00f2ff',
+                            shadowRadius: glowSize,
+                            shadowOpacity: glowOpacity,
+                            elevation: 10
+                        }
+                    ]}>
+                        <Ionicons name="person" size={20} color="#cbd5e1" />
+                    </Animated.View>
+                </View>
+            );
+        }
+
+        if (isGalaxy) {
+            const rotate = anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+            const rotateReverse = anim.interpolate({ inputRange: [0, 1], outputRange: ['360deg', '0deg'] });
+
+            return (
+                <View style={styles.previewBase}>
+                    <Animated.View style={[styles.framePreviewAvatar, { borderColor: 'transparent', transform: [{ rotate }] }]}>
+                        <LinearGradient
+                            colors={['#ec4899', '#8b5cf6', '#3b82f6']}
+                            style={StyleSheet.absoluteFill}
+                        />
+                        <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ rotate: rotateReverse }], margin: 2, backgroundColor: '#020617', borderRadius: 999, alignItems: 'center', justifyContent: 'center' }]}>
+                            <Ionicons name="person" size={20} color="#cbd5e1" />
+                        </Animated.View>
+                    </Animated.View>
+                </View>
+            );
+        }
+
         return (
             <View style={styles.previewBase}>
                 <View style={[styles.framePreviewAvatar, frameStyle]}>
@@ -206,9 +316,47 @@ const ItemPreview = ({ item }: { item: ShopItem }) => {
         );
     }
 
-    // 3. BUBBLES: Message Bubble
+    // 3. BUBBLES
     if (item.type === 'bubble') {
         const bubbleStyle = getBubbleStyle(item.id);
+        const isMagic = item.id.includes('magic');
+        const isLava = item.id.includes('lava');
+
+        if (isMagic) {
+            const starOpacity = pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.2, 1, 0.2] });
+            const starScale = pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.8, 1.2, 0.8] });
+
+            return (
+                <View style={styles.previewBase}>
+                    <View style={[styles.bubblePreviewContainer, bubbleStyle, { overflow: 'hidden' }]}>
+                        <LinearGradient colors={['#6366f1', '#a855f7']} style={StyleSheet.absoluteFill} />
+                        <Animated.View style={{ opacity: starOpacity, transform: [{ scale: starScale }], position: 'absolute', top: 4, right: 4 }}>
+                            <Ionicons name="sparkles" size={14} color="#fff" />
+                        </Animated.View>
+                        <Animated.View style={{ opacity: starOpacity, transform: [{ scale: starScale }], position: 'absolute', bottom: 4, left: 4 }}>
+                            <Ionicons name="star" size={8} color="#fff" />
+                        </Animated.View>
+                    </View>
+                </View>
+            );
+        }
+
+        if (isLava) {
+            const lavaColor = anim.interpolate({
+                inputRange: [0, 0.5, 1],
+                outputRange: ['#ef4444', '#f97316', '#ef4444']
+            });
+
+            return (
+                <View style={styles.previewBase}>
+                    <Animated.View style={[styles.bubblePreviewContainer, bubbleStyle, { backgroundColor: lavaColor, borderColor: '#7f1d1d', borderWidth: 1 }]}>
+                        <View style={[styles.bubbleLine, { backgroundColor: '#fff', opacity: 0.8, width: 24 }]} />
+                        <View style={[styles.bubbleLine, { backgroundColor: '#fff', opacity: 0.5, width: 14, marginTop: 4 }]} />
+                    </Animated.View>
+                </View>
+            );
+        }
+
         const isDarkContent = item.id.includes('cloud') || item.id.includes('comic') || item.id.includes('paper');
         const textColor = isDarkContent ? '#000' : '#fff';
 
@@ -230,29 +378,58 @@ const ItemPreview = ({ item }: { item: ShopItem }) => {
     );
 };
 
-const PremiumBanner = ({ onPress }: { onPress: () => void }) => (
-    <AnimatedTouchable onPress={onPress}>
-        <BlurView intensity={20} tint="light" style={styles.premiumBannerBlur}>
-            <LinearGradient
-                colors={['rgba(99, 102, 241, 0.8)', 'rgba(168, 85, 247, 0.6)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.premiumBanner}
-            >
-                <View style={styles.premiumContent}>
-                    <View style={styles.premiumIconCircle}>
-                        <Ionicons name="sparkles" size={24} color="#FFF" />
+const PremiumBanner = ({ onPress }: { onPress: () => void }) => {
+    const shine = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        const animation = Animated.loop(
+            Animated.sequence([
+                Animated.timing(shine, { toValue: 1, duration: 2500, easing: Easing.linear, useNativeDriver: true }),
+                Animated.delay(3000)
+            ])
+        );
+        animation.start();
+        return () => animation.stop();
+    }, []);
+
+    const translateX = shine.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-width, width]
+    });
+
+    return (
+        <AnimatedTouchable onPress={onPress}>
+            <BlurView intensity={20} tint="light" style={styles.premiumBannerBlur}>
+                <LinearGradient
+                    colors={['rgba(99, 102, 241, 0.8)', 'rgba(168, 85, 247, 0.6)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.premiumBanner}
+                >
+                    <Animated.View style={[
+                        StyleSheet.absoluteFill,
+                        {
+                            backgroundColor: 'rgba(255,255,255,0.15)',
+                            width: width / 3,
+                            transform: [{ skewX: '-25deg' }, { translateX }]
+                        }
+                    ]} />
+
+                    <View style={styles.premiumContent}>
+                        <View style={styles.premiumIconCircle}>
+                            <Ionicons name="sparkles" size={24} color="#FFF" />
+                        </View>
+                        <View style={styles.premiumTextContainer}>
+                            <Text style={styles.premiumTitle}>Plural Premium</Text>
+                            <Text style={styles.premiumSubtitle}>Accès illimité à toute la boutique</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={24} color="rgba(255,255,255,0.7)" />
                     </View>
-                    <View style={styles.premiumTextContainer}>
-                        <Text style={styles.premiumTitle}>Plural Premium</Text>
-                        <Text style={styles.premiumSubtitle}>Accès illimité à toute la boutique</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={24} color="rgba(255,255,255,0.7)" />
-                </View>
-            </LinearGradient>
-        </BlurView>
-    </AnimatedTouchable>
-);
+                </LinearGradient>
+            </BlurView>
+        </AnimatedTouchable>
+    );
+};
 
 const AdRewardCard = ({ onPress, loading, disabled }: { onPress: () => void, loading: boolean, disabled: boolean }) => (
     <AnimatedTouchable onPress={onPress} disabled={disabled} style={{ opacity: disabled ? 0.6 : 1 }}>
@@ -762,18 +939,18 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(255,255,255,0.08)',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 4,
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 6,
     },
     cardPreviewContainer: {
-        height: 100,
+        height: 110,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'rgba(0,0,0,0.2)', // Slightly darker for contrast
+        backgroundColor: 'rgba(15, 23, 42, 0.4)', // Slate 900 with opacity
     },
     previewBase: {
         width: 64,

@@ -12,10 +12,11 @@ import {
     ActivityIndicator,
     Alert,
     TextInput,
+    Modal,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-// import { Video, ResizeMode, Audio } from 'expo-av'; // TODO: Fix expo-av installation
+import { Video, ResizeMode, Audio } from 'expo-av';
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../src/contexts/AuthContext';
@@ -55,6 +56,7 @@ export default function AlterSpaceScreen() {
     const [alter, setAlter] = useState<Alter | null>(null);
     const [activeTab, setActiveTab] = useState<TabType>('feed');
     const [refreshing, setRefreshing] = useState(false);
+    const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
     const [posts, setPosts] = useState<Post[]>([]); // Gallery posts
     const [loading, setLoading] = useState(true);
     const [latestEmotion, setLatestEmotion] = useState<Emotion | null>(null);
@@ -173,6 +175,7 @@ export default function AlterSpaceScreen() {
 
     useEffect(() => {
         // Initial load from local context
+        const foundAlter = alters.find(a => a.id === alterId);
         if (foundAlter) {
             setAlter(foundAlter);
             FriendService.getFriends(foundAlter.id).then(friends => {
@@ -486,7 +489,7 @@ export default function AlterSpaceScreen() {
                                 key={img.id}
                                 style={styles.galleryItem}
                                 onPress={() => {
-                                    // TODO: Ouvrir en plein écran
+                                    setFullScreenImage(img.uri);
                                     triggerHaptic.selection();
                                 }}
                             >
@@ -771,6 +774,27 @@ export default function AlterSpaceScreen() {
                     <Ionicons name="add" size={30} color="#FFF" />
                 </TouchableOpacity>
             )}
+            {/* Full Screen Image Modal */}
+            <Modal
+                visible={!!fullScreenImage}
+                transparent={true}
+                onRequestClose={() => setFullScreenImage(null)}
+                animationType="fade"
+            >
+                <View style={[styles.container, { backgroundColor: 'black', justifyContent: 'center' }]}>
+                    <TouchableOpacity
+                        style={{ position: 'absolute', top: 50, right: 20, zIndex: 10, padding: 10 }}
+                        onPress={() => setFullScreenImage(null)}
+                    >
+                        <Ionicons name="close" size={30} color="white" />
+                    </TouchableOpacity>
+                    <Image
+                        source={{ uri: fullScreenImage || '' }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="contain"
+                    />
+                </View>
+            </Modal>
         </View>
     );
 }

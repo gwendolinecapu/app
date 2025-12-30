@@ -53,7 +53,6 @@ class PersistentNotificationService {
         }
 
         this.isActive = true;
-        console.log('[PersistentNotification] Started');
     }
 
     /**
@@ -68,7 +67,6 @@ class PersistentNotificationService {
 
         this.isActive = false;
         this.data = null;
-        console.log('[PersistentNotification] Stopped');
     }
 
     /**
@@ -86,7 +84,7 @@ class PersistentNotificationService {
             await this.updateIOSNotification(data);
         }
 
-        console.log('[PersistentNotification] Updated');
+
     }
 
     /**

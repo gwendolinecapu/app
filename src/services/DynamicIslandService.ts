@@ -65,7 +65,6 @@ class DynamicIslandService {
             });
 
             this.isActive = true;
-            console.log('[DynamicIsland] Started with ID:', this.activityId);
             return true;
         } catch (error) {
             console.error('[DynamicIsland] Failed to start:', error);
@@ -93,7 +92,7 @@ class DynamicIslandService {
                 coFronters: data.coFronters || [],
             });
 
-            console.log('[DynamicIsland] Updated');
+
             return true;
         } catch (error) {
             console.error('[DynamicIsland] Failed to update:', error);
@@ -115,7 +114,6 @@ class DynamicIslandService {
             await LiveActivityModule!.endLiveActivity(this.activityId);
             this.isActive = false;
             this.activityId = null;
-            console.log('[DynamicIsland] Stopped');
             return true;
         } catch (error) {
             console.error('[DynamicIsland] Failed to stop:', error);

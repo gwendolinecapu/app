@@ -1,14 +1,21 @@
-import { initializeApp, getApp, getApps } from 'firebase/app';
-import 'firebase/auth';
-// @ts-ignore - getReactNativePersistence is resolved via metro.config.js to RN bundle
-import { getAuth, initializeAuth, browserLocalPersistence } from 'firebase/auth';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// ------------------------------------------------------------------
+// FIX: Using Compat SDK for Initialization to resolve Web/Metro issues
+// ("Component auth has not been registered yet")
+// ------------------------------------------------------------------
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
+import 'firebase/compat/firestore';
+import 'firebase/compat/storage';
+
+// Import Modular types for exports
+import { getAuth, initializeAuth } from 'firebase/auth';
 import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
 
 // Configuration Firebase
-// TODO: Remplacer par les vraies clés après création du projet
 const firebaseConfig = {
     apiKey: "AIzaSyByyRNVyyz24J1JXS2J_xWb7F8PwSz6QRQ",
     authDomain: "app-tdi.firebaseapp.com",
@@ -19,37 +26,45 @@ const firebaseConfig = {
     measurementId: "G-Y5Y6LXVNS1"
 };
 
-// Initialisation de l'application Firebase (Singleton)
+// Initialisation (Compat Mode guarantees registration)
 let app;
-if (getApps().length === 0) {
-    app = initializeApp(firebaseConfig);
+if (!firebase.apps.length) {
+    app = firebase.initializeApp(firebaseConfig);
 } else {
-    app = getApp();
+    app = firebase.app();
 }
 
-// Initialisation de l'Authentification avec persistance AsyncStorage pour React Native
-// Initialisation de l'Authentification (Web vs Native)
+// Auth Initialization
 let auth;
 if (Platform.OS === 'web') {
-    auth = getAuth(app);
+    // Web: Use compat auth instance which is fully initialized
+    auth = firebase.auth();
 } else {
-    const { getReactNativePersistence } = require('firebase/auth');
-    auth = initializeAuth(app, {
-        persistence: getReactNativePersistence(AsyncStorage)
-    });
+    // Native: Use modular auth with persistence, forcing registration via side-effects above
+    try {
+        // We try to get the modular auth instance (should work because of compat/auth import)
+        auth = getAuth(app);
+    } catch (e) {
+        // Fallback or explicit init
+        // Note: getReactNativePersistence is only available in RN context
+        const { getReactNativePersistence } = require('firebase/auth');
+        auth = initializeAuth(app, {
+            persistence: getReactNativePersistence(AsyncStorage)
+        });
+    }
 }
 
-// Initialisation de Firestore
+// Firestore & Storage
+// We use modular instances because the rest of the app might use modular methods
+// Compat app instance IS a modular app instance (mostly).
 const db = getFirestore(app);
+const storage = getStorage(app);
 
-// Activation de la persistance hors-ligne (IndexedDB pour Web, AsyncStorage pour React Native)
-// Cela permet à l'app de fonctionner sans connexion et de synchroniser quand le réseau revient.
+// Enable Persistence (Firestore)
 enableIndexedDbPersistence(db).catch((err) => {
     if (err.code === 'failed-precondition') {
-        // Multiple tabs open, persistence can only be enabled in one tab at a time.
         console.warn('Firestore persistence failed: Multiple tabs open');
     } else if (err.code === 'unimplemented') {
-        // The current browser does not support all of the features required
         console.warn('Firestore persistence not supported in this environment');
     }
 });
@@ -58,4 +73,3 @@ enableIndexedDbPersistence(db).catch((err) => {
 const storage = getStorage(app);
 
 export { auth, db, storage };
-

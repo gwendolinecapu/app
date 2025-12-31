@@ -12,6 +12,7 @@ import { triggerHaptic } from '../../lib/haptics';
 interface AnimatedPressableProps extends Omit<PressableProps, 'style'> {
     children: React.ReactNode;
     style?: StyleProp<ViewStyle>;
+    containerStyle?: StyleProp<ViewStyle>;
     scaleMin?: number;
     haptic?: boolean;
 }
@@ -23,6 +24,7 @@ interface AnimatedPressableProps extends Omit<PressableProps, 'style'> {
 export const AnimatedPressable: React.FC<AnimatedPressableProps> = ({
     children,
     style,
+    containerStyle,
     scaleMin = 0.96,
     haptic = true,
     ...props
@@ -57,6 +59,7 @@ export const AnimatedPressable: React.FC<AnimatedPressableProps> = ({
     return (
         <Pressable
             {...props}
+            style={containerStyle}
             onPressIn={handlePressIn}
             onPressOut={handlePressOut}
             delayLongPress={200}

@@ -47,7 +47,7 @@ const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
     if (type === 'blurry') {
         return (
             <AnimatedPressable
-                style={styles.bubbleWrapper}
+                containerStyle={styles.bubbleWrapper}
                 onPress={onPress}
                 haptic={true}
             >
@@ -62,7 +62,7 @@ const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
     if (type === 'add') {
         return (
             <AnimatedPressable
-                style={styles.bubbleWrapper}
+                containerStyle={styles.bubbleWrapper}
                 onPress={onPress}
                 haptic={true}
             >
@@ -81,7 +81,7 @@ const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
 
     return (
         <AnimatedPressable
-            style={[styles.bubbleWrapper, dimmed && styles.bubbleDimmed]}
+            containerStyle={[styles.bubbleWrapper, dimmed && styles.bubbleDimmed]}
             onPress={onPress}
             onLongPress={onLongPress}
             haptic={true}

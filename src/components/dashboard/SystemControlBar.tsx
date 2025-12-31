@@ -30,7 +30,7 @@ export const SystemControlBar: React.FC<SystemControlBarProps> = ({
         <View style={[styles.wrapper, { bottom: Math.max(insets.bottom, 16) }]} >
             <BlurView intensity={80} tint="dark" style={styles.container}>
                 <AnimatedPressable
-                    style={styles.menuItem}
+                    containerStyle={styles.menuItem}
                     onPress={() => {
                         triggerHaptic.medium();
                         onOpenMenu();
@@ -43,7 +43,7 @@ export const SystemControlBar: React.FC<SystemControlBarProps> = ({
                 </AnimatedPressable>
 
                 <AnimatedPressable
-                    style={styles.menuItem}
+                    containerStyle={styles.menuItem}
                     onPress={() => router.push('/team-chat')}
                 >
                     <View style={styles.iconWrapper}>
@@ -53,6 +53,7 @@ export const SystemControlBar: React.FC<SystemControlBarProps> = ({
                 </AnimatedPressable>
 
                 <AnimatedPressable
+                    containerStyle={styles.centerButtonContainer}
                     style={[
                         styles.centerButton,
                         hasSelection && styles.centerButtonActive
@@ -76,7 +77,7 @@ export const SystemControlBar: React.FC<SystemControlBarProps> = ({
                 </AnimatedPressable>
 
                 <AnimatedPressable
-                    style={styles.menuItem}
+                    containerStyle={styles.menuItem}
                     onPress={() => router.push('/history')}
                 >
                     <View style={styles.iconWrapper}>
@@ -86,7 +87,7 @@ export const SystemControlBar: React.FC<SystemControlBarProps> = ({
                 </AnimatedPressable>
 
                 <AnimatedPressable
-                    style={styles.menuItem}
+                    containerStyle={styles.menuItem}
                     onPress={() => router.push('/settings')}
                 >
                     <View style={styles.iconWrapper}>
@@ -141,14 +142,18 @@ const styles = StyleSheet.create({
         color: colors.textSecondary,
         marginTop: 4,
     },
-    centerButton: {
+    centerButtonContainer: {
         width: 54,
         height: 54,
+        marginTop: -12, // Lowered for integration
+    },
+    centerButton: {
+        width: '100%',
+        height: '100%',
         borderRadius: 27,
         backgroundColor: 'rgba(255, 255, 255, 0.1)',
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: -12, // Lowered for integration
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.2)',
     },

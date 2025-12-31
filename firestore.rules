@@ -240,15 +240,6 @@ service cloud.firestore {
     }
 
     // ============================================
-    // Comments Collection
-    // ============================================
-    match /posts/{postId}/comments/{commentId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.author_id == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.author_id == request.auth.uid;
-    }
-
-    // ============================================
     // Monetization & Credits Collection
     // ============================================
     match /user_monetization/{userId} {
@@ -288,12 +279,20 @@ service cloud.firestore {
       // Read: any authenticated user can read friend requests
       allow read: if isAuthenticated();
       
-      // Create: sender's system must be authenticated
-      allow create: if isAuthenticated() && request.resource.data.systemId == request.auth.uid;
+      // Create: sender's system must be authenticated, force server timestamp
+      allow create: if isAuthenticated() && 
+                    request.resource.data.systemId == request.auth.uid &&
+                    request.resource.data.createdAt == request.time;
       
       // Update: ONLY receiver can update (to accept/reject)
-      // Requires 'receiverSystemId' to be present on the doc
-      allow update: if isAuthenticated() && resource.data.receiverSystemId == request.auth.uid;
+      // IDs must remain unchanged
+      allow update: if isAuthenticated() && 
+                    resource.data.receiverSystemId == request.auth.uid &&
+                    isUnchanged('senderId') &&
+                    isUnchanged('receiverId') &&
+                    isUnchanged('systemId') &&
+                    isUnchanged('receiverSystemId') &&
+                    isUnchanged('createdAt');
       
       // Delete: sender (cancel) or receiver (reject/cleanup)
       allow delete: if isAuthenticated() && (

@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Text } from 'react-native';
+import {
+    View,
+    StyleSheet,
+    ActivityIndicator,
+    Alert,
+    TouchableOpacity,
+    Text,
+    ScrollView
+} from 'react-native';
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { FriendService } from '../../../src/services/friends';
@@ -20,7 +28,7 @@ import { FollowListModal } from '../../../src/components/alter-space/FollowListM
 import { useAlterData } from '../../../src/hooks/useAlterData';
 import { ErrorBoundary } from '../../../src/components/ErrorBoundary';
 
-type TabType = 'feed' | 'profile' | 'journal' | 'gallery' | 'emotions' | 'settings' | 'search';
+type TabType = 'feed' | 'profile' | 'journal' | 'gallery' | 'emotions' | 'settings' | 'menu';
 
 export default function AlterSpaceScreen() {
     const { alterId, tab } = useLocalSearchParams<{ alterId: string; tab?: string }>();
@@ -151,6 +159,32 @@ export default function AlterSpaceScreen() {
                         />
                     </View>
                 );
+            case 'menu':
+                return (
+                    <ScrollView style={{ flex: 1, padding: 20 }}>
+                        <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: colors.text }}>Menu</Text>
+
+                        <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('gallery')}>
+                            <Ionicons name="images-outline" size={24} color={colors.text} style={{ marginRight: 15 }} />
+                            <Text style={styles.menuItemText}>Galerie</Text>
+                            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('emotions')}>
+                            <Ionicons name="heart-outline" size={24} color={colors.text} style={{ marginRight: 15 }} />
+                            <Text style={styles.menuItemText}>Émotions</Text>
+                            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                        </TouchableOpacity>
+
+                        {isOwner && (
+                            <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('settings')}>
+                                <Ionicons name="settings-outline" size={24} color={colors.text} style={{ marginRight: 15 }} />
+                                <Text style={styles.menuItemText}>Paramètres</Text>
+                                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                        )}
+                    </ScrollView>
+                );
             case 'journal':
                 return <AlterJournal alter={alter} />;
             case 'gallery':
@@ -187,23 +221,52 @@ export default function AlterSpaceScreen() {
 
             {/* Bottom Tab Bar (Custom for Alter Space navigation) */}
             <View style={styles.bottomBar}>
+                {/* 1. Accueil / Feed */}
                 <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('feed')}>
                     <Ionicons name={activeTab === 'feed' ? "home" : "home-outline"} size={24} color={activeTab === 'feed' ? colors.primary : colors.textSecondary} />
+                    <Text style={{ fontSize: 10, color: activeTab === 'feed' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Accueil</Text>
                 </TouchableOpacity>
+
+                {/* 2. Journal */}
                 <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('journal')}>
                     <Ionicons name={activeTab === 'journal' ? "book" : "book-outline"} size={24} color={activeTab === 'journal' ? colors.primary : colors.textSecondary} />
+                    <Text style={{ fontSize: 10, color: activeTab === 'journal' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Journal</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('gallery')}>
-                    <Ionicons name={activeTab === 'gallery' ? "images" : "images-outline"} size={24} color={activeTab === 'gallery' ? colors.primary : colors.textSecondary} />
+
+                {/* 3. Post (+) */}
+                <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => {
+                    // Navigate to create post, possibly passing alterId if supported or relying on global context
+                    router.push('/post/create');
+                }}>
+                    <View style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 24,
+                        backgroundColor: colors.primary,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        marginTop: -24,
+                        shadowColor: colors.primary,
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 8,
+                        elevation: 5,
+                    }}>
+                        <Ionicons name="add" size={32} color="white" />
+                    </View>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('emotions')}>
-                    <Ionicons name={activeTab === 'emotions' ? "heart" : "heart-outline"} size={24} color={activeTab === 'emotions' ? colors.primary : colors.textSecondary} />
+
+                {/* 4. Profil */}
+                <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('profile')}>
+                    <Ionicons name={activeTab === 'profile' ? "person" : "person-outline"} size={24} color={activeTab === 'profile' ? colors.primary : colors.textSecondary} />
+                    <Text style={{ fontSize: 10, color: activeTab === 'profile' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Profil</Text>
                 </TouchableOpacity>
-                {isOwner && (
-                    <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('settings')}>
-                        <Ionicons name={activeTab === 'settings' ? "settings" : "settings-outline"} size={24} color={activeTab === 'settings' ? colors.primary : colors.textSecondary} />
-                    </TouchableOpacity>
-                )}
+
+                {/* 5. Menu */}
+                <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('menu')}>
+                    <Ionicons name={activeTab === 'menu' ? "menu" : "menu-outline"} size={24} color={activeTab === 'menu' ? colors.primary : colors.textSecondary} />
+                    <Text style={{ fontSize: 10, color: activeTab === 'menu' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Menu</Text>
+                </TouchableOpacity>
             </View>
 
             {/* Modals */}
@@ -283,5 +346,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         padding: 5,
+        flex: 1, // Distribute evenly
     },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+    },
+    menuItemText: {
+        flex: 1,
+        fontSize: 16,
+        color: colors.text,
+    }
 });

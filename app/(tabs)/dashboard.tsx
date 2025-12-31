@@ -63,6 +63,7 @@ export default function Dashboard() {
     const { alters, user, refreshAlters, setFronting, activeFront, loading: authLoading } = useAuth();
     const [modalVisible, setModalVisible] = useState(false);
     const [menuVisible, setMenuVisible] = useState(false);
+
     const [selectionMode, setSelectionMode] = useState<'single' | 'multi'>('single');
     const [selectedAlters, setSelectedAlters] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -148,6 +149,7 @@ export default function Dashboard() {
 
     const handleOpenMenu = useCallback(() => setMenuVisible(true), []);
     const handleCloseMenu = useCallback(() => setMenuVisible(false), []);
+
     const handleCloseAddModal = useCallback(() => setModalVisible(false), []);
 
     const pickImage = async () => {

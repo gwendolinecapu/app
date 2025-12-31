@@ -5,6 +5,11 @@
 - **Cleanup**: Removed duplicate `user_monetization` rules to prevent conflicts.
 - **Indexes**: Added composite index for `messages` collection to support group chat query ordering.
 
+## [2025-12-31] - Web Compatibility & Stability Fixes 🕸️
+- **AddAlterModal**: Improved web compatibility by disabling `BlurView` on web (replaced with semi-transparent view) to prevent unresponsive UI interaction.
+- **TeamChatScreen**: Added robust error handling for Firestore snapshots to prevent infinite loading loops on web permissions errors.
+- **Stability**: Fixed a logic issue where chat loading would hang if user data wasn't fully initialized locally.
+
 ## [2025-12-31] - Code Cleanup & Refactoring 🧹
 - **Suppression de Doublons**: Retrait du composant inutilisé `MessageList.tsx` pour éviter toute confusion avec la nouvelle implémentation du chat.
 - **AlterBubble**: Nettoyage du code mort lié à l'ancien type de bulle "chat" qui n'est plus utilisé dans le Dashboard.

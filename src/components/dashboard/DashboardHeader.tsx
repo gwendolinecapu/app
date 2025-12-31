@@ -3,8 +3,6 @@ import { View, Text, StyleSheet, TextInput, Dimensions } from 'react-native';
 import { AnimatedPressable } from '../ui/AnimatedPressable';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../lib/theme';
-import { router } from 'expo-router';
-import { triggerHaptic } from '../../lib/haptics';
 import { LayoutAnimation, Platform, UIManager } from 'react-native';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -106,14 +104,6 @@ const styles = StyleSheet.create({
     headerActions: {
         flexDirection: 'row',
         gap: 8,
-    },
-    headerIconBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: colors.backgroundLight,
     },
     modeSwitchContainer: {
         flexDirection: 'row',

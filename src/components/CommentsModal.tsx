@@ -119,15 +119,26 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
                 style={styles.container}
             >
                 {/* Backdrop */}
-                <TouchableOpacity style={styles.backdrop} onPress={onClose} activeOpacity={1} />
+                <TouchableOpacity
+                    style={styles.backdrop}
+                    onPress={onClose}
+                    activeOpacity={1}
+                    accessibilityLabel="Fermer la fenêtre de commentaires"
+                    accessibilityRole="button"
+                />
 
                 {/* Content */}
                 <View style={styles.content}>
                     {/* Header */}
                     <View style={styles.header}>
                         <View style={styles.handle} />
-                        <Text style={styles.title}>Commentaires</Text>
-                        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                        <Text style={styles.title} accessibilityRole="header">Commentaires</Text>
+                        <TouchableOpacity
+                            onPress={onClose}
+                            style={styles.closeButton}
+                            accessibilityLabel="Fermer"
+                            accessibilityRole="button"
+                        >
                             <Ionicons name="close" size={24} color={colors.textSecondary} />
                         </TouchableOpacity>
                     </View>
@@ -179,6 +190,8 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
                             style={[styles.sendButton, (!newComment.trim() || sending) && styles.sendButtonDisabled]}
                             onPress={handleSend}
                             disabled={!newComment.trim() || sending}
+                            accessibilityLabel="Envoyer le commentaire"
+                            accessibilityRole="button"
                         >
                             {sending ? (
                                 <ActivityIndicator size="small" color="white" />

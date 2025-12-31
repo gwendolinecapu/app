@@ -154,8 +154,15 @@ export default function CreatePostScreen() {
     };
 
     const handlePost = async () => {
-        if (!content.trim() && !mediaUri && !audioUri) {
+        const trimmedContent = content.trim();
+
+        if (!trimmedContent && !mediaUri && !audioUri) {
             Alert.alert('Erreur', 'Ajoutez du contenu à votre post !');
+            return;
+        }
+
+        if (trimmedContent.length > 500) {
+            Alert.alert('Erreur', 'Le post ne doit pas dépasser 500 caractères');
             return;
         }
 

@@ -7,23 +7,72 @@ import {
     onAuthStateChanged
 } from 'firebase/auth';
 import {
-    import {
-        doc,
-        getDoc,
-        setDoc,
-        collection,
-        query,
-        where,
-        getDocs,
-        orderBy,
-        updateDoc,
-        deleteDoc,
-        writeBatch,
-        onSnapshot,
-        Unsubscribe
-    } from 'firebase/firestore';
+    doc,
+    getDoc,
+    setDoc,
+    collection,
+    query,
+    where,
+    getDocs,
+    orderBy,
+    updateDoc,
+    deleteDoc,
+    writeBatch,
+    onSnapshot,
+    Unsubscribe
+} from 'firebase/firestore';
 
-// ... imports ...
+import { auth, db } from '../lib/firebase';
+import { useToast } from './ToastContext';
+import { FrontingService } from '../services/fronting';
+import { triggerHaptic } from '../lib/haptics';
+
+interface Alter {
+    id: string;
+    name: string;
+    avatar?: string;
+    avatar_url?: string;
+    role?: string;
+    is_host?: boolean;
+    is_active?: boolean;
+    isArchived?: boolean;
+    color?: string;
+    created_at?: string;
+}
+
+interface System {
+    id: string;
+    username: string;
+    email: string;
+    created_at: string;
+    headspace?: string;
+}
+
+interface FrontStatus {
+    type: 'single' | 'co-front' | 'blurry';
+    alters: Alter[];
+    customStatus?: string;
+}
+
+interface AuthContextType {
+    user: User | null;
+    system: System | null;
+    activeFront: FrontStatus;
+    alters: Alter[];
+    loading: boolean;
+    signUp: (email: string, password: string, username: string) => Promise<{ error: any }>;
+    signIn: (email: string, password: string) => Promise<{ error: any }>;
+    signOut: () => Promise<void>;
+    deleteAccount: () => Promise<void>;
+    setFronting: (frontAlters: Alter[], type: 'single' | 'co-front' | 'blurry', customStatus?: string) => Promise<void>;
+    refreshAlters: () => Promise<void>;
+    togglePin: (alterId: string) => Promise<void>;
+    toggleArchive: (alterId: string) => Promise<void>;
+    updateHeadspace: (mood: string) => Promise<void>;
+    currentAlter: Alter | null;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);

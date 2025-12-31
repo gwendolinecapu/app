@@ -4,15 +4,15 @@ import { AuthProvider } from '../src/contexts/AuthContext';
 import { ThemeProvider } from '../src/contexts/ThemeContext';
 import { NotificationProvider } from '../src/contexts/NotificationContext';
 import { MonetizationProvider } from '../src/contexts/MonetizationContext';
+import { NetworkProvider } from '../src/contexts/NetworkContext';
 import { colors, typography } from '../src/lib/theme';
 import { View, StyleSheet, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { ErrorBoundary } from '../src/components/ErrorBoundary'; // Assuming path for ErrorBoundary
+import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { ToastProvider } from '../src/components/ui/Toast';
-import { AppState, AppStateStatus } from 'react-native'; // Import AppState
-import React, { useState, useEffect } from 'react'; // React hooks
-import { BlurView } from 'expo-blur'; // Privacy Blur
+import { AppState, AppStateStatus } from 'react-native';
+import React, { useState, useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -21,7 +21,6 @@ export default function RootLayout() {
     const [privacyEnabled, setPrivacyEnabled] = useState(true);
 
     useEffect(() => {
-        // Load preference
         AsyncStorage.getItem('privacy_blur_enabled').then(value => {
             if (value !== null) setPrivacyEnabled(value === 'true');
         });
@@ -34,31 +33,17 @@ export default function RootLayout() {
             }
         });
 
-        // Event listener for settings change (simple event bus or specialized storage listener would be better, but poller/callback works)
-        // For simplicity, we rely on AppState to re-check, or we can export a context.
-        // Let's implement a simple polling or event listener if we need real-time update from settings without reload.
-        // Actually, let's use a simple FocusEffect or Context?
-        // Simpler: Just read AsyncStorage in the listener? No, it's async.
-        // Best: Add to specific Context. But RootLayout is outside contexts?
-        // Wait, RootLayout wraps Contexts. So we can't use useAuth/Theme.
-        // We will stick to basic AsyncStorage and maybe a global event emitter if needed.
-        // For now, let's read it every time we go to background?
-
         return () => {
             subscription.remove();
         };
     }, [privacyEnabled]);
 
-    // Re-check preference when app state changes effectively
     useEffect(() => {
         const checkPref = async () => {
             const val = await AsyncStorage.getItem('privacy_blur_enabled');
             if (val !== null) setPrivacyEnabled(val === 'true');
         };
         checkPref();
-
-        // Poll every 5 seconds just in case changed in settings? Or accept restart needed?
-        // Better: Settings screen updates AsyncStorage AND emits an event or we just accept 'next launch' or 'next background'.
     }, []);
 
     return (
@@ -67,116 +52,107 @@ export default function RootLayout() {
                 <ErrorBoundary>
                     <ToastProvider>
                         <AuthProvider>
-                            <ThemeProvider>
-                                <NotificationProvider>
-                                    <MonetizationProvider>
-                                        <View style={styles.container}>
-                                            <Stack
-                                                screenOptions={{
-                                                    headerStyle: {
-                                                        backgroundColor: colors.background,
-                                                    },
-                                                    headerTintColor: colors.text,
-                                                    headerTitleStyle: {
-                                                        fontWeight: 'bold',
-                                                    },
-                                                    contentStyle: {
-                                                        backgroundColor: colors.background,
-                                                    },
-                                                }}
-                                            >
-                                                <Stack.Screen name="index" options={{ headerShown: false }} />
-                                                <Stack.Screen name="alter-space" options={{ headerShown: false }} />
-                                                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                                                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                                                <Stack.Screen
-                                                    name="alter/[id]"
-                                                    options={{
-                                                        title: 'Profil Alter',
-                                                        presentation: 'modal',
-                                                        headerShown: false,
+                            <NetworkProvider>
+                                <ThemeProvider>
+                                    <NotificationProvider>
+                                        <MonetizationProvider>
+                                            <View style={styles.container}>
+                                                <Stack
+                                                    screenOptions={{
+                                                        headerStyle: {
+                                                            backgroundColor: colors.background,
+                                                        },
+                                                        headerTintColor: colors.text,
+                                                        headerTitleStyle: {
+                                                            fontWeight: 'bold',
+                                                        },
+                                                        contentStyle: {
+                                                            backgroundColor: colors.background,
+                                                        },
                                                     }}
-                                                />
-                                                <Stack.Screen
-                                                    name="conversation/[id]"
-                                                    options={{
-                                                        title: 'Conversation',
-                                                        headerShown: false,
-                                                    }}
-                                                />
-                                                <Stack.Screen
-                                                    name="post/create"
-                                                    options={{
-                                                        title: 'Nouvelle Publication',
-                                                        presentation: 'modal',
-                                                        headerShown: false,
-                                                    }}
-                                                />
-                                                {/* Settings et sous-écrans */}
-                                                <Stack.Screen name="settings/index" options={{ headerShown: false }} />
-                                                <Stack.Screen name="settings/import" options={{ headerShown: false, presentation: 'modal' }} />
-                                                <Stack.Screen name="settings/notifications" options={{ headerShown: false }} />
+                                                >
+                                                    <Stack.Screen name="index" options={{ headerShown: false }} />
+                                                    <Stack.Screen name="alter-space" options={{ headerShown: false }} />
+                                                    <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                                                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                                                    <Stack.Screen
+                                                        name="alter/[id]"
+                                                        options={{
+                                                            title: 'Profil Alter',
+                                                            presentation: 'modal',
+                                                            headerShown: false,
+                                                        }}
+                                                    />
+                                                    <Stack.Screen
+                                                        name="conversation/[id]"
+                                                        options={{
+                                                            title: 'Conversation',
+                                                            headerShown: false,
+                                                        }}
+                                                    />
+                                                    <Stack.Screen
+                                                        name="post/create"
+                                                        options={{
+                                                            title: 'Nouvelle Publication',
+                                                            presentation: 'modal',
+                                                            headerShown: false,
+                                                        }}
+                                                    />
+                                                    <Stack.Screen name="settings/index" options={{ headerShown: false }} />
+                                                    <Stack.Screen name="settings/import" options={{ headerShown: false, presentation: 'modal' }} />
+                                                    <Stack.Screen name="settings/notifications" options={{ headerShown: false }} />
 
-                                                {/* Roles */}
-                                                <Stack.Screen name="roles/index" options={{ headerShown: false }} />
-                                                <Stack.Screen name="roles/create" options={{ headerShown: false, presentation: 'modal' }} />
+                                                    <Stack.Screen name="roles/index" options={{ headerShown: false }} />
+                                                    <Stack.Screen name="roles/create" options={{ headerShown: false, presentation: 'modal' }} />
 
-                                                {/* Help/Demandes d'aide */}
-                                                <Stack.Screen name="help/index" options={{ headerShown: false }} />
-                                                <Stack.Screen name="help/create" options={{ headerShown: false, presentation: 'modal' }} />
+                                                    <Stack.Screen name="help/index" options={{ headerShown: false }} />
+                                                    <Stack.Screen name="help/create" options={{ headerShown: false, presentation: 'modal' }} />
 
-                                                {/* Journal */}
-                                                <Stack.Screen name="journal/[id]" options={{ headerShown: false }} />
+                                                    <Stack.Screen name="journal/[id]" options={{ headerShown: false }} />
 
-                                                {/* Premium */}
-                                                <Stack.Screen name="premium/index" options={{ headerShown: false, presentation: 'modal' }} />
-                                                <Stack.Screen name="journal/create" options={{ headerShown: false, presentation: 'modal' }} />
+                                                    <Stack.Screen name="premium/index" options={{ headerShown: false, presentation: 'modal' }} />
+                                                    <Stack.Screen name="journal/create" options={{ headerShown: false, presentation: 'modal' }} />
 
-                                                {/* Tasks */}
-                                                <Stack.Screen name="tasks/index" options={{ headerShown: false }} />
-                                                <Stack.Screen name="tasks/create" options={{ headerShown: false, presentation: 'modal' }} />
+                                                    <Stack.Screen name="tasks/index" options={{ headerShown: false }} />
+                                                    <Stack.Screen name="tasks/create" options={{ headerShown: false, presentation: 'modal' }} />
 
-                                                {/* Groups */}
-                                                <Stack.Screen name="groups/[id]" options={{ headerShown: false }} />
-                                                <Stack.Screen name="groups/create" options={{ headerShown: false, presentation: 'modal' }} />
+                                                    <Stack.Screen name="groups/[id]" options={{ headerShown: false }} />
+                                                    <Stack.Screen name="groups/create" options={{ headerShown: false, presentation: 'modal' }} />
 
-                                                {/* Découverte et profils externes (Social) */}
-                                                <Stack.Screen name="discover/index" options={{ headerShown: false }} />
-                                                <Stack.Screen
-                                                    name="profile/[systemId]"
-                                                    options={{
-                                                        headerShown: false,
-                                                        presentation: 'modal',
-                                                    }}
-                                                />
+                                                    <Stack.Screen name="discover/index" options={{ headerShown: false }} />
+                                                    <Stack.Screen
+                                                        name="profile/[systemId]"
+                                                        options={{
+                                                            headerShown: false,
+                                                            presentation: 'modal',
+                                                        }}
+                                                    />
 
-                                                {/* Autres écrans */}
-                                                <Stack.Screen name="crisis/index" options={{ headerShown: false }} />
-                                                <Stack.Screen name="crisis/guide" options={{ headerShown: false }} />
+                                                    <Stack.Screen name="crisis/index" options={{ headerShown: false }} />
+                                                    <Stack.Screen name="crisis/guide" options={{ headerShown: false }} />
 
 
-                                                {/* Boutique */}
-                                                <Stack.Screen name="shop/index" options={{ headerShown: false }} />
+                                                    <Stack.Screen name="shop/index" options={{ headerShown: false }} />
 
-                                                {/* Historique unifié */}
-                                                <Stack.Screen name="history/index" options={{ headerShown: false }} />
-                                            </Stack>
-                                            <StatusBar style="auto" />
-                                            {isPrivacyActive && (
-                                                <View style={styles.privacyScreen}>
-                                                    <View style={styles.privacyContent}>
-                                                        <Ionicons name="lock-closed" size={48} color={colors.primary} />
-                                                        <Text style={styles.privacyTitle}>App en pause</Text>
-                                                        <Text style={styles.privacySubtitle}>
-                                                            Touchez pour revenir
-                                                        </Text>
+                                                    <Stack.Screen name="history/index" options={{ headerShown: false }} />
+                                                </Stack>
+                                                <StatusBar style="auto" />
+                                                {isPrivacyActive && (
+                                                    <View style={styles.privacyScreen}>
+                                                        <View style={styles.privacyContent}>
+                                                            <Ionicons name="lock-closed" size={48} color={colors.primary} />
+                                                            <Text style={styles.privacyTitle}>App en pause</Text>
+                                                            <Text style={styles.privacySubtitle}>
+                                                                Touchez pour revenir
+                                                            </Text>
+                                                        </View>
                                                     </View>
-                                                </View>
-                                            )}
-                                        </View>
-                                    </MonetizationProvider>
-                                </NotificationProvider>
-                            </ThemeProvider>
+                                                )}
+                                            </View>
+                                        </MonetizationProvider>
+                                    </NotificationProvider>
+                                </ThemeProvider>
+                            </NetworkProvider>
                         </AuthProvider>
                     </ToastProvider>
                 </ErrorBoundary>

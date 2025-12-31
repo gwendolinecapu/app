@@ -1,5 +1,10 @@
 # Changelog
 
+## [2025-12-31] - Code Cleanup & Refactoring 🧹
+- **Suppression de Doublons**: Retrait du composant inutilisé `MessageList.tsx` pour éviter toute confusion avec la nouvelle implémentation du chat.
+- **AlterBubble**: Nettoyage du code mort lié à l'ancien type de bulle "chat" qui n'est plus utilisé dans le Dashboard.
+- **Optimisation**: Réduction de la dette technique en supprimant les imports et styles non utilisés liés à l'ancienne version du chat.
+
 ## [2025-12-31] - Internal Team Chat 💬
 - **New Feature**: Added a dedicated "Internal Team Chat" for alerts to communicate within the system.
 - **UI**: Added a Chat screen (`app/chat/index.tsx`) with message bubbles differentiated by sender (Me vs Others).

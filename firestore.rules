@@ -239,15 +239,19 @@ service cloud.firestore {
       }
     }
 
-    // ============================================
-    // Monetization & Credits Collection
-    // ============================================
-    match /user_monetization/{userId} {
-      allow read, write: if isAuthenticated() && request.auth.uid == userId;
-    }
-    
     match /user_credits/{userId} {
       allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ============================================
+    // System Chats Collection (Team Chat)
+    // ============================================
+    match /system_chats/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+
+      match /messages/{messageId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
     }
 
     // ============================================

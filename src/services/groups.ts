@@ -185,9 +185,9 @@ export const GroupService = {
     ) => {
         try {
             // IMPORTANT: Les règles Firestore exigent senderId == request.auth.uid
-            const messageData: Omit<Message, 'id'> & { senderId: string } = {
+            const messageData: Omit<Message, 'id'> = {
                 group_id: groupId,
-                senderId: senderId, // Requis par firestore.rules L139
+                system_id: senderId, // Requis par le type Message
                 sender_alter_id: senderAlterId,
                 content: content,
                 type: type,

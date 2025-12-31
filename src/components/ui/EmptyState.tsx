@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../../lib/theme';
-import { ScaleButton } from './ScaleButton';
+import { AnimatedPressable } from './AnimatedPressable';
 
 interface EmptyStateProps {
     icon?: keyof typeof Ionicons.glyphMap;
@@ -34,9 +34,9 @@ export const EmptyState = ({
             {message && <Text style={styles.message}>{message}</Text>}
 
             {actionLabel && onAction && (
-                <ScaleButton onPress={onAction} style={styles.button}>
+                <AnimatedPressable onPress={onAction} style={styles.button}>
                     <Text style={styles.buttonText}>{actionLabel}</Text>
-                </ScaleButton>
+                </AnimatedPressable>
             )}
         </View>
     );

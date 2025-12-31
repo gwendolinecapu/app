@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TextInput } from 'react-native';
+import { AnimatedPressable } from '../ui/AnimatedPressable';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../lib/theme';
 import { router } from 'expo-router';
@@ -41,41 +42,39 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                     <Text style={styles.title}>Qui est là ?</Text>
                 </View>
                 <View style={styles.headerActions}>
-                    <TouchableOpacity
+                    <AnimatedPressable
                         style={styles.headerIconBtn}
                         onPress={() => {
-                            triggerHaptic.light();
                             router.push('/messages');
                         }}
                     >
                         <Ionicons name="chatbubble-outline" size={20} color={colors.text} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </AnimatedPressable>
+                    <AnimatedPressable
                         style={styles.headerIconBtn}
                         onPress={() => {
-                            triggerHaptic.light();
                             router.push('/shop');
                         }}
                     >
                         <Ionicons name="storefront-outline" size={20} color={colors.primary} />
-                    </TouchableOpacity>
+                    </AnimatedPressable>
                 </View>
             </View>
 
             {/* Mode Switcher */}
             <View style={styles.modeSwitchContainer}>
-                <TouchableOpacity
+                <AnimatedPressable
                     style={[styles.modeButton, selectionMode === 'single' && styles.modeButtonActive]}
                     onPress={() => onModeChange('single')}
                 >
                     <Text style={[styles.modeButtonText, selectionMode === 'single' && styles.modeButtonTextActive]}>Solo</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </AnimatedPressable>
+                <AnimatedPressable
                     style={[styles.modeButton, selectionMode === 'multi' && styles.modeButtonActive]}
                     onPress={() => onModeChange('multi')}
                 >
                     <Text style={[styles.modeButtonText, selectionMode === 'multi' && styles.modeButtonTextActive]}>Co-Front</Text>
-                </TouchableOpacity>
+                </AnimatedPressable>
             </View>
 
             {/* Search Bar */}

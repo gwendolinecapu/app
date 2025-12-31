@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Platform } from 'react-native';
+import { AnimatedPressable } from '../ui/AnimatedPressable';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
@@ -23,15 +24,11 @@ export const SystemControlBar: React.FC<SystemControlBarProps> = ({
     hasSelection
 }) => {
     const insets = useSafeAreaInsets();
-    const handlePress = (route: string) => {
-        triggerHaptic.light();
-        router.push(route as any);
-    };
 
     return (
         <View style={[styles.wrapper, { bottom: Math.max(insets.bottom, 16) }]} >
             <BlurView intensity={80} tint="dark" style={styles.container}>
-                <TouchableOpacity
+                <AnimatedPressable
                     style={styles.menuItem}
                     onPress={() => {
                         triggerHaptic.medium();
@@ -42,19 +39,19 @@ export const SystemControlBar: React.FC<SystemControlBarProps> = ({
                         <Ionicons name="apps-outline" size={24} color="white" />
                     </View>
                     <Text style={styles.label}>Menu</Text>
-                </TouchableOpacity>
+                </AnimatedPressable>
 
-                <TouchableOpacity
+                <AnimatedPressable
                     style={styles.menuItem}
-                    onPress={() => handlePress('/team-chat')}
+                    onPress={() => router.push('/team-chat')}
                 >
                     <View style={styles.iconWrapper}>
                         <Ionicons name="chatbubbles-outline" size={24} color={colors.primary} />
                     </View>
                     <Text style={styles.label}>Team</Text>
-                </TouchableOpacity>
+                </AnimatedPressable>
 
-                <TouchableOpacity
+                <AnimatedPressable
                     style={[
                         styles.centerButton,
                         hasSelection && styles.centerButtonActive
@@ -63,11 +60,9 @@ export const SystemControlBar: React.FC<SystemControlBarProps> = ({
                         if (hasSelection) {
                             triggerHaptic.success();
                             onConfirmFronting();
-                        } else {
-                            triggerHaptic.light();
                         }
                     }}
-                    activeOpacity={0.7}
+                    scaleMin={0.9}
                 >
                     <View style={styles.centerIconBg}>
                         <Ionicons
@@ -76,27 +71,27 @@ export const SystemControlBar: React.FC<SystemControlBarProps> = ({
                             color="white"
                         />
                     </View>
-                </TouchableOpacity>
+                </AnimatedPressable>
 
-                <TouchableOpacity
+                <AnimatedPressable
                     style={styles.menuItem}
-                    onPress={() => handlePress('/history')}
+                    onPress={() => router.push('/history')}
                 >
                     <View style={styles.iconWrapper}>
                         <Ionicons name="stats-chart-outline" size={24} color={colors.warning} />
                     </View>
                     <Text style={styles.label}>Historique</Text>
-                </TouchableOpacity>
+                </AnimatedPressable>
 
-                <TouchableOpacity
+                <AnimatedPressable
                     style={styles.menuItem}
-                    onPress={() => handlePress('/settings')}
+                    onPress={() => router.push('/settings')}
                 >
                     <View style={styles.iconWrapper}>
                         <Ionicons name="settings-outline" size={24} color={colors.textSecondary} />
                     </View>
                     <Text style={styles.label}>Réglages</Text>
-                </TouchableOpacity>
+                </AnimatedPressable>
             </BlurView>
         </View >
     );

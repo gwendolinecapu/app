@@ -11,7 +11,7 @@ import { triggerHaptic } from '../../lib/haptics';
 
 interface AlterBubbleProps {
     alter?: Alter;
-    type: 'alter' | 'blurry' | 'add' | 'chat';
+    type: 'alter' | 'blurry' | 'add';
     size: number;
     isSelected?: boolean;
     selectionMode: 'single' | 'multi';
@@ -77,20 +77,7 @@ const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
 
 
 
-    if (type === 'chat') {
-        return (
-            <AnimatedPressable
-                containerStyle={styles.bubbleWrapper}
-                onPress={() => router.push('/chat')}
-                haptic={true}
-            >
-                <View style={[styles.bubble, styles.chatBubble, dynamicStyles.bubble]}>
-                    <Ionicons name="chatbubbles" size={dynamicStyles.iconSize + 2} color={colors.primary} />
-                </View>
-                <Text style={[styles.bubbleName, dynamicStyles.bubbleName]} numberOfLines={1}>Chat</Text>
-            </AnimatedPressable>
-        );
-    }
+
 
     // Alter bubble
     if (!alter) return null;
@@ -200,11 +187,7 @@ const styles = StyleSheet.create({
         borderColor: colors.border,
         borderWidth: 1.5,
     },
-    chatBubble: {
-        backgroundColor: colors.backgroundCard,
-        borderWidth: 1.5,
-        borderColor: colors.borderLight, // Ensure borderLight exists in theme or use primaryLight
-    },
+
     checkBadge: {
         position: 'absolute',
         top: -4,

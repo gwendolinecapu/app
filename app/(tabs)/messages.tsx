@@ -98,7 +98,7 @@ export default function MessagesScreen() {
             style={styles.conversationItem}
             onPress={() => {
                 if (item.id === 'system-general') {
-                    router.push('/chat');
+                    router.push('/team-chat');
                 } else {
                     router.push(`/conversation/${item.alter.id}?internal=true`);
                 }

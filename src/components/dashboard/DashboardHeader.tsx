@@ -50,22 +50,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                     <Text style={styles.title}>Qui est là ?</Text>
                 </View>
                 <View style={styles.headerActions}>
-                    <AnimatedPressable
-                        style={styles.headerIconBtn}
-                        onPress={() => {
-                            router.push('/messages');
-                        }}
-                    >
-                        <Ionicons name="chatbubble-outline" size={20} color={colors.text} />
-                    </AnimatedPressable>
-                    <AnimatedPressable
-                        style={styles.headerIconBtn}
-                        onPress={() => {
-                            router.push('/shop');
-                        }}
-                    >
-                        <Ionicons name="storefront-outline" size={20} color={colors.primary} />
-                    </AnimatedPressable>
+                    {/* Icons removed as per user request */}
                 </View>
             </View>
 

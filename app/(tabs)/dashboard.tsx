@@ -29,8 +29,8 @@ import { triggerHaptic } from '../../src/lib/haptics';
 import { DashboardHeader } from '../../src/components/dashboard/DashboardHeader';
 import { SystemControlBar } from '../../src/components/dashboard/SystemControlBar';
 import { SystemMenuModal } from '../../src/components/dashboard/SystemMenuModal';
-import { AlterBubble } from '../../src/components/dashboard/AlterBubble';
 import { AddAlterModal } from '../../src/components/dashboard/AddAlterModal';
+import { DashboardGrid, GridItem } from '../../src/components/dashboard/DashboardGrid';
 import { Alter } from '../../src/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -55,11 +55,6 @@ const getBubbleConfig = (alterCount: number) => {
         return { size, spacing, columns: Math.max(5, columns) };
     }
 };
-
-type GridItem =
-    | { type: 'blurry' }
-    | { type: 'add' }
-    | { type: 'alter'; data: Alter };
 /**
  * Dashboard Screen - Refactored for better performance and modularity.
  * Handles the Apple Watch-inspired "Alter Grid" and system utility tools.
@@ -74,8 +69,8 @@ export default function Dashboard() {
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    const scrollRef = useRef<FlatList<GridItem>>(null);
-    useScrollToTop(scrollRef as any);
+    // const scrollRef = useRef<FlatList<GridItem>>(null);
+    // useScrollToTop(scrollRef as any);
 
     useEffect(() => {
         if (activeFront.alters.length > 0) {
@@ -151,6 +146,10 @@ export default function Dashboard() {
         ]);
     };
 
+    const handleOpenMenu = useCallback(() => setMenuVisible(true), []);
+    const handleCloseMenu = useCallback(() => setMenuVisible(false), []);
+    const handleCloseAddModal = useCallback(() => setModalVisible(false), []);
+
     const pickImage = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ['images'],
@@ -195,36 +194,19 @@ export default function Dashboard() {
         }
     };
 
-    const renderItem = useCallback(({ item }: { item: GridItem }) => (
-        <View style={{ width: AVAILABLE_WIDTH / NUM_COLUMNS, alignItems: 'center' }}>
-            <AlterBubble
-                alter={item.type === 'alter' ? item.data : undefined}
-                type={item.type}
-                size={BUBBLE_SIZE}
-                selectionMode={selectionMode}
-                isSelected={item.type === 'alter' && selectedAlters.includes(item.data.id)}
-                dimmed={selectionMode === 'multi' && selectedAlters.length > 0 && (item.type !== 'alter' || !selectedAlters.includes(item.data.id))}
-                onPress={() => {
-                    if (item.type === 'alter') toggleSelection(item.data.id);
-                    else if (item.type === 'blurry') handleBlurryMode();
-                    else if (item.type === 'add') setModalVisible(true);
-                }}
-                onLongPress={() => item.type === 'alter' && router.push(`/alter-space/${item.data.id}` as any)}
-            />
-        </View>
-    ), [NUM_COLUMNS, BUBBLE_SIZE, selectionMode, selectedAlters, toggleSelection]);
-
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            <FlatList
-                ref={scrollRef}
-                key={`grid-${NUM_COLUMNS}`}
+            <DashboardGrid
                 data={authLoading ? [] : gridData}
-                renderItem={renderItem}
-                keyExtractor={(item, index) => item.type === 'alter' ? item.data.id : item.type}
                 numColumns={NUM_COLUMNS}
-                contentContainerStyle={[styles.gridContent, { paddingBottom: 120 }]}
-                showsVerticalScrollIndicator={false}
+                bubbleSize={BUBBLE_SIZE}
+                selectionMode={selectionMode}
+                selectedAlters={selectedAlters}
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                toggleSelection={toggleSelection}
+                handleBlurryMode={handleBlurryMode}
+                setModalVisible={setModalVisible}
                 ListHeaderComponent={
                     <DashboardHeader
                         searchQuery={searchQuery}
@@ -234,11 +216,10 @@ export default function Dashboard() {
                         hasSelection={selectedAlters.length > 0}
                     />
                 }
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
             />
 
             <SystemControlBar
-                onOpenMenu={() => setMenuVisible(true)}
+                onOpenMenu={handleOpenMenu}
                 onConfirmFronting={handleConfirmCoFront}
                 hasSelection={selectedAlters.length > 0}
             />
@@ -247,7 +228,7 @@ export default function Dashboard() {
 
             <AddAlterModal
                 visible={modalVisible}
-                onClose={() => setModalVisible(false)}
+                onClose={handleCloseAddModal}
                 onCreate={handleCreateAlter}
                 loading={loading}
                 pickImage={pickImage}
@@ -255,7 +236,7 @@ export default function Dashboard() {
 
             <SystemMenuModal
                 visible={menuVisible}
-                onClose={() => setMenuVisible(false)}
+                onClose={handleCloseMenu}
                 hasSelection={selectedAlters.length > 0}
             />
         </SafeAreaView>

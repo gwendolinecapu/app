@@ -27,10 +27,7 @@ import { useToast } from '../components/ui/Toast';
 import { FrontingService } from '../services/fronting';
 import { triggerHaptic } from '../lib/haptics';
 
-import { auth, db } from '../lib/firebase';
-import { useToast } from '../components/ui/Toast';
-import { FrontingService } from '../services/fronting';
-import { triggerHaptic } from '../lib/haptics';
+
 import { Alter, System } from '../types';
 
 // Removed local Alter/System interfaces to use global ones from src/types

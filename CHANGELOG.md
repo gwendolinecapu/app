@@ -13,6 +13,8 @@
 - **Design System**: Added `surface` color alias to `theme.ts` for consistent card backgrounds.
 - **UX**: Improved the "Add Alter" flow with live color selection and premium blur effects.
 - **Fix**: Resolved syntax errors and type mismatches introduced during refactoring.
+- **Fix**: Resolved `SyntaxError` in `AuthContext` (duplicate imports) to restore app stability.
+- **Fix**: Updated `firestore.rules` to correctly handle nested subcollections for comments and fix permission errors.
 
 ## [2025-12-31] - Core & Bundling Fixes
 - **Fix**: Resolved `recyclerlistview` bundling error ("Unable to resolve ./core/RecyclerListView") by implementing advanced module resolution logic in `metro.config.js`.

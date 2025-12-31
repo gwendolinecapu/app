@@ -129,7 +129,7 @@ export function SystemWeather() {
                                         <View>
                                             <Text style={styles.alterName}>{getAlterName(alterId)}</Text>
                                             <Text style={styles.timestamp}>
-                                                {timeAgo(emotion.created_at)}
+                                                {emotion.created_at ? timeAgo(emotion.created_at) : 'récemment'}
                                             </Text>
                                         </View>
                                         <View style={styles.emotionBadge}>

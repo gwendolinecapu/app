@@ -56,48 +56,63 @@ export const AlterPrimers = ({ alter, editable = false }: Props) => {
 
     const handleDeletePrimer = async (primerId: string) => {
         if (!editable) return;
-        try {
-            const updatedPrimers = primers.filter(p => p.id !== primerId);
-            await updateDoc(doc(db, 'alters', alter.id), {
-                primers: updatedPrimers
-            });
-            await refreshAlters();
-        } catch (error) {
-            Alert.alert('Erreur', "Impossible de supprimer.");
-        }
+        Alert.alert("Supprimer ?", "Retirer cette note ?", [
+            { text: "Annuler" },
+            {
+                text: "Supprimer", style: 'destructive', onPress: async () => {
+                    try {
+                        const updatedPrimers = primers.filter(p => p.id !== primerId);
+                        await updateDoc(doc(db, 'alters', alter.id), {
+                            primers: updatedPrimers
+                        });
+                        await refreshAlters();
+                    } catch (error) {
+                        Alert.alert('Erreur', "Impossible de supprimer.");
+                    }
+                }
+            }
+        ]);
     };
 
     return (
         <View style={styles.container}>
+            {/* Compact header with just icon */}
             <View style={styles.header}>
-                <Text style={styles.title}>📌 Primers & Notes</Text>
-                {editable && (
-                    <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.addButton}>
-                        <Ionicons name="add" size={20} color={colors.primary} />
-                    </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => editable && setModalVisible(true)}
+                    style={styles.noteIconButton}
+                    disabled={!editable}
+                >
+                    <Ionicons name="document-text" size={18} color={colors.primary} />
+                    {primers.length > 0 && (
+                        <View style={styles.badge}>
+                            <Text style={styles.badgeText}>{primers.length}</Text>
+                        </View>
+                    )}
+                </TouchableOpacity>
+                {editable && primers.length === 0 && (
+                    <Text style={styles.addHint}>Ajouter une note</Text>
                 )}
             </View>
 
-            {primers.length === 0 ? (
-                <Text style={styles.emptyText}>Aucune note épinglée.</Text>
-            ) : (
+            {primers.length > 0 && (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.list}>
                     {primers.map(primer => (
-                        <TouchableOpacity
+                        <View
                             key={primer.id}
                             style={[styles.card, { borderLeftColor: primer.color || colors.primary }]}
-                            onLongPress={() => {
-                                if (editable) {
-                                    Alert.alert("Supprimer ?", "Retirer cette note ?", [
-                                        { text: "Annuler" },
-                                        { text: "Supprimer", style: 'destructive', onPress: () => handleDeletePrimer(primer.id) }
-                                    ])
-                                }
-                            }}
                         >
+                            {editable && (
+                                <TouchableOpacity
+                                    style={styles.deleteButton}
+                                    onPress={() => handleDeletePrimer(primer.id)}
+                                >
+                                    <Ionicons name="close-circle" size={20} color={colors.error} />
+                                </TouchableOpacity>
+                            )}
                             <Text style={styles.cardLabel}>{primer.label}</Text>
-                            <Text style={styles.cardContent} numberOfLines={4}>{primer.content}</Text>
-                        </TouchableOpacity>
+                            <Text style={styles.cardContent} numberOfLines={3}>{primer.content}</Text>
+                        </View>
                     ))}
                 </ScrollView>
             )}
@@ -140,52 +155,73 @@ export const AlterPrimers = ({ alter, editable = false }: Props) => {
 
 const styles = StyleSheet.create({
     container: {
-        marginBottom: spacing.lg,
+        marginBottom: spacing.sm,
     },
     header: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: spacing.sm,
-        paddingHorizontal: spacing.md
+        gap: spacing.sm,
+        paddingHorizontal: spacing.md,
+        marginBottom: spacing.xs,
     },
-    title: {
-        ...typography.h3,
-        color: colors.text,
+    noteIconButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: `${colors.primary}15`,
+        padding: spacing.xs,
+        paddingHorizontal: spacing.sm,
+        borderRadius: borderRadius.full,
     },
-    addButton: {
-        padding: 4,
-        backgroundColor: colors.backgroundLight,
-        borderRadius: borderRadius.md,
+    badge: {
+        backgroundColor: colors.primary,
+        borderRadius: 10,
+        minWidth: 18,
+        height: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 4,
+    },
+    badgeText: {
+        color: 'white',
+        fontSize: 11,
+        fontWeight: 'bold',
+    },
+    addHint: {
+        ...typography.caption,
+        color: colors.textMuted,
+        fontStyle: 'italic',
     },
     list: {
         paddingLeft: spacing.md,
     },
     card: {
-        width: 160,
-        height: 120,
+        width: 140,
+        height: 100,
         backgroundColor: colors.backgroundCard,
         borderRadius: borderRadius.md,
         padding: spacing.sm,
-        marginRight: spacing.md,
-        borderLeftWidth: 4,
+        marginRight: spacing.sm,
+        borderLeftWidth: 3,
         justifyContent: 'flex-start',
+        position: 'relative',
+    },
+    deleteButton: {
+        position: 'absolute',
+        top: 4,
+        right: 4,
+        zIndex: 1,
     },
     cardLabel: {
-        ...typography.bodySmall,
+        ...typography.caption,
         fontWeight: 'bold',
         color: colors.text,
-        marginBottom: 4,
+        marginBottom: 2,
+        marginRight: 20,
     },
     cardContent: {
         ...typography.caption,
         color: colors.textSecondary,
-    },
-    emptyText: {
-        ...typography.caption,
-        color: colors.textMuted,
-        fontStyle: 'italic',
-        marginLeft: spacing.md,
+        fontSize: 11,
     },
     modalOverlay: {
         flex: 1,

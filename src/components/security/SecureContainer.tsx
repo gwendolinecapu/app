@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
-import * as LocalAuthentication from 'expo-local-authentication';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, borderRadius, spacing, typography } from '../../lib/theme';
 import { BlurView } from 'expo-blur';
+
+// Optional import for expo-local-authentication (not available in Expo Go)
+let LocalAuthentication: any = null;
+try {
+    LocalAuthentication = require('expo-local-authentication');
+} catch (e) {
+    console.log('[SecureContainer] expo-local-authentication not available (Expo Go mode)');
+}
 
 interface SecureContainerProps {
     children: React.ReactNode;
@@ -29,6 +36,14 @@ export const SecureContainer: React.FC<SecureContainerProps> = ({
     }, []);
 
     const checkHardware = async () => {
+        // If LocalAuthentication is not available (Expo Go), auto-unlock
+        if (!LocalAuthentication) {
+            console.log('[SecureContainer] No LocalAuthentication, auto-unlocking for dev');
+            setIsAuthenticated(true);
+            if (onUnlock) onUnlock();
+            return;
+        }
+
         const compatible = await LocalAuthentication.hasHardwareAsync();
         setHasHardware(compatible);
 

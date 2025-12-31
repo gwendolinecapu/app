@@ -1,5 +1,10 @@
 # Changelog
 
+## [2025-12-31] - Core & Bundling Fixes
+- **Fix**: Resolved `recyclerlistview` bundling error ("Unable to resolve ./core/RecyclerListView") by implementing advanced module resolution logic in `metro.config.js`.
+- **Infrastructure**: Performed a clean reinstallation of all dependencies and cleared Metro cache.
+
+
 ## [2025-12-30] - Compilation & Permission Fixes
 - **Fix**: Resolved `ReferenceError: Property 'useState' doesn't exist` in `app/post/[id].tsx` by adding missing imports.
 - **Security**: Added missing Firestore security rules for `user_monetization` and `comments` collections.

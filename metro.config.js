@@ -1,5 +1,6 @@
 const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
+const fs = require('fs');
 
 const config = getDefaultConfig(__dirname);
 
@@ -15,6 +16,36 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
             };
         }
     }
+
+    // Special handling for recyclerlistview resolution issues
+    const isInsideRecycler = context.originModulePath && context.originModulePath.includes('recyclerlistview');
+    if (moduleName.includes('recyclerlistview') || isInsideRecycler) {
+        try {
+            return context.resolveRequest(context, moduleName, platform);
+        } catch (e) {
+            if (isInsideRecycler && moduleName.startsWith('./')) {
+                const originDir = path.dirname(context.originModulePath);
+                const absolutePath = path.resolve(originDir, moduleName);
+
+                // Try common extensions
+                for (const ext of ['.js', '.jsx', '.ts', '.tsx']) {
+                    const filePath = absolutePath + ext;
+                    if (fs.existsSync(filePath)) {
+                        return { filePath, type: 'sourceFile' };
+                    }
+                }
+            }
+
+            // Fallback for package name itself
+            if (moduleName === 'recyclerlistview') {
+                const resolved = path.resolve(__dirname, 'node_modules/recyclerlistview/dist/reactnative/index.js');
+                if (fs.existsSync(resolved)) {
+                    return { filePath: resolved, type: 'sourceFile' };
+                }
+            }
+        }
+    }
+
     // Fallback to default resolution
     return context.resolveRequest(context, moduleName, platform);
 };

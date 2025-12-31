@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleProp, ViewStyle } from 'react-native';
+import { Pressable, PressableProps, StyleProp, ViewStyle } from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -9,14 +9,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import { triggerHaptic } from '../../lib/haptics';
 
-interface AnimatedPressableProps {
+interface AnimatedPressableProps extends Omit<PressableProps, 'style'> {
     children: React.ReactNode;
-    onPress?: () => void;
-    onLongPress?: () => void;
     style?: StyleProp<ViewStyle>;
     scaleMin?: number;
     haptic?: boolean;
-    disabled?: boolean;
 }
 
 /**
@@ -25,12 +22,10 @@ interface AnimatedPressableProps {
  */
 export const AnimatedPressable: React.FC<AnimatedPressableProps> = ({
     children,
-    onPress,
-    onLongPress,
     style,
     scaleMin = 0.96,
     haptic = true,
-    disabled = false
+    ...props
 }) => {
     const scale = useSharedValue(1);
 
@@ -41,7 +36,7 @@ export const AnimatedPressable: React.FC<AnimatedPressableProps> = ({
     });
 
     const handlePressIn = () => {
-        if (disabled) return;
+        if (props.disabled) return;
         scale.value = withSpring(scaleMin, {
             mass: 0.5,
             stiffness: 200,
@@ -51,7 +46,7 @@ export const AnimatedPressable: React.FC<AnimatedPressableProps> = ({
     };
 
     const handlePressOut = () => {
-        if (disabled) return;
+        if (props.disabled) return;
         scale.value = withSpring(1, {
             mass: 0.5,
             stiffness: 200,
@@ -61,11 +56,9 @@ export const AnimatedPressable: React.FC<AnimatedPressableProps> = ({
 
     return (
         <Pressable
-            onPress={onPress}
-            onLongPress={onLongPress}
+            {...props}
             onPressIn={handlePressIn}
             onPressOut={handlePressOut}
-            disabled={disabled}
             delayLongPress={200}
         >
             <Animated.View style={[style, animatedStyle]}>

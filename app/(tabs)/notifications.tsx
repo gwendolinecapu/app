@@ -26,7 +26,7 @@ import { FriendService, FriendRequest } from '../../src/services/friends';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { triggerHaptic } from '../../src/lib/haptics';
 import { timeAgo } from '../../src/lib/date';
-import { ScaleButton } from '../../src/components/ui/ScaleButton';
+import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
 
 // Types pour les différentes notifications
 type NotificationType = 'friend_request' | 'follow' | 'like' | 'comment' | 'mention' | 'system';
@@ -168,18 +168,18 @@ export default function NotificationsScreen() {
                     </Text>
                 </View>
                 <View style={styles.requestActions}>
-                    <ScaleButton
+                    <AnimatedPressable
                         style={styles.acceptButton}
                         onPress={() => handleAcceptRequest(item.id)}
                     >
                         <Text style={styles.acceptButtonText}>Accepter</Text>
-                    </ScaleButton>
-                    <ScaleButton
+                    </AnimatedPressable>
+                    <AnimatedPressable
                         style={styles.rejectButton}
                         onPress={() => handleRejectRequest(item.id)}
                     >
                         <Text style={styles.rejectButtonText}>Refuser</Text>
-                    </ScaleButton>
+                    </AnimatedPressable>
                 </View>
             </View>
         );
@@ -210,7 +210,7 @@ export default function NotificationsScreen() {
         };
 
         return (
-            <ScaleButton
+            <AnimatedPressable
                 style={[
                     styles.notificationItem,
                     !item.isRead && styles.notificationUnread
@@ -228,7 +228,7 @@ export default function NotificationsScreen() {
                 <Text style={styles.notificationTime}>
                     {timeAgo(item.timestamp)}
                 </Text>
-            </ScaleButton>
+            </AnimatedPressable>
         );
     };
 

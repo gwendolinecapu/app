@@ -13,7 +13,7 @@ import { colors, spacing, typography, borderRadius } from '../../src/lib/theme';
 import { Post, Comment } from '../../src/types';
 import { triggerHaptic } from '../../src/lib/haptics';
 import { timeAgo } from '../../src/lib/date';
-import { ScaleButton } from '../../src/components/ui/ScaleButton';
+import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
 
 export default function PostDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -99,9 +99,9 @@ export default function PostDetailScreen() {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={[styles.header, { paddingTop: 16 }]}>
-                    <ScaleButton onPress={() => router.back()} style={styles.backButton}>
+                    <AnimatedPressable onPress={() => router.back()} style={styles.backButton}>
                         <Ionicons name="chevron-back" size={28} color={colors.text} />
-                    </ScaleButton>
+                    </AnimatedPressable>
                     <Text style={styles.headerTitle}>Publications</Text>
                     <View style={{ width: 40 }} />
                 </View>
@@ -131,9 +131,9 @@ export default function PostDetailScreen() {
                 tint="dark"
                 style={[styles.headerAbsolute, { paddingTop: insets.top || 16, height: headerHeight }]}
             >
-                <ScaleButton onPress={() => router.back()} style={styles.backButton}>
+                <AnimatedPressable onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="chevron-back" size={28} color={colors.text} />
-                </ScaleButton>
+                </AnimatedPressable>
                 <Text style={styles.headerTitle}>Publications</Text>
                 <View style={{ width: 40 }} />
             </BlurView>
@@ -177,7 +177,7 @@ export default function PostDetailScreen() {
                     onChangeText={setCommentText}
                     multiline
                 />
-                <ScaleButton
+                <AnimatedPressable
                     onPress={handleAddComment}
                     disabled={!commentText.trim() || submittingComment}
                     style={styles.sendButton}
@@ -192,7 +192,7 @@ export default function PostDetailScreen() {
                             Publier
                         </Text>
                     )}
-                </ScaleButton>
+                </AnimatedPressable>
             </View>
         </KeyboardAvoidingView>
     );

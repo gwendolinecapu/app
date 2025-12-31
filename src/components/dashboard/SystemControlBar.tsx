@@ -5,6 +5,7 @@ import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { triggerHaptic } from '../../lib/haptics';
+import { triggerSuccessAnimation } from '../ui/SuccessAnimation';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -59,6 +60,7 @@ export const SystemControlBar: React.FC<SystemControlBarProps> = ({
                     onPress={() => {
                         if (hasSelection) {
                             triggerHaptic.success();
+                            triggerSuccessAnimation();
                             onConfirmFronting();
                         }
                     }}

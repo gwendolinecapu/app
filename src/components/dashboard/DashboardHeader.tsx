@@ -11,13 +11,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-import Animated, {
-    useSharedValue,
-    useAnimatedStyle,
-    withSpring,
-    withTiming,
-    interpolateColor
-} from 'react-native-reanimated';
+import { ModeIndicator } from './ModeIndicator';
 
 interface DashboardHeaderProps {
     searchQuery: string;
@@ -56,14 +50,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
             {/* Mode Switcher */}
             <View style={styles.modeSwitchContainer}>
-                <Animated.View
-                    style={[
-                        styles.modeIndicator,
-                        useAnimatedStyle(() => ({
-                            transform: [{ translateX: withSpring(selectionMode === 'single' ? 0 : (Dimensions.get('window').width - spacing.lg * 2 - 8) / 2) }]
-                        }))
-                    ]}
-                />
+                <ModeIndicator selectionMode={selectionMode} />
                 <AnimatedPressable
                     containerStyle={styles.modeButton}
                     style={styles.modeButtonInner}
@@ -139,20 +126,7 @@ const styles = StyleSheet.create({
         height: 48,
         alignItems: 'center',
     },
-    modeIndicator: {
-        position: 'absolute',
-        top: 4,
-        left: 4,
-        width: '50%',
-        height: 40,
-        backgroundColor: colors.surface,
-        borderRadius: 20,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 6,
-        elevation: 3,
-    },
+
     modeButton: {
         flex: 1,
         height: '100%',

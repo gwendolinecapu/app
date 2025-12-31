@@ -1,5 +1,10 @@
 # Changelog
 
+## [2025-12-31] - Firebase Config & Permissions 🔒
+- **Security Rules**: Added rules for `system_chats` to enable the new Team Chat features.
+- **Cleanup**: Removed duplicate `user_monetization` rules to prevent conflicts.
+- **Indexes**: Added composite index for `messages` collection to support group chat query ordering.
+
 ## [2025-12-31] - Code Cleanup & Refactoring 🧹
 - **Suppression de Doublons**: Retrait du composant inutilisé `MessageList.tsx` pour éviter toute confusion avec la nouvelle implémentation du chat.
 - **AlterBubble**: Nettoyage du code mort lié à l'ancien type de bulle "chat" qui n'est plus utilisé dans le Dashboard.

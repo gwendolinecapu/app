@@ -9,15 +9,18 @@ import { router } from 'expo-router';
 interface SystemMenuModalProps {
     visible: boolean;
     onClose: () => void;
+    hasSelection: boolean;
 }
 
 const MENU_ITEMS = [
-    { id: 'tasks', label: 'Tâches', icon: 'list', color: colors.success, route: '/tasks' },
-    { id: 'history', label: 'Suivi', icon: 'stats-chart', color: colors.warning, route: '/history' },
-    { id: 'help', label: 'Aide & SOS', icon: 'help-circle', color: colors.error, route: '/help' },
+    { id: 'tasks', label: 'Tâches', description: 'Liste partagée', icon: 'list', color: colors.success, route: '/tasks' },
+    { id: 'history', label: 'Historique', description: 'Stats & Fronts', icon: 'stats-chart', color: colors.warning, route: '/history' },
+    { id: 'journal', label: 'Journal', description: 'Notes privées', icon: 'book', color: colors.primary, route: '/journal' },
+    { id: 'vault', label: 'Coffre-fort', description: 'Espace sécurisé', icon: 'lock-closed', color: '#6C5CE7', route: '/vault' },
+    { id: 'help', label: 'Aide & SOS', description: 'Support système', icon: 'help-circle', color: colors.error, route: '/help' },
 ];
 
-export const SystemMenuModal: React.FC<SystemMenuModalProps> = ({ visible, onClose }) => {
+export const SystemMenuModal: React.FC<SystemMenuModalProps> = ({ visible, onClose, hasSelection }) => {
     const handleNavigation = (route: string) => {
         triggerHaptic.light();
         onClose();
@@ -43,18 +46,38 @@ export const SystemMenuModal: React.FC<SystemMenuModalProps> = ({ visible, onClo
                     </View>
 
                     <ScrollView contentContainerStyle={styles.grid}>
-                        {MENU_ITEMS.map((item) => (
-                            <TouchableOpacity
-                                key={item.id}
-                                style={styles.gridItem}
-                                onPress={() => handleNavigation(item.route)}
-                            >
-                                <View style={[styles.iconBg, { backgroundColor: `${item.color}20` }]}>
-                                    <Ionicons name={item.icon as any} size={28} color={item.color} />
-                                </View>
-                                <Text style={styles.itemLabel}>{item.label}</Text>
-                            </TouchableOpacity>
-                        ))}
+                        {MENU_ITEMS.map((item) => {
+                            const isRestricted = (item.id === 'journal' || item.id === 'vault') && !hasSelection;
+
+                            return (
+                                <TouchableOpacity
+                                    key={item.id}
+                                    style={[styles.gridItem, isRestricted && styles.gridItemDisabled]}
+                                    onPress={() => {
+                                        if (isRestricted) {
+                                            triggerHaptic.warning();
+                                        } else {
+                                            handleNavigation(item.route);
+                                        }
+                                    }}
+                                    activeOpacity={isRestricted ? 1 : 0.7}
+                                >
+                                    <View style={[styles.iconBg, { backgroundColor: isRestricted ? 'rgba(255,255,255,0.05)' : `${item.color}20` }]}>
+                                        <Ionicons
+                                            name={isRestricted ? "lock-closed" : item.icon as any}
+                                            size={28}
+                                            color={isRestricted ? colors.textMuted : item.color}
+                                        />
+                                    </View>
+                                    <View style={styles.itemTextContainer}>
+                                        <Text style={[styles.itemLabel, isRestricted && styles.itemTextDisabled]}>{item.label}</Text>
+                                        <Text style={[styles.itemDescription, isRestricted && styles.itemTextDisabled]}>
+                                            {isRestricted ? 'Sélectionner un alter' : item.description}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </ScrollView>
                 </BlurView>
             </View>
@@ -106,22 +129,40 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
     },
     gridItem: {
-        width: '30%',
+        width: '46%',
+        flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: spacing.xl,
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        padding: spacing.md,
+        borderRadius: borderRadius.lg,
+        marginBottom: spacing.md,
     },
     iconBg: {
-        width: 64,
-        height: 64,
-        borderRadius: 20,
+        width: 48,
+        height: 48,
+        borderRadius: 14,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 8,
+        marginRight: spacing.sm,
+    },
+    itemTextContainer: {
+        flex: 1,
     },
     itemLabel: {
         ...typography.body,
+        fontWeight: '600',
         color: colors.text,
-        fontSize: 12,
-        textAlign: 'center',
+        fontSize: 14,
+    },
+    itemDescription: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        fontSize: 10,
+    },
+    gridItemDisabled: {
+        opacity: 0.5,
+    },
+    itemTextDisabled: {
+        color: colors.textMuted,
     },
 });

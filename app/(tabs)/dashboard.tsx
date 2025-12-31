@@ -231,6 +231,7 @@ export default function Dashboard() {
                         onSearchChange={setSearchQuery}
                         selectionMode={selectionMode}
                         onModeChange={setSelectionMode}
+                        hasSelection={selectedAlters.length > 0}
                     />
                 }
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
@@ -255,6 +256,7 @@ export default function Dashboard() {
             <SystemMenuModal
                 visible={menuVisible}
                 onClose={() => setMenuVisible(false)}
+                hasSelection={selectedAlters.length > 0}
             />
         </SafeAreaView>
     );

@@ -4,12 +4,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../lib/theme';
 import { router } from 'expo-router';
 import { triggerHaptic } from '../../lib/haptics';
+import { LayoutAnimation, Platform, UIManager } from 'react-native';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 interface DashboardHeaderProps {
     searchQuery: string;
     onSearchChange: (text: string) => void;
     selectionMode: 'single' | 'multi';
     onModeChange: (mode: 'single' | 'multi') => void;
+    hasSelection: boolean;
 }
 
 /**
@@ -21,7 +27,12 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     onSearchChange,
     selectionMode,
     onModeChange,
+    hasSelection,
 }) => {
+    React.useEffect(() => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }, [hasSelection]);
+
     return (
         <View style={styles.dashboardHeader}>
             <View style={styles.headerTop}>
@@ -39,15 +50,23 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                     >
                         <Ionicons name="medical" size={20} color={colors.error} />
                     </TouchableOpacity>
+                    {hasSelection && (
+                        <TouchableOpacity
+                            style={styles.headerIconBtn}
+                            onPress={() => {
+                                triggerHaptic.light();
+                                router.push('/shop');
+                            }}
+                        >
+                            <Ionicons name="storefront-outline" size={20} color={colors.primary} />
+                        </TouchableOpacity>
+                    )}
                     <TouchableOpacity
                         style={styles.headerIconBtn}
-                        onPress={() => router.push('/shop')}
-                    >
-                        <Ionicons name="storefront-outline" size={20} color={colors.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.headerIconBtn}
-                        onPress={() => router.push('/settings')}
+                        onPress={() => {
+                            triggerHaptic.light();
+                            router.push('/settings');
+                        }}
                     >
                         <Ionicons name="settings-outline" size={20} color={colors.textSecondary} />
                     </TouchableOpacity>

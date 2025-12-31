@@ -7,51 +7,23 @@ import {
     onAuthStateChanged
 } from 'firebase/auth';
 import {
-    doc,
-    getDoc,
-    setDoc,
-    collection,
-    query,
-    where,
-    getDocs,
-    orderBy,
-    updateDoc,
-    deleteDoc,
-    writeBatch
-} from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
-import { triggerHaptic } from '../lib/haptics';
-import { useToast } from '../components/ui/Toast';
-import { Alter, System } from '../types';
-import { FrontingService } from '../services/fronting';
+    import {
+        doc,
+        getDoc,
+        setDoc,
+        collection,
+        query,
+        where,
+        getDocs,
+        orderBy,
+        updateDoc,
+        deleteDoc,
+        writeBatch,
+        onSnapshot,
+        Unsubscribe
+    } from 'firebase/firestore';
 
-// New interface for Active Front
-export type FrontStatus = {
-    type: 'single' | 'co-front' | 'blurry';
-    alters: Alter[]; // Empty if blurry
-    customStatus?: string; // Optional custom status for blurry mode
-};
-
-interface AuthContextType {
-    user: User | null;
-    system: System | null;
-    activeFront: FrontStatus; // Replaces currentAlter
-    alters: Alter[];
-    loading: boolean;
-    signUp: (email: string, password: string, username: string) => Promise<{ error: any }>;
-    signIn: (email: string, password: string) => Promise<{ error: any }>;
-    signOut: () => Promise<void>;
-    deleteAccount: () => Promise<void>;
-    setFronting: (alters: Alter[], type: 'single' | 'co-front' | 'blurry', customStatus?: string) => Promise<void>;
-    refreshAlters: () => Promise<void>;
-    togglePin: (alterId: string) => Promise<void>;
-    toggleArchive: (alterId: string) => Promise<void>;
-    updateHeadspace: (mood: string) => Promise<void>;
-    // Helpers for compatibility
-    currentAlter: Alter | null; // Derived from activeFront (first alter or null)
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// ... imports ...
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
@@ -62,108 +34,102 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        let unsubscribeSystem: Unsubscribe | null = null;
+        let unsubscribeAlters: Unsubscribe | null = null;
+
+        const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
             setUser(firebaseUser);
             if (firebaseUser) {
-                await fetchSystemData(firebaseUser.uid);
+                // 1. Subscribe to System Data
+                const systemRef = doc(db, 'systems', firebaseUser.uid);
+                unsubscribeSystem = onSnapshot(systemRef, async (docSnap) => {
+                    if (docSnap.exists()) {
+                        setSystemData(docSnap.data() as System);
+                    } else {
+                        // Creates system if not exists
+                        const email = firebaseUser.email || '';
+                        const username = email.split('@')[0] || 'user';
+                        const newSystem: System = {
+                            id: firebaseUser.uid,
+                            email: email,
+                            username: username,
+                            created_at: new Date().toISOString(),
+                        };
+                        try {
+                            await setDoc(systemRef, newSystem);
+                            // Snapshot will fire again
+                        } catch (e) {
+                            console.error("Error creating system", e);
+                        }
+                    }
+                }, (error) => {
+                    console.error("System snapshot error", error);
+                });
+
+                // 2. Subscribe to Alters
+                const altersq = query(
+                    collection(db, 'alters'),
+                    where('system_id', '==', firebaseUser.uid),
+                    orderBy('created_at', 'asc')
+                );
+
+                unsubscribeAlters = onSnapshot(altersq, (querySnapshot) => {
+                    const altersData: Alter[] = [];
+                    querySnapshot.forEach((doc) => {
+                        altersData.push({ id: doc.id, ...doc.data() } as Alter);
+                    });
+                    setAlters(altersData);
+
+                    // Update Active Front based on new data
+                    updateActiveFront(altersData);
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Alters snapshot error", error);
+                    setLoading(false);
+                });
+
             } else {
                 setSystemData(null);
                 setAlters([]);
                 setActiveFront({ type: 'single', alters: [] });
                 setLoading(false);
+                if (unsubscribeSystem) unsubscribeSystem();
+                if (unsubscribeAlters) unsubscribeAlters();
             }
         });
 
-        return () => unsubscribe();
+        return () => {
+            unsubscribeAuth();
+            if (unsubscribeSystem) unsubscribeSystem();
+            if (unsubscribeAlters) unsubscribeAlters();
+        };
     }, []);
 
-    const fetchSystemData = async (userId: string) => {
-        try {
-            const systemRef = doc(db, 'systems', userId);
-            const systemSnap = await getDoc(systemRef);
-            let systemData = systemSnap.exists() ? (systemSnap.data() as System) : null;
-
-            if (!systemData && auth.currentUser) {
-                const email = auth.currentUser.email || '';
-                const username = email.split('@')[0] || 'user';
-                const newSystem: System = {
-                    id: userId,
-                    email: email,
-                    username: username,
-                    created_at: new Date().toISOString(),
-                };
-                await setDoc(systemRef, newSystem);
-                systemData = newSystem;
-            }
-
-            if (systemData) {
-                setSystemData(systemData);
-
-                const altersq = query(
-                    collection(db, 'alters'),
-                    where('system_id', '==', userId),
-                    orderBy('created_at', 'asc')
-                );
-
-                const querySnapshot = await getDocs(altersq);
-                const altersData: Alter[] = [];
-                querySnapshot.forEach((doc) => {
-                    altersData.push({ id: doc.id, ...doc.data() } as Alter);
+    const updateActiveFront = (currentAlters: Alter[]) => {
+        const activeAlters = currentAlters.filter(a => a.is_active);
+        if (activeAlters.length === 1) {
+            setActiveFront({ type: 'single', alters: activeAlters });
+        } else if (activeAlters.length > 1) {
+            setActiveFront({ type: 'co-front', alters: activeAlters });
+        } else {
+            const host = currentAlters.find(a => a.is_host);
+            const firstAlter = currentAlters[0];
+            if (host) {
+                setActiveFront({ type: 'single', alters: [host] });
+            } else if (firstAlter) {
+                setActiveFront({ type: 'single', alters: [firstAlter] });
+            } else {
+                setActiveFront({
+                    type: 'blurry',
+                    alters: [],
+                    customStatus: 'Mode Système'
                 });
-
-                setAlters(altersData);
-
-                // Initialiser activeFront basé sur is_active
-                const activeAlters = altersData.filter(a => a.is_active);
-                if (activeAlters.length === 1) {
-                    setActiveFront({ type: 'single', alters: activeAlters });
-                } else if (activeAlters.length > 1) {
-                    setActiveFront({ type: 'co-front', alters: activeAlters });
-                } else {
-                    // Fallback : chercher l'hôte, sinon premier alter, sinon "Mode Système" virtuel
-                    const host = altersData.find(a => a.is_host);
-                    const firstAlter = altersData[0];
-
-                    if (host) {
-                        setActiveFront({ type: 'single', alters: [host] });
-                    } else if (firstAlter) {
-                        setActiveFront({ type: 'single', alters: [firstAlter] });
-                    } else {
-                        // Aucun alter : mode "Système" (blurry avec message explicatif)
-                        // L'UI devra gérer ce cas en affichant le profil système
-                        setActiveFront({
-                            type: 'blurry',
-                            alters: [],
-                            customStatus: 'Mode Système'
-                        });
-                    }
-                }
             }
-        } catch (error) {
-            console.error('Error fetching system data:', error);
-        } finally {
-            setLoading(false);
         }
     };
 
-    const refreshAlters = async () => {
-        if (!user) return;
-        try {
-            const altersq = query(
-                collection(db, 'alters'),
-                where('system_id', '==', user.uid),
-                orderBy('created_at', 'asc')
-            );
-            const querySnapshot = await getDocs(altersq);
-            const altersData: Alter[] = [];
-            querySnapshot.forEach((doc) => {
-                altersData.push({ id: doc.id, ...doc.data() } as Alter);
-            });
-            setAlters(altersData);
-        } catch (error) {
-            console.error('Error refreshing alters:', error);
-        }
-    };
+    // No-op for compatibility as functionality is now realtime
+    const refreshAlters = async () => { };
 
     const signUp = async (email: string, password: string, username: string) => {
         try {

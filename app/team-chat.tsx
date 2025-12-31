@@ -45,7 +45,10 @@ export default function TeamChatScreen() {
     const currentSender = alters.find(a => a.id === selectedSenderId) || alters[0];
 
     useEffect(() => {
-        if (!user) return;
+        if (!user) {
+            setLoading(false);
+            return;
+        }
 
         const q = query(
             collection(db, `system_chats/${user.uid}/messages`),
@@ -58,6 +61,9 @@ export default function TeamChatScreen() {
                 ...doc.data()
             } as Message));
             setMessages(msgs);
+            setLoading(false);
+        }, (error) => {
+            console.error("Chat snapshot error:", error);
             setLoading(false);
         });
 

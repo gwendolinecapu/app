@@ -70,7 +70,11 @@ export const AddAlterModal: React.FC<AddAlterModalProps> = ({
             onRequestClose={onClose}
         >
             <View style={styles.modalOverlay}>
-                <BlurView intensity={30} style={StyleSheet.absoluteFill} tint="dark" />
+                {Platform.OS !== 'web' ? (
+                    <BlurView intensity={30} style={StyleSheet.absoluteFill} tint="dark" />
+                ) : (
+                    <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
+                )}
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     style={styles.keyboardView}

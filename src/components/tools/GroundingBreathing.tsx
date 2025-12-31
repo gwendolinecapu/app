@@ -29,7 +29,7 @@ export const GroundingBreathing = () => {
     const opacity = useSharedValue(0.5);
     const [phase, setPhase] = useState<'INHALE' | 'HOLD' | 'EXHALE'>('INHALE');
     const isMounted = useRef(true);
-    const animationTimeout = useRef<NodeJS.Timeout | null>(null);
+    const animationTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         isMounted.current = true;

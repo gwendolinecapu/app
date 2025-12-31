@@ -6,9 +6,24 @@ import { useSuccessAnimation } from '../../contexts/SuccessAnimationContext';
 
 const confettiAnimation = require('../../../assets/animations/confetti.json');
 
+let successAnimationRef: { play: () => void } | null = null;
+
+export function triggerSuccessAnimation() {
+    if (successAnimationRef) {
+        successAnimationRef.play();
+    }
+}
+
 export function SuccessAnimation() {
-    const { isPlaying } = useSuccessAnimation();
+    const { isPlaying, play } = useSuccessAnimation();
     const animationRef = useRef<LottieView>(null);
+
+    useEffect(() => {
+        successAnimationRef = { play };
+        return () => {
+            successAnimationRef = null;
+        };
+    }, [play]);
 
     useEffect(() => {
         if (isPlaying) {

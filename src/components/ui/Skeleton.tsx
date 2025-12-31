@@ -97,6 +97,28 @@ export const SkeletonFeed: React.FC = () => {
       </View>
     </View>
   );
+};
+
+export const SkeletonProfile: React.FC = () => {
+  const theme = useTheme();
+  const styles = getStyles(theme);
+
+  return (
+    <View style={styles.profileContainer}>
+      <View style={styles.profileHeader}>
+        <Skeleton shape="circle" width={80} height={80} />
+        <View style={{ flex: 1, marginLeft: 16 }}>
+          <Skeleton shape="text" width="70%" height={20} />
+          <Skeleton shape="text" width="50%" height={16} style={{ marginTop: 8 }} />
+        </View>
+      </View>
+      <View style={styles.profileContent}>
+        <Skeleton shape="rect" width="100%" height={120} style={{ marginBottom: 12 }} />
+        <Skeleton shape="text" width="100%" height={16} style={{ marginBottom: 8 }} />
+        <Skeleton shape="text" width="80%" height={16} />
+      </View>
+    </View>
+  );
 }
 
 const getStyles = (theme: any) => StyleSheet.create({
@@ -121,5 +143,18 @@ const getStyles = (theme: any) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 12,
+  },
+  profileContainer: {
+    backgroundColor: theme.colors.card,
+    padding: 16,
+    borderRadius: 12,
+  },
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  profileContent: {
+    marginTop: 16,
   }
 });

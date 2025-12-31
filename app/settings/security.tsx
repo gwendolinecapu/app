@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { triggerHaptic } from '../../src/lib/haptics';
 
 export default function SecurityScreen() {
-    const { deleteAccount, user } = useAuth();
+    const { deleteAccount, user, isBiometricEnabled, toggleBiometric } = useAuth();
     const [deleteConfirmation, setDeleteConfirmation] = useState('');
     const [showDeleteInput, setShowDeleteInput] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -261,5 +261,33 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         color: colors.textSecondary,
         marginTop: spacing.xs,
+    },
+    switchRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    switchLabelContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    switchLabel: {
+        ...typography.body,
+        fontWeight: '500',
+        color: colors.text,
+    },
+    switchSubLabel: {
+        ...typography.caption,
+        color: colors.textSecondary,
+    },
+    iconContainer: {
+        width: 32,
+        height: 32,
+        borderRadius: 8,
+        backgroundColor: colors.backgroundCard, // was background
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: spacing.md,
     },
 });

@@ -13,6 +13,7 @@ interface SystemMenuModalProps {
 }
 
 const MENU_ITEMS = [
+    { id: 'team', label: 'Team', description: 'Chat & Discussions', icon: 'people', color: colors.secondary, route: '/messages' },
     { id: 'tasks', label: 'Tâches', description: 'Liste partagée', icon: 'list', color: colors.success, route: '/tasks' },
     { id: 'history', label: 'Historique', description: 'Stats & Fronts', icon: 'stats-chart', color: colors.warning, route: '/history' },
     { id: 'journal', label: 'Journal', description: 'Notes privées', icon: 'book', color: colors.primary, route: '/journal' },

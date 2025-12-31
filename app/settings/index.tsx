@@ -13,8 +13,8 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { useMonetization } from '../../src/contexts/MonetizationContext';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { Ionicons } from '@expo/vector-icons';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
+// import * as FileSystem from 'expo-file-system';
+// import * as Sharing from 'expo-sharing';
 import { db } from '../../src/lib/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { triggerHaptic } from '../../src/lib/haptics';
@@ -36,11 +36,8 @@ export default function SettingsScreen() {
 
     const handleSubscriptionAction = async () => {
         triggerHaptic.selection();
-        if (isPremium) {
-            await presentCustomerCenter();
-        } else {
-            await presentPaywall();
-        }
+        // Always direct to premium landing page for now to see features
+        router.push('/premium' as any);
     };
 
     const handleLogout = async () => {
@@ -136,22 +133,28 @@ export default function SettingsScreen() {
             <View style={styles.itemLeft}>
                 <View style={styles.iconContainer}>
                     <Ionicons name={icon} size={20} color={colors.primary} />
+                    <Text style={styles.itemLabel}>{label}</Text>
                 </View>
-                <Text style={styles.itemLabel}>{label}</Text>
-            </View>
-            {typeof value === 'boolean' ? (
-                <Switch
-                    value={value}
-                    onValueChange={action}
-                    trackColor={{ false: colors.border, true: colors.primary }}
-                    thumbColor={'#FFFFFF'}
-                />
-            ) : (
-                <View style={styles.itemRight}>
-                    {value && <Text style={styles.itemValue}>{value}</Text>}
-                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                </View>
-            )}
+                {value === 'toggle' ? (
+                    <Switch
+                        value={false} // Placeholder if needed, but we use action logic for specific toggles
+                        trackColor={{ false: colors.border, true: colors.primary }}
+                        thumbColor={'#FFFFFF'}
+                        disabled={true}
+                    />
+                ) : typeof value === 'boolean' ? (
+                    <Switch
+                        value={value}
+                        onValueChange={action}
+                        trackColor={{ false: colors.border, true: colors.primary }}
+                        thumbColor={'#FFFFFF'}
+                    />
+                ) : (
+                    <View style={styles.itemRight}>
+                        {value && <Text style={styles.itemValue}>{value}</Text>}
+                        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                    </View>
+                )}
         </TouchableOpacity>
     );
 
@@ -191,10 +194,10 @@ export default function SettingsScreen() {
                 <Text style={styles.sectionTitle}>Application</Text>
                 <View style={styles.section}>
                     {renderSettingItem("Notifications", "notifications-outline", () => {
-                        triggerHaptic.medium();
-                        setNotifications(!notifications);
-                    }, notifications)}
-                    {renderSettingItem("Protection écran (Flou)", "eye-off-outline", async () => {
+                        router.push('/settings/notifications' as any);
+                    })}
+                    {renderSettingItem("Verrouillage Biométrique (FaceID)", "scan-outline", toggleBiometric, isBiometricEnabled)}
+                    {renderSettingItem("Flou de confidentialité", "eye-off-outline", async () => {
                         try {
                             const newVal = !privacyBlurEnabled;
                             setPrivacyBlurEnabled(newVal);
@@ -204,21 +207,22 @@ export default function SettingsScreen() {
                             console.error(e);
                         }
                     }, privacyBlurEnabled)}
-                    {renderSettingItem("Apparence", "moon-outline", () => Alert.alert("Info", "Thème sombre activé par défaut"), "Sombre")}
-                    {renderSettingItem("Langue", "language-outline", () => { }, "Français")}
                 </View>
 
+                {/* Removed Broken/Unused Settings based on feedback: Theme, Language, Export */}
+                {/* 
                 <Text style={styles.sectionTitle}>Données & Stockage</Text>
                 <View style={styles.section}>
                     {renderSettingItem("Exporter mes données (JSON)", "download-outline", handleExportData)}
                     {renderSettingItem("Vider le cache", "trash-outline", handleClearCache)}
-                </View>
+                </View> 
+                */}
 
                 {/* Support */}
                 <Text style={styles.sectionTitle}>Aide & Support</Text>
                 <View style={styles.section}>
-                    {renderSettingItem("À propos", "information-circle-outline", () => router.push('/help/index' as any))}
-                    {renderSettingItem("Crisis Resources", "warning-outline", () => router.push('/crisis/index' as any))}
+                    {renderSettingItem("À propos", "information-circle-outline", () => router.push('/help' as any))}
+                    {renderSettingItem("Crisis Resources", "warning-outline", () => router.push('/crisis' as any))}
                 </View>
 
                 {/* Logout */}

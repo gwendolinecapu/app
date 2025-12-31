@@ -4,7 +4,7 @@ import LottieView from 'lottie-react-native';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useSuccessAnimation } from '../../contexts/SuccessAnimationContext';
 
-const confettiAnimation = require('../../assets/animations/confetti.json');
+const confettiAnimation = require('../../../assets/animations/confetti.json');
 
 export function SuccessAnimation() {
     const { isPlaying } = useSuccessAnimation();

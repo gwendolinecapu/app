@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Dimensions } from 'react-native';
 import { AnimatedPressable } from '../ui/AnimatedPressable';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../lib/theme';
@@ -10,6 +10,14 @@ import { LayoutAnimation, Platform, UIManager } from 'react-native';
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
+
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withSpring,
+    withTiming,
+    interpolateColor
+} from 'react-native-reanimated';
 
 interface DashboardHeaderProps {
     searchQuery: string;
@@ -63,14 +71,24 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
             {/* Mode Switcher */}
             <View style={styles.modeSwitchContainer}>
+                <Animated.View
+                    style={[
+                        styles.modeIndicator,
+                        useAnimatedStyle(() => ({
+                            transform: [{ translateX: withSpring(selectionMode === 'single' ? 0 : (Dimensions.get('window').width - spacing.lg * 2 - 8) / 2) }]
+                        }))
+                    ]}
+                />
                 <AnimatedPressable
-                    style={[styles.modeButton, selectionMode === 'single' && styles.modeButtonActive]}
+                    containerStyle={styles.modeButton}
+                    style={styles.modeButtonInner}
                     onPress={() => onModeChange('single')}
                 >
                     <Text style={[styles.modeButtonText, selectionMode === 'single' && styles.modeButtonTextActive]}>Solo</Text>
                 </AnimatedPressable>
                 <AnimatedPressable
-                    style={[styles.modeButton, selectionMode === 'multi' && styles.modeButtonActive]}
+                    containerStyle={styles.modeButton}
+                    style={styles.modeButtonInner}
                     onPress={() => onModeChange('multi')}
                 >
                     <Text style={[styles.modeButtonText, selectionMode === 'multi' && styles.modeButtonTextActive]}>Co-Front</Text>
@@ -128,33 +146,46 @@ const styles = StyleSheet.create({
     modeSwitchContainer: {
         flexDirection: 'row',
         backgroundColor: colors.backgroundLight,
-        borderRadius: 20,
+        borderRadius: 24,
         padding: 4,
         marginHorizontal: spacing.lg,
         marginBottom: spacing.md,
+        position: 'relative',
+        height: 48,
+        alignItems: 'center',
+    },
+    modeIndicator: {
+        position: 'absolute',
+        top: 4,
+        left: 4,
+        width: '50%',
+        height: 40,
+        backgroundColor: colors.surface,
+        borderRadius: 20,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+        elevation: 3,
     },
     modeButton: {
         flex: 1,
-        paddingVertical: 8,
-        alignItems: 'center',
-        borderRadius: 16,
+        height: '100%',
     },
-    modeButtonActive: {
-        backgroundColor: colors.surface,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
+    modeButtonInner: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     modeButtonText: {
         ...typography.body,
-        fontSize: 14,
+        fontSize: 15,
         color: colors.textSecondary,
+        fontWeight: '500',
     },
     modeButtonTextActive: {
         color: colors.text,
-        fontWeight: '600',
+        fontWeight: '700',
     },
     searchContainer: {
         flexDirection: 'row',

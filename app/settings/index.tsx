@@ -13,16 +13,12 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { useMonetization } from '../../src/contexts/MonetizationContext';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { Ionicons } from '@expo/vector-icons';
-// import * as FileSystem from 'expo-file-system';
-// import * as Sharing from 'expo-sharing';
-import { db } from '../../src/lib/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
 import { triggerHaptic } from '../../src/lib/haptics';
 import * as Clipboard from 'expo-clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SettingsScreen() {
-    const { signOut, system } = useAuth();
+    const { signOut, system, toggleBiometric, isBiometricEnabled } = useAuth();
     const { isPremium, presentPaywall, presentCustomerCenter } = useMonetization();
     const [notifications, setNotifications] = useState(true);
     const [theme, setTheme] = useState('dark');
@@ -63,38 +59,6 @@ export default function SettingsScreen() {
         );
     };
 
-    const handleExportData = async () => {
-        if (!system) return;
-        try {
-            // Fetch all data (Alters, Journal, System)
-            const altersQuery = query(collection(db, 'alters'), where('systemId', '==', system.id));
-            const altersSnap = await getDocs(altersQuery);
-            const altersData = altersSnap.docs.map(doc => doc.data());
-
-            const journalQuery = query(collection(db, 'journal_entries'), where('systemId', '==', system.id)); // Assuming systemId exists or filter locally
-            // Note: Journal might be strictly secure, check permissions. Assuming export allowed for own data.
-            // For now exporting Alters + System Profile as MVP
-
-            const exportData = {
-                system: system,
-                alters: altersData,
-                exportedAt: new Date().toISOString(),
-                version: "1.0.0"
-            };
-
-            const fileUri = (FileSystem as any).documentDirectory + 'pluralconnect_backup.json';
-            await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(exportData, null, 2));
-
-            if (await Sharing.isAvailableAsync()) {
-                await Sharing.shareAsync(fileUri);
-            } else {
-                Alert.alert("Succès", "Sauvegarde créée : " + fileUri);
-            }
-        } catch (error) {
-            console.error("Export failed:", error);
-            Alert.alert("Erreur", "Échec de l'exportation des données.");
-        }
-    };
 
     const handleCopySystemId = async () => {
         if (!system?.id) return;
@@ -103,30 +67,6 @@ export default function SettingsScreen() {
         Alert.alert("Copié !", "ID Système copié dans le presse-papier.");
     };
 
-    const handleClearCache = async () => {
-        Alert.alert(
-            "Vider le cache ?",
-            "Cela peut libérer de l'espace mais les images devront être rechargées.",
-            [
-                { text: "Annuler", style: "cancel" },
-                {
-                    text: "Vider",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            const cacheDir = (FileSystem as any).cacheDirectory;
-                            if (cacheDir) {
-                                triggerHaptic.success();
-                                Alert.alert("Cache vidé", "L'espace temporaire a été nettoyé.");
-                            }
-                        } catch (e) {
-                            console.error(e);
-                        }
-                    }
-                }
-            ]
-        );
-    };
 
     const renderSettingItem = (label: string, icon: any, action: () => void, value?: boolean | string) => (
         <TouchableOpacity style={styles.item} onPress={action} disabled={typeof value === 'boolean'}>
@@ -135,26 +75,27 @@ export default function SettingsScreen() {
                     <Ionicons name={icon} size={20} color={colors.primary} />
                     <Text style={styles.itemLabel}>{label}</Text>
                 </View>
-                {value === 'toggle' ? (
-                    <Switch
-                        value={false} // Placeholder if needed, but we use action logic for specific toggles
-                        trackColor={{ false: colors.border, true: colors.primary }}
-                        thumbColor={'#FFFFFF'}
-                        disabled={true}
-                    />
-                ) : typeof value === 'boolean' ? (
-                    <Switch
-                        value={value}
-                        onValueChange={action}
-                        trackColor={{ false: colors.border, true: colors.primary }}
-                        thumbColor={'#FFFFFF'}
-                    />
-                ) : (
-                    <View style={styles.itemRight}>
-                        {value && <Text style={styles.itemValue}>{value}</Text>}
-                        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                    </View>
-                )}
+            </View>
+            {value === 'toggle' ? (
+                <Switch
+                    value={false} // Placeholder if needed, but we use action logic for specific toggles
+                    trackColor={{ false: colors.border, true: colors.primary }}
+                    thumbColor={'#FFFFFF'}
+                    disabled={true}
+                />
+            ) : typeof value === 'boolean' ? (
+                <Switch
+                    value={value}
+                    onValueChange={action}
+                    trackColor={{ false: colors.border, true: colors.primary }}
+                    thumbColor={'#FFFFFF'}
+                />
+            ) : (
+                <View style={styles.itemRight}>
+                    {value && <Text style={styles.itemValue}>{value}</Text>}
+                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                </View>
+            )}
         </TouchableOpacity>
     );
 

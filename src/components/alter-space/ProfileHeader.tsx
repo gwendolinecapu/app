@@ -150,18 +150,21 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 {isOwner ? (
                     <>
                         <AnimatedPressable
+                            containerStyle={{ flex: 1 }}
                             style={styles.actionButton}
                             onPress={() => router.push(`/alter-space/${alter.id}/edit`)}
                         >
                             <Text style={styles.actionButtonText}>Modifier</Text>
                         </AnimatedPressable>
                         <AnimatedPressable
+                            containerStyle={{ flex: 1 }}
                             style={styles.actionButton}
                             onPress={() => router.push('/history')}
                         >
                             <Text style={styles.actionButtonText}>Historique</Text>
                         </AnimatedPressable>
                         <AnimatedPressable
+                            containerStyle={{ flex: 1 }}
                             style={styles.actionButton}
                             onPress={() => router.push('/settings')}
                         >
@@ -171,6 +174,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 ) : (
                     <>
                         <AnimatedPressable
+                            containerStyle={{ flex: 1 }}
                             style={[styles.actionButton, styles.primaryActionButton]}
                             onPress={onFriendAction}
                         >
@@ -180,6 +184,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                             </Text>
                         </AnimatedPressable>
                         <AnimatedPressable
+                            containerStyle={{ flex: 1 }}
                             style={styles.actionButton}
                             onPress={() => router.push({ pathname: '/conversation/[id]', params: { id: alter.id } })}
                         >

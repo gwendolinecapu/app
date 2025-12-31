@@ -14,6 +14,7 @@ const API_KEYS = {
     android: process.env.EXPO_PUBLIC_RC_ANDROID_KEY || ''
 };
 
+// TODO: Verify this Entitlement ID matches the one created in RevenueCat dashboard
 const ENTITLEMENT_ID = 'Plural Connect Pro';
 
 class RevenueCatService {

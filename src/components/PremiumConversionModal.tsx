@@ -14,7 +14,6 @@ import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../lib/theme';
 import { useMonetization } from '../contexts/MonetizationContext';
-import { PREMIUM_PACKS } from '../services/MonetizationTypes';
 import { triggerHaptic } from '../lib/haptics';
 
 const { width, height } = Dimensions.get('window');

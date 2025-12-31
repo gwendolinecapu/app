@@ -9,7 +9,7 @@ let LocalAuthentication: any = null;
 try {
     LocalAuthentication = require('expo-local-authentication');
 } catch (e) {
-    console.log('[SecureContainer] expo-local-authentication not available (Expo Go mode)');
+
 }
 
 interface SecureContainerProps {
@@ -38,7 +38,6 @@ export const SecureContainer: React.FC<SecureContainerProps> = ({
     const checkHardware = async () => {
         // If LocalAuthentication is not available (Expo Go), auto-unlock
         if (!LocalAuthentication) {
-            console.log('[SecureContainer] No LocalAuthentication, auto-unlocking for dev');
             setIsAuthenticated(true);
             if (onUnlock) onUnlock();
             return;

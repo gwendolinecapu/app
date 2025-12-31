@@ -3,14 +3,10 @@ import { View, Text, StyleSheet, Dimensions, TouchableOpacity, FlatList, ViewTok
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
-    withSpring,
-    withTiming,
     interpolate,
     Extrapolation,
     useAnimatedScrollHandler,
     SharedValue,
-    withRepeat,
-    withSequence,
 } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -96,14 +92,14 @@ const Slide = ({ item, index, scrollX, onInputChange, quizData }: { item: typeof
             <Animated.View style={[styles.textContainer, animatedStyle]}>
                 <Text style={[styles.title, { color: item.color }]}>{item.title}</Text>
                 <Text style={styles.description}>{item.description}</Text>
-                {item.type === 'input' && (
+                {item.type === 'input' && item.inputKey && (
                     <TextInput
                         style={styles.input}
                         placeholder={item.placeholder}
                         placeholderTextColor={colors.textMuted}
                         value={quizData[item.inputKey]}
-                        onChangeText={(text) => onInputChange(item.inputKey, text)}
-                        keyboardType={item.keyboardType || 'default'}
+                        onChangeText={(text) => item.inputKey && onInputChange(item.inputKey, text)}
+                        keyboardType={item.keyboardType as any || 'default'}
                         autoCapitalize="sentences"
                     />
                 )}

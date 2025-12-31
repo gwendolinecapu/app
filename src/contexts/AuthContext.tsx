@@ -45,7 +45,7 @@ interface AuthContextType {
     activeFront: FrontStatus;
     alters: Alter[];
     loading: boolean;
-    signUp: (email: string, password: string, username: string) => Promise<{ error: any }>;
+    signUp: (email: string, password: string, username: string, alterCount?: number) => Promise<{ error: any }>;
     signIn: (email: string, password: string) => Promise<{ error: any }>;
     signOut: () => Promise<void>;
     deleteAccount: () => Promise<void>;
@@ -165,16 +165,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // No-op for compatibility as functionality is now realtime
     const refreshAlters = async () => { };
 
-    const signUp = async (email: string, password: string, username: string) => {
+    const signUp = async (email: string, password: string, username: string, alterCount?: number) => {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const newUser = userCredential.user;
-            await setDoc(doc(db, 'systems', newUser.uid), {
+
+            const newSystemData: System = {
                 id: newUser.uid,
                 email,
                 username,
                 created_at: new Date().toISOString(),
-            });
+            };
+
+            if (alterCount) {
+                newSystemData.alter_count = alterCount;
+            }
+
+            await setDoc(doc(db, 'systems', newUser.uid), newSystemData);
             return { error: null };
         } catch (error: any) {
             return { error };

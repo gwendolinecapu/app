@@ -1,122 +1,107 @@
-import React, { useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
+import React, { useEffect, useCallback, useState, useRef } from 'react';
+import { View, Text, StyleSheet, Dimensions, AppState } from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
-    withRepeat,
     withTiming,
-    withSequence,
     Easing,
     cancelAnimation,
     runOnJS,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, borderRadius, spacing } from '../../lib/theme';
-import { BlurView } from 'expo-blur';
-import { router } from 'expo-router';
+import { colors, typography, spacing } from '../../lib/theme';
 
 const { width } = Dimensions.get('window');
 const CIRCLE_SIZE = width * 0.6;
 
-// 4-7-8 Technique
 const INHALE_DURATION = 4000;
 const HOLD_DURATION = 7000;
 const EXHALE_DURATION = 8000;
 
+const PHASES = {
+    INHALE: { text: 'Inspirez... (4s)', haptic: Haptics.ImpactFeedbackStyle.Medium },
+    HOLD: { text: 'Bloquez... (7s)', haptic: Haptics.ImpactFeedbackStyle.Light },
+    EXHALE: { text: 'Expirez... (8s)', haptic: Haptics.ImpactFeedbackStyle.Heavy },
+};
+
 export const GroundingBreathing = () => {
     const scale = useSharedValue(1);
     const opacity = useSharedValue(0.5);
-    const textOpacity = useSharedValue(1);
-    const [phase, setPhase] = React.useState<'INHALE' | 'HOLD' | 'EXHALE'>('INHALE');
-    const [isActive, setIsActive] = React.useState(true);
-
-    const triggerHaptic = (style: Haptics.ImpactFeedbackStyle) => {
-        Haptics.impactAsync(style);
-    };
-
-    const startBreathing = useCallback(() => {
-        if (!isActive) return;
-
-        // Reset
-        scale.value = 1;
-        opacity.value = 0.5;
-
-        // INHALE
-        setPhase('INHALE');
-        runOnJS(triggerHaptic)(Haptics.ImpactFeedbackStyle.Medium);
-
-        scale.value = withTiming(1.5, { duration: INHALE_DURATION, easing: Easing.inOut(Easing.ease) });
-        opacity.value = withTiming(0.8, { duration: INHALE_DURATION });
-
-        // HOLD
-        setTimeout(() => {
-            if (!isActive) return;
-            setPhase('HOLD');
-            runOnJS(triggerHaptic)(Haptics.ImpactFeedbackStyle.Light);
-
-            // Pulse slightly during hold
-            scale.value = withRepeat(
-                withSequence(
-                    withTiming(1.55, { duration: 1000 }),
-                    withTiming(1.5, { duration: 1000 })
-                ),
-                3, // Approx 7 seconds
-                true
-            );
-
-            // EXHALE
-            setTimeout(() => {
-                if (!isActive) return;
-                setPhase('EXHALE');
-                runOnJS(triggerHaptic)(Haptics.ImpactFeedbackStyle.Heavy);
-
-                scale.value = withTiming(1, { duration: EXHALE_DURATION, easing: Easing.inOut(Easing.ease) });
-                opacity.value = withTiming(0.5, { duration: EXHALE_DURATION });
-
-                // Loop
-                setTimeout(() => {
-                    if (isActive) startBreathing();
-                }, EXHALE_DURATION);
-
-            }, HOLD_DURATION);
-
-        }, INHALE_DURATION);
-    }, [isActive, scale, opacity]);
+    const [phase, setPhase] = useState<'INHALE' | 'HOLD' | 'EXHALE'>('INHALE');
+    const isMounted = useRef(true);
+    const animationTimeout = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
-        startBreathing();
+        isMounted.current = true;
+        const handleAppStateChange = (nextAppState: any) => {
+            if (nextAppState === 'active') {
+                isMounted.current = true;
+                startAnimationCycle();
+            } else {
+                isMounted.current = false;
+                if (animationTimeout.current) clearTimeout(animationTimeout.current);
+                cancelAnimation(scale);
+                cancelAnimation(opacity);
+            }
+        };
+
+        const subscription = AppState.addEventListener('change', handleAppStateChange);
+        
+        startAnimationCycle();
+
         return () => {
-            setIsActive(false);
+            isMounted.current = false;
+            if (animationTimeout.current) clearTimeout(animationTimeout.current);
+            subscription.remove();
             cancelAnimation(scale);
             cancelAnimation(opacity);
         };
     }, []);
 
-    const animatedStyle = useAnimatedStyle(() => {
-        return {
-            transform: [{ scale: scale.value }],
-            opacity: opacity.value,
-        };
-    });
+    const animatePhase = (
+        currentPhase: 'INHALE' | 'HOLD' | 'EXHALE',
+        scaleTo: number,
+        opacityTo: number,
+        duration: number,
+        nextPhase: () => void
+    ) => {
+        if (!isMounted.current) return;
 
-    const getInstruction = () => {
-        switch (phase) {
-            case 'INHALE': return 'Inspirez... (4s)';
-            case 'HOLD': return 'Bloquez... (7s)';
-            case 'EXHALE': return 'Expirez... (8s)';
-        }
+        runOnJS(setPhase)(currentPhase);
+        runOnJS(Haptics.impactAsync)(PHASES[currentPhase].haptic);
+
+        scale.value = withTiming(scaleTo, { duration, easing: Easing.inOut(Easing.ease) });
+        opacity.value = withTiming(opacityTo, { duration, easing: Easing.inOut(Easing.ease) });
+
+        animationTimeout.current = setTimeout(nextPhase, duration);
     };
+    
+    const startAnimationCycle = () => {
+        if (!isMounted.current) return;
+        
+        scale.value = 1;
+        opacity.value = 0.5;
+
+        const exhaleStep = () => animatePhase('EXHALE', 1, 0.5, EXHALE_DURATION, startAnimationCycle);
+        const holdStep = () => animatePhase('HOLD', 1.5, 0.9, HOLD_DURATION, exhaleStep);
+        const inhaleStep = () => animatePhase('INHALE', 1.5, 0.8, INHALE_DURATION, holdStep);
+        
+        inhaleStep();
+    };
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: scale.value }],
+        opacity: opacity.value,
+    }));
 
     return (
         <View style={styles.container}>
             <View style={styles.circleContainer}>
                 <Animated.View style={[styles.circle, animatedStyle]} />
                 <View style={styles.centerContent}>
-                    <Text style={styles.instruction}>{getInstruction()}</Text>
+                    <Text style={styles.instruction}>{PHASES[phase].text}</Text>
                 </View>
             </View>
-
             <View style={styles.footer}>
                 <Text style={styles.subtitle}>Technique 4-7-8 pour calmer l'anxiété</Text>
             </View>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -10,18 +10,25 @@ import {
     Alert,
     ScrollView,
 } from 'react-native';
-import { Link, router } from 'expo-router';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { DismissKeyboard } from '../../src/components/ui/DismissKeyboard';
 
 export default function RegisterScreen() {
+    const params = useLocalSearchParams<{ systemName?: string; alterCount?: string }>();
     const [email, setEmail] = useState('');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const { signUp } = useAuth();
+
+    useEffect(() => {
+        if (params.systemName) {
+            setUsername(params.systemName);
+        }
+    }, [params.systemName]);
 
     const handleRegister = async () => {
         if (!email || !username || !password || !confirmPassword) {
@@ -54,17 +61,19 @@ export default function RegisterScreen() {
             Alert.alert('Erreur', "Le nom d'utilisateur ne doit pas dépasser 30 caractères");
             return;
         }
+        
+        const alterCountNumber = params.alterCount ? parseInt(params.alterCount, 10) : undefined;
 
         setLoading(true);
-        const { error } = await signUp(trimmedEmail, trimmedPassword, trimmedUsername);
+        const { error } = await signUp(trimmedEmail, trimmedPassword, trimmedUsername, alterCountNumber);
         setLoading(false);
 
         if (error) {
             console.error('Registration error:', error.message);
-            // Check if user already exists
             if (error.message.includes('already registered') ||
                 error.message.includes('already exists') ||
-                error.message.includes('User already registered')) {
+                error.message.includes('user-already-in-use') ||
+                error.message.includes('email-already-in-use')) {
                 Alert.alert(
                     'Compte existant',
                     'Un compte avec cet email existe déjà. Voulez-vous vous connecter ?',
@@ -79,7 +88,7 @@ export default function RegisterScreen() {
         } else {
             Alert.alert(
                 'Inscription réussie !',
-                'Vous pouvez maintenant vous connecter.',
+                'Votre système a été créé. Vous pouvez maintenant vous connecter.',
                 [{ text: 'OK', onPress: () => router.replace('/(auth)/login') }]
             );
         }
@@ -100,15 +109,14 @@ export default function RegisterScreen() {
 
                     <View style={styles.form}>
                         <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Nom d&apos;utilisateur</Text>
+                            <Text style={styles.label}>Nom du système</Text>
                             <TextInput
                                 style={styles.input}
-                                placeholder="MonSystème"
+                                placeholder="Le Collectif Stellaire"
                                 placeholderTextColor={colors.textMuted}
                                 value={username}
                                 onChangeText={setUsername}
-                                autoCapitalize="none"
-                                autoComplete="username"
+                                autoCapitalize="words"
                             />
                         </View>
 
@@ -237,7 +245,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.primary,
     },
     buttonText: {
-        color: colors.text,
+        color: colors.textOnPrimary,
         fontSize: 16,
         fontWeight: 'bold',
     },

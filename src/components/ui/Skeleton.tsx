@@ -1,108 +1,125 @@
+
 import React, { useEffect } from 'react';
-import { View, StyleSheet, StyleProp, ViewStyle, DimensionValue } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import Animated, {
-    useSharedValue,
-    useAnimatedStyle,
-    withRepeat,
-    withSequence,
-    withTiming,
-    Easing
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  interpolate,
+  Extrapolation,
 } from 'react-native-reanimated';
-import { colors } from '../../lib/theme';
+import { Theme, useTheme } from '@/src/contexts/ThemeContext';
 
 interface SkeletonProps {
-    width?: DimensionValue;
-    height?: DimensionValue;
-    variant?: 'rect' | 'circle' | 'text';
-    style?: StyleProp<ViewStyle>;
-    borderRadius?: number;
+  shape: 'circle' | 'rect' | 'text';
+  width?: number | string;
+  height?: number | string;
+  style?: object;
 }
 
-export const Skeleton = ({ width, height, variant = 'rect', style, borderRadius }: SkeletonProps) => {
-    const opacity = useSharedValue(0.3);
+export const Skeleton: React.FC<SkeletonProps> = ({
+  shape,
+  width,
+  height,
+  style,
+}) => {
+  const { theme } = useTheme();
+  const progress = useSharedValue(0);
 
-    useEffect(() => {
-        opacity.value = withRepeat(
-            withSequence(
-                withTiming(0.7, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
-                withTiming(0.3, { duration: 1000, easing: Easing.inOut(Easing.ease) })
-            ),
-            -1,
-            true
-        );
-    }, []);
+  useEffect(() => {
+    progress.value = withRepeat(withTiming(1, { duration: 1200 }), -1, true);
+  }, [progress]);
 
-    const animatedStyle = useAnimatedStyle(() => ({
-        opacity: opacity.value,
-    }));
-
-    const getBorderRadius = () => {
-        if (borderRadius) return borderRadius;
-        if (variant === 'circle') return 999;
-        if (variant === 'text') return 4;
-        return 8; // Default rect radius
-    };
-
-    return (
-        <Animated.View
-            style={[
-                styles.skeleton,
-                {
-                    width,
-                    height: variant === 'text' ? (height || 16) : height,
-                    borderRadius: getBorderRadius(),
-                },
-                style,
-                animatedStyle,
-            ]}
-        />
+  const animatedStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(
+      progress.value,
+      [0, 0.5, 1],
+      [0.1, 0.3, 0.1],
+      Extrapolation.CLAMP
     );
+    return {
+      opacity,
+    };
+  });
+
+  const getShapeStyle = () => {
+    switch (shape) {
+      case 'circle':
+        return {
+          width: width || 50,
+          height: height || 50,
+          borderRadius: (typeof width === 'number' ? width : 50) / 2,
+        };
+      case 'rect':
+        return {
+          width: width || '100%',
+          height: height || 100,
+          borderRadius: 8,
+        };
+      case 'text':
+        return {
+          width: width || '100%',
+          height: height || 20,
+          borderRadius: 4,
+        };
+      default:
+        return {};
+    }
+  };
+  
+  const styles = getStyles(theme);
+
+  return (
+    <View style={[styles.container, getShapeStyle(), style]}>
+      <Animated.View style={[StyleSheet.absoluteFill, styles.shimmer, animatedStyle]} />
+    </View>
+  );
 };
 
-// Pre-defined skeletons for common use cases
-export const SkeletonFeed = () => (
+export const SkeletonFeed: React.FC = () => {
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
+
+  return (
     <View style={styles.feedContainer}>
-        <View style={styles.header}>
-            <Skeleton variant="circle" width={40} height={40} />
-            <View style={{ marginLeft: 12 }}>
-                <Skeleton variant="text" width={120} height={16} style={{ marginBottom: 4 }} />
-                <Skeleton variant="text" width={80} height={12} />
-            </View>
+      <View style={styles.feedHeader}>
+        <Skeleton shape="circle" width={40} height={40} />
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <Skeleton shape="text" width="60%" height={16} />
+          <Skeleton shape="text" width="40%" height={12} style={{ marginTop: 8 }} />
         </View>
-        <Skeleton variant="rect" width="100%" height={200} style={{ marginVertical: 12 }} />
-        <View style={{ gap: 8 }}>
-            <Skeleton variant="text" width="90%" height={14} />
-            <Skeleton variant="text" width="70%" height={14} />
-        </View>
+      </View>
+      <Skeleton shape="rect" width="100%" height={200} style={{ marginTop: 12 }} />
+      <View style={styles.feedFooter}>
+        <Skeleton shape="text" width={80} height={20} />
+        <Skeleton shape="text" width={80} height={20} />
+      </View>
     </View>
-);
+  );
+}
 
-export const SkeletonProfile = () => (
-    <View style={styles.profileContainer}>
-        <Skeleton variant="rect" width="100%" height={150} style={{ marginBottom: -50 }} />
-        <View style={{ alignItems: 'center', paddingHorizontal: 16 }}>
-            <Skeleton variant="circle" width={100} height={100} style={{ borderWidth: 4, borderColor: colors.background }} />
-            <Skeleton variant="text" width={150} height={24} style={{ marginTop: 12, marginBottom: 8 }} />
-            <Skeleton variant="text" width={200} height={16} />
-        </View>
-    </View>
-);
-
-const styles = StyleSheet.create({
-    skeleton: {
-        backgroundColor: colors.backgroundLight, // Using backgroundLight as base grey
-    },
-    feedContainer: {
-        padding: 16,
-        backgroundColor: colors.backgroundCard,
-        marginBottom: 16,
-        borderRadius: 12,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    profileContainer: {
-        marginBottom: 16,
-    }
+const getStyles = (theme: Theme) => StyleSheet.create({
+  container: {
+    backgroundColor: theme.colors.skeletonBackground,
+    overflow: 'hidden',
+  },
+  shimmer: {
+    backgroundColor: theme.colors.skeletonShimmer,
+  },
+  feedContainer: {
+    backgroundColor: theme.colors.card,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  feedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  feedFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  }
 });

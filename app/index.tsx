@@ -2,11 +2,21 @@ import { Redirect } from 'expo-router';
 import { useAuth } from '../src/contexts/AuthContext';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { colors } from '../src/lib/theme';
+import { storage } from '../src/lib/storage';
 
 export default function Index() {
-    const { user, loading } = useAuth();
+    const { user, loading: authLoading } = useAuth();
+    const [isFirstLaunch, setIsFirstLaunch] = useState<boolean | null>(null);
 
-    if (loading) {
+    useEffect(() => {
+        const checkOnboarding = async () => {
+            const seen = await storage.hasSeenOnboarding();
+            setIsFirstLaunch(!seen);
+        };
+        checkOnboarding();
+    }, []);
+
+    if (authLoading || isFirstLaunch === null) {
         return (
             <View style={styles.container}>
                 <ActivityIndicator size="large" color={colors.primary} />
@@ -16,6 +26,10 @@ export default function Index() {
 
     if (user) {
         return <Redirect href="/(tabs)/dashboard" />;
+    }
+
+    if (isFirstLaunch) {
+        return <Redirect href="/onboarding" />;
     }
 
     return <Redirect href="/(auth)/login" />;

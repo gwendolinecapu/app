@@ -27,7 +27,7 @@ export function BiometricGuard({ children }: BiometricGuardProps) {
                 appState.current.match(/background/) &&
                 nextAppState === 'active'
             ) {
-                if (user && !isAuthenticating.current) {
+                if (user && !isAuthenticating.current && isBiometricEnabled) {
                     authenticate();
                 }
             }

@@ -12,6 +12,7 @@ const AVAILABLE_WIDTH = SCREEN_WIDTH - (CONTAINER_PADDING * 2);
 
 export type GridItem =
     | { type: 'blurry' }
+    | { type: 'chat' }
     | { type: 'add' }
     | { type: 'alter'; data: Alter };
 
@@ -56,6 +57,7 @@ const DashboardGridComponent = ({
                     if (item.type === 'alter') toggleSelection(item.data.id);
                     else if (item.type === 'blurry') handleBlurryMode();
                     else if (item.type === 'add') setModalVisible(true);
+                    else if (item.type === 'chat') router.push('/chat');
                 }}
                 onLongPress={() => item.type === 'alter' && router.push(`/alter-space/${item.data.id}` as any)}
             />

@@ -122,6 +122,7 @@ export interface Comment {
 
 export interface Message {
     id: string;
+    system_id: string; // ID du système propriétaire
     sender_alter_id: string;
     receiver_alter_id?: string; // Optionnel si c'est un message de groupe
     group_id?: string; // ID du groupe si c'est un message de groupe

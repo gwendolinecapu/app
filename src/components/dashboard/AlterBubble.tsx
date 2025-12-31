@@ -4,13 +4,14 @@ import { Image } from 'expo-image';
 import Animated from 'react-native-reanimated';
 import { AnimatedPressable } from '../ui/AnimatedPressable';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { colors, typography } from '../../lib/theme';
 import { Alter } from '../../types';
 import { triggerHaptic } from '../../lib/haptics';
 
 interface AlterBubbleProps {
     alter?: Alter;
-    type: 'alter' | 'blurry' | 'add';
+    type: 'alter' | 'blurry' | 'add' | 'chat';
     size: number;
     isSelected?: boolean;
     selectionMode: 'single' | 'multi';
@@ -70,6 +71,23 @@ const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
                     <Ionicons name="add" size={dynamicStyles.iconSize + 4} color={colors.textMuted} />
                 </View>
                 <Text style={[styles.bubbleName, dynamicStyles.bubbleName]} numberOfLines={1}>Ajouter</Text>
+            </AnimatedPressable>
+        );
+    }
+
+
+
+    if (type === 'chat') {
+        return (
+            <AnimatedPressable
+                containerStyle={styles.bubbleWrapper}
+                onPress={() => router.push('/chat')}
+                haptic={true}
+            >
+                <View style={[styles.bubble, styles.chatBubble, dynamicStyles.bubble]}>
+                    <Ionicons name="chatbubbles" size={dynamicStyles.iconSize + 2} color={colors.primary} />
+                </View>
+                <Text style={[styles.bubbleName, dynamicStyles.bubbleName]} numberOfLines={1}>Chat</Text>
             </AnimatedPressable>
         );
     }
@@ -181,6 +199,11 @@ const styles = StyleSheet.create({
         borderStyle: 'dashed',
         borderColor: colors.border,
         borderWidth: 1.5,
+    },
+    chatBubble: {
+        backgroundColor: colors.backgroundCard,
+        borderWidth: 1.5,
+        borderColor: colors.borderLight, // Ensure borderLight exists in theme or use primaryLight
     },
     checkBadge: {
         position: 'absolute',

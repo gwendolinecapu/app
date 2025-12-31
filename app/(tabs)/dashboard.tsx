@@ -106,7 +106,6 @@ export default function Dashboard() {
     const gridData = useMemo((): GridItem[] => {
         return [
             { type: 'blurry' },
-            { type: 'chat' }, // New Chat Tool
             { type: 'add' },
             ...filteredAlters.map(alter => ({ type: 'alter' as const, data: alter }))
         ];

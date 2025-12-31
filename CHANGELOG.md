@@ -1,5 +1,15 @@
 # Changelog
 
+## [2025-12-31] - Internal Team Chat 💬
+- **New Feature**: Added a dedicated "Internal Team Chat" for alerts to communicate within the system.
+- **UI**: Added a Chat screen (`app/chat/index.tsx`) with message bubbles differentiated by sender (Me vs Others).
+- **Dashboard**: Added a "Chat" shortcut to the dashboard grid.
+- **Functionality**:
+    - Real-time messaging with Firestore `system_chats`.
+    - Alter selector to switch who is speaking.
+    - Integration with Alter colors and avatars.
+    - Type-safe implementation with updated `Message` interface.
+
 ## [2025-12-31] - Premium UX Overhaul 💎
 - **Skeleton Loaders**: Implemented a reusable `Skeleton` component and integrated it into the Feed, **AlterGrid**, and **ProfileHeader** to ensure a premium loading experience throughout the Alter Space.
 - **Onboarding 2.0**: Completely redesigned the onboarding flow with new slides, floating bubble animations, and an interactive quiz that **automatically pre-fills** the user's system name and alter count on the registration screen.

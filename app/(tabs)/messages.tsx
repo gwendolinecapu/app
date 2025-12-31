@@ -69,25 +69,49 @@ export default function MessagesScreen() {
     };
 
     // Create mock conversations from alters
-    const internalConversations: ConversationItem[] = alters
-        .filter(a => a.id !== currentAlter?.id)
-        .map(alter => ({
-            id: alter.id,
-            alter,
-            lastMessage: 'Démarrer une conversation',
+    const internalConversations: ConversationItem[] = [
+        {
+            id: 'system-general',
+            alter: {
+                id: 'general',
+                name: 'Chat Général',
+                color: colors.primary,
+                avatar_url: undefined // Use specific icon logic if needed
+            } as Alter,
+            lastMessage: 'Discussion de groupe système',
             time: '',
             unread: 0,
-        }));
+        },
+        ...alters
+            .filter(a => a.id !== currentAlter?.id)
+            .map(alter => ({
+                id: alter.id,
+                alter,
+                lastMessage: 'Démarrer une conversation',
+                time: '',
+                unread: 0,
+            }))
+    ];
 
     const renderConversation = ({ item }: { item: ConversationItem }) => (
         <TouchableOpacity
             style={styles.conversationItem}
-            onPress={() => router.push(`/conversation/${item.alter.id}?internal=true`)}
+            onPress={() => {
+                if (item.id === 'system-general') {
+                    router.push('/chat');
+                } else {
+                    router.push(`/conversation/${item.alter.id}?internal=true`);
+                }
+            }}
         >
             <View style={[styles.avatar, { backgroundColor: item.alter.color }]}>
-                <Text style={styles.avatarText}>
-                    {item.alter.name.charAt(0).toUpperCase()}
-                </Text>
+                {item.id === 'system-general' ? (
+                    <Ionicons name="people" size={24} color="white" />
+                ) : (
+                    <Text style={styles.avatarText}>
+                        {item.alter.name.charAt(0).toUpperCase()}
+                    </Text>
+                )}
             </View>
             <View style={styles.conversationContent}>
                 <View style={styles.conversationHeader}>

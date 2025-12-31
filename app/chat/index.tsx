@@ -141,7 +141,7 @@ export default function TeamChatScreen() {
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
                 <View style={styles.headerTitleContainer}>
-                    <Text style={styles.headerTitle}>Discussion Système</Text>
+                    <Text style={styles.headerTitle}>Chat Général</Text>
                     <Text style={styles.headerSubtitle}>{alters.length} membres</Text>
                 </View>
                 <TouchableOpacity style={styles.headerAction}>

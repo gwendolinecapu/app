@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import * as React from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
     View,
     Text,
     TouchableOpacity,
     StyleSheet,
-    Modal,
-    TextInput,
     Alert,
     Image,
     Platform,
@@ -22,47 +21,33 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { db, storage } from '../../src/lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Alter } from '../../src/types';
-import { colors, spacing, borderRadius, typography, alterColors } from '../../src/lib/theme';
+import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { Skeleton } from '../../src/components/ui/Skeleton';
-import { SystemWeather } from '../../src/components/SystemWeather';
-import { SwitchNote } from '../../src/components/SwitchNote';
-import { FrontingStats } from '../../src/components/FrontingStats';
-import { useScrollToTop } from '@react-navigation/native'
+import { useScrollToTop } from '@react-navigation/native';
 import { triggerHaptic } from '../../src/lib/haptics';
-import { SystemCalendar } from '../../src/components/widgets/SystemCalendar';
-import { SystemTasks } from '../../src/components/widgets/SystemTasks';
+
+import { DashboardHeader } from '../../src/components/dashboard/DashboardHeader';
+import { ToolsGrid } from '../../src/components/dashboard/ToolsGrid';
+import { AlterBubble } from '../../src/components/dashboard/AlterBubble';
+import { AddAlterModal } from '../../src/components/dashboard/AddAlterModal';
+import { Alter } from '../../src/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-// =====================================================
-// APPLE WATCH STYLE BUBBLE CONFIGURATION
-// Taille DYNAMIQUE basée sur le nombre d'alters :
-// - Peu d'alters (< 6) : grandes bulles (80px)
-// - Moyen (6-20) : bulles moyennes (64px)
-// - Beaucoup (> 20) : petites bulles (48px)
-// Support pour 2000+ alters avec FlatList optimisée
-// =====================================================
 const CONTAINER_PADDING = 16;
 const AVAILABLE_WIDTH = SCREEN_WIDTH - (CONTAINER_PADDING * 2);
 
-// Fonction pour calculer la taille des bulles selon le nombre d'alters
 const getBubbleConfig = (alterCount: number) => {
     if (alterCount <= 5) {
-        // Peu d'alters : grandes bulles style Apple Watch
         const size = 80;
         const spacing = 20;
         const columns = Math.floor(AVAILABLE_WIDTH / (size + spacing));
         return { size, spacing, columns: Math.max(3, columns) };
     } else if (alterCount <= 20) {
-        // Nombre moyen : bulles moyennes
         const size = 64;
         const spacing = 14;
         const columns = Math.floor(AVAILABLE_WIDTH / (size + spacing));
         return { size, spacing, columns: Math.max(4, columns) };
     } else {
-        // Beaucoup d'alters : petites bulles compactes
         const size = 48;
         const spacing = 10;
         const columns = Math.floor(AVAILABLE_WIDTH / (size + spacing));
@@ -70,34 +55,27 @@ const getBubbleConfig = (alterCount: number) => {
     }
 };
 
-// Types pour les items de la grille (bubbles + actions spéciales)
 type GridItem =
     | { type: 'blurry' }
     | { type: 'add' }
     | { type: 'alter'; data: Alter };
-
-export default function DashboardScreen() {
+/**
+ * Dashboard Screen - Refactored for better performance and modularity.
+ * Handles the Apple Watch-inspired "Alter Grid" and system utility tools.
+ */
+export default function Dashboard() {
     const { alters, user, refreshAlters, setFronting, activeFront, loading: authLoading } = useAuth();
     const [modalVisible, setModalVisible] = useState(false);
     const [selectionMode, setSelectionMode] = useState<'single' | 'multi'>('single');
     const [selectedAlters, setSelectedAlters] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [refreshing, setRefreshing] = useState(false);
-
-    // Create new alter state
-    const [newAlterName, setNewAlterName] = useState('');
-    const [newAlterPronouns, setNewAlterPronouns] = useState('');
-    const [newAlterBio, setNewAlterBio] = useState('');
-    const [selectedColor, setSelectedColor] = useState<string>(alterColors[0]);
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
-    // Scroll-to-top ref
-    const scrollRef = React.useRef(null);
-    useScrollToTop(scrollRef);
+    const scrollRef = useRef<FlatList<GridItem>>(null);
+    useScrollToTop(scrollRef as any);
 
     useEffect(() => {
-        // Pre-select currently active alters
         if (activeFront.alters.length > 0) {
             setSelectedAlters(activeFront.alters.map(a => a.id));
             if (activeFront.type === 'co-front') {
@@ -115,17 +93,9 @@ export default function DashboardScreen() {
         }
     }, [refreshAlters]);
 
-    // =====================================================
-    // CONFIG DYNAMIQUE DES BULLES
-    // Taille calculée selon le nombre d'alters pour un rendu optimal
-    // =====================================================
     const bubbleConfig = useMemo(() => getBubbleConfig(alters.length), [alters.length]);
     const { size: BUBBLE_SIZE, spacing: BUBBLE_SPACING, columns: NUM_COLUMNS } = bubbleConfig;
 
-    // =====================================================
-    // RECHERCHE ET FILTRAGE
-    // Filtrage optimisé pour 2000+ alters avec useMemo
-    // =====================================================
     const filteredAlters = useMemo(() => {
         if (!searchQuery.trim()) return alters;
         const query = searchQuery.toLowerCase();
@@ -135,555 +105,152 @@ export default function DashboardScreen() {
         );
     }, [alters, searchQuery]);
 
-    // =====================================================
-    // GRID DATA
-    // Combine les boutons spéciaux + alters filtrés pour FlashList
-    // =====================================================
     const gridData = useMemo((): GridItem[] => {
-        const items: GridItem[] = [
+        return [
             { type: 'blurry' },
             { type: 'add' },
             ...filteredAlters.map(alter => ({ type: 'alter' as const, data: alter }))
         ];
-        return items;
     }, [filteredAlters]);
 
     const toggleSelection = useCallback((alterId: string) => {
         if (selectionMode === 'single') {
-            handleSelectSingle(alterId);
+            const alter = alters.find(a => a.id === alterId);
+            if (alter) {
+                setFronting([alter], 'single');
+                router.push(`/alter-space/${alterId}` as any);
+            }
         } else {
             setSelectedAlters(prev => {
-                if (prev.includes(alterId)) {
-                    return prev.filter(id => id !== alterId);
-                } else {
-                    return [...prev, alterId];
-                }
+                const newSelection = prev.includes(alterId)
+                    ? prev.filter(id => id !== alterId)
+                    : [...prev, alterId];
+                return newSelection;
             });
         }
-    }, [selectionMode, alters]);
-
-    const handleSelectSingle = async (alterId: string) => {
-        const alter = alters.find(a => a.id === alterId);
-        if (alter) {
-            await setFronting([alter], 'single');
-            // Ouvrir l'Alter Space isolé (profil Instagram-style)
-            router.push(`/alter-space/${alterId}` as any);
-        }
-    };
+    }, [selectionMode, alters, setFronting]);
 
     const handleConfirmCoFront = async () => {
         if (selectedAlters.length === 0) return;
-
         const selectedAlterObjects = alters.filter(a => selectedAlters.includes(a.id));
-
-        if (selectedAlterObjects.length === 1) {
-            await setFronting(selectedAlterObjects, 'single');
-        } else {
-            await setFronting(selectedAlterObjects, 'co-front');
-        }
-        router.push('/(tabs)/dashboard');
+        await setFronting(selectedAlterObjects, selectedAlterObjects.length === 1 ? 'single' : 'co-front');
+        triggerHaptic.success();
     };
 
     const handleBlurryMode = async () => {
-        Alert.alert(
-            "Mode Flou",
-            "Vous allez entrer en tant que système sans alter spécifique défini.",
-            [
-                { text: "Annuler", style: "cancel" },
-                {
-                    text: "Continuer",
-                    onPress: async () => {
-                        await setFronting([], 'blurry');
-                        router.push('/(tabs)/dashboard');
-                    }
+        Alert.alert("Mode Flou", "Entrer en tant que système sans alter spécifique ?", [
+            { text: "Annuler", style: "cancel" },
+            {
+                text: "Continuer", onPress: async () => {
+                    await setFronting([], 'blurry');
+                    triggerHaptic.medium();
                 }
-            ]
-        );
-    };
-
-    const handleOpenAlterSpace = (alter: Alter) => {
-        // Navigation vers l'Alter Space isolé (profil Instagram-style)
-        router.push(`/alter-space/${alter.id}` as any);
+            }
+        ]);
     };
 
     const pickImage = async () => {
-        if (Platform.OS !== 'web') {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (status !== 'granted') {
-                Alert.alert('Permission requise', 'Nous avons besoin de la permission pour accéder à vos photos.');
-                return;
-            }
-        }
-
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ['images'],
             allowsEditing: true,
             aspect: [1, 1],
-            quality: 0.8,
+            quality: 0.7,
         });
-
-        if (!result.canceled && result.assets[0]) {
-            setSelectedImage(result.assets[0].uri);
-        }
+        return result.canceled ? null : result.assets[0].uri;
     };
 
-    const handleCreateAlter = async () => {
-
-        if (!newAlterName.trim()) {
-            Alert.alert('Erreur', 'Le nom est requis');
-            return;
-        }
-
-        if (!user) {
-            Alert.alert('Erreur', 'Vous devez être connecté');
-            console.error('[DEBUG] No user found!');
-            return;
-        }
-
+    const handleCreateAlter = async (data: { name: string, pronouns: string, bio: string, color: string, image: string | null }) => {
+        if (!user) return;
         setLoading(true);
         try {
             let avatarUrl = null;
-
-            if (selectedImage) {
-                try {
-                    const response = await fetch(selectedImage);
-                    const blob = await response.blob();
-                    const fileName = `avatars/${user.uid}/${Date.now()}.jpg`;
-                    const storageRef = ref(storage, fileName);
-
-                    await uploadBytes(storageRef, blob);
-                    avatarUrl = await getDownloadURL(storageRef);
-                } catch (uploadErr) {
-                    console.error('[DEBUG] Image upload failed:', uploadErr);
-                }
+            if (data.image) {
+                const response = await fetch(data.image);
+                const blob = await response.blob();
+                const storageRef = ref(storage, `avatars/${user.uid}/${Date.now()}.jpg`);
+                await uploadBytes(storageRef, blob);
+                avatarUrl = await getDownloadURL(storageRef);
             }
-
             const newAlter = {
                 system_id: user.uid,
-                name: newAlterName.trim(),
-                pronouns: newAlterPronouns.trim() || null,
-                bio: newAlterBio.trim() || null,
-                color: selectedColor,
+                name: data.name,
+                pronouns: data.pronouns || null,
+                bio: data.bio || null,
+                color: data.color,
                 avatar_url: avatarUrl,
-                // is_host: false par défaut, l'utilisateur peut le définir plus tard
-                // L'ancienne logique `alters.length === 0` était bugguée si on créait 2 alters rapidement
                 is_host: false,
                 is_active: false,
                 created_at: new Date().toISOString(),
             };
-
             await addDoc(collection(db, 'alters'), newAlter);
-
             await refreshAlters();
             setModalVisible(false);
-            resetForm();
-            Alert.alert('Succès', `${newAlterName} a été créé !`);
-        } catch (error: any) {
-            console.error('[DEBUG] Error creating alter:', error);
-            Alert.alert('Erreur', error.message || 'Une erreur est survenue');
+            triggerHaptic.success();
+        } catch (error) {
+            Alert.alert('Erreur', 'Impossible de créer l\'alter');
         } finally {
             setLoading(false);
         }
     };
 
-    const resetForm = () => {
-        setNewAlterName('');
-        setNewAlterPronouns('');
-        setNewAlterBio('');
-        setSelectedColor(alterColors[0]);
-        setSelectedImage(null);
-    };
-
-    // =====================================================
-    // APPLE WATCH STYLE BUBBLE RENDERER
-    // Design compact, fluide avec animations subtiles
-    // Styles dynamiques calculés via bubbleConfig
-    // =====================================================
-    const renderBubble = useCallback(({ item, index }: { item: GridItem; index: number }) => {
-        // Styles dynamiques basés sur le nombre d'alters
-        const dynamicStyles = {
-            wrapper: { width: AVAILABLE_WIDTH / NUM_COLUMNS },
-            bubble: {
-                width: BUBBLE_SIZE,
-                height: BUBBLE_SIZE,
-                borderRadius: BUBBLE_SIZE / 2
-            },
-            bubbleName: { maxWidth: BUBBLE_SIZE + 10 },
-            iconSize: BUBBLE_SIZE < 60 ? 20 : BUBBLE_SIZE < 70 ? 24 : 28,
-            initialFontSize: BUBBLE_SIZE < 60 ? 18 : BUBBLE_SIZE < 70 ? 22 : 28,
-        };
-
-        if (item.type === 'blurry') {
-            return (
-                <TouchableOpacity
-                    style={[styles.bubbleWrapper, dynamicStyles.wrapper]}
-                    onPress={handleBlurryMode}
-                    activeOpacity={0.7}
-                >
-                    <View style={[styles.bubble, styles.blurryBubble, dynamicStyles.bubble]}>
-                        <Ionicons name="help" size={dynamicStyles.iconSize} color={colors.textMuted} />
-                    </View>
-                    <Text style={[styles.bubbleName, dynamicStyles.bubbleName]} numberOfLines={1}>Flou</Text>
-                </TouchableOpacity>
-            );
-        }
-
-        if (item.type === 'add') {
-            return (
-                <TouchableOpacity
-                    style={[styles.bubbleWrapper, dynamicStyles.wrapper]}
-                    onPress={() => setModalVisible(true)}
-                    activeOpacity={0.7}
-                >
-                    <View style={[styles.bubble, styles.addBubble, dynamicStyles.bubble]}>
-                        <Ionicons name="add" size={dynamicStyles.iconSize + 4} color={colors.textMuted} />
-                    </View>
-                    <Text style={[styles.bubbleName, dynamicStyles.bubbleName]} numberOfLines={1}>Ajouter</Text>
-                </TouchableOpacity>
-            );
-        }
-
-        // Alter bubble
-        const alter = item.data;
-        const isSelected = selectedAlters.includes(alter.id);
-        const showCheck = selectionMode === 'multi' && isSelected;
-        const dimmed = selectionMode === 'multi' && !isSelected && selectedAlters.length > 0;
-
-        return (
-            <TouchableOpacity
-                style={[styles.bubbleWrapper, dynamicStyles.wrapper, dimmed && styles.bubbleDimmed]}
-                onPress={() => toggleSelection(alter.id)}
-                onLongPress={() => handleOpenAlterSpace(alter)}
-                activeOpacity={0.7}
-                delayLongPress={300}
-            >
-                <View style={[
-                    styles.bubble,
-                    dynamicStyles.bubble,
-                    { backgroundColor: alter.color },
-                    isSelected && styles.bubbleSelected
-                ]}>
-                    {alter.avatar_url ? (
-                        <Image source={{ uri: alter.avatar_url }} style={styles.bubbleImage} />
-                    ) : (
-                        <Text style={[styles.bubbleInitial, { fontSize: dynamicStyles.initialFontSize }]}>
-                            {alter.name.charAt(0).toUpperCase()}
-                        </Text>
-                    )}
-                    {/* Checkmark badge pour le mode co-front */}
-                    {showCheck && (
-                        <View style={styles.checkBadge}>
-                            <Ionicons name="checkmark" size={12} color="white" />
-                        </View>
-                    )}
-                </View>
-                <Text
-                    style={[styles.bubbleName, dynamicStyles.bubbleName, isSelected && styles.bubbleNameSelected]}
-                    numberOfLines={1}
-                >
-                    {alter.name}
-                </Text>
-            </TouchableOpacity>
-        );
-    }, [selectedAlters, selectionMode, alters, toggleSelection, BUBBLE_SIZE, NUM_COLUMNS]);
-
-    // Key extractor pour FlashList (performance optimale)
-    const keyExtractor = useCallback((item: GridItem, index: number) => {
-        if (item.type === 'blurry') return 'blurry';
-        if (item.type === 'add') return 'add';
-        return item.data.id;
-    }, []);
+    const renderItem = useCallback(({ item }: { item: GridItem }) => (
+        <View style={{ width: AVAILABLE_WIDTH / NUM_COLUMNS, alignItems: 'center' }}>
+            <AlterBubble
+                alter={item.type === 'alter' ? item.data : undefined}
+                type={item.type}
+                size={BUBBLE_SIZE}
+                selectionMode={selectionMode}
+                isSelected={item.type === 'alter' && selectedAlters.includes(item.data.id)}
+                dimmed={selectionMode === 'multi' && selectedAlters.length > 0 && (item.type !== 'alter' || !selectedAlters.includes(item.data.id))}
+                onPress={() => {
+                    if (item.type === 'alter') toggleSelection(item.data.id);
+                    else if (item.type === 'blurry') handleBlurryMode();
+                    else if (item.type === 'add') setModalVisible(true);
+                }}
+                onLongPress={() => item.type === 'alter' && router.push(`/alter-space/${item.data.id}` as any)}
+            />
+        </View>
+    ), [NUM_COLUMNS, BUBBLE_SIZE, selectionMode, selectedAlters, toggleSelection]);
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Header */}
-            <View style={styles.header}>
-                <View>
-                    <Text style={styles.greeting}>Bonjour,</Text>
-                    <Text style={styles.title}>Qui est là ?</Text>
-                </View>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                    {/* SOS Button */}
-                    <TouchableOpacity
-                        style={[styles.settingsButton, { backgroundColor: colors.errorBackground, borderRadius: borderRadius.full }]}
-                        onPress={() => router.push('/tools/grounding')}
-                    >
-                        <Ionicons name="medical" size={20} color={colors.error} />
-                    </TouchableOpacity>
-                    {/* Shop Button */}
-                    <TouchableOpacity
-                        style={styles.settingsButton}
-                        onPress={() => router.push('/shop' as any)}
-                    >
-                        <Ionicons name="storefront-outline" size={24} color={colors.primary} />
-                    </TouchableOpacity>
-                    {/* Settings Button */}
-                    <TouchableOpacity
-                        style={styles.settingsButton}
-                        onPress={() => router.push('/settings' as any)}
-                    >
-                        <Ionicons name="settings-outline" size={24} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            <View style={{ flex: 1 }}>
-                {/* System Weather Widget */}
-                <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
-                    <SystemWeather />
-                </View>
-
-                {/* System Tools - Tasks & Calendar */}
-                <View style={{ paddingHorizontal: 16, marginBottom: 8, flexDirection: 'row', gap: 8 }}>
-                    <View style={{ flex: 1 }}>
-                        <SystemTasks />
-                    </View>
-                </View>
-
-                <TouchableOpacity
-                    style={{
-                        marginHorizontal: 16,
-                        marginBottom: 8,
-                        backgroundColor: colors.backgroundCard,
-                        padding: 12,
-                        borderRadius: borderRadius.lg,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 8,
-                        borderWidth: 1,
-                        borderColor: colors.border
-                    }}
-                    onPress={() => router.push('/team-chat' as any)}
-                >
-                    <Ionicons name="chatbubbles-outline" size={20} color={colors.primary} />
-                    <Text style={{ ...typography.body, fontWeight: 'bold', color: colors.primary }}>
-                        Team Chat
-                    </Text>
-                </TouchableOpacity>
-
-                <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
-                    <SystemCalendar />
-                </View>
-
-                {/* Switch Note Widget */}
-                <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
-                    <SwitchNote />
-                </View>
-
-
-                {/* Mode Switcher */}
-                <View style={styles.modeSwitchContainer}>
-                    <TouchableOpacity
-                        style={[styles.modeButton, selectionMode === 'single' && styles.modeButtonActive]}
-                        onPress={() => {
-                            setSelectionMode('single');
-                            setSelectedAlters([]);
-                        }}
-                    >
-                        <Text style={[styles.modeButtonText, selectionMode === 'single' && styles.modeButtonTextActive]}>Solo</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.modeButton, selectionMode === 'multi' && styles.modeButtonActive]}
-                        onPress={() => setSelectionMode('multi')}
-                    >
-                        <Text style={[styles.modeButtonText, selectionMode === 'multi' && styles.modeButtonTextActive]}>Co-Front</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Compteur d'alters */}
-                <View style={styles.alterCountContainer}>
-                    <Text style={styles.alterCountText}>
-                        {filteredAlters.length} alter{filteredAlters.length !== 1 ? 's' : ''}
-                        {searchQuery && ` (sur ${alters.length})`}
-                    </Text>
-                </View>
-
-                {/* =====================================================
-            APPLE WATCH STYLE GRID
-            FlatList optimisée pour performance avec 2000+ alters
-            key prop obligatoire pour permettre changement de numColumns
-            ===================================================== */}
-                <View style={styles.gridContainer}>
-                    <FlatList
-                        ref={scrollRef}
-                        key={`grid-${NUM_COLUMNS}`}  // IMPORTANT: permet changement dynamique de numColumns
-                        data={authLoading ? [] : gridData}
-                        renderItem={renderBubble}
-                        keyExtractor={keyExtractor}
-                        numColumns={NUM_COLUMNS}
-                        contentContainerStyle={styles.gridContent}
-                        showsVerticalScrollIndicator={false}
-                        refreshControl={
-                            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-                        }
-                        ListEmptyComponent={
-                            authLoading ? (
-                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: BUBBLE_SPACING }}>
-                                    {[...Array(12)].map((_, i) => (
-                                        <View key={i} style={{ alignItems: 'center', marginBottom: 10 }}>
-                                            <Skeleton width={BUBBLE_SIZE} height={BUBBLE_SIZE} borderRadius={BUBBLE_SIZE / 2} />
-                                            <View style={{ marginTop: 8 }}>
-                                                <Skeleton width={60} height={12} borderRadius={4} />
-                                            </View>
-                                        </View>
-                                    ))}
-                                </View>
-                            ) : null
-                        }
-                        // Optimisations pour très grandes listes (2000+ items)
-                        removeClippedSubviews={true}
-                        maxToRenderPerBatch={20}
-                        windowSize={10}
-                        initialNumToRender={30}
-                        getItemLayout={(data, index) => ({
-                            length: BUBBLE_SIZE + 24,
-                            offset: (BUBBLE_SIZE + 24) * Math.floor(index / NUM_COLUMNS),
-                            index,
-                        })}
-                        ListFooterComponent={
-                            <View style={{ paddingTop: 20 }}>
-                                <FrontingStats />
-                            </View>
-                        }
+            <FlatList
+                ref={scrollRef}
+                key={`grid-${NUM_COLUMNS}`}
+                data={authLoading ? [] : gridData}
+                renderItem={renderItem}
+                keyExtractor={(item, index) => item.type === 'alter' ? item.data.id : item.type}
+                numColumns={NUM_COLUMNS}
+                contentContainerStyle={styles.gridContent}
+                showsVerticalScrollIndicator={false}
+                ListHeaderComponent={
+                    <DashboardHeader
+                        searchQuery={searchQuery}
+                        onSearchChange={setSearchQuery}
+                        selectionMode={selectionMode}
+                        onModeChange={setSelectionMode}
                     />
-                </View>
+                }
+                ListFooterComponent={<ToolsGrid />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+            />
 
-                {/* Co-Front Floating Action Button */}
-                {selectionMode === 'multi' && selectedAlters.length > 0 && (
-                    <View style={styles.fabContainer}>
-                        <TouchableOpacity style={styles.fabButton} onPress={handleConfirmCoFront}>
-                            <Text style={styles.fabText}>
-                                Confirmer ({selectedAlters.length})
-                            </Text>
-                            <Ionicons name="arrow-forward" size={20} color="white" />
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                {/* Footer Actions */}
-                <View style={styles.footerActions}>
-                    <TouchableOpacity
-                        style={styles.footerButton}
-                        onPress={() => router.push({ pathname: '/history', params: { tab: 'front' } })}
-                    >
-                        <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
-                        <Text style={styles.footerButtonText}>Historique</Text>
+            {selectionMode === 'multi' && selectedAlters.length > 0 && (
+                <View style={styles.fabContainer}>
+                    <TouchableOpacity style={styles.fabButton} onPress={handleConfirmCoFront}>
+                        <Text style={styles.fabText}>Confirmer ({selectedAlters.length})</Text>
+                        <Ionicons name="arrow-forward" size={20} color="white" />
                     </TouchableOpacity>
                 </View>
-            </View>
+            )}
 
-            {/* Add Alter Modal */}
-            <Modal
-                animationType="slide"
-                transparent={true}
+            <AddAlterModal
                 visible={modalVisible}
-                onRequestClose={() => setModalVisible(false)}
-            >
-                <View style={styles.modalOverlay}>
-                    <KeyboardAvoidingView
-                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                        style={{ width: '100%' }}
-                    >
-                        <View style={styles.modalContent}>
-                            <Text style={styles.modalTitle}>Nouvel Alter</Text>
-
-                            <ScrollView showsVerticalScrollIndicator={false}>
-                                {/* Avatar Picker */}
-                                <View style={styles.avatarPickerContainer}>
-                                    <TouchableOpacity onPress={pickImage} style={styles.avatarPicker}>
-                                        {selectedImage ? (
-                                            <Image source={{ uri: selectedImage }} style={styles.avatarPreview} />
-                                        ) : (
-                                            <View style={[styles.avatarPlaceholder, { backgroundColor: selectedColor }]}>
-                                                <Text style={styles.avatarPlaceholderText}>
-                                                    {newAlterName ? newAlterName.charAt(0).toUpperCase() : '?'}
-                                                </Text>
-                                            </View>
-                                        )}
-                                        <View style={styles.cameraIcon}>
-                                            <Ionicons name="camera" size={16} color="white" />
-                                        </View>
-                                    </TouchableOpacity>
-                                </View>
-
-                                <View style={styles.inputContainer}>
-                                    <Text style={styles.label}>Pseudo *</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        value={newAlterName}
-                                        onChangeText={setNewAlterName}
-                                        placeholder="Nom de l'alter"
-                                        placeholderTextColor={colors.textMuted}
-                                    />
-                                </View>
-
-                                <View style={styles.inputContainer}>
-                                    <Text style={styles.label}>Pronoms</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        value={newAlterPronouns}
-                                        onChangeText={setNewAlterPronouns}
-                                        placeholder="elle/lui, iel..."
-                                        placeholderTextColor={colors.textMuted}
-                                    />
-                                </View>
-
-                                <View style={styles.inputContainer}>
-                                    <Text style={styles.label}>Bio</Text>
-                                    <TextInput
-                                        style={[styles.input, styles.inputMultiline]}
-                                        value={newAlterBio}
-                                        onChangeText={setNewAlterBio}
-                                        placeholder="Description..."
-                                        placeholderTextColor={colors.textMuted}
-                                        multiline
-                                        numberOfLines={3}
-                                    />
-                                </View>
-
-                                <View style={styles.inputContainer}>
-                                    <Text style={styles.label}>Couleur</Text>
-                                    <View style={styles.colorPicker}>
-                                        {alterColors.map((color: string) => (
-                                            <TouchableOpacity
-                                                key={color}
-                                                style={[
-                                                    styles.colorOption,
-                                                    { backgroundColor: color },
-                                                    selectedColor === color && styles.colorOptionSelected,
-                                                ]}
-                                                onPress={() => setSelectedColor(color)}
-                                            />
-                                        ))}
-                                    </View>
-                                </View>
-                            </ScrollView>
-
-                            <View style={styles.modalActions}>
-                                <TouchableOpacity
-                                    style={styles.cancelButton}
-                                    onPress={() => {
-                                        setModalVisible(false);
-                                        resetForm();
-                                    }}
-                                >
-                                    <Text style={styles.cancelButtonText}>Annuler</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.createButton, loading && styles.createButtonDisabled]}
-                                    onPress={handleCreateAlter}
-                                    disabled={loading}
-                                >
-                                    <Text style={styles.createButtonText}>
-                                        {loading ? 'Création...' : 'Créer'}
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </KeyboardAvoidingView>
-                </View>
-            </Modal>
+                onClose={() => setModalVisible(false)}
+                onCreate={handleCreateAlter}
+                loading={loading}
+                pickImage={pickImage}
+            />
         </SafeAreaView>
     );
 }
@@ -697,14 +264,92 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
     },
-    header: {
+    dashboardHeader: {
+        paddingTop: spacing.sm,
+        paddingBottom: spacing.md,
+    },
+    headerTop: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: spacing.lg,
-        paddingBottom: spacing.sm,
-        paddingTop: spacing.sm,
+        marginBottom: spacing.md,
     },
+    headerActions: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    headerIconBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: colors.backgroundLight,
+    },
+    dashboardFooter: {
+        paddingTop: spacing.lg,
+    },
+
+    /* Section Headers */
+    sectionHeader: {
+        paddingHorizontal: spacing.lg,
+        marginBottom: spacing.md,
+    },
+    sectionTitle: {
+        ...typography.h3,
+        color: colors.text,
+        fontSize: 18,
+    },
+
+    /* Tools Grid */
+    toolsGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        paddingHorizontal: spacing.md,
+        gap: spacing.md,
+        marginBottom: spacing.xl,
+    },
+    toolItem: {
+        width: (AVAILABLE_WIDTH - spacing.md * 2) / 4, // 4 tools per row
+        alignItems: 'center',
+        gap: 8,
+    },
+    toolIcon: {
+        width: 54,
+        height: 54,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    toolLabel: {
+        ...typography.tiny,
+        color: colors.textSecondary,
+        textAlign: 'center',
+    },
+
+    /* Detailed Widgets */
+    widgetsContainer: {
+        paddingHorizontal: spacing.md,
+        gap: spacing.md,
+    },
+
+    skeletonGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        paddingTop: 20,
+    },
+    skeletonItem: {
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+
     greeting: {
         ...typography.body,
         color: colors.textSecondary,
@@ -716,26 +361,6 @@ const styles = StyleSheet.create({
     },
     settingsButton: {
         padding: spacing.sm,
-    },
-    viewToggleWrapper: {
-        flexDirection: 'row',
-        backgroundColor: colors.backgroundLight,
-        borderRadius: borderRadius.lg,
-        padding: 4,
-        gap: 4,
-        alignItems: 'center',
-    },
-    viewToggleBtn: {
-        padding: 8,
-        borderRadius: borderRadius.md,
-    },
-    viewToggleBtnActive: {
-        backgroundColor: colors.backgroundCard,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 1,
-        elevation: 1,
     },
 
 
@@ -769,7 +394,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.backgroundLight,
         borderRadius: borderRadius.lg,
         padding: 3,
-        marginBottom: spacing.sm,
+        marginBottom: spacing.md,
     },
     modeButton: {
         flex: 1,
@@ -811,7 +436,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: CONTAINER_PADDING,
     },
     gridContent: {
-        paddingBottom: 120,
+        paddingBottom: 40,
     },
 
     // Apple Watch style bubbles - width dynamique via inline style
@@ -896,7 +521,7 @@ const styles = StyleSheet.create({
     // FAB
     fabContainer: {
         position: 'absolute',
-        bottom: 70,
+        bottom: 30,
         left: 0,
         right: 0,
         alignItems: 'center',
@@ -923,7 +548,7 @@ const styles = StyleSheet.create({
 
     // Footer
     footerActions: {
-        padding: spacing.sm,
+        paddingVertical: spacing.xl,
         alignItems: 'center',
     },
     footerButton: {
@@ -1063,3 +688,4 @@ const styles = StyleSheet.create({
         color: 'white',
     },
 });
+

@@ -19,6 +19,7 @@ export const colors = {
     // Couleurs de fond - THÈME BLEU FONCÉ CANVA
     background: '#0F2847',           // Fond principal - bleu foncé Canva
     backgroundCard: '#163560',       // Fond des cartes - bleu moyen
+    surface: '#163560',              // Alias pour backgroundCard, utilisé dans certains composants
     backgroundLight: '#1E4275',      // Fond des inputs - bleu clair
 
     // Bordures et séparateurs

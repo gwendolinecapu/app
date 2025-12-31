@@ -12,7 +12,7 @@ import { ImageLightbox } from './ui/ImageLightbox';
 import { ImageCarousel } from './ui/ImageCarousel';
 import { FrontIndicator } from './ui/ActiveFrontBadge';
 import { ShareService } from '../services/share';
-import { ScaleButton } from './ui/ScaleButton';
+import { AnimatedPressable } from './ui/AnimatedPressable';
 import { ReportModal } from './ReportModal';
 import { ReportingService, ReportReason } from '../services/reporting';
 import { Alert, ActionSheetIOS, Platform } from 'react-native';
@@ -173,7 +173,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
             {/* Header - Clickable for profile navigation */}
             {showAuthor && (
                 <View style={styles.header}>
-                    <TouchableOpacity style={styles.authorInfo} onPress={handleAuthorPress} activeOpacity={0.7}>
+                    <AnimatedPressable style={styles.authorInfo} onPress={handleAuthorPress}>
                         {/* Avatar with Front Indicator */}
                         <FrontIndicator isFronting={post.is_author_fronting || false}>
                             {post.author_avatar ? (
@@ -195,7 +195,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                             </View>
                             <Text style={styles.timestamp}>{timeAgo(post.created_at)}</Text>
                         </View>
-                    </TouchableOpacity >
+                    </AnimatedPressable >
                     <TouchableOpacity onPress={handleOptions} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                         <Ionicons name="ellipsis-horizontal" size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
@@ -271,7 +271,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
             <View style={styles.actions}>
                 <View style={styles.leftActions}>
                     {/* Like Button */}
-                    <ScaleButton style={styles.actionButton} onPress={handleHeartPress}>
+                    <AnimatedPressable style={styles.actionButton} onPress={handleHeartPress}>
                         <Ionicons
                             name={isLiked ? "heart" : "heart-outline"}
                             size={26}
@@ -280,20 +280,20 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                         {(post.likes?.length || 0) > 0 && (
                             <Text style={styles.actionText}>{post.likes?.length}</Text>
                         )}
-                    </ScaleButton>
+                    </AnimatedPressable>
 
                     {/* Comment Button */}
-                    <ScaleButton style={styles.actionButton} onPress={() => onComment && onComment(post.id)}>
+                    <AnimatedPressable style={styles.actionButton} onPress={() => onComment && onComment(post.id)}>
                         <Ionicons name="chatbubble-outline" size={24} color={colors.textSecondary} />
                         {(post.comments_count || 0) > 0 && (
                             <Text style={styles.actionText}>{post.comments_count}</Text>
                         )}
-                    </ScaleButton>
+                    </AnimatedPressable>
 
                     {/* Share Button - Now functional */}
-                    <ScaleButton style={styles.actionButton} onPress={handleShare}>
+                    <AnimatedPressable style={styles.actionButton} onPress={handleShare}>
                         <Ionicons name="share-social-outline" size={24} color={colors.textSecondary} />
-                    </ScaleButton>
+                    </AnimatedPressable>
                 </View>
             </View>
 

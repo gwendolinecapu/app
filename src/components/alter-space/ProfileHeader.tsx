@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image } from 'expo-image';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { AnimatedPressable } from '../ui/AnimatedPressable';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Alter } from '../../types';
@@ -62,20 +63,20 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                         <Text style={styles.statValue}>{stats.posts}</Text>
                         <Text style={styles.statLabel}>Posts</Text>
                     </View>
-                    <TouchableOpacity
+                    <AnimatedPressable
                         style={styles.statBox}
                         onPress={onFollowersPress}
                     >
                         <Text style={styles.statValue}>{stats.followers}</Text>
                         <Text style={styles.statLabel}>Abonnés</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </AnimatedPressable>
+                    <AnimatedPressable
                         style={styles.statBox}
                         onPress={onFollowingPress}
                     >
                         <Text style={styles.statValue}>{stats.following}</Text>
                         <Text style={styles.statLabel}>Suivis</Text>
-                    </TouchableOpacity>
+                    </AnimatedPressable>
                 </View>
             </View>
 
@@ -107,28 +108,28 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             <View style={styles.actionButtonsRow}>
                 {isOwner ? (
                     <>
-                        <TouchableOpacity
+                        <AnimatedPressable
                             style={styles.actionButton}
                             onPress={() => router.push(`/alter-space/${alter.id}/edit`)}
                         >
                             <Text style={styles.actionButtonText}>Modifier</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </AnimatedPressable>
+                        <AnimatedPressable
                             style={styles.actionButton}
                             onPress={() => router.push('/history')}
                         >
                             <Text style={styles.actionButtonText}>Historique</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </AnimatedPressable>
+                        <AnimatedPressable
                             style={styles.actionButton}
                             onPress={() => router.push('/settings')}
                         >
                             <Ionicons name="settings-outline" size={16} color={colors.text} />
-                        </TouchableOpacity>
+                        </AnimatedPressable>
                     </>
                 ) : (
                     <>
-                        <TouchableOpacity
+                        <AnimatedPressable
                             style={[styles.actionButton, styles.primaryActionButton]}
                             onPress={onFriendAction}
                         >
@@ -136,13 +137,13 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                                 {friendStatus === 'friends' ? 'Abonnés' :
                                     friendStatus === 'pending' ? 'Demande envoyée' : 'S\'abonner'}
                             </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </AnimatedPressable>
+                        <AnimatedPressable
                             style={styles.actionButton}
                             onPress={() => router.push({ pathname: '/conversation/[id]', params: { id: alter.id } })}
                         >
                             <Text style={styles.actionButtonText}>Message</Text>
-                        </TouchableOpacity>
+                        </AnimatedPressable>
                     </>
                 )}
             </View>

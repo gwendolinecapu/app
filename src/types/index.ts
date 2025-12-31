@@ -29,7 +29,7 @@ export interface Alter {
     avatar_url?: string; // Alias for avatar (backward compatibility)
     color?: string; // Couleur préférée de l'alter (pour l'UI)
     role_ids?: string[]; // IDs des rôles attribués
-    createdAt: any; // Timestamp Firestore
+    createdAt: any; // Timestamp Firestore (TODO: Type correctly as Timestamp | Date | number)
     userId: string; // ID de l'utilisateur principal (système)
     is_host?: boolean; // Si l'alter est l'hôte principal
     is_active: boolean; // Si l'alter est actuellement au front

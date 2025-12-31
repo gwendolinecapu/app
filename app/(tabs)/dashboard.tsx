@@ -28,6 +28,7 @@ import { triggerHaptic } from '../../src/lib/haptics';
 
 import { DashboardHeader } from '../../src/components/dashboard/DashboardHeader';
 import { SystemControlBar } from '../../src/components/dashboard/SystemControlBar';
+import { SystemMenuModal } from '../../src/components/dashboard/SystemMenuModal';
 import { AlterBubble } from '../../src/components/dashboard/AlterBubble';
 import { AddAlterModal } from '../../src/components/dashboard/AddAlterModal';
 import { Alter } from '../../src/types';
@@ -66,6 +67,7 @@ type GridItem =
 export default function Dashboard() {
     const { alters, user, refreshAlters, setFronting, activeFront, loading: authLoading } = useAuth();
     const [modalVisible, setModalVisible] = useState(false);
+    const [menuVisible, setMenuVisible] = useState(false);
     const [selectionMode, setSelectionMode] = useState<'single' | 'multi'>('single');
     const [selectedAlters, setSelectedAlters] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -234,16 +236,13 @@ export default function Dashboard() {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
             />
 
-            <SystemControlBar />
+            <SystemControlBar
+                onOpenMenu={() => setMenuVisible(true)}
+                onConfirmFronting={handleConfirmCoFront}
+                hasSelection={selectedAlters.length > 0}
+            />
 
-            {selectionMode === 'multi' && selectedAlters.length > 0 && (
-                <View style={styles.fabContainer}>
-                    <TouchableOpacity style={styles.fabButton} onPress={handleConfirmCoFront}>
-                        <Text style={styles.fabText}>Confirmer ({selectedAlters.length})</Text>
-                        <Ionicons name="arrow-forward" size={20} color="white" />
-                    </TouchableOpacity>
-                </View>
-            )}
+            {/* Selection Confirmation FAB removed as it is now in the center button of ControlBar */}
 
             <AddAlterModal
                 visible={modalVisible}
@@ -251,6 +250,11 @@ export default function Dashboard() {
                 onCreate={handleCreateAlter}
                 loading={loading}
                 pickImage={pickImage}
+            />
+
+            <SystemMenuModal
+                visible={menuVisible}
+                onClose={() => setMenuVisible(false)}
             />
         </SafeAreaView>
     );

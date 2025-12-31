@@ -1,5 +1,11 @@
 # Changelog
 
+## [2025-12-31] - UX Refinement & Navigation 💎
+- **System Control Bar**: Lowered position using `useSafeAreaInsets` for better ergonomics and refined center button design (removed bulky border).
+- **Menu Cleanup**: Simplified `SystemMenuModal` by removing redundant "Journal" and "Vault" items and consolidating "Calendar" and "Stats" into a single "Suivi" option.
+- **Navigation**: Added back button and header layout to `app/(tabs)/journal.tsx` to ensure consistent navigation.
+- **Verification**: Audited and confirmed presence of back buttons on `Help`, `Tasks`, and `History` screens.
+
 ## [2025-12-31] - Dashboard Final Polish & Refactoring 💎
 - **Architectural Cleanup**: Split monolithic `dashboard.tsx` into modular components (`DashboardHeader`, `SystemControlBar`, `AlterBubble`, `AddAlterModal`).
 - **System Control Bar**: Replaced the static toolkit grid with a premium floating bar using glassmorphism for better tool accessibility.

@@ -5,20 +5,49 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { triggerHaptic } from '../../lib/haptics';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /**
  * SystemControlBar - A premium, floating navigation bar for system tools.
  * Provides quick access to internal communication and organization features.
  */
-export const SystemControlBar: React.FC = () => {
+interface SystemControlBarProps {
+    onOpenMenu: () => void;
+    onConfirmFronting: () => void;
+    hasSelection: boolean;
+}
+
+/**
+ * SystemControlBar - A premium, floating navigation bar for system tools.
+ * Provides quick access to internal communication and organization features.
+ */
+export const SystemControlBar: React.FC<SystemControlBarProps> = ({
+    onOpenMenu,
+    onConfirmFronting,
+    hasSelection
+}) => {
+    const insets = useSafeAreaInsets();
     const handlePress = (route: string) => {
         triggerHaptic.light();
         router.push(route as any);
     };
 
     return (
-        <View style={styles.wrapper}>
+        <View style={[styles.wrapper, { bottom: Math.max(insets.bottom, 16) }]} >
             <BlurView intensity={80} tint="dark" style={styles.container}>
+                <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => {
+                        triggerHaptic.medium();
+                        onOpenMenu();
+                    }}
+                >
+                    <View style={styles.iconWrapper}>
+                        <Ionicons name="apps-outline" size={24} color="white" />
+                    </View>
+                    <Text style={styles.label}>Menu</Text>
+                </TouchableOpacity>
+
                 <TouchableOpacity
                     style={styles.menuItem}
                     onPress={() => handlePress('/team-chat')}
@@ -30,32 +59,34 @@ export const SystemControlBar: React.FC = () => {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => handlePress('/(tabs)/dashboard')} // Placeholder or specific tasks route
-                >
-                    <View style={styles.iconWrapper}>
-                        <Ionicons name="list-outline" size={24} color={colors.success} />
-                    </View>
-                    <Text style={styles.label}>Tâches</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={styles.centerButton}
-                    onPress={() => triggerHaptic.medium()}
+                    style={[styles.centerButton, !hasSelection && styles.centerButtonDisabled]}
+                    onPress={() => {
+                        if (hasSelection) {
+                            triggerHaptic.success();
+                            onConfirmFronting();
+                        } else {
+                            triggerHaptic.light();
+                        }
+                    }}
+                    activeOpacity={0.7}
                 >
                     <View style={styles.centerIconBg}>
-                        <Ionicons name="stats-chart" size={26} color="white" />
+                        <Ionicons
+                            name={hasSelection ? "checkmark-circle" : "radio-button-on"}
+                            size={28}
+                            color="white"
+                        />
                     </View>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={styles.menuItem}
-                    onPress={() => handlePress('/(tabs)/dashboard')} // Placeholder or calendar route
+                    onPress={() => handlePress('/history')}
                 >
                     <View style={styles.iconWrapper}>
                         <Ionicons name="calendar-outline" size={24} color={colors.warning} />
                     </View>
-                    <Text style={styles.label}>Calendrier</Text>
+                    <Text style={styles.label}>Suivi</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -65,10 +96,10 @@ export const SystemControlBar: React.FC = () => {
                     <View style={styles.iconWrapper}>
                         <Ionicons name="settings-outline" size={24} color={colors.textSecondary} />
                     </View>
-                    <Text style={styles.label}>Profil</Text>
+                    <Text style={styles.label}>Réglages</Text>
                 </TouchableOpacity>
             </BlurView>
-        </View>
+        </View >
     );
 };
 
@@ -115,19 +146,23 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     centerButton: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
+        width: 60,
+        height: 60,
+        borderRadius: 30,
         backgroundColor: colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: -30, // Légère surélévation
-        borderWidth: 5,
-        borderColor: colors.background,
+        marginTop: -35,
         shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.5,
+        shadowRadius: 10,
+        elevation: 8,
+    },
+    centerButtonDisabled: {
+        backgroundColor: colors.surface,
+        opacity: 0.5,
+        shadowOpacity: 0,
     },
     centerIconBg: {
         width: '100%',

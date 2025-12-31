@@ -50,17 +50,15 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                     >
                         <Ionicons name="medical" size={20} color={colors.error} />
                     </TouchableOpacity>
-                    {hasSelection && (
-                        <TouchableOpacity
-                            style={styles.headerIconBtn}
-                            onPress={() => {
-                                triggerHaptic.light();
-                                router.push('/shop');
-                            }}
-                        >
-                            <Ionicons name="storefront-outline" size={20} color={colors.primary} />
-                        </TouchableOpacity>
-                    )}
+                    <TouchableOpacity
+                        style={styles.headerIconBtn}
+                        onPress={() => {
+                            triggerHaptic.light();
+                            router.push('/shop');
+                        }}
+                    >
+                        <Ionicons name="storefront-outline" size={20} color={colors.primary} />
+                    </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.headerIconBtn}
                         onPress={() => {

@@ -44,6 +44,17 @@ export default function RegisterScreen() {
             return;
         }
 
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(trimmedEmail)) {
+            Alert.alert('Erreur', 'Veuillez entrer une adresse email valide');
+            return;
+        }
+
+        if (trimmedUsername.length > 30) {
+            Alert.alert('Erreur', "Le nom d'utilisateur ne doit pas dépasser 30 caractères");
+            return;
+        }
+
         setLoading(true);
         const { error } = await signUp(trimmedEmail, trimmedPassword, trimmedUsername);
         setLoading(false);
@@ -89,7 +100,7 @@ export default function RegisterScreen() {
 
                     <View style={styles.form}>
                         <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Nom d'utilisateur</Text>
+                            <Text style={styles.label}>Nom d&apos;utilisateur</Text>
                             <TextInput
                                 style={styles.input}
                                 placeholder="MonSystème"

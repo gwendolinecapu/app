@@ -47,32 +47,26 @@ export const SystemMenuModal: React.FC<SystemMenuModalProps> = ({ visible, onClo
 
                     <ScrollView contentContainerStyle={styles.grid}>
                         {MENU_ITEMS.map((item) => {
-                            const isRestricted = (item.id === 'journal' || item.id === 'vault') && !hasSelection;
-
                             return (
                                 <TouchableOpacity
                                     key={item.id}
-                                    style={[styles.gridItem, isRestricted && styles.gridItemDisabled]}
+                                    style={styles.gridItem}
                                     onPress={() => {
-                                        if (isRestricted) {
-                                            triggerHaptic.warning();
-                                        } else {
-                                            handleNavigation(item.route);
-                                        }
+                                        handleNavigation(item.route);
                                     }}
-                                    activeOpacity={isRestricted ? 1 : 0.7}
+                                    activeOpacity={0.7}
                                 >
-                                    <View style={[styles.iconBg, { backgroundColor: isRestricted ? 'rgba(255,255,255,0.05)' : `${item.color}20` }]}>
+                                    <View style={[styles.iconBg, { backgroundColor: `${item.color}20` }]}>
                                         <Ionicons
-                                            name={isRestricted ? "lock-closed" : item.icon as any}
+                                            name={item.icon as any}
                                             size={28}
-                                            color={isRestricted ? colors.textMuted : item.color}
+                                            color={item.color}
                                         />
                                     </View>
                                     <View style={styles.itemTextContainer}>
-                                        <Text style={[styles.itemLabel, isRestricted && styles.itemTextDisabled]}>{item.label}</Text>
-                                        <Text style={[styles.itemDescription, isRestricted && styles.itemTextDisabled]}>
-                                            {isRestricted ? 'Sélectionner un alter' : item.description}
+                                        <Text style={styles.itemLabel}>{item.label}</Text>
+                                        <Text style={styles.itemDescription}>
+                                            {item.description}
                                         </Text>
                                     </View>
                                 </TouchableOpacity>

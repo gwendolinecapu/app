@@ -57,7 +57,6 @@ export const SystemControlBar: React.FC<SystemControlBarProps> = ({
                 <TouchableOpacity
                     style={[
                         styles.centerButton,
-                        !hasSelection && styles.centerButtonDisabled,
                         hasSelection && styles.centerButtonActive
                     ]}
                     onPress={() => {

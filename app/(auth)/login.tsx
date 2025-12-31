@@ -30,6 +30,12 @@ export default function LoginScreen() {
         const trimmedEmail = email.trim();
         const trimmedPassword = password.trim();
 
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(trimmedEmail)) {
+            Alert.alert('Erreur', 'Veuillez entrer une adresse email valide');
+            return;
+        }
+
 
 
         setLoading(true);
@@ -103,7 +109,7 @@ export default function LoginScreen() {
                         <Text style={styles.footerText}>Pas encore de compte ?</Text>
                         <Link href="/(auth)/register" asChild>
                             <TouchableOpacity>
-                                <Text style={styles.link}>S'inscrire</Text>
+                                <Text style={styles.link}>S&apos;inscrire</Text>
                             </TouchableOpacity>
                         </Link>
                     </View>

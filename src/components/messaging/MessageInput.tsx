@@ -71,23 +71,40 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                     style={styles.modalOverlay}
                     activeOpacity={1}
                     onPress={() => setMenuVisible(false)}
+                    accessibilityLabel="Fermer le menu des pièces jointes"
+                    accessibilityRole="button"
                 >
                     <View style={styles.menuContainer}>
-                        <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); onOpenPoll(); }}>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => { setMenuVisible(false); onOpenPoll(); }}
+                            accessibilityLabel="Créer un sondage"
+                            accessibilityRole="button"
+                        >
                             <View style={[styles.iconContainer, { backgroundColor: '#E3F2FD' }]}>
                                 <Ionicons name="stats-chart" size={24} color="#1565C0" />
                             </View>
                             <Text style={styles.menuText}>Sondage</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); onOpenNote(); }}>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => { setMenuVisible(false); onOpenNote(); }}
+                            accessibilityLabel="Créer une note"
+                            accessibilityRole="button"
+                        >
                             <View style={[styles.iconContainer, { backgroundColor: '#FFF3E0' }]}>
                                 <Ionicons name="document-text" size={24} color="#EF6C00" />
                             </View>
                             <Text style={styles.menuText}>Note</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); onPickImage?.(); }}>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => { setMenuVisible(false); onPickImage?.(); }}
+                            accessibilityLabel="Envoyer une image"
+                            accessibilityRole="button"
+                        >
                             <View style={[styles.iconContainer, { backgroundColor: '#E8F5E9' }]}>
                                 <Ionicons name="image" size={24} color="#2E7D32" />
                             </View>
@@ -100,6 +117,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             <TouchableOpacity
                 style={styles.attachButton}
                 onPress={() => setMenuVisible(true)}
+                accessibilityLabel="Ouvrir le menu des pièces jointes"
+                accessibilityRole="button"
             >
                 <Ionicons name="add" size={24} color={colors.text} />
             </TouchableOpacity>
@@ -118,6 +137,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                 style={[styles.sendButton, !text.trim() && styles.sendButtonDisabled]}
                 onPress={handleSend}
                 disabled={!text.trim()}
+                accessibilityLabel="Envoyer le message"
+                accessibilityRole="button"
             >
                 <Ionicons name="send" size={20} color={colors.background} />
             </TouchableOpacity>

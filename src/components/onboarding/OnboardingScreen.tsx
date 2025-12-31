@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity, FlatList, ViewToken } from 'react-native';
+import React, { useRef, useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity, FlatList, ViewToken, TextInput } from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -8,11 +8,13 @@ import Animated, {
     interpolate,
     Extrapolation,
     useAnimatedScrollHandler,
-    SharedValue
+    SharedValue,
+    withRepeat,
+    withSequence,
 } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography } from '../../lib/theme';
+import { colors, typography, spacing, borderRadius } from '../../lib/theme';
 import { storage } from '../../lib/storage';
 import { triggerHaptic } from '../../lib/haptics';
 
@@ -21,56 +23,68 @@ const { width, height } = Dimensions.get('window');
 const SLIDES = [
     {
         id: '1',
+        type: 'info',
         title: 'Bienvenue sur Plural Connect',
-        description: 'L\'espace sécurisé conçu pour faciliter la communication et l\'organisation des systèmes pluriels.',
+        description: 'L\'espace sécurisé pour la communication et l\'organisation des systèmes pluriels.',
         icon: 'people-circle-outline' as const,
         color: '#6366f1'
     },
     {
         id: '2',
-        title: 'Gérez vos Alters',
-        description: 'Créez des profils détaillés, suivez qui front, et gardez une trace de vos états émotionnels.',
-        icon: 'albums-outline' as const,
+        type: 'info',
+        title: 'Suivi du Front',
+        description: 'Enregistrez qui est en front, la durée, et analysez les statistiques pour mieux comprendre votre système.',
+        icon: 'swap-horizontal-outline' as const,
         color: '#8b5cf6'
     },
     {
         id: '3',
+        type: 'info',
+        title: 'Journal Intime',
+        description: 'Un espace privé pour chaque alter, ou un journal partagé pour le système. Exprimez-vous librement.',
+        icon: 'book-outline' as const,
+        color: '#10b981'
+    },
+    {
+        id: '4',
+        type: 'info',
         title: 'Espace Sécurisé',
-        description: 'Vos données sont privées. Utilisez le mode discret et le verrouillage pour protéger votre jardin secret.',
+        description: 'Protégez votre jardin secret avec un code PIN, le mode discret et des données chiffrées.',
         icon: 'shield-checkmark-outline' as const,
         color: '#ec4899'
     },
+    {
+        id: '5',
+        type: 'input',
+        title: 'Comment s\'appelle votre système ?',
+        description: 'Ce nom sera visible par les autres si vous le rendez public.',
+        icon: 'sparkles-outline' as const,
+        color: '#f59e0b',
+        inputKey: 'systemName',
+        placeholder: 'Ex: Le Collectif Stellaire'
+    },
+    {
+        id: '6',
+        type: 'input',
+        title: 'Combien d\'alters êtes-vous ?',
+        description: 'Une estimation suffit, vous pourrez toujours modifier cela plus tard.',
+        icon: 'list-outline' as const,
+        color: '#3b82f6',
+        inputKey: 'alterCount',
+        placeholder: 'Ex: 5',
+        keyboardType: 'numeric'
+    },
 ];
 
-const Slide = ({ item, index, scrollX }: { item: typeof SLIDES[0], index: number, scrollX: SharedValue<number> }) => {
+const Slide = ({ item, index, scrollX, onInputChange, quizData }: { item: typeof SLIDES[0], index: number, scrollX: SharedValue<number>, onInputChange: (key: string, value: string) => void, quizData: any }) => {
     const animatedStyle = useAnimatedStyle(() => {
         const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
 
-        const scale = interpolate(
-            scrollX.value,
-            inputRange,
-            [0.5, 1, 0.5],
-            Extrapolation.CLAMP
-        );
+        const scale = interpolate(scrollX.value, inputRange, [0.5, 1, 0.5], Extrapolation.CLAMP);
+        const opacity = interpolate(scrollX.value, inputRange, [0, 1, 0], Extrapolation.CLAMP);
+        const translateY = interpolate(scrollX.value, inputRange, [100, 0, 100], Extrapolation.CLAMP);
 
-        const opacity = interpolate(
-            scrollX.value,
-            inputRange,
-            [0, 1, 0],
-            Extrapolation.CLAMP
-        );
-
-        const translateY = interpolate(
-            scrollX.value,
-            inputRange,
-            [100, 0, 100],
-            Extrapolation.CLAMP
-        );
-
-        return {
-            transform: [{ scale }, { translateY }],
-            opacity
-        };
+        return { transform: [{ scale }, { translateY }], opacity };
     });
 
     return (
@@ -81,6 +95,17 @@ const Slide = ({ item, index, scrollX }: { item: typeof SLIDES[0], index: number
             <Animated.View style={[styles.textContainer, animatedStyle]}>
                 <Text style={[styles.title, { color: item.color }]}>{item.title}</Text>
                 <Text style={styles.description}>{item.description}</Text>
+                {item.type === 'input' && (
+                    <TextInput
+                        style={styles.input}
+                        placeholder={item.placeholder}
+                        placeholderTextColor={colors.textMuted}
+                        value={quizData[item.inputKey]}
+                        onChangeText={(text) => onInputChange(item.inputKey, text)}
+                        keyboardType={item.keyboardType || 'default'}
+                        autoCapitalize="sentences"
+                    />
+                )}
             </Animated.View>
         </View>
     );
@@ -92,37 +117,54 @@ const Paginator = ({ data, scrollX }: { data: typeof SLIDES, scrollX: SharedValu
             {data.map((_, i) => {
                 const animatedDotStyle = useAnimatedStyle(() => {
                     const inputRange = [(i - 1) * width, i * width, (i + 1) * width];
-                    const widthDot = interpolate(
-                        scrollX.value,
-                        inputRange,
-                        [10, 20, 10],
-                        Extrapolation.CLAMP
-                    );
-                    const opacity = interpolate(
-                        scrollX.value,
-                        inputRange,
-                        [0.3, 1, 0.3],
-                        Extrapolation.CLAMP
-                    );
-                    return {
-                        width: widthDot,
-                        opacity
-                    };
+                    const widthDot = interpolate(scrollX.value, inputRange, [10, 20, 10], Extrapolation.CLAMP);
+                    const opacity = interpolate(scrollX.value, inputRange, [0.3, 1, 0.3], Extrapolation.CLAMP);
+                    return { width: widthDot, opacity };
                 });
 
-                return (
-                    <Animated.View style={[styles.dot, animatedDotStyle]} key={i.toString()} />
-                );
+                return <Animated.View style={[styles.dot, animatedDotStyle]} key={i.toString()} />;
             })}
         </View>
     );
 };
 
+const BackgroundBubbles = () => {
+    const anim1 = useSharedValue(0);
+    const anim2 = useSharedValue(0);
+
+    useEffect(() => {
+        anim1.value = withRepeat(withSequence(withTiming(1, { duration: 15000 }), withTiming(0, { duration: 15000 })), -1, true);
+        anim2.value = withRepeat(withSequence(withTiming(1, { duration: 20000 }), withTiming(0, { duration: 20000 })), -1, true);
+    }, []);
+
+    const circle1Style = useAnimatedStyle(() => ({
+        transform: [
+            { translateX: interpolate(anim1.value, [0, 1], [-width * 0.2, width * 0.1]) },
+            { translateY: interpolate(anim1.value, [0, 1], [-height * 0.1, height * 0.1]) },
+        ],
+    }));
+
+    const circle2Style = useAnimatedStyle(() => ({
+        transform: [
+            { translateX: interpolate(anim2.value, [0, 1], [width * 0.1, -width * 0.1]) },
+            { translateY: interpolate(anim2.value, [0, 1], [height * 0.1, -height * 0.1]) },
+        ],
+    }));
+
+    return (
+        <View style={styles.backgroundCircles}>
+            <Animated.View style={[styles.circle, styles.circle1, circle1Style]} />
+            <Animated.View style={[styles.circle, styles.circle2, circle2Style]} />
+        </View>
+    )
+}
+
 export function OnboardingScreen() {
     const router = useRouter();
     const scrollX = useSharedValue(0);
     const flatListRef = useRef<FlatList>(null);
-    const [currentIndex, setCurrentIndex] = React.useState(0);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [quizData, setQuizData] = useState({ systemName: '', alterCount: '' });
 
     const scrollHandler = useAnimatedScrollHandler((event) => {
         scrollX.value = event.contentOffset.x;
@@ -134,6 +176,10 @@ export function OnboardingScreen() {
         }
     }).current;
 
+    const handleInputChange = (key: string, value: string) => {
+        setQuizData(prev => ({ ...prev, [key]: value }));
+    };
+
     const handleNext = async () => {
         if (currentIndex < SLIDES.length - 1) {
             flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
@@ -141,21 +187,21 @@ export function OnboardingScreen() {
         } else {
             triggerHaptic.success();
             await storage.setHasSeenOnboarding(true);
-            router.replace('/(auth)/login');
+            router.replace({
+                pathname: '/(auth)/register',
+                params: { systemName: quizData.systemName, alterCount: quizData.alterCount }
+            });
         }
     };
 
     return (
         <View style={styles.container}>
-            <View style={styles.backgroundCircles}>
-                <View style={[styles.circle, styles.circle1]} />
-                <View style={[styles.circle, styles.circle2]} />
-            </View>
+            <BackgroundBubbles />
 
             <Animated.FlatList
                 ref={flatListRef}
                 data={SLIDES}
-                renderItem={({ item, index }) => <Slide item={item} index={index} scrollX={scrollX} />}
+                renderItem={({ item, index }) => <Slide item={item} index={index} scrollX={scrollX} onInputChange={handleInputChange} quizData={quizData} />}
                 keyExtractor={(item) => item.id}
                 horizontal
                 pagingEnabled
@@ -169,13 +215,9 @@ export function OnboardingScreen() {
             <View style={styles.footer}>
                 <Paginator data={SLIDES} scrollX={scrollX} />
 
-                <TouchableOpacity
-                    style={styles.button}
-                    onPress={handleNext}
-                    activeOpacity={0.8}
-                >
+                <TouchableOpacity style={styles.button} onPress={handleNext} activeOpacity={0.8}>
                     <Text style={styles.buttonText}>
-                        {currentIndex === SLIDES.length - 1 ? 'Commencer' : 'Suivant'}
+                        {currentIndex === SLIDES.length - 1 ? 'Créer mon compte' : 'Suivant'}
                     </Text>
                     <Ionicons
                         name={currentIndex === SLIDES.length - 1 ? 'rocket-outline' : 'arrow-forward'}
@@ -198,7 +240,7 @@ const styles = StyleSheet.create({
     },
     slide: {
         width,
-        height: height * 0.7, // Take up 70% of screen height
+        height: height * 0.7,
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
@@ -213,7 +255,7 @@ const styles = StyleSheet.create({
     },
     textContainer: {
         alignItems: 'center',
-        maxWidth: '80%',
+        maxWidth: '85%',
     },
     title: {
         ...typography.h1,
@@ -228,8 +270,20 @@ const styles = StyleSheet.create({
         fontSize: 16,
         lineHeight: 24,
     },
+    input: {
+        ...typography.body,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.backgroundLight,
+        borderRadius: borderRadius.md,
+        width: width * 0.8,
+        padding: spacing.md,
+        marginTop: spacing.lg,
+        textAlign: 'center',
+        color: colors.text,
+    },
     footer: {
-        height: height * 0.2, // Bottom 20%
+        height: height * 0.2,
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 20,

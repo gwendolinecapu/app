@@ -1,7 +1,9 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { TapGestureHandler, State } from 'react-native-gesture-handler';
+import Animated2, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { Post } from '../types';
 import { colors, spacing, borderRadius, typography } from '../lib/theme';
 import { timeAgo } from '../lib/date';
@@ -17,17 +19,6 @@ import { ReportModal } from './ReportModal';
 import { ReportingService, ReportReason } from '../services/reporting';
 import { Alert, ActionSheetIOS, Platform } from 'react-native';
 
-// =====================================================
-// POST CARD V2
-// Composant de post complet avec:
-// - Double tap to like
-// - Navigation vers profil auteur
-// - Support vidéo/audio/image/carousel
-// - Lightbox pour les images
-// - Badge "En Front" pour auteur actif
-// - Partage natif
-// =====================================================
-
 interface PostCardProps {
     post: Post;
     onLike: (postId: string) => void;
@@ -39,38 +30,29 @@ interface PostCardProps {
 }
 
 const { width } = Dimensions.get('window');
+const AnimatedIcon = Animated.createAnimatedComponent(Ionicons);
 
 export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthorPress, currentUserId, showAuthor = true }: PostCardProps) => {
     const doubleTapRef = useRef(null);
     const likeScale = useRef(new Animated.Value(0)).current;
+    const heartScale = useRef(new Animated.Value(1)).current;
 
-    // Lightbox state for image zoom
     const [lightboxVisible, setLightboxVisible] = useState(false);
     const [lightboxImageUrl, setLightboxImageUrl] = useState('');
-
-    // Report Modal specific state
     const [reportModalVisible, setReportModalVisible] = useState(false);
 
     const isLiked = currentUserId && post.likes?.includes(currentUserId);
-
-    // Check if post has multiple images
     const hasMultipleImages = post.media_urls && post.media_urls.length > 1;
-    const allImages = hasMultipleImages
-        ? post.media_urls
-        : post.media_url
-            ? [post.media_url]
-            : [];
+    const allImages = hasMultipleImages ? post.media_urls : post.media_url ? [post.media_url] : [];
 
     const onDoubleTap = (event: any) => {
         if (event.nativeEvent.state === State.ACTIVE) {
             triggerHaptic.success();
-
             Animated.sequence([
                 Animated.spring(likeScale, { toValue: 1, useNativeDriver: true, speed: 50, bounciness: 10 }),
                 Animated.delay(500),
                 Animated.timing(likeScale, { toValue: 0, duration: 200, useNativeDriver: true })
             ]).start();
-
             if (!isLiked) {
                 onLike(post.id);
             }
@@ -80,6 +62,14 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
     const handleHeartPress = () => {
         triggerHaptic.selection();
         onLike(post.id);
+        
+        // Pop animation
+        heartScale.setValue(0.8);
+        Animated.spring(heartScale, {
+            toValue: 1,
+            friction: 3,
+            useNativeDriver: true,
+        }).start();
     };
 
     const handleAuthorPress = () => {
@@ -89,24 +79,17 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
         }
     };
 
-    // Handle share with native sharing
     const handleShare = async () => {
         triggerHaptic.selection();
-        if (onShare) {
-            onShare(post.id);
-        } else {
-            // Use native share if no custom handler
-            await ShareService.sharePost(post.id, post.content, post.author_name || 'Utilisateur');
-        }
+        if (onShare) onShare(post.id);
+        else await ShareService.sharePost(post.id, post.content, post.author_name || 'Utilisateur');
     };
 
-    // Handle image press from carousel
     const handleImagePress = (index: number, imageUrl: string) => {
         setLightboxImageUrl(imageUrl);
         setLightboxVisible(true);
     };
 
-    // Determine media type from URL extension
     const getMediaType = (url: string) => {
         if (!url) return 'none';
         const ext = url.split('.').pop()?.toLowerCase();
@@ -117,32 +100,15 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
 
     const handleOptions = () => {
         const options = ['Signaler', 'Annuler'];
-        const destructiveButtonIndex = 0;
-        const cancelButtonIndex = 1;
-
         if (Platform.OS === 'ios') {
-            ActionSheetIOS.showActionSheetWithOptions(
-                {
-                    options,
-                    destructiveButtonIndex,
-                    cancelButtonIndex,
-                },
-                (buttonIndex) => {
-                    if (buttonIndex === 0) {
-                        setReportModalVisible(true);
-                    }
-                }
+            ActionSheetIOS.showActionSheetWithOptions({ options, cancelButtonIndex: 1, destructiveButtonIndex: 0 },
+                (buttonIndex) => { if (buttonIndex === 0) setReportModalVisible(true); }
             );
         } else {
-            // Android fallback
-            Alert.alert(
-                'Options',
-                '',
-                [
-                    { text: 'Annuler', style: 'cancel' },
-                    { text: 'Signaler', style: 'destructive', onPress: () => setReportModalVisible(true) },
-                ]
-            );
+            Alert.alert('Options', '', [
+                { text: 'Annuler', style: 'cancel' },
+                { text: 'Signaler', style: 'destructive', onPress: () => setReportModalVisible(true) },
+            ]);
         }
     };
 
@@ -152,14 +118,8 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
             return;
         }
         try {
-            await ReportingService.submitReport(
-                currentUserId,
-                post.id,
-                'post',
-                reason,
-                details
-            );
-            Alert.alert('Merci', 'Votre signalement a été reçu et sera examiné.');
+            await ReportingService.submitReport(currentUserId, post.id, 'post', reason, details);
+            Alert.alert('Merci', 'Votre signalement a été reçu.');
         } catch (error) {
             console.error(error);
             Alert.alert('Erreur', "Impossible d'envoyer le signalement.");
@@ -170,11 +130,9 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
 
     return (
         <View style={styles.card}>
-            {/* Header - Clickable for profile navigation */}
             {showAuthor && (
                 <View style={styles.header}>
                     <AnimatedPressable style={styles.authorInfo} onPress={handleAuthorPress}>
-                        {/* Avatar with Front Indicator */}
                         <FrontIndicator isFronting={post.is_author_fronting || false}>
                             {post.author_avatar ? (
                                 <Image source={{ uri: post.author_avatar }} style={styles.avatar} />
@@ -188,9 +146,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                             <View style={styles.authorNameRow}>
                                 <Text style={styles.authorName}>{post.author_name || 'Système'}</Text>
                                 {post.is_author_fronting && (
-                                    <View style={styles.frontBadge}>
-                                        <Text style={styles.frontBadgeText}>En front</Text>
-                                    </View>
+                                    <View style={styles.frontBadge}><Text style={styles.frontBadgeText}>En front</Text></View>
                                 )}
                             </View>
                             <Text style={styles.timestamp}>{timeAgo(post.created_at)}</Text>
@@ -202,114 +158,58 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                 </View >
             )}
 
-            {/* Content Text */}
-            {
-                post.content && (
-                    <Text style={styles.content}>{post.content}</Text>
-                )
-            }
+            {post.content && <Text style={styles.content}>{post.content}</Text>}
 
-            {/* Media Section with Double Tap to Like */}
-            {
-                (post.media_url || hasMultipleImages) && (
-                    <TapGestureHandler
-                        ref={doubleTapRef}
-                        numberOfTaps={2}
-                        onHandlerStateChange={onDoubleTap}
-                    >
-                        <View style={styles.mediaContainer}>
-                            {/* Multi-Image Carousel */}
-                            {hasMultipleImages ? (
-                                <ImageCarousel
-                                    images={post.media_urls!}
-                                    onImagePress={handleImagePress}
-                                />
-                            ) : (
-                                <>
-                                    {/* Single Image */}
-                                    {mediaType === 'image' && (
-                                        <TouchableOpacity
-                                            activeOpacity={0.95}
-                                            onPress={() => {
-                                                setLightboxImageUrl(post.media_url || '');
-                                                setLightboxVisible(true);
-                                            }}
-                                            style={styles.mediaWrapper}
-                                        >
-                                            <Image
-                                                source={{ uri: post.media_url }}
-                                                style={styles.media}
-                                                resizeMode="cover"
-                                            />
-                                        </TouchableOpacity>
-                                    )}
+            {(post.media_url || hasMultipleImages) && (
+                <TapGestureHandler ref={doubleTapRef} numberOfTaps={2} onHandlerStateChange={onDoubleTap}>
+                    <View style={styles.mediaContainer}>
+                        {hasMultipleImages ? (
+                            <ImageCarousel images={post.media_urls!} onImagePress={handleImagePress} />
+                        ) : (
+                            <>
+                                {mediaType === 'image' && (
+                                    <TouchableOpacity activeOpacity={0.95} onPress={() => { setLightboxImageUrl(post.media_url || ''); setLightboxVisible(true); }} style={styles.mediaWrapper}>
+                                        <Image source={{ uri: post.media_url }} style={styles.media} resizeMode="cover" />
+                                    </TouchableOpacity>
+                                )}
+                                {mediaType === 'video' && <VideoPlayer uri={post.media_url!} autoPlay={false} />}
+                                {mediaType === 'audio' && <View style={styles.audioWrapper}><AudioPlayer uri={post.media_url!} /></View>}
+                            </>
+                        )}
+                        <Animated.View style={[styles.heartOverlay, { transform: [{ scale: likeScale }] }]}>
+                            <Ionicons name="heart" size={80} color="white" style={styles.heartShadow} />
+                        </Animated.View>
+                    </View>
+                </TapGestureHandler>
+            )}
 
-                                    {/* Video Player */}
-                                    {mediaType === 'video' && (
-                                        <VideoPlayer uri={post.media_url!} autoPlay={false} />
-                                    )}
-
-                                    {/* Audio Player */}
-                                    {mediaType === 'audio' && (
-                                        <View style={styles.audioWrapper}>
-                                            <AudioPlayer uri={post.media_url!} />
-                                        </View>
-                                    )}
-                                </>
-                            )}
-
-                            {/* Animated Heart Overlay (shown on double tap) */}
-                            <Animated.View style={[styles.heartOverlay, { transform: [{ scale: likeScale }] }]}>
-                                <Ionicons name="heart" size={80} color="white" style={styles.heartShadow} />
-                            </Animated.View>
-                        </View>
-                    </TapGestureHandler>
-                )
-            }
-
-            {/* Action Buttons */}
             <View style={styles.actions}>
                 <View style={styles.leftActions}>
-                    {/* Like Button */}
                     <AnimatedPressable style={styles.actionButton} onPress={handleHeartPress}>
-                        <Ionicons
+                        <AnimatedIcon
                             name={isLiked ? "heart" : "heart-outline"}
                             size={26}
                             color={isLiked ? colors.error : colors.textSecondary}
+                            style={{ transform: [{ scale: heartScale }] }}
                         />
                         {(post.likes?.length || 0) > 0 && (
                             <Text style={styles.actionText}>{post.likes?.length}</Text>
                         )}
                     </AnimatedPressable>
-
-                    {/* Comment Button */}
                     <AnimatedPressable style={styles.actionButton} onPress={() => onComment && onComment(post.id)}>
                         <Ionicons name="chatbubble-outline" size={24} color={colors.textSecondary} />
                         {(post.comments_count || 0) > 0 && (
                             <Text style={styles.actionText}>{post.comments_count}</Text>
                         )}
                     </AnimatedPressable>
-
-                    {/* Share Button - Now functional */}
                     <AnimatedPressable style={styles.actionButton} onPress={handleShare}>
                         <Ionicons name="share-social-outline" size={24} color={colors.textSecondary} />
                     </AnimatedPressable>
                 </View>
             </View>
 
-            {/* Image Lightbox Modal */}
-            <ImageLightbox
-                visible={lightboxVisible}
-                imageUrl={lightboxImageUrl || post.media_url || ''}
-                onClose={() => setLightboxVisible(false)}
-            />
-
-            {/* Report Modal */}
-            <ReportModal
-                isVisible={reportModalVisible}
-                onClose={() => setReportModalVisible(false)}
-                onSubmit={handleReportSubmit}
-            />
+            <ImageLightbox visible={lightboxVisible} imageUrl={lightboxImageUrl || post.media_url || ''} onClose={() => setLightboxVisible(false)} />
+            <ReportModal isVisible={reportModalVisible} onClose={() => setReportModalVisible(false)} onSubmit={handleReportSubmit} />
         </View >
     );
 });
@@ -347,7 +247,7 @@ const styles = StyleSheet.create({
     },
     avatarInitial: {
         ...typography.h3,
-        fontSize: 16, // Override to fit circle
+        fontSize: 16,
     },
     authorNameRow: {
         flexDirection: 'row',

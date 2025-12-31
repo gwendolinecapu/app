@@ -39,6 +39,10 @@ export const colors = {
     // Couleurs de gradient (utilisées pour les LinearGradient)
     gradientStart: '#8B5CF6', // Violet - début du gradient
     gradientEnd: '#6366F1',   // Indigo - fin du gradient
+
+    // Skeleton Loaders
+    skeletonBackground: '#1E4275', // Version plus claire de backgroundCard
+    skeletonShimmer: '#2A5A8F',    // Version plus claire pour l'animation
 };
 
 export type ThemeColors = typeof colors;

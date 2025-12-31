@@ -22,6 +22,8 @@ import { VoiceNoteRecorder } from '../../src/components/ui/VoiceNoteRecorder';
 import { VideoPlayer } from '../../src/components/ui/VideoPlayer';
 import { AudioPlayer } from '../../src/components/ui/AudioPlayer';
 
+import { useSuccessAnimation } from '../../src/contexts/SuccessAnimationContext';
+
 type PostType = 'text' | 'photo' | 'video' | 'audio';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -30,6 +32,7 @@ const DRAFT_STORAGE_KEY = 'post_draft_v1';
 
 export default function CreatePostScreen() {
     const { activeFront, system, currentAlter } = useAuth();
+    const { play: playSuccessAnimation } = useSuccessAnimation();
     const [postType, setPostType] = useState<PostType>('text');
     const [content, setContent] = useState('');
     const [mediaUri, setMediaUri] = useState<string | null>(null);
@@ -215,7 +218,12 @@ export default function CreatePostScreen() {
             // Clear draft on success
             await clearDraft();
 
-            router.back();
+            playSuccessAnimation();
+
+            // Wait a bit for animation to be seen
+            setTimeout(() => {
+                router.back();
+            }, 1000);
         } catch (error: any) {
             console.error(error);
             Alert.alert('Erreur', error.message || "Erreur lors de la publication");

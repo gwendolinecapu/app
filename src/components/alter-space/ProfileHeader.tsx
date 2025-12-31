@@ -50,7 +50,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                                     style={styles.avatarImage}
                                     contentFit="cover"
                                     transition={500}
-                                    {...({ sharedTransitionTag: `avatar-${alter.id}` } as any)}
+                                    sharedTransitionTag={`avatar-${alter.id}`}
                                 />
                             ) : (
                                 <Text style={styles.avatarText}>

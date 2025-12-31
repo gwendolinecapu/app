@@ -8,6 +8,7 @@ export interface System {
     bio?: string;
     headspace?: string; // 'sunny', 'cloudy', 'rainy', 'stormy', 'night', etc.
     created_at: string;
+    alter_count?: number; // Pre-filled from onboarding
 }
 
 // Rôle d'un alter dans le système (ex: Protecteur, Gatekeeper)

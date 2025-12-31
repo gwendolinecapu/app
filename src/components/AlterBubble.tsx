@@ -1,5 +1,7 @@
 import React from 'react';
-import { TouchableOpacity, View, Text, StyleSheet, Image } from 'react-native';
+import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
+import Animated from 'react-native-reanimated';
 import { Alter } from '../types';
 import { colors, spacing, borderRadius } from '../lib/theme';
 
@@ -11,6 +13,8 @@ interface AlterBubbleProps {
     size?: number;
     showName?: boolean;
 }
+
+const AnimatedImage = Animated.createAnimatedComponent(Image);
 
 export const AlterBubble: React.FC<AlterBubbleProps> = ({
     alter,
@@ -43,9 +47,12 @@ export const AlterBubble: React.FC<AlterBubbleProps> = ({
                 ]}
             >
                 {alter.avatar_url ? (
-                    <Image
+                    <AnimatedImage
                         source={{ uri: alter.avatar_url }}
                         style={styles.image}
+                        contentFit="cover"
+                        transition={500}
+                        sharedTransitionTag={`avatar-${alter.id}`}
                     />
                 ) : (
                     <Text style={[styles.initial, { fontSize: size * 0.4 }]}>
@@ -68,6 +75,7 @@ export const AlterBubble: React.FC<AlterBubbleProps> = ({
         </TouchableOpacity>
     );
 };
+
 
 const styles = StyleSheet.create({
     container: {

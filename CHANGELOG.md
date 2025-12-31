@@ -17,6 +17,8 @@
 - **Fix**: Updated `firestore.rules` to correctly handle nested subcollections for comments and fix permission errors.
 - **Security**: Patched critical vulnerability in `friend_requests` by enforcing `receiverSystemId` checks for updates (accept/reject).
 - **Security**: Removed duplicate `emotions` rules in `firestore.rules` to prevent conflicts.
+- **Security**: Enforced **Immutability** on critical ownership fields (`systemId`, `author_id`, `userId`) across all collections to prevent spoofing/hijacking.
+- **Security**: Enforced **Server Timestamps** (`request.time`) for Posts, Comments, and FriendRequests to prevent backdating attacks.
 
 ## [2025-12-31] - Core & Bundling Fixes
 - **Fix**: Resolved `recyclerlistview` bundling error ("Unable to resolve ./core/RecyclerListView") by implementing advanced module resolution logic in `metro.config.js`.

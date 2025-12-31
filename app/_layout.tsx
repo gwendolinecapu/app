@@ -37,14 +37,15 @@ export default function RootLayout() {
     return (
         <GestureHandlerRootView style={styles.container}>
             <SafeAreaProvider>
-                <ErrorBoundary>
-                    <AuthProvider>
-                        <NetworkProvider>
-                            <ThemeProvider>
-                                <NotificationProvider>
-                                    <MonetizationProvider>
-                                        <ToastProvider>
+                <ToastProvider>
+                    <ErrorBoundary>
+                        <AuthProvider>
+                            <NetworkProvider>
+                                <ThemeProvider>
+                                    <NotificationProvider>
+                                        <MonetizationProvider>
                                             <View style={styles.container}>
+
                                                 <OfflineBanner />
                                                 <SuccessAnimation />
                                                 <Stack
@@ -139,13 +140,13 @@ export default function RootLayout() {
                                                     </View>
                                                 )}
                                             </View>
-                                        </ToastProvider>
-                                    </MonetizationProvider>
-                                </NotificationProvider>
-                            </ThemeProvider>
-                        </NetworkProvider>
-                    </AuthProvider>
-                </ErrorBoundary>
+                                        </MonetizationProvider>
+                                    </NotificationProvider>
+                                </ThemeProvider>
+                            </NetworkProvider>
+                        </AuthProvider>
+                    </ErrorBoundary>
+                </ToastProvider>
             </SafeAreaProvider>
         </GestureHandlerRootView>
     );

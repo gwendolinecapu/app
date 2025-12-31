@@ -4,6 +4,7 @@ import { useAuth } from '../src/contexts/AuthContext';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { colors } from '../src/lib/theme';
 import { storage } from '../src/lib/storage';
+import { BackgroundBubbles } from '../src/components/ui/BackgroundBubbles';
 
 export default function Index() {
     const { user, loading: authLoading } = useAuth();
@@ -20,7 +21,7 @@ export default function Index() {
     if (authLoading || isFirstLaunch === null) {
         return (
             <View style={styles.container}>
-                <ActivityIndicator size="large" color={colors.primary} />
+                <BackgroundBubbles />
             </View>
         );
     }

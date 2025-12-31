@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../../lib/theme';
 import { storage } from '../../lib/storage';
 import { triggerHaptic } from '../../lib/haptics';
+import { BackgroundBubbles } from '../ui/BackgroundBubbles';
 
 const { width, height } = Dimensions.get('window');
 
@@ -128,36 +129,7 @@ const Paginator = ({ data, scrollX }: { data: typeof SLIDES, scrollX: SharedValu
     );
 };
 
-const BackgroundBubbles = () => {
-    const anim1 = useSharedValue(0);
-    const anim2 = useSharedValue(0);
 
-    useEffect(() => {
-        anim1.value = withRepeat(withSequence(withTiming(1, { duration: 15000 }), withTiming(0, { duration: 15000 })), -1, true);
-        anim2.value = withRepeat(withSequence(withTiming(1, { duration: 20000 }), withTiming(0, { duration: 20000 })), -1, true);
-    }, []);
-
-    const circle1Style = useAnimatedStyle(() => ({
-        transform: [
-            { translateX: interpolate(anim1.value, [0, 1], [-width * 0.2, width * 0.1]) },
-            { translateY: interpolate(anim1.value, [0, 1], [-height * 0.1, height * 0.1]) },
-        ],
-    }));
-
-    const circle2Style = useAnimatedStyle(() => ({
-        transform: [
-            { translateX: interpolate(anim2.value, [0, 1], [width * 0.1, -width * 0.1]) },
-            { translateY: interpolate(anim2.value, [0, 1], [height * 0.1, -height * 0.1]) },
-        ],
-    }));
-
-    return (
-        <View style={styles.backgroundCircles}>
-            <Animated.View style={[styles.circle, styles.circle1, circle1Style]} />
-            <Animated.View style={[styles.circle, styles.circle2, circle2Style]} />
-        </View>
-    )
-}
 
 export function OnboardingScreen() {
     const router = useRouter();
@@ -319,29 +291,5 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 18,
         fontWeight: 'bold',
-    },
-    backgroundCircles: {
-        ...StyleSheet.absoluteFillObject,
-        zIndex: -1,
-        overflow: 'hidden',
-    },
-    circle: {
-        position: 'absolute',
-        borderRadius: 999,
-        opacity: 0.1,
-    },
-    circle1: {
-        width: width * 1.5,
-        height: width * 1.5,
-        backgroundColor: colors.primary,
-        top: -width * 0.5,
-        right: -width * 0.5,
-    },
-    circle2: {
-        width: width,
-        height: width,
-        backgroundColor: colors.secondary,
-        bottom: -width * 0.2,
-        left: -width * 0.2,
     },
 });

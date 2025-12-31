@@ -11,7 +11,7 @@ interface ReportModalProps {
     onSubmit: (reason: ReportReason, details: string) => Promise<void>;
 }
 
-const REASONS: { id: ReportReason; label: string; icon: any }[] = [
+const REASONS: { id: ReportReason; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
     { id: 'spam', label: "C'est du spam", icon: 'mail-open-outline' },
     { id: 'harassment', label: "Harcèlement ou intimidation", icon: 'sad-outline' },
     { id: 'inappropriate', label: "Contenu inapproprié", icon: 'alert-circle-outline' },

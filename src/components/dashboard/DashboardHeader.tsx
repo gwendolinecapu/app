@@ -42,13 +42,13 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                 </View>
                 <View style={styles.headerActions}>
                     <TouchableOpacity
-                        style={[styles.headerIconBtn, { backgroundColor: colors.errorBackground }]}
+                        style={styles.headerIconBtn}
                         onPress={() => {
-                            triggerHaptic.medium();
-                            router.push('/tools/grounding');
+                            triggerHaptic.light();
+                            router.push('/messages');
                         }}
                     >
-                        <Ionicons name="medical" size={20} color={colors.error} />
+                        <Ionicons name="chatbubble-outline" size={20} color={colors.text} />
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.headerIconBtn}
@@ -58,15 +58,6 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                         }}
                     >
                         <Ionicons name="storefront-outline" size={20} color={colors.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.headerIconBtn}
-                        onPress={() => {
-                            triggerHaptic.light();
-                            router.push('/settings');
-                        }}
-                    >
-                        <Ionicons name="settings-outline" size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
                 </View>
             </View>

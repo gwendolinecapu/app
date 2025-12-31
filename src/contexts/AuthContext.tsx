@@ -27,26 +27,14 @@ import { useToast } from '../components/ui/Toast';
 import { FrontingService } from '../services/fronting';
 import { triggerHaptic } from '../lib/haptics';
 
-interface Alter {
-    id: string;
-    name: string;
-    avatar?: string;
-    avatar_url?: string;
-    role?: string;
-    is_host?: boolean;
-    is_active?: boolean;
-    isArchived?: boolean;
-    color?: string;
-    created_at?: string;
-}
+import { auth, db } from '../lib/firebase';
+import { useToast } from '../components/ui/Toast';
+import { FrontingService } from '../services/fronting';
+import { triggerHaptic } from '../lib/haptics';
+import { Alter, System } from '../types';
 
-interface System {
-    id: string;
-    username: string;
-    email: string;
-    created_at: string;
-    headspace?: string;
-}
+// Removed local Alter/System interfaces to use global ones from src/types
+
 
 interface FrontStatus {
     type: 'single' | 'co-front' | 'blurry';

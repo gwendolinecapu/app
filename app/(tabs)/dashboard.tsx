@@ -224,8 +224,6 @@ export default function Dashboard() {
                 hasSelection={selectedAlters.length > 0}
             />
 
-            {/* Selection Confirmation FAB removed as it is now in the center button of ControlBar */}
-
             <AddAlterModal
                 visible={modalVisible}
                 onClose={handleCloseAddModal}

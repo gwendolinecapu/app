@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
+import { AnimatedPressable } from '../ui/AnimatedPressable';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../../lib/theme';
 import { Alter } from '../../types';
@@ -39,38 +40,33 @@ const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
         initialFontSize: size < 60 ? 18 : size < 70 ? 22 : 28,
     };
 
-    const handlePress = () => {
-        triggerHaptic.light();
-        onPress();
-    };
-
     if (type === 'blurry') {
         return (
-            <TouchableOpacity
+            <AnimatedPressable
                 style={styles.bubbleWrapper}
-                onPress={handlePress}
-                activeOpacity={0.7}
+                onPress={onPress}
+                haptic={true}
             >
                 <View style={[styles.bubble, styles.blurryBubble, dynamicStyles.bubble]}>
                     <Ionicons name="help" size={dynamicStyles.iconSize} color={colors.textMuted} />
                 </View>
                 <Text style={[styles.bubbleName, dynamicStyles.bubbleName]} numberOfLines={1}>Flou</Text>
-            </TouchableOpacity>
+            </AnimatedPressable>
         );
     }
 
     if (type === 'add') {
         return (
-            <TouchableOpacity
+            <AnimatedPressable
                 style={styles.bubbleWrapper}
-                onPress={handlePress}
-                activeOpacity={0.7}
+                onPress={onPress}
+                haptic={true}
             >
                 <View style={[styles.bubble, styles.addBubble, dynamicStyles.bubble]}>
                     <Ionicons name="add" size={dynamicStyles.iconSize + 4} color={colors.textMuted} />
                 </View>
                 <Text style={[styles.bubbleName, dynamicStyles.bubbleName]} numberOfLines={1}>Ajouter</Text>
-            </TouchableOpacity>
+            </AnimatedPressable>
         );
     }
 
@@ -80,12 +76,11 @@ const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
     const showCheck = selectionMode === 'multi' && isSelected;
 
     return (
-        <TouchableOpacity
+        <AnimatedPressable
             style={[styles.bubbleWrapper, dimmed && styles.bubbleDimmed]}
-            onPress={handlePress}
+            onPress={onPress}
             onLongPress={onLongPress}
-            activeOpacity={0.7}
-            delayLongPress={300}
+            haptic={true}
         >
             <View style={[
                 styles.bubble,
@@ -112,7 +107,7 @@ const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
             >
                 {alter.name}
             </Text>
-        </TouchableOpacity>
+        </AnimatedPressable>
     );
 };
 

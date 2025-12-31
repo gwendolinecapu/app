@@ -4,9 +4,23 @@ const fs = require('fs');
 
 const config = getDefaultConfig(__dirname);
 
+// Alias native-only modules to empty mocks on web
+const webAliases = {
+    'react-native/Libraries/Utilities/codegenNativeComponent': path.resolve(__dirname, 'src/mocks/empty-mock.js'),
+    'react-native-google-mobile-ads': path.resolve(__dirname, 'src/mocks/empty-mock.js'),
+};
+
 // Configure Metro to resolve firebase/auth to the React Native bundle
 // This fixes getReactNativePersistence not being exported from firebase/auth
 config.resolver.resolveRequest = (context, moduleName, platform) => {
+    // Apply web aliases
+    if (platform === 'web' && webAliases[moduleName]) {
+        return {
+            filePath: webAliases[moduleName],
+            type: 'sourceFile',
+        };
+    }
+
     // Redirect firebase/auth to the React Native specific bundle ONLY on native
     if (platform === 'ios' || platform === 'android') {
         if (moduleName === 'firebase/auth' || moduleName === 'firebase/auth/react-native') {

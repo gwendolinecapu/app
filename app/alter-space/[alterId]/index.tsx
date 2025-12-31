@@ -333,7 +333,7 @@ export default function AlterSpaceScreen() {
                         </View>
                         <View style={styles.statBox}>
                             <Text style={styles.statValue}>0</Text>
-                            <Text style={styles.statLabel}>Suivis</Text>
+                            <Text style={styles.statLabel}>Historique</Text>
                         </View>
                     </View>
                 </View>
@@ -691,7 +691,7 @@ export default function AlterSpaceScreen() {
                 ) : (
                     <View style={styles.emptyState}>
                         <Ionicons name="heart-outline" size={48} color={colors.textMuted} />
-                        <Text style={styles.emptyTitle}>Suivi émotionnel</Text>
+                        <Text style={styles.emptyTitle}>Historique émotionnel</Text>
                         <Text style={styles.emptySubtitle}>
                             Enregistrer les émotions de {alter.name} pour suivre son bien-être au fil du temps.
                         </Text>

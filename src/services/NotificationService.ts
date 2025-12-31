@@ -55,15 +55,17 @@ class NotificationService {
 
     async initialize(): Promise<void> {
         // Configurer le comportement des notifications
-        Notifications.setNotificationHandler({
-            handleNotification: async () => ({
-                shouldShowAlert: true,
-                shouldPlaySound: true,
-                shouldSetBadge: true,
-                shouldShowBanner: true,
-                shouldShowList: true,
-            }),
-        });
+        if (Platform.OS !== 'web') {
+            Notifications.setNotificationHandler({
+                handleNotification: async () => ({
+                    shouldShowAlert: true,
+                    shouldPlaySound: true,
+                    shouldSetBadge: true,
+                    shouldShowBanner: true,
+                    shouldShowList: true,
+                }),
+            });
+        }
 
         // Charger les settings
         await this.loadSettings();
@@ -169,6 +171,8 @@ class NotificationService {
     // ==================== SCHEDULING ====================
 
     async scheduleAllNotifications(): Promise<void> {
+        if (Platform.OS === 'web') return;
+
         // Annuler toutes les notifications existantes
         await Notifications.cancelAllScheduledNotificationsAsync();
         this.scheduledIds.clear();
@@ -312,7 +316,7 @@ class NotificationService {
         variables: Record<string, string> = {}
     ): Promise<string | null> {
         const config = NOTIFICATION_CONFIGS.find(c => c.id === type);
-        if (!config) return null;
+        if (!config || Platform.OS === 'web') return null;
 
         // Vérifier les heures calmes
         if (this.isQuietHours()) {
@@ -338,6 +342,8 @@ class NotificationService {
     }
 
     async sendAffirmation(): Promise<void> {
+        if (Platform.OS === 'web') return;
+
         const message = AFFIRMATION_MESSAGES[
             Math.floor(Math.random() * AFFIRMATION_MESSAGES.length)
         ];

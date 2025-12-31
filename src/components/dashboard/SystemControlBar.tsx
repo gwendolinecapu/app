@@ -17,10 +17,6 @@ interface SystemControlBarProps {
     hasSelection: boolean;
 }
 
-/**
- * SystemControlBar - A premium, floating navigation bar for system tools.
- * Provides quick access to internal communication and organization features.
- */
 export const SystemControlBar: React.FC<SystemControlBarProps> = ({
     onOpenMenu,
     onConfirmFronting,
@@ -59,7 +55,11 @@ export const SystemControlBar: React.FC<SystemControlBarProps> = ({
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    style={[styles.centerButton, !hasSelection && styles.centerButtonDisabled]}
+                    style={[
+                        styles.centerButton,
+                        !hasSelection && styles.centerButtonDisabled,
+                        hasSelection && styles.centerButtonActive
+                    ]}
                     onPress={() => {
                         if (hasSelection) {
                             triggerHaptic.success();
@@ -72,8 +72,8 @@ export const SystemControlBar: React.FC<SystemControlBarProps> = ({
                 >
                     <View style={styles.centerIconBg}>
                         <Ionicons
-                            name={hasSelection ? "checkmark-circle" : "radio-button-on"}
-                            size={28}
+                            name={hasSelection ? "checkmark" : "add"}
+                            size={32}
                             color="white"
                         />
                     </View>
@@ -84,9 +84,9 @@ export const SystemControlBar: React.FC<SystemControlBarProps> = ({
                     onPress={() => handlePress('/history')}
                 >
                     <View style={styles.iconWrapper}>
-                        <Ionicons name="calendar-outline" size={24} color={colors.warning} />
+                        <Ionicons name="stats-chart-outline" size={24} color={colors.warning} />
                     </View>
-                    <Text style={styles.label}>Suivi</Text>
+                    <Text style={styles.label}>Historique</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -146,23 +146,27 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     centerButton: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: colors.primary,
+        width: 54,
+        height: 54,
+        borderRadius: 27,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: -35,
+        marginTop: -12, // Lowered for integration
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.2)',
+    },
+    centerButtonActive: {
+        backgroundColor: colors.primary,
         shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 6 },
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.5,
-        shadowRadius: 10,
-        elevation: 8,
+        shadowRadius: 8,
+        elevation: 6,
+        borderColor: 'rgba(255, 255, 255, 0.4)',
     },
     centerButtonDisabled: {
-        backgroundColor: colors.surface,
-        opacity: 0.5,
-        shadowOpacity: 0,
+        opacity: 0.6,
     },
     centerIconBg: {
         width: '100%',

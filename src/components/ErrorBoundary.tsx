@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { colors } from '../lib/theme';
 
 interface Props {
@@ -26,6 +26,10 @@ export class ErrorBoundary extends Component<Props, State> {
         // Here you would log to a crash reporting service like Sentry or Crashlytics
     }
 
+    public resetError = () => {
+        this.setState({ hasError: false, error: null });
+    };
+
     public render() {
         if (this.state.hasError) {
             return (
@@ -33,7 +37,7 @@ export class ErrorBoundary extends Component<Props, State> {
                     <View style={styles.card}>
                         <Text style={styles.title}>Oups ! Une erreur est survenue.</Text>
                         <Text style={styles.subtitle}>
-                            L'application a rencontré un problème inattendu. Veuillez redémarrer l'application.
+                            L'application a rencontré un problème inattendu.
                         </Text>
 
                         <ScrollView style={styles.errorContainer}>
@@ -41,6 +45,10 @@ export class ErrorBoundary extends Component<Props, State> {
                                 {this.state.error?.toString()}
                             </Text>
                         </ScrollView>
+
+                        <TouchableOpacity style={styles.button} onPress={this.resetError}>
+                            <Text style={styles.buttonText}>Réessayer</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
             );

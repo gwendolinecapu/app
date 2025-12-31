@@ -421,13 +421,15 @@ class NotificationService {
 
     addNotificationReceivedListener(
         callback: (notification: Notifications.Notification) => void
-    ): Notifications.EventSubscription {
+    ): Notifications.EventSubscription | null {
+        if (Platform.OS === 'web') return null;
         return Notifications.addNotificationReceivedListener(callback);
     }
 
     addNotificationResponseListener(
         callback: (response: Notifications.NotificationResponse) => void
-    ): Notifications.EventSubscription {
+    ): Notifications.EventSubscription | null {
+        if (Platform.OS === 'web') return null;
         return Notifications.addNotificationResponseReceivedListener(callback);
     }
 }

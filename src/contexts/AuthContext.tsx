@@ -23,7 +23,7 @@ import {
 } from 'firebase/firestore';
 
 import { auth, db } from '../lib/firebase';
-import { useToast } from './ToastContext';
+import { useToast } from '../components/ui/Toast';
 import { FrontingService } from '../services/fronting';
 import { triggerHaptic } from '../lib/haptics';
 

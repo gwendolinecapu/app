@@ -41,16 +41,18 @@ if (Platform.OS === 'web') {
     auth = firebase.auth();
 } else {
     // Native: Use modular auth with persistence, forcing registration via side-effects above
+    // Native: Use modular auth with persistence
     try {
-        // We try to get the modular auth instance (should work because of compat/auth import)
-        auth = getAuth(app);
-    } catch (e) {
-        // Fallback or explicit init
-        // Note: getReactNativePersistence is only available in RN context
+        // Explicitly try to initialize with React Native Persistence first
         const { getReactNativePersistence } = require('firebase/auth');
         auth = initializeAuth(app, {
             persistence: getReactNativePersistence(AsyncStorage)
         });
+    } catch (e: any) {
+        // If already initialized (e.g. by compat), get the existing instance
+        // Note: use compat/auth imports might auto-init without persistence, 
+        // so strictly speaking we prefer the above to succeed first.
+        auth = getAuth(app);
     }
 }
 

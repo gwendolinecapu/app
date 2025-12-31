@@ -151,16 +151,21 @@ export default function JournalScreen() {
         >
             <SafeAreaView style={styles.container} edges={['top']}>
                 {/* Header */}
-                <View style={[styles.header, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }]}>
-                    <View>
+                <View style={styles.header}>
+                    <View style={styles.headerTop}>
+                        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                            <Ionicons name="arrow-back" size={24} color={colors.text} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => router.push('/crisis/index' as any)}>
+                            <Ionicons name="warning-outline" size={28} color={colors.error || '#FF4444'} />
+                        </TouchableOpacity>
+                    </View>
+                    <View style={styles.headerContent}>
                         <Text style={styles.title}>Mon Journal</Text>
                         <Text style={styles.subtitle}>
                             Par {currentAlter.name}
                         </Text>
                     </View>
-                    <TouchableOpacity onPress={() => router.push('/crisis/index' as any)}>
-                        <Ionicons name="warning-outline" size={28} color={colors.error || '#FF4444'} />
-                    </TouchableOpacity>
                 </View>
 
                 {/* Liste des entrées */}
@@ -201,6 +206,19 @@ const styles = StyleSheet.create({
     },
     header: {
         padding: spacing.lg,
+    },
+    headerTop: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.md,
+    },
+    headerContent: {
+        marginTop: spacing.xs,
+    },
+    backButton: {
+        padding: spacing.xs,
+        marginLeft: -spacing.xs,
     },
     title: {
         ...typography.h1,

@@ -277,14 +277,7 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated() && resource.data.system_id == request.auth.uid;
     }
 
-    // ============================================
-    // Emotions Collection
-    // ============================================
-    match /emotions/{emotionId} {
-      allow read: if isAuthenticated() && resource.data.system_id == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.system_id == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.system_id == request.auth.uid;
-    }
+
 
     // ============================================
     // Friend Requests Collection
@@ -293,18 +286,19 @@ service cloud.firestore {
     // ============================================
     match /friend_requests/{requestId} {
       // Read: any authenticated user can read friend requests
-      // (client-side filters by receiverId which is an Alter belonging to the user)
       allow read: if isAuthenticated();
       
       // Create: sender's system must be authenticated
       allow create: if isAuthenticated() && request.resource.data.systemId == request.auth.uid;
       
-      // Update: any authenticated user (for accept/reject flow)
-      allow update: if isAuthenticated(); 
+      // Update: ONLY receiver can update (to accept/reject)
+      // Requires 'receiverSystemId' to be present on the doc
+      allow update: if isAuthenticated() && resource.data.receiverSystemId == request.auth.uid;
       
-      // Delete: system owner or involved party
+      // Delete: sender (cancel) or receiver (reject/cleanup)
       allow delete: if isAuthenticated() && (
-         resource.data.systemId == request.auth.uid
+         resource.data.systemId == request.auth.uid || 
+         resource.data.receiverSystemId == request.auth.uid
       );
     }
 

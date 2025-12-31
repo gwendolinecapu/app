@@ -37,10 +37,25 @@ export const FriendService = {
         }
 
         if (!auth.currentUser) throw new Error("Not authenticated");
+
+        // Fetch receiver alter to get their system ID for security rules
+        const receiverRef = doc(db, 'alters', receiverId);
+        const receiverSnap = await getDoc(receiverRef);
+        if (!receiverSnap.exists()) {
+            throw new Error("Receiver alter not found");
+        }
+        const receiverData = receiverSnap.data();
+        const receiverSystemId = receiverData?.userId || receiverData?.systemId; // Handle both fields just in case
+
+        if (!receiverSystemId) {
+            throw new Error("Receiver system ID not found");
+        }
+
         await addDoc(collection(db, 'friend_requests'), {
             senderId,
             receiverId,
-            systemId: auth.currentUser.uid, // Add systemId for security rules
+            systemId: auth.currentUser.uid, // Sender's System ID
+            receiverSystemId, // Receiver's System ID (for security rules)
             status: 'pending',
             createdAt: serverTimestamp()
         });

@@ -180,6 +180,7 @@ class PremiumService {
         // User request: "popup comme quoi depuis 14j il profitais que si il veut il continue"
 
         if (!this.status.silentTrialStartDate) return false;
+        if (this.status.hasSeenConversionModal) return false;
 
         // If 14 days passed
         const now = Date.now();
@@ -187,7 +188,14 @@ class PremiumService {
         const isExpired = (now - this.status.silentTrialStartDate) >= fourteenDaysMs;
 
         return isExpired;
-        // Logic to not spam checking will be in UI or Context
+    }
+
+    /**
+     * Marque la popup de conversion comme vue
+     */
+    async markConversionModalSeen(): Promise<void> {
+        this.status.hasSeenConversionModal = true;
+        await this.saveStatus();
     }
 
     /**

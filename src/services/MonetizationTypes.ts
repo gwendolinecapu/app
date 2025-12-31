@@ -63,6 +63,7 @@ export interface MonetizationStatus {
     hasUsedFreeMonth: boolean;          // A déjà utilisé les 30j offerts
     decorations: string[];              // IDs des décorations possédées
     silentTrialStartDate: number | null;// Début du trial silencieux (sans CB)
+    hasSeenConversionModal: boolean;    // A vu la popup de conversion fin trial
 }
 
 /** Configuration premium par défaut */
@@ -79,6 +80,7 @@ export const DEFAULT_MONETIZATION_STATUS: MonetizationStatus = {
     hasUsedFreeMonth: false,
     decorations: [],
     silentTrialStartDate: null,
+    hasSeenConversionModal: false,
 };
 
 // ==================== CRÉDITS ====================

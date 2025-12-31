@@ -4,12 +4,14 @@
  */
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { PurchasesOffering } from 'react-native-purchases';
 import { useAuth } from './AuthContext';
 import AdMediationService from '../services/AdMediationService';
 import PremiumService from '../services/PremiumService';
 import CreditService from '../services/CreditService';
 import DecorationService from '../services/DecorationService';
 import RevenueCatService from '../services/RevenueCatService';
+import { PremiumConversionModal } from '../components/PremiumConversionModal';
 import {
     UserTier,
     MonetizationStatus,
@@ -37,6 +39,7 @@ interface MonetizationContextType {
     activateFreeMonth: () => Promise<boolean>;
     isSilentTrialActive: boolean;
     shouldShowConversionModal: boolean;
+    markConversionModalSeen: () => Promise<void>;
 
     // Sans pub
     isAdFree: boolean;
@@ -77,6 +80,7 @@ interface MonetizationContextType {
     // Refresh
     refresh: () => Promise<void>;
     addCredits: (amount: number, reason: string) => Promise<boolean>;
+    offerings: PurchasesOffering | null;
 }
 
 const MonetizationContext = createContext<MonetizationContextType | undefined>(undefined);
@@ -88,6 +92,8 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     // États dérivés des services
     const [tier, setTier] = useState<UserTier>('free');
     const [credits, setCredits] = useState(0);
+    const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
+    const [isConversionModalVisible, setConversionModalVisible] = useState(false);
 
     // ==================== INITIALIZATION ====================
 
@@ -110,6 +116,10 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
                 DecorationService.initialize(userId),
                 RevenueCatService.initialize(userId),
             ]);
+
+            // Fetch loaded offerings
+            const loadedOfferings = await RevenueCatService.getOfferings();
+            setOfferings(loadedOfferings);
 
             // Mettre à jour les états
             refreshState();
@@ -134,9 +144,20 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
                 // Sync logic
             }
             await PremiumService.refreshStatus();
+
+            // Refresh offerings
+            const loadedOfferings = await RevenueCatService.getOfferings();
+            setOfferings(loadedOfferings);
+
             refreshState();
         }
     }, [user?.uid, refreshState]);
+
+    const markConversionModalSeen = useCallback(async () => {
+        await PremiumService.markConversionModalSeen();
+        setConversionModalVisible(false);
+        refreshState();
+    }, [refreshState]);
 
     const addCredits = useCallback(async (amount: number, reason: string): Promise<boolean> => {
         try {
@@ -191,10 +212,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
     // ==================== CREDITS ====================
 
-    const currentStreak = CreditService.getCurrentStreak(); // Still useful for system analytics? Or per alter? 
-    // CreditService now has per-alter streak. 
-    // We should probably expose a method to get streak for alter. 
-    // For now, let's remove system-wide streak from context or update it to be flexible.
+    const currentStreak = CreditService.getCurrentStreak();
 
     const canClaimDaily = useCallback(async (alterId: string) => {
         return CreditService.canClaimDailyLogin(alterId);
@@ -215,18 +233,14 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     // ==================== BOUTIQUE ====================
 
     const purchaseItem = useCallback(async (item: ShopItem, alterId?: string): Promise<boolean> => {
-        // If it's a decoration, we need alterId
         if (item.type === 'decoration') {
             if (!alterId) {
                 console.error("PurchaseItem: alterId required for decoration");
                 return false;
             }
-            // Purchase logic for decoration is: 
-            // 1. DecorationService.purchaseDecoration handles check + credit deduction + grant
             return DecorationService.purchaseDecoration(item.id, alterId);
         }
 
-        // Standard system items (premium, ad-free)
         const success = await CreditService.purchaseItem(item, true);
         if (success) refreshState();
         return success;
@@ -294,8 +308,6 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
     // ==================== DECORATIONS ====================
 
-    // Removed ownedDecorations state as it is per-alter.
-
     const purchaseDecoration = useCallback(async (decorationId: string, alterId: string): Promise<boolean> => {
         const success = await DecorationService.purchaseDecoration(decorationId, alterId);
         if (success) refreshState();
@@ -311,13 +323,6 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     }, []);
 
     const getOwnedDecorations = useCallback(async (alterId: string): Promise<Decoration[]> => {
-        // This is async now. Callers should handle promise.
-        // Or we rely on the Alter object passed to the UI.
-        const catalog = DecorationService.getCatalog();
-        // We need to fetch the alter or expect the UI to pass us the list of owned IDs?
-        // UI usually has the Alter object.
-        // DecorationService.ownsDecoration checks against Firestore.
-        // Better: Helper "getOwnedDecorationsForAlter(alter)"
         return [];
     }, []);
 
@@ -327,8 +332,6 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         if (isAdFree) return null;
         return AdMediationService.getPreloadedNativeAd();
     }, [isAdFree]);
-
-    // ==================== CONTEXT VALUE ====================
 
     // ==================== CONTEXT VALUE ====================
 
@@ -346,6 +349,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         activateFreeMonth,
         isSilentTrialActive,
         shouldShowConversionModal,
+        markConversionModalSeen,
 
         isAdFree,
         adFreeDaysRemaining,
@@ -357,7 +361,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         watchRewardAd,
         claimRewardAd,
 
-        checkDailyLogin: canClaimDaily, // mapped to the callback
+        checkDailyLogin: canClaimDaily,
         currentStreak,
         claimDailyLogin,
 
@@ -375,12 +379,17 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
         getNativeAd,
         refresh,
-        addCredits
+        addCredits,
+        offerings,
     };
 
     return (
         <MonetizationContext.Provider value={value}>
             {children}
+            <PremiumConversionModal
+                visible={isConversionModalVisible || shouldShowConversionModal}
+                onClose={markConversionModalSeen}
+            />
         </MonetizationContext.Provider>
     );
 }

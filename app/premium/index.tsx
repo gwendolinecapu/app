@@ -279,10 +279,15 @@ const PricingCard = ({
 
 // ==================== MAIN COMPONENT ====================
 
+// ==================== MAIN COMPONENT ====================
+
+import { PACKAGE_TYPE, PurchasesPackage } from 'react-native-purchases';
+
 export default function PremiumScreen() {
     const router = useRouter();
-    const { presentPaywall, restorePurchases, isPremium, loading } = useMonetization();
-    const [selectedPlan, setSelectedPlan] = useState<string>('yearly'); // Yearly par défaut
+    const { presentPaywall, restorePurchases, isPremium, loading: contextLoading, purchaseIAP, offerings } = useMonetization();
+    const [selectedPlan, setSelectedPlan] = useState<string>('');
+    const [plans, setPlans] = useState<PricingPlan[]>([]);
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
     // Animation d'entrée du CTA
@@ -294,6 +299,71 @@ export default function PremiumScreen() {
             useNativeDriver: true,
         }).start();
     }, []);
+
+    // Charger les offres réelles
+    useEffect(() => {
+        if (offerings && offerings.availablePackages.length > 0) {
+            const mappedPlans: PricingPlan[] = offerings.availablePackages.map(pkg => {
+                let name = 'Premium';
+                let period = '';
+                let discount = undefined;
+                let featured = false;
+
+                switch (pkg.packageType) {
+                    case PACKAGE_TYPE.MONTHLY:
+                        name = 'Mensuel';
+                        period = '/mois';
+                        break;
+                    case PACKAGE_TYPE.ANNUAL:
+                        name = 'Annuel';
+                        period = '/an';
+                        featured = true;
+                        discount = 'Économisez 40%'; // Simplification pour l'instant (calcul réel possible)
+                        break;
+                    case PACKAGE_TYPE.LIFETIME:
+                        name = 'À Vie';
+                        period = 'une seule fois';
+                        break;
+                    case PACKAGE_TYPE.WEEKLY:
+                        name = 'Hebdomadaire';
+                        period = '/semaine';
+                        break;
+                    default:
+                        name = pkg.product.title;
+                        period = '';
+                }
+
+                return {
+                    id: pkg.identifier,
+                    name,
+                    price: pkg.product.priceString,
+                    period,
+                    discount,
+                    featured
+                };
+            });
+
+            // Trier: Annuel d'abord (featured), puis Mensuel, puis Lifetime
+            mappedPlans.sort((a, b) => {
+                if (a.featured) return -1;
+                if (b.featured) return 1;
+                // Ordre custom si besoin, sinon par prix
+                return 0;
+            });
+
+            setPlans(mappedPlans);
+
+            // Sélectionner le plan "Annuel" ou le premier par défaut
+            const defaultPlan = mappedPlans.find(p => p.featured) || mappedPlans[0];
+            if (defaultPlan) setSelectedPlan(defaultPlan.id);
+        } else {
+            // Fallback hardcodé si pas d'offres (offline ou dev)
+            // Ou on garde le loading. Pour UX, on garde le fallback hardcodé si rien n'est chargé
+            // mais on désactive l'achat direct vers presentPaywall
+            setPlans(PRICING_PLANS);
+            setSelectedPlan('yearly');
+        }
+    }, [offerings]);
 
     // Redirection si déjà premium
     useEffect(() => {
@@ -309,9 +379,21 @@ export default function PremiumScreen() {
     const handleSubscribe = async () => {
         triggerHaptic.selection();
 
-        // Lance le paywall RevenueCat
-        const success = await presentPaywall();
+        // Si on a chargés des plans réels, on tente l'achat direct
+        if (plans.length > 0 && offerings && offerings.availablePackages.length > 0) {
+            const plan = plans.find(p => p.id === selectedPlan);
+            if (plan) {
+                const success = await purchaseIAP(plan.id);
+                if (success) {
+                    triggerHaptic.success();
+                    router.back();
+                }
+                return;
+            }
+        }
 
+        // Fallback: Lance le paywall RevenueCat natif
+        const success = await presentPaywall();
         if (success) {
             triggerHaptic.success();
             router.back();
@@ -374,7 +456,7 @@ export default function PremiumScreen() {
                     <View style={styles.pricingSection}>
                         <Text style={styles.sectionTitle}>Choisissez votre plan</Text>
                         <View style={styles.pricingContainer}>
-                            {PRICING_PLANS.map(plan => (
+                            {plans.map(plan => (
                                 <PricingCard
                                     key={plan.id}
                                     plan={plan}
@@ -407,7 +489,7 @@ export default function PremiumScreen() {
                         <TouchableOpacity
                             style={styles.ctaButton}
                             onPress={handleSubscribe}
-                            disabled={loading}
+                            disabled={contextLoading}
                             activeOpacity={0.85}
                         >
                             <LinearGradient
@@ -416,7 +498,7 @@ export default function PremiumScreen() {
                                 end={{ x: 1, y: 0 }}
                                 style={styles.ctaGradient}
                             >
-                                {loading ? (
+                                {contextLoading ? (
                                     <Text style={styles.ctaText}>Chargement...</Text>
                                 ) : (
                                     <>

@@ -114,12 +114,14 @@ export default function AlterSpaceScreen() {
                 return (
                     <AlterGrid
                         posts={posts}
+                        loading={loading}
                         refreshing={refreshing}
                         onRefresh={refresh}
                         alterName={alter.name}
                         listHeaderComponent={
                             <ProfileHeader
                                 alter={alter}
+                                loading={loading}
                                 isOwner={isOwner}
                                 stats={{ posts: posts.length, followers: friendCount, following: followingCount }}
                                 friendStatus={friendStatus}
@@ -142,6 +144,7 @@ export default function AlterSpaceScreen() {
                                     <View style={styles.feedHeaderContainer}>
                                         <ProfileHeader
                                             alter={alter}
+                                            loading={loading}
                                             isOwner={isOwner}
                                             stats={{ posts: posts.length, followers: friendCount, following: followingCount }}
                                             friendStatus={friendStatus}

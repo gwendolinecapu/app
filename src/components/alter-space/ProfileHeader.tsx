@@ -10,8 +10,11 @@ import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { AlterPrimers } from '../AlterPrimers';
 import { SystemRelationships } from '../SystemRelationships';
 
+import { Skeleton } from '../ui/Skeleton';
+
 interface ProfileHeaderProps {
     alter: Alter;
+    loading?: boolean;
     isOwner: boolean;
     stats: {
         posts: number;
@@ -28,6 +31,7 @@ const AnimatedImage = Animated.createAnimatedComponent(Image);
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     alter,
+    loading,
     isOwner,
     stats,
     friendStatus,
@@ -35,6 +39,38 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     onFollowersPress,
     onFollowingPress
 }) => {
+    if (loading) {
+        return (
+            <View style={styles.container}>
+                <View style={styles.topSection}>
+                    <View style={styles.avatarColumn}>
+                        <Skeleton shape="circle" width={80} height={80} style={{ marginBottom: spacing.xs }} />
+                        <Skeleton shape="text" width={60} height={16} />
+                    </View>
+                    <View style={styles.statsContainer}>
+                        <View style={styles.statBox}>
+                            <Skeleton shape="text" width={30} height={20} style={{ marginBottom: 4 }} />
+                            <Skeleton shape="text" width={40} height={12} />
+                        </View>
+                        <View style={styles.statBox}>
+                            <Skeleton shape="text" width={30} height={20} style={{ marginBottom: 4 }} />
+                            <Skeleton shape="text" width={50} height={12} />
+                        </View>
+                        <View style={styles.statBox}>
+                            <Skeleton shape="text" width={30} height={20} style={{ marginBottom: 4 }} />
+                            <Skeleton shape="text" width={50} height={12} />
+                        </View>
+                    </View>
+                </View>
+                <View style={styles.bioContainer}>
+                    <Skeleton shape="text" width={100} height={14} style={{ marginBottom: 8 }} />
+                    <Skeleton shape="text" width="100%" height={14} style={{ marginBottom: 4 }} />
+                    <Skeleton shape="text" width="80%" height={14} />
+                </View>
+            </View>
+        );
+    }
+
     return (
         <View style={styles.container}>
             {/* Top Section: Avatar + Stats */}
@@ -50,7 +86,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                                     style={styles.avatarImage}
                                     contentFit="cover"
                                     transition={500}
-                                    sharedTransitionTag={`avatar-${alter.id}`}
+                                    {...({ sharedTransitionTag: `avatar-${alter.id}` } as any)}
                                 />
                             ) : (
                                 <Text style={styles.avatarText}>

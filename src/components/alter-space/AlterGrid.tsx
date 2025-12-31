@@ -11,6 +11,7 @@ const MAX_WIDTH = 430;
 
 interface AlterGridProps {
     posts: Post[];
+    loading?: boolean;
     refreshing: boolean;
     onRefresh: () => void;
     listHeaderComponent?: React.ReactElement;
@@ -19,11 +20,41 @@ interface AlterGridProps {
 
 export const AlterGrid: React.FC<AlterGridProps> = ({
     posts,
+    loading,
     refreshing,
     onRefresh,
     listHeaderComponent,
     alterName
 }) => {
+    if (loading && posts.length === 0) {
+        return (
+            <FlatList
+                data={[1, 2, 3, 4, 5, 6, 7, 8, 9]}
+                numColumns={3}
+                keyExtractor={(item) => `skeleton-${item}`}
+                ListHeaderComponent={() => (
+                    <>
+                        {listHeaderComponent}
+                        <View style={styles.tabsStrip}>
+                            <View style={styles.tabIcon}>
+                                <View style={{ width: 24, height: 24, backgroundColor: colors.border, borderRadius: 12, opacity: 0.3 }} />
+                            </View>
+                            <View style={styles.tabIcon}>
+                                <View style={{ width: 24, height: 24, backgroundColor: colors.border, borderRadius: 12, opacity: 0.3 }} />
+                            </View>
+                        </View>
+                    </>
+                )}
+                renderItem={() => (
+                    <View style={styles.gridItem}>
+                        <View style={{ width: '100%', height: '100%', backgroundColor: colors.backgroundLight, overflow: 'hidden' }}>
+                            <View style={{ width: '100%', height: '100%', backgroundColor: colors.border, opacity: 0.2 }} />
+                        </View>
+                    </View>
+                )}
+            />
+        );
+    }
     if (posts.length === 0) {
         return (
             <FlatList

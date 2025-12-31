@@ -1,14 +1,14 @@
 # Changelog
 
 ## [2025-12-31] - Premium UX Overhaul 💎
-- **Skeleton Loaders**: Implemented a reusable `Skeleton` component with shimmering animations to improve loading states in the Feed and other areas.
-- **Onboarding 2.0**: Completely redesigned the onboarding flow with new slides, floating bubble animations, and an interactive quiz to pre-fill the user's system name and alter count on the registration screen.
+- **Skeleton Loaders**: Implemented a reusable `Skeleton` component and integrated it into the Feed, **AlterGrid**, and **ProfileHeader** to ensure a premium loading experience throughout the Alter Space.
+- **Onboarding 2.0**: Completely redesigned the onboarding flow with new slides, floating bubble animations, and an interactive quiz that **automatically pre-fills** the user's system name and alter count on the registration screen.
 - **Micro-interactions**:
-  - Added a global `SuccessAnimation` (confetti) triggered after major positive actions (e.g., creating a post).
+  - Integrated a global `SuccessAnimation` (confetti) triggered after **successful registration** and major actions.
   - Added a "pop" animation to the heart icon when liking a post for better tactile feedback.
 - **Hero Transitions**: Implemented shared element transitions for alter avatars, creating a seamless "hero" animation when navigating from the dashboard to an alter's profile.
-- **Offline Banner**: Created a discreet, animated banner that slides down to inform the user of network connectivity issues. Refactored `NetworkContext` to centralize logic.
-- **Breathing Animation**: Refactored the grounding breathing tool to use a more robust and smooth animation loop, which is now aware of the app's state (pauses in the background).
+- **Offline Banner**: Created a discreet, animated banner that slides down to inform the user of network connectivity issues.
+- **Breathing Animation**: Refactored the grounding breathing tool for smoother transitions and state-aware behavior.
 
 ## [2025-12-31] - UX Refinement & Navigation 💎
 - **System Control Bar**: Lowered position using `useSafeAreaInsets` for better ergonomics and refined center button design (removed bulky border).

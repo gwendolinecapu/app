@@ -1,34 +1,30 @@
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, Text, AppState } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+
 import { AuthProvider } from '../src/contexts/AuthContext';
 import { ThemeProvider } from '../src/contexts/ThemeContext';
 import { NotificationProvider } from '../src/contexts/NotificationContext';
 import { MonetizationProvider } from '../src/contexts/MonetizationContext';
 import { NetworkProvider } from '../src/contexts/NetworkContext';
-import { colors, typography } from '../src/lib/theme';
-import { View, StyleSheet, Text } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { ToastProvider } from '../src/components/ui/Toast';
-import { AppState, AppStateStatus } from 'react-native';
-import React, { useState, useEffect } from 'react';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ErrorBoundary } from '../src/components/ErrorBoundary';
+import { OfflineBanner } from '../src/components/ui/OfflineBanner';
+import { SuccessAnimation } from '../src/components/ui/SuccessAnimation';
+import { colors, typography } from '../src/lib/theme';
 
 export default function RootLayout() {
     const [isPrivacyActive, setIsPrivacyActive] = useState(false);
-    const [privacyEnabled, setPrivacyEnabled] = useState(true);
 
     useEffect(() => {
-        AsyncStorage.getItem('privacy_blur_enabled').then(value => {
-            if (value !== null) setPrivacyEnabled(value === 'true');
-        });
-
-        const subscription = AppState.addEventListener('change', (nextAppState) => {
+        const subscription = AppState.addEventListener('change', nextAppState => {
             if (nextAppState === 'active') {
                 setIsPrivacyActive(false);
-            } else if ((nextAppState === 'inactive' || nextAppState === 'background') && privacyEnabled) {
+            } else if (nextAppState === 'background' || nextAppState === 'inactive') {
                 setIsPrivacyActive(true);
             }
         });
@@ -36,27 +32,21 @@ export default function RootLayout() {
         return () => {
             subscription.remove();
         };
-    }, [privacyEnabled]);
-
-    useEffect(() => {
-        const checkPref = async () => {
-            const val = await AsyncStorage.getItem('privacy_blur_enabled');
-            if (val !== null) setPrivacyEnabled(val === 'true');
-        };
-        checkPref();
     }, []);
 
     return (
-        <GestureHandlerRootView style={{ flex: 1 }}>
+        <GestureHandlerRootView style={styles.container}>
             <SafeAreaProvider>
                 <ErrorBoundary>
-                    <ToastProvider>
-                        <AuthProvider>
-                            <NetworkProvider>
-                                <ThemeProvider>
-                                    <NotificationProvider>
-                                        <MonetizationProvider>
+                    <AuthProvider>
+                        <NetworkProvider>
+                            <ThemeProvider>
+                                <NotificationProvider>
+                                    <MonetizationProvider>
+                                        <ToastProvider>
                                             <View style={styles.container}>
+                                                <OfflineBanner />
+                                                <SuccessAnimation />
                                                 <Stack
                                                     screenOptions={{
                                                         headerStyle: {
@@ -69,6 +59,7 @@ export default function RootLayout() {
                                                         contentStyle: {
                                                             backgroundColor: colors.background,
                                                         },
+                                                        animation: 'fade',
                                                     }}
                                                 >
                                                     <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -131,7 +122,6 @@ export default function RootLayout() {
                                                     <Stack.Screen name="crisis/index" options={{ headerShown: false }} />
                                                     <Stack.Screen name="crisis/guide" options={{ headerShown: false }} />
 
-
                                                     <Stack.Screen name="shop/index" options={{ headerShown: false }} />
 
                                                     <Stack.Screen name="history/index" options={{ headerShown: false }} />
@@ -149,12 +139,12 @@ export default function RootLayout() {
                                                     </View>
                                                 )}
                                             </View>
-                                        </MonetizationProvider>
-                                    </NotificationProvider>
-                                </ThemeProvider>
-                            </NetworkProvider>
-                        </AuthProvider>
-                    </ToastProvider>
+                                        </ToastProvider>
+                                    </MonetizationProvider>
+                                </NotificationProvider>
+                            </ThemeProvider>
+                        </NetworkProvider>
+                    </AuthProvider>
                 </ErrorBoundary>
             </SafeAreaProvider>
         </GestureHandlerRootView>
@@ -188,3 +178,4 @@ const styles = StyleSheet.create({
         marginTop: 8,
     },
 });
+

@@ -6,6 +6,14 @@
 - **Navigation**: Added back button and header layout to `app/(tabs)/journal.tsx` to ensure consistent navigation.
 - **Verification**: Audited and confirmed presence of back buttons on `Help`, `Tasks`, and `History` screens.
 
+## [2025-12-31] - Refactorisation & Corrections Techniques 🛠️
+- **Composants UI**: Remplacement global de `ScaleButton` (déprécié) par `AnimatedPressable` pour une meilleure gestion des animations et des props.
+- **Type Safety**: Correction des erreurs TypeScript strictes :
+  - `sharedTransitionTag` sur `AnimatedImage`.
+  - Imports manquants dans `AnimatedPressable`.
+  - Gestion sécurisée des styles dans `AlterBubble`.
+- **Root Layout**: Nettoyage de `app/_layout.tsx` (suppression des styles en double, correction de la structure).
+
 ## [2025-12-31] - Dashboard Final Polish & Refactoring 💎
 - **Architectural Cleanup**: Split monolithic `dashboard.tsx` into modular components (`DashboardHeader`, `SystemControlBar`, `AlterBubble`, `AddAlterModal`).
 - **System Control Bar**: Replaced the static toolkit grid with a premium floating bar using glassmorphism for better tool accessibility.

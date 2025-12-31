@@ -1,5 +1,6 @@
 import React from 'react';
 import { Image } from 'expo-image';
+import Animated from 'react-native-reanimated';
 import { View, Text, StyleSheet } from 'react-native';
 import { AnimatedPressable } from '../ui/AnimatedPressable';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,6 +24,8 @@ interface ProfileHeaderProps {
     onFollowingPress: () => void;
 }
 
+const AnimatedImage = Animated.createAnimatedComponent(Image);
+
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     alter,
     isOwner,
@@ -40,12 +43,14 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 <View style={styles.avatarColumn}>
                     <View style={[styles.avatarContainer, { borderColor: alter.color || colors.primary }]}>
                         <View style={[styles.avatar, { backgroundColor: alter.color || colors.primary }]}>
+
                             {alter.avatar_url ? (
-                                <Image
+                                <AnimatedImage
                                     source={{ uri: alter.avatar_url }}
                                     style={styles.avatarImage}
                                     contentFit="cover"
                                     transition={500}
+                                    {...({ sharedTransitionTag: `avatar-${alter.id}` } as any)}
                                 />
                             ) : (
                                 <Text style={styles.avatarText}>

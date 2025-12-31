@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
+import Animated from 'react-native-reanimated';
 import { AnimatedPressable } from '../ui/AnimatedPressable';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../../lib/theme';
@@ -16,6 +18,8 @@ interface AlterBubbleProps {
     onLongPress?: () => void;
     dimmed?: boolean;
 }
+
+const AnimatedImage = Animated.createAnimatedComponent(Image);
 
 const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
     alter,
@@ -89,7 +93,14 @@ const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
                 isSelected && styles.bubbleSelected
             ]}>
                 {alter.avatar_url ? (
-                    <Image source={{ uri: alter.avatar_url }} style={styles.bubbleImage} />
+                    <AnimatedImage
+                        source={{ uri: alter.avatar_url }}
+                        style={styles.bubbleImage}
+                        contentFit="cover"
+                        transition={500}
+                        {...({ sharedTransitionTag: `avatar-${alter.id}` } as any)}
+                        cachePolicy="memory-disk"
+                    />
                 ) : (
                     <Text style={[styles.bubbleInitial, { fontSize: dynamicStyles.initialFontSize }]}>
                         {alter.name.charAt(0).toUpperCase()}

@@ -25,7 +25,7 @@ import { PublicProfile, Post } from '../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { SkeletonProfile } from '../../src/components/ui/Skeleton';
 import { EmptyState } from '../../src/components/ui/EmptyState';
-import { ScaleButton } from '../../src/components/ui/ScaleButton';
+import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
 
 const GRID_ITEM_SIZE = (Dimensions.get('window').width - spacing.md * 2 - 4) / 3;
 
@@ -188,7 +188,7 @@ export default function ExternalProfileScreen() {
 
                 {/* Follow Button */}
                 <View style={styles.actionButtons}>
-                    <ScaleButton
+                    <AnimatedPressable
                         style={[
                             styles.followButton,
                             isFollowing && styles.followingButton,
@@ -201,7 +201,7 @@ export default function ExternalProfileScreen() {
                         ]}>
                             {isFollowing ? 'Ne plus suivre' : 'Suivre'}
                         </Text>
-                    </ScaleButton>
+                    </AnimatedPressable>
                 </View>
 
                 {/* Posts Grid */}

@@ -51,7 +51,7 @@ export function useNotifications() {
             }
         );
 
-        return () => subscription.remove();
+        return () => subscription?.remove();
     }, [router]);
 
     const loadSettings = async () => {

@@ -26,7 +26,7 @@ import { CommentsModal } from '../../src/components/CommentsModal';
 import { triggerHaptic } from '../../src/lib/haptics';
 import { SkeletonProfile } from '../../src/components/ui/Skeleton';
 import { EmptyState } from '../../src/components/ui/EmptyState';
-import { ScaleButton } from '../../src/components/ui/ScaleButton';
+import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
 
 const { width } = Dimensions.get('window');
 const GRID_SIZE = (width - 4) / 3;
@@ -271,19 +271,19 @@ export default function ProfileScreen() {
 
                 {/* Action Buttons */}
                 <View style={styles.actionButtons}>
-                    <ScaleButton
+                    <AnimatedPressable
                         style={styles.editButton}
                         onPress={() => router.push(`/alter/${currentAlter.id}`)}
                     >
                         <Ionicons name="pencil" size={16} color={colors.text} style={{ marginRight: 6 }} />
                         <Text style={styles.editButtonText}>Modifier le profil</Text>
-                    </ScaleButton>
-                    <ScaleButton
+                    </AnimatedPressable>
+                    <AnimatedPressable
                         style={styles.statsButton}
                         onPress={() => router.push('/history')}
                     >
                         <Ionicons name="bar-chart-outline" size={20} color={colors.text} />
-                    </ScaleButton>
+                    </AnimatedPressable>
                 </View>
 
                 {/* Tabs: Grid / List */}
@@ -323,10 +323,10 @@ export default function ProfileScreen() {
                         />
                     ) : (
                         posts.map((post, index) => (
-                            <ScaleButton
+                            <AnimatedPressable
                                 key={post.id}
                                 style={styles.gridItem}
-                                scaleTo={0.98}
+                                scaleMin={0.98}
                                 onPress={() => {
                                     triggerHaptic.selection();
                                     setSelectedPostIndex(index);
@@ -344,7 +344,7 @@ export default function ProfileScreen() {
                                         </Text>
                                     </View>
                                 )}
-                            </ScaleButton>
+                            </AnimatedPressable>
                         ))
                     )}
                 </View>

@@ -6,8 +6,10 @@
 - **Indexes**: Added composite index for `messages` collection to support group chat query ordering.
 
 ## [2025-12-31] - Web Compatibility & Stability Fixes 🕸️
-- **AddAlterModal**: Improved web compatibility by disabling `BlurView` on web (replaced with semi-transparent view) to prevent unresponsive UI interaction.
-- **TeamChatScreen**: Added robust error handling for Firestore snapshots to prevent infinite loading loops on web permissions errors.
+- **Web Compatibility**: Fixed unresponsive "Créer" button in `AddAlterModal` by simplifying the modal overlay and adjusting `KeyboardAvoidingView` behavior for Web.
+- **Web Compatibility**: Resolved infinite loading and "0 membres" display in `TeamChatScreen` by refining snapshot handling and adding initial state fallbacks.
+- **Web Compatibility**: Added diagnostic logging to `AuthContext.tsx` and `TeamChatScreen` to facilitate troubleshooting of synchronization issues on web.
+- **Internal Chat**: Improved message sending reliability and error handling on Web.
 - **Stability**: Fixed a logic issue where chat loading would hang if user data wasn't fully initialized locally.
 
 ## [2025-12-31] - Code Cleanup & Refactoring 🧹

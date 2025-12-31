@@ -10,7 +10,8 @@ import {
     Platform,
     Image,
     Modal,
-    ActivityIndicator
+    ActivityIndicator,
+    Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -56,6 +57,7 @@ export default function TeamChatScreen() {
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
+            console.log('[TeamChat] Messages snapshot received. Count:', snapshot.size);
             const msgs: Message[] = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -63,7 +65,7 @@ export default function TeamChatScreen() {
             setMessages(msgs);
             setLoading(false);
         }, (error) => {
-            console.error("Chat snapshot error:", error);
+            console.error("[TeamChat] Snapshot error:", error);
             setLoading(false);
         });
 
@@ -74,22 +76,27 @@ export default function TeamChatScreen() {
         if (!inputText.trim() || !user || !selectedSenderId) return;
 
         const text = inputText.trim();
-        setInputText('');
-        triggerHaptic.light();
+        const senderId = selectedSenderId;
+
+        const messageData = {
+            content: text,
+            sender_alter_id: senderId,
+            type: 'text',
+            is_internal: true,
+            is_read: true,
+            created_at: new Date().toISOString(),
+            system_id: user.uid
+        };
 
         try {
-            await addDoc(collection(db, `system_chats/${user.uid}/messages`), {
-                content: text,
-                sender_alter_id: selectedSenderId,
-                type: 'text',
-                is_internal: true,
-                is_read: true,
-                created_at: new Date().toISOString(), // Use ISO string for consistency with type
-                system_id: user.uid
-            });
+            console.log('[TeamChat] Sending message...', { text, senderId });
+            const docRef = await addDoc(collection(db, 'system_chats', user.uid, 'messages'), messageData);
+            console.log('[TeamChat] Message sent successfully. ID:', docRef.id);
+            setInputText('');
+            triggerHaptic.light();
         } catch (error) {
-            console.error("Error sending message", error);
-            setInputText(text); // Revert on fail
+            console.error('[TeamChat] Error sending message:', error);
+            Alert.alert('Erreur', 'Impossible d\'envoyer le message');
         }
     };
 
@@ -145,7 +152,9 @@ export default function TeamChatScreen() {
                 </TouchableOpacity>
                 <View style={styles.headerTitleContainer}>
                     <Text style={styles.headerTitle}>Discussion Système</Text>
-                    <Text style={styles.headerSubtitle}>{alters.length} membres</Text>
+                    <Text style={styles.headerSubtitle}>
+                        {alters.length > 0 ? `${alters.length} membres` : (loading ? 'Chargement...' : 'Système')}
+                    </Text>
                 </View>
                 <TouchableOpacity style={styles.headerAction}>
                     <Ionicons name="settings-outline" size={24} color={colors.text} />

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { useSuccessAnimation } from '../../src/contexts/SuccessAnimationContext';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { DismissKeyboard } from '../../src/components/ui/DismissKeyboard';
 
@@ -23,6 +24,7 @@ export default function RegisterScreen() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const { signUp } = useAuth();
+    const { play } = useSuccessAnimation();
 
     useEffect(() => {
         if (params.systemName) {
@@ -61,7 +63,7 @@ export default function RegisterScreen() {
             Alert.alert('Erreur', "Le nom d'utilisateur ne doit pas dépasser 30 caractères");
             return;
         }
-        
+
         const alterCountNumber = params.alterCount ? parseInt(params.alterCount, 10) : undefined;
 
         setLoading(true);
@@ -86,6 +88,7 @@ export default function RegisterScreen() {
                 Alert.alert('Erreur', error.message);
             }
         } else {
+            play();
             Alert.alert(
                 'Inscription réussie !',
                 'Votre système a été créé. Vous pouvez maintenant vous connecter.',

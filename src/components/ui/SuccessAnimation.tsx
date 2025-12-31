@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { StyleSheet } from 'react-native';
 import LottieView from 'lottie-react-native';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import { useSuccessAnimation } from '../contexts/SuccessAnimationContext';
+import { useSuccessAnimation } from '../../contexts/SuccessAnimationContext';
 
 const confettiAnimation = require('../../assets/animations/confetti.json');
 
@@ -23,12 +23,13 @@ export function SuccessAnimation() {
         };
     }, [isPlaying]);
 
-    if (!isPlaying) {
-        return null;
-    }
-
+    // We don't return null immediately to allow for the opacity fade-out animation
+    // The pointerEvents="none" ensures it doesn't block interactions when invisible
     return (
-        <Animated.View style={[styles.container, animatedStyle]} pointerEvents="none">
+        <Animated.View
+            style={[styles.container, animatedStyle]}
+            pointerEvents="none"
+        >
             <LottieView
                 ref={animationRef}
                 source={confettiAnimation}

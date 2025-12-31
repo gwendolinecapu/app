@@ -9,7 +9,7 @@ import Animated, {
   interpolate,
   Extrapolation,
 } from 'react-native-reanimated';
-import { Theme, useTheme } from '@/src/contexts/ThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface SkeletonProps {
   shape: 'circle' | 'rect' | 'text';
@@ -24,7 +24,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   height,
   style,
 }) => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const progress = useSharedValue(0);
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
         return {};
     }
   };
-  
+
   const styles = getStyles(theme);
 
   return (
@@ -78,7 +78,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 };
 
 export const SkeletonFeed: React.FC = () => {
-  const { theme } = useTheme();
+  const theme = useTheme();
   const styles = getStyles(theme);
 
   return (
@@ -99,7 +99,7 @@ export const SkeletonFeed: React.FC = () => {
   );
 }
 
-const getStyles = (theme: Theme) => StyleSheet.create({
+const getStyles = (theme: any) => StyleSheet.create({
   container: {
     backgroundColor: theme.colors.skeletonBackground,
     overflow: 'hidden',

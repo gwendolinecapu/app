@@ -15,6 +15,8 @@
 - **Fix**: Resolved syntax errors and type mismatches introduced during refactoring.
 - **Fix**: Resolved `SyntaxError` in `AuthContext` (duplicate imports) to restore app stability.
 - **Fix**: Updated `firestore.rules` to correctly handle nested subcollections for comments and fix permission errors.
+- **Security**: Patched critical vulnerability in `friend_requests` by enforcing `receiverSystemId` checks for updates (accept/reject).
+- **Security**: Removed duplicate `emotions` rules in `firestore.rules` to prevent conflicts.
 
 ## [2025-12-31] - Core & Bundling Fixes
 - **Fix**: Resolved `recyclerlistview` bundling error ("Unable to resolve ./core/RecyclerListView") by implementing advanced module resolution logic in `metro.config.js`.

@@ -48,13 +48,21 @@ export const AddAlterModal: React.FC<AddAlterModalProps> = ({
     const [image, setImage] = useState<string | null>(null);
 
     const handleCreate = async () => {
-        await onCreate({ name, pronouns, bio, color, image });
-        // Reset form after creation
-        setName('');
-        setPronouns('');
-        setBio('');
-        setColor(alterColors[0]);
-        setImage(null);
+        console.log('[AddAlterModal] handleCreate triggered', { name, hasOnCreate: !!onCreate });
+        if (!name.trim()) return;
+
+        try {
+            await onCreate({ name, pronouns, bio, color, image });
+            console.log('[AddAlterModal] Alter created successfully');
+            // Reset form after creation
+            setName('');
+            setPronouns('');
+            setBio('');
+            setColor(alterColors[0]);
+            setImage(null);
+        } catch (error) {
+            console.error('[AddAlterModal] Error creating alter:', error);
+        }
     };
 
     const handlePickImage = async () => {
@@ -69,14 +77,12 @@ export const AddAlterModal: React.FC<AddAlterModalProps> = ({
             visible={visible}
             onRequestClose={onClose}
         >
-            <View style={styles.modalOverlay}>
-                {Platform.OS !== 'web' ? (
+            <View style={[styles.modalOverlay, Platform.OS === 'web' && styles.modalOverlayWeb]}>
+                {Platform.OS !== 'web' && (
                     <BlurView intensity={30} style={StyleSheet.absoluteFill} tint="dark" />
-                ) : (
-                    <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
                 )}
                 <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    behavior={Platform.OS === 'ios' ? 'padding' : (Platform.OS === 'web' ? undefined : 'height')}
                     style={styles.keyboardView}
                 >
                     <View style={styles.modalContent}>
@@ -184,6 +190,9 @@ const styles = StyleSheet.create({
     modalOverlay: {
         flex: 1,
         justifyContent: 'flex-end',
+    },
+    modalOverlayWeb: {
+        backgroundColor: 'rgba(0,0,0,0.5)',
     },
     keyboardView: {
         width: '100%',

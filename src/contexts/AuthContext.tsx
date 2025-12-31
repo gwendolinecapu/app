@@ -80,11 +80,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         let unsubscribeAlters: Unsubscribe | null = null;
 
         const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+            console.log('[AuthContext] onAuthStateChanged', firebaseUser?.uid);
             setUser(firebaseUser);
             if (firebaseUser) {
-                // 1. Subscribe to System Data
+                console.log('[AuthContext] User authenticated, subscribing to system and alters...');
                 const systemRef = doc(db, 'systems', firebaseUser.uid);
                 unsubscribeSystem = onSnapshot(systemRef, async (docSnap) => {
+                    console.log('[AuthContext] System snapshot received', docSnap.exists());
                     if (docSnap.exists()) {
                         setSystemData(docSnap.data() as System);
                     } else {
@@ -116,6 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 );
 
                 unsubscribeAlters = onSnapshot(altersq, (querySnapshot) => {
+                    console.log('[AuthContext] Alters snapshot received. Count:', querySnapshot.size);
                     const altersData: Alter[] = [];
                     querySnapshot.forEach((doc) => {
                         altersData.push({ id: doc.id, ...doc.data() } as Alter);

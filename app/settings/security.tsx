@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, TextInput, Switch } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
@@ -65,6 +65,27 @@ export default function SecurityScreen() {
                     <View style={styles.infoRow}>
                         <Ionicons name="mail-outline" size={20} color={colors.textSecondary} />
                         <Text style={styles.infoText}>{user?.email}</Text>
+                    </View>
+                </View>
+
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Sécurité de l'application</Text>
+                    <View style={styles.switchRow}>
+                        <View style={styles.switchLabelContainer}>
+                            <View style={styles.iconContainer}>
+                                <Ionicons name="finger-print-outline" size={22} color={colors.primary} />
+                            </View>
+                            <View>
+                                <Text style={styles.switchLabel}>Verrouillage Biométrique</Text>
+                                <Text style={styles.switchSubLabel}>FaceID / TouchID au lancement</Text>
+                            </View>
+                        </View>
+                        <Switch
+                            value={isBiometricEnabled}
+                            onValueChange={toggleBiometric}
+                            trackColor={{ false: colors.border, true: colors.primary }}
+                            thumbColor={'#FFFFFF'}
+                        />
                     </View>
                 </View>
 

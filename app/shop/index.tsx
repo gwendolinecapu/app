@@ -198,8 +198,8 @@ const ItemPreview = ({ item }: { item: ShopItem }) => {
                         useNativeDriver: true
                     })
                     : Animated.sequence([
-                        Animated.timing(anim, { toValue: 1, duration, easing: Easing.sin, useNativeDriver: false }),
-                        Animated.timing(anim, { toValue: 0, duration, easing: Easing.sin, useNativeDriver: false })
+                        Animated.timing(anim, { toValue: 1, duration, easing: Easing.sin, useNativeDriver: true }),
+                        Animated.timing(anim, { toValue: 0, duration, easing: Easing.sin, useNativeDriver: true })
                     ])
             );
 

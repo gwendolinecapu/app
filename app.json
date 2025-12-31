@@ -17,6 +17,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.pluralconnect.app",
       "infoPlist": {
+        "NSFaceIDUsageDescription": "L'accès à FaceID est nécessaire pour sécuriser l'accès à votre système.",
         "NSUserTrackingUsageDescription": "Cette autorisation permet d'afficher des publicités personnalisées.",
         "SKAdNetworkItems": [
           {
@@ -97,6 +98,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-local-authentication",
       [
         "expo-sqlite",
         {

@@ -143,7 +143,7 @@ export const FriendService = {
     },
 
     /**
-     * Get friends list
+     * Get friends list (people who follow this alter)
      */
     getFriends: async (alterId: string) => {
         if (!auth.currentUser) return [];
@@ -155,5 +155,20 @@ export const FriendService = {
         );
         const snapshot = await getDocs(q);
         return snapshot.docs.map(d => d.data().friendId as string);
+    },
+
+    /**
+     * Get following list (people this alter follows)
+     */
+    getFollowing: async (alterId: string): Promise<string[]> => {
+        if (!auth.currentUser) return [];
+
+        const q = query(
+            collection(db, 'friendships'),
+            where('friendId', '==', alterId),
+            where('friendSystemId', '==', auth.currentUser.uid)
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(d => d.data().alterId as string);
     }
 };

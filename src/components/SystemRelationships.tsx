@@ -74,33 +74,35 @@ export const SystemRelationships = ({ alter, editable = false }: Props) => {
 
     return (
         <View style={styles.container}>
+            {/* Compact header with just icon */}
             <View style={styles.header}>
-                <Text style={styles.title}>💞 Relations Système</Text>
-                {editable && (
-                    <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.addButton}>
-                        <Ionicons name="settings-outline" size={18} color={colors.primary} />
-                    </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => editable && setModalVisible(true)}
+                    style={styles.relationIconButton}
+                    disabled={!editable}
+                >
+                    <Ionicons name="people" size={18} color={colors.secondary || '#E91E63'} />
+                    {relationships.length > 0 && (
+                        <View style={styles.countBadge}>
+                            <Text style={styles.countBadgeText}>{relationships.length}</Text>
+                        </View>
+                    )}
+                </TouchableOpacity>
+                {editable && relationships.length === 0 && (
+                    <Text style={styles.addHint}>Ajouter une relation</Text>
                 )}
             </View>
 
-            {relationships.length === 0 ? (
-                <Text style={styles.emptyText}>Aucune relation définie.</Text>
-            ) : (
+            {relationships.length > 0 && (
                 <View style={styles.list}>
                     {relationships.map(rel => {
                         const target = getTargetAlter(rel.target_alter_id);
                         if (!target) return null;
 
                         return (
-                            <TouchableOpacity
+                            <View
                                 key={rel.target_alter_id}
                                 style={styles.item}
-                                onLongPress={() => {
-                                    if (editable) Alert.alert("Supprimer ?", `Retirer la relation avec ${target.name} ?`, [
-                                        { text: "Annuler" },
-                                        { text: "Supprimer", style: 'destructive', onPress: () => handleRemoveRelationship(rel.target_alter_id) }
-                                    ])
-                                }}
                             >
                                 <View style={[styles.avatar, { backgroundColor: target.color }]}>
                                     {target.avatar_url ? (
@@ -116,7 +118,20 @@ export const SystemRelationships = ({ alter, editable = false }: Props) => {
                                         <Text style={styles.badgeText}>{RELATIONSHIP_LABELS[rel.type]}</Text>
                                     </View>
                                 </View>
-                            </TouchableOpacity>
+                                {editable && (
+                                    <TouchableOpacity
+                                        style={styles.deleteBtn}
+                                        onPress={() => {
+                                            Alert.alert("Supprimer ?", `Retirer la relation avec ${target.name} ?`, [
+                                                { text: "Annuler" },
+                                                { text: "Supprimer", style: 'destructive', onPress: () => handleRemoveRelationship(rel.target_alter_id) }
+                                            ]);
+                                        }}
+                                    >
+                                        <Ionicons name="close-circle" size={18} color={colors.error} />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
                         );
                     })}
                 </View>
@@ -159,37 +174,61 @@ export const SystemRelationships = ({ alter, editable = false }: Props) => {
 
 const styles = StyleSheet.create({
     container: {
-        marginBottom: spacing.lg,
+        marginBottom: spacing.sm,
     },
     header: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: spacing.sm,
-        paddingHorizontal: spacing.md
+        gap: spacing.sm,
+        paddingHorizontal: spacing.md,
+        marginBottom: spacing.xs,
     },
-    title: {
-        ...typography.h3,
-        color: colors.text,
+    relationIconButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#E91E6315',
+        padding: spacing.xs,
+        paddingHorizontal: spacing.sm,
+        borderRadius: borderRadius.full,
     },
-    addButton: {
-        padding: 4,
+    countBadge: {
+        backgroundColor: '#E91E63',
+        borderRadius: 10,
+        minWidth: 18,
+        height: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 4,
+    },
+    countBadgeText: {
+        color: 'white',
+        fontSize: 11,
+        fontWeight: 'bold',
+    },
+    addHint: {
+        ...typography.caption,
+        color: colors.textMuted,
+        fontStyle: 'italic',
     },
     list: {
         paddingHorizontal: spacing.md,
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: spacing.sm
+        gap: spacing.xs,
     },
     item: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.backgroundLight,
         padding: spacing.xs,
-        paddingRight: spacing.md,
+        paddingRight: spacing.sm,
         borderRadius: borderRadius.full,
         borderWidth: 1,
-        borderColor: colors.border
+        borderColor: colors.border,
+    },
+    deleteBtn: {
+        marginLeft: spacing.xs,
+        padding: 2,
     },
     avatar: {
         width: 32,

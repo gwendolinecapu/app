@@ -92,6 +92,14 @@ export default function AlterSpaceScreen() {
     const [friendCount, setFriendCount] = useState(0);
     const [friendIds, setFriendIds] = useState<string[]>([]);
 
+    // Following (people I follow)
+    const [followingCount, setFollowingCount] = useState(0);
+    const [followingIds, setFollowingIds] = useState<string[]>([]);
+
+    // Modals for followers/following lists
+    const [showFollowersModal, setShowFollowersModal] = useState(false);
+    const [showFollowingModal, setShowFollowingModal] = useState(false);
+
     // État pour la galerie privée
     const [galleryImages, setGalleryImages] = useState<Array<{ id: string, uri: string, createdAt: Date }>>([]);
     const [isCloudEnabled, setIsCloudEnabled] = useState(false);
@@ -183,9 +191,19 @@ export default function AlterSpaceScreen() {
         const foundAlter = alters.find(a => a.id === alterId);
         if (foundAlter) {
             setAlter(foundAlter);
+            // Load followers (friends of this alter)
             FriendService.getFriends(foundAlter.id).then(friends => {
                 setFriendCount(friends.length);
                 setFriendIds(friends);
+            });
+            // Load following (people this alter follows)
+            FriendService.getFollowing(foundAlter.id).then(following => {
+                setFollowingCount(following.length);
+                setFollowingIds(following);
+            }).catch(() => {
+                // If no getFollowing method, use 0
+                setFollowingCount(0);
+                setFollowingIds([]);
             });
         }
     }, [alterId, alters]);
@@ -327,14 +345,20 @@ export default function AlterSpaceScreen() {
                             <Text style={styles.statValue}>{posts.length}</Text>
                             <Text style={styles.statLabel}>Posts</Text>
                         </View>
-                        <View style={styles.statBox}>
+                        <TouchableOpacity
+                            style={styles.statBox}
+                            onPress={() => setShowFollowersModal(true)}
+                        >
                             <Text style={styles.statValue}>{friendCount}</Text>
                             <Text style={styles.statLabel}>Abonnés</Text>
-                        </View>
-                        <View style={styles.statBox}>
-                            <Text style={styles.statValue}>0</Text>
-                            <Text style={styles.statLabel}>Historique</Text>
-                        </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.statBox}
+                            onPress={() => setShowFollowingModal(true)}
+                        >
+                            <Text style={styles.statValue}>{followingCount}</Text>
+                            <Text style={styles.statLabel}>Suivis</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
 
@@ -1030,6 +1054,100 @@ export default function AlterSpaceScreen() {
                     />
                 </View>
             </Modal >
+
+            {/* Followers Modal */}
+            <Modal
+                visible={showFollowersModal}
+                animationType="slide"
+                transparent
+                onRequestClose={() => setShowFollowersModal(false)}
+            >
+                <View style={styles.followModalOverlay}>
+                    <View style={styles.followModalContent}>
+                        <View style={styles.followModalHeader}>
+                            <Text style={styles.followModalTitle}>Abonnés</Text>
+                            <TouchableOpacity onPress={() => setShowFollowersModal(false)}>
+                                <Ionicons name="close" size={24} color={colors.text} />
+                            </TouchableOpacity>
+                        </View>
+                        <FlatList
+                            data={friendIds.map(id => alters.find(a => a.id === id)).filter(Boolean)}
+                            keyExtractor={(item) => item?.id || Math.random().toString()}
+                            renderItem={({ item }) => item ? (
+                                <TouchableOpacity
+                                    style={styles.followUserItem}
+                                    onPress={() => {
+                                        setShowFollowersModal(false);
+                                        router.push(`/alter-space/${item.id}`);
+                                    }}
+                                >
+                                    <View style={[styles.followUserAvatar, { backgroundColor: item.color || colors.primary }]}>
+                                        {item.avatar_url ? (
+                                            <Image source={{ uri: item.avatar_url }} style={styles.followUserAvatarImg} />
+                                        ) : (
+                                            <Text style={styles.followUserAvatarText}>{item.name[0]}</Text>
+                                        )}
+                                    </View>
+                                    <Text style={styles.followUserName}>{item.name}</Text>
+                                </TouchableOpacity>
+                            ) : null}
+                            ListEmptyComponent={
+                                <View style={styles.followEmptyState}>
+                                    <Ionicons name="people-outline" size={48} color={colors.textMuted} />
+                                    <Text style={styles.followEmptyText}>Aucun abonné</Text>
+                                </View>
+                            }
+                        />
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Following Modal */}
+            <Modal
+                visible={showFollowingModal}
+                animationType="slide"
+                transparent
+                onRequestClose={() => setShowFollowingModal(false)}
+            >
+                <View style={styles.followModalOverlay}>
+                    <View style={styles.followModalContent}>
+                        <View style={styles.followModalHeader}>
+                            <Text style={styles.followModalTitle}>Suivis</Text>
+                            <TouchableOpacity onPress={() => setShowFollowingModal(false)}>
+                                <Ionicons name="close" size={24} color={colors.text} />
+                            </TouchableOpacity>
+                        </View>
+                        <FlatList
+                            data={followingIds.map(id => alters.find(a => a.id === id)).filter(Boolean)}
+                            keyExtractor={(item) => item?.id || Math.random().toString()}
+                            renderItem={({ item }) => item ? (
+                                <TouchableOpacity
+                                    style={styles.followUserItem}
+                                    onPress={() => {
+                                        setShowFollowingModal(false);
+                                        router.push(`/alter-space/${item.id}`);
+                                    }}
+                                >
+                                    <View style={[styles.followUserAvatar, { backgroundColor: item.color || colors.primary }]}>
+                                        {item.avatar_url ? (
+                                            <Image source={{ uri: item.avatar_url }} style={styles.followUserAvatarImg} />
+                                        ) : (
+                                            <Text style={styles.followUserAvatarText}>{item.name[0]}</Text>
+                                        )}
+                                    </View>
+                                    <Text style={styles.followUserName}>{item.name}</Text>
+                                </TouchableOpacity>
+                            ) : null}
+                            ListEmptyComponent={
+                                <View style={styles.followEmptyState}>
+                                    <Ionicons name="people-outline" size={48} color={colors.textMuted} />
+                                    <Text style={styles.followEmptyText}>Vous ne suivez personne</Text>
+                                </View>
+                            }
+                        />
+                    </View>
+                </View>
+            </Modal>
         </View >
     );
 }
@@ -1862,5 +1980,69 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: spacing.md,
+    },
+    // Followers/Following Modal Styles
+    followModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        justifyContent: 'flex-end',
+    },
+    followModalContent: {
+        backgroundColor: colors.backgroundCard,
+        borderTopLeftRadius: borderRadius.xl,
+        borderTopRightRadius: borderRadius.xl,
+        maxHeight: '70%',
+        paddingBottom: spacing.xl,
+    },
+    followModalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: spacing.lg,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+    },
+    followModalTitle: {
+        ...typography.h3,
+        fontWeight: 'bold',
+    },
+    followUserItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: spacing.md,
+        paddingHorizontal: spacing.lg,
+    },
+    followUserAvatar: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: spacing.md,
+        overflow: 'hidden',
+    },
+    followUserAvatarImg: {
+        width: '100%',
+        height: '100%',
+    },
+    followUserAvatarText: {
+        color: 'white',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    followUserName: {
+        ...typography.body,
+        fontWeight: '600',
+        color: colors.text,
+    },
+    followEmptyState: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: spacing.xxl,
+    },
+    followEmptyText: {
+        ...typography.body,
+        color: colors.textMuted,
+        marginTop: spacing.md,
     },
 });

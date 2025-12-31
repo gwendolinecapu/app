@@ -7,7 +7,8 @@ import Animated, {
     withTiming,
     interpolate,
     Extrapolation,
-    useAnimatedScrollHandler
+    useAnimatedScrollHandler,
+    SharedValue
 } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -41,7 +42,7 @@ const SLIDES = [
     },
 ];
 
-const Slide = ({ item, index, scrollX }: { item: typeof SLIDES[0], index: number, scrollX: Animated.SharedValue<number> }) => {
+const Slide = ({ item, index, scrollX }: { item: typeof SLIDES[0], index: number, scrollX: SharedValue<number> }) => {
     const animatedStyle = useAnimatedStyle(() => {
         const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
 
@@ -85,7 +86,7 @@ const Slide = ({ item, index, scrollX }: { item: typeof SLIDES[0], index: number
     );
 };
 
-const Paginator = ({ data, scrollX }: { data: typeof SLIDES, scrollX: Animated.SharedValue<number> }) => {
+const Paginator = ({ data, scrollX }: { data: typeof SLIDES, scrollX: SharedValue<number> }) => {
     return (
         <View style={styles.paginationContainer}>
             {data.map((_, i) => {

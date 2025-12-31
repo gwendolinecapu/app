@@ -1,4 +1,5 @@
 import { Redirect } from 'expo-router';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../src/contexts/AuthContext';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { colors } from '../src/lib/theme';

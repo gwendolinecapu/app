@@ -9,6 +9,8 @@
 - **Hero Transitions**: Implemented shared element transitions for alter avatars, creating a seamless "hero" animation when navigating from the dashboard to an alter's profile.
 - **Offline Banner**: Created a discreet, animated banner that slides down to inform the user of network connectivity issues.
 - **Breathing Animation**: Refactored the grounding breathing tool for smoother transitions and state-aware behavior.
+- **Launch Experience**: Implemented a "Seamless Launch" by hoisting the bubble animation to the root index. The app now transitions fluidly from launch to onboarding without jarring white screens or generic spinners.
+
 
 ## [2025-12-31] - UX Refinement & Navigation 💎
 - **System Control Bar**: Lowered position using `useSafeAreaInsets` for better ergonomics and refined center button design (removed bulky border).

@@ -1,7 +1,7 @@
 import { Redirect } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../src/contexts/AuthContext';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { colors } from '../src/lib/theme';
 import { storage } from '../src/lib/storage';
 import { BackgroundBubbles } from '../src/components/ui/BackgroundBubbles';

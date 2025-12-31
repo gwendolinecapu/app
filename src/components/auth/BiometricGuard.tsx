@@ -10,21 +10,24 @@ interface BiometricGuardProps {
 }
 
 export function BiometricGuard({ children }: BiometricGuardProps) {
-    const { user } = useAuth();
-    const [isLocked, setIsLocked] = useState(false); // Default to false, lock only if auth'd and necessary
+    const { user, isBiometricEnabled } = useAuth();
+    const [isLocked, setIsLocked] = useState(false);
     const [hasHardware, setHasHardware] = useState(false);
     const appState = useRef(AppState.currentState);
+    const isAuthenticating = useRef(false);
 
     useEffect(() => {
         checkHardware();
 
         const subscription = AppState.addEventListener('change', nextAppState => {
+            // FIX: Only trigger logic if coming from BACKGROUND.
+            // Biometric prompt matches "inactive", so inactive -> active transition causes loop.
+            // We strictly want to lock only when the app was fully backgrounded.
             if (
-                appState.current.match(/inactive|background/) &&
+                appState.current.match(/background/) &&
                 nextAppState === 'active'
             ) {
-                // App came to foreground
-                if (user) {
+                if (user && !isAuthenticating.current) {
                     authenticate();
                 }
             }
@@ -49,13 +52,15 @@ export function BiometricGuard({ children }: BiometricGuardProps) {
 
     const authenticate = async () => {
         if (!hasHardware && isLocked) {
-            // Fallback if hardware isn't available but we are locked? 
-            // Ideally we shouldn't lock if no hardware, but let's be safe.
             setIsLocked(false);
             return;
         }
 
+        if (isAuthenticating.current) return;
+
+        isAuthenticating.current = true;
         setIsLocked(true);
+
         try {
             const result = await LocalAuthentication.authenticateAsync({
                 promptMessage: 'Authentification requise',
@@ -66,14 +71,15 @@ export function BiometricGuard({ children }: BiometricGuardProps) {
 
             if (result.success) {
                 setIsLocked(false);
-            } else {
-                // Keep locked or Retry?
-                // setIsLocked(true); 
             }
         } catch (error) {
             console.error('Biometric auth error', error);
-            setIsLocked(false); // Fail open or closed? Closed for security, but fail open for avoiding lockouts due to bugs?
-            // For now, fail open if it's a technical error to avoid blocking user.
+            setIsLocked(false);
+        } finally {
+            // Small delay to prevent fluttering state re-trigger
+            setTimeout(() => {
+                isAuthenticating.current = false;
+            }, 500);
         }
     };
 

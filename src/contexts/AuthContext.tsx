@@ -29,6 +29,7 @@ import { triggerHaptic } from '../lib/haptics';
 
 
 import { Alter, System } from '../types';
+import { storage } from '../lib/storage';
 
 // Removed local Alter/System interfaces to use global ones from src/types
 
@@ -55,6 +56,8 @@ interface AuthContextType {
     toggleArchive: (alterId: string) => Promise<void>;
     updateHeadspace: (mood: string) => Promise<void>;
     currentAlter: Alter | null;
+    isBiometricEnabled: boolean;
+    toggleBiometric: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -66,6 +69,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [activeFront, setActiveFront] = useState<FrontStatus>({ type: 'single', alters: [] });
     const [alters, setAlters] = useState<Alter[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isBiometricEnabled, setIsBiometricEnabled] = useState(true);
+
+    useEffect(() => {
+        storage.isBiometricsEnabled().then(setIsBiometricEnabled);
+    }, []);
 
     useEffect(() => {
         let unsubscribeSystem: Unsubscribe | null = null;
@@ -362,6 +370,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const toggleBiometric = async () => {
+        const newValue = !isBiometricEnabled;
+        setIsBiometricEnabled(newValue);
+        await storage.setBiometricsEnabled(newValue);
+        if (newValue) {
+            triggerHaptic.success();
+        } else {
+            triggerHaptic.selection();
+        }
+    };
+
     return (
         <AuthContext.Provider
             value={{
@@ -379,7 +398,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 togglePin,
                 toggleArchive,
                 updateHeadspace,
-                currentAlter: activeFront.alters[0] || null
+                currentAlter: activeFront.alters[0] || null,
+                isBiometricEnabled,
+                toggleBiometric
             }}
         >
             {children}

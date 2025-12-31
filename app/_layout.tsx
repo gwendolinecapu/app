@@ -84,9 +84,6 @@ export default function RootLayout() {
                                                             <Stack.Screen name="settings/blocked" options={{ headerShown: false }} />
                                                             <Stack.Screen name="settings/security" options={{ headerShown: false }} />
                                                             <Stack.Screen name="settings/edit-system" options={{ headerShown: false }} />
-                                                            <Stack.Screen name="settings/blocked" options={{ headerShown: false }} />
-                                                            <Stack.Screen name="settings/security" options={{ headerShown: false }} />
-                                                            <Stack.Screen name="settings/edit-system" options={{ headerShown: false }} />
 
                                                             <Stack.Screen name="roles/index" options={{ headerShown: false }} />
                                                             <Stack.Screen name="roles/create" options={{ headerShown: false, presentation: 'modal' }} />

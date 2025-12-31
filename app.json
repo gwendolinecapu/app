@@ -19,6 +19,8 @@
       "infoPlist": {
         "NSFaceIDUsageDescription": "L'accès à FaceID est nécessaire pour sécuriser l'accès à votre système.",
         "NSUserTrackingUsageDescription": "Cette autorisation permet d'afficher des publicités personnalisées.",
+        "NSPhotoLibraryUsageDescription": "L'accès à vos photos est nécessaire pour les ajouter à la galerie de l'alter.",
+        "NSCameraUsageDescription": "L'accès à l'appareil photo est nécessaire pour prendre des photos pour la galerie.",
         "SKAdNetworkItems": [
           {
             "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork"

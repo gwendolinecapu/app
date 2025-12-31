@@ -210,9 +210,11 @@ export default function AlterSpaceScreen() {
                 </TouchableOpacity>
                 <Text style={styles.headerTitle} numberOfLines={1}>{alter.name}</Text>
                 <View style={styles.headerRight}>
-                    {/* Tab Switcher for Demo Purposes - In real app, this might be a bottom bar or segment control */}
-                    <TouchableOpacity onPress={() => setActiveTab(activeTab === 'feed' ? 'profile' : 'feed')}>
-                        <Ionicons name={activeTab === 'feed' ? "grid-outline" : "newspaper-outline"} size={24} color={colors.text} />
+                    <TouchableOpacity onPress={() => router.push('/search' as any)} style={{ marginRight: 15 }}>
+                        <Ionicons name="search-outline" size={24} color={colors.text} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push({ pathname: '/conversation/[id]', params: { id: alterId } })}>
+                        <Ionicons name="chatbubble-ellipses-outline" size={24} color={colors.text} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -322,8 +324,8 @@ const styles = StyleSheet.create({
         padding: spacing.xs,
     },
     headerRight: {
-        width: 40,
-        alignItems: 'flex-end',
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     notFoundText: {
         fontSize: 18,

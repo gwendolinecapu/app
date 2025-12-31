@@ -1,5 +1,9 @@
 # Changelog
 
+## [2025-12-31] - Correction Crash Galerie 📸
+- **Fix (Critical)**: Ajout des permissions manquantes (`NSPhotoLibraryUsageDescription`, `NSCameraUsageDescription`) dans `app.json` qui causaient un crash immédiat lors de l'ouverture de la galerie.
+- **Stabilité**: Cela résout également le problème de "retour en arrière" inattendu, car le crash réinitialisait la navigation.
+
 ## [2025-12-31] - Firebase Config & Permissions 🔒
 - **Security Rules**: Added rules for `system_chats` to enable the new Team Chat features.
 - **Cleanup**: Removed duplicate `user_monetization` rules to prevent conflicts.

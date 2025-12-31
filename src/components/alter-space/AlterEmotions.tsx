@@ -65,27 +65,33 @@ export const AlterEmotions: React.FC<AlterEmotionsProps> = ({ alterId, alterName
                 {EMOTION_CONFIG.map((item, index) => (
                     <TouchableOpacity
                         key={index}
-                        style={[styles.emotionButton, { borderColor: item.color + '40' }]}
+                        style={[styles.emotionButton, { backgroundColor: item.color + '15' }]} // 15% opacity background
                         onPress={() => handleAddEmotion(item.type)}
+                        activeOpacity={0.7}
                     >
-                        <Ionicons name={item.icon} size={32} color={item.color} />
-                        <Text style={styles.emotionLabel}>{item.label}</Text>
+                        <View style={[styles.iconContainer, { backgroundColor: item.color + '20' }]}>
+                            <Ionicons name={item.icon} size={28} color={item.color} />
+                        </View>
+                        <Text style={[styles.emotionLabel, { color: colors.text }]}>{item.label}</Text>
                     </TouchableOpacity>
                 ))}
             </View>
 
             {latestEmotion ? (
-                <View style={styles.statusContainer}>
-                    <View style={[styles.statusIcon, { backgroundColor: (currentEmotionConfig?.color || colors.primary) + '20' }]}>
-                        <Ionicons name={currentEmotionConfig?.icon || 'heart-outline'} size={24} color={currentEmotionConfig?.color || colors.primary} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.statusText}>
-                            Actuellement <Text style={{ fontWeight: 'bold', color: currentEmotionConfig?.color || colors.text }}>{currentEmotionConfig?.label || latestEmotion.emotion}</Text>
-                        </Text>
-                        <Text style={styles.statusTime}>
-                            {timeAgo(latestEmotion.created_at) ? `Depuis ${timeAgo(latestEmotion.created_at)}` : "À l'instant"}
-                        </Text>
+                <View style={styles.statusSection}>
+                    <Text style={styles.sectionTitle}>Dernier ressenti</Text>
+                    <View style={[styles.statusContainer, { borderLeftColor: currentEmotionConfig?.color || colors.primary }]}>
+                        <View style={[styles.statusIcon, { backgroundColor: (currentEmotionConfig?.color || colors.primary) + '20' }]}>
+                            <Ionicons name={currentEmotionConfig?.icon || 'heart-outline'} size={24} color={currentEmotionConfig?.color || colors.primary} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.statusText}>
+                                Actuellement <Text style={{ fontWeight: 'bold', color: currentEmotionConfig?.color || colors.text }}>{currentEmotionConfig?.label || latestEmotion.emotion}</Text>
+                            </Text>
+                            <Text style={styles.statusTime}>
+                                {timeAgo(latestEmotion.created_at) ? `Depuis ${timeAgo(latestEmotion.created_at)}` : "À l'instant"}
+                            </Text>
+                        </View>
                     </View>
                 </View>
             ) : (
@@ -93,7 +99,7 @@ export const AlterEmotions: React.FC<AlterEmotionsProps> = ({ alterId, alterName
                     <Ionicons name="heart-outline" size={48} color={colors.textMuted} />
                     <Text style={styles.emptyTitle}>Historique émotionnel</Text>
                     <Text style={styles.emptySubtitle}>
-                        Enregistrer les émotions de {alterName} pour suivre son bien-être au fil du temps.
+                        Enregistrez les émotions de {alterName} pour suivre son bien-être au fil du temps.
                     </Text>
                 </View>
             )}
@@ -110,37 +116,60 @@ const styles = StyleSheet.create({
         ...typography.h3,
         marginBottom: spacing.lg,
         color: colors.text,
+        textAlign: 'center',
+    },
+    sectionTitle: {
+        ...typography.h4,
+        fontSize: 14,
+        color: colors.textSecondary,
+        marginBottom: spacing.sm,
+        marginTop: spacing.md,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
     },
     grid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
-        gap: spacing.md,
+        gap: spacing.sm, // Reduced gap
         marginBottom: spacing.xl,
     },
     emotionButton: {
-        width: '23%', // 4 columns with gap
-        aspectRatio: 1,
+        width: '23%', // 4 columns
+        aspectRatio: 0.85, // Slightly taller
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
-        borderRadius: 12,
-        backgroundColor: colors.surface,
+        borderRadius: 16,
+        padding: 4,
+    },
+    iconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 8,
     },
     emotionLabel: {
-        fontSize: 10,
-        color: colors.textSecondary,
-        marginTop: 4,
+        fontSize: 11,
+        fontWeight: '500',
         textAlign: 'center',
+    },
+    statusSection: {
+        marginTop: spacing.xs,
     },
     statusContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: spacing.md,
         backgroundColor: colors.surface,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: colors.border,
+        borderRadius: 16,
+        borderLeftWidth: 4, // Accent border
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
     },
     statusIcon: {
         width: 48,

@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { router } from 'expo-router';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -62,7 +63,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
     const handleHeartPress = () => {
         triggerHaptic.selection();
         onLike(post.id);
-        
+
         // Pop animation
         heartScale.setValue(0.8);
         Animated.spring(heartScale, {
@@ -129,7 +130,11 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
     const mediaType = getMediaType(post.media_url || '');
 
     return (
-        <View style={styles.card}>
+        <TouchableOpacity
+            style={styles.card}
+            activeOpacity={0.9}
+            onPress={() => router.push(`/post/${post.id}` as any)}
+        >
             {showAuthor && (
                 <View style={styles.header}>
                     <AnimatedPressable style={styles.authorInfo} onPress={handleAuthorPress}>
@@ -210,7 +215,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
 
             <ImageLightbox visible={lightboxVisible} imageUrl={lightboxImageUrl || post.media_url || ''} onClose={() => setLightboxVisible(false)} />
             <ReportModal isVisible={reportModalVisible} onClose={() => setReportModalVisible(false)} onSubmit={handleReportSubmit} />
-        </View >
+        </TouchableOpacity >
     );
 });
 

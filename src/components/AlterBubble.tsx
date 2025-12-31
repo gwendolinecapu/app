@@ -52,7 +52,6 @@ export const AlterBubble: React.FC<AlterBubbleProps> = ({
                         style={styles.image}
                         contentFit="cover"
                         transition={500}
-                        sharedTransitionTag={`avatar-${alter.id}`}
                     />
                 ) : (
                     <Text style={[styles.initial, { fontSize: size * 0.4 }]}>

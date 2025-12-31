@@ -108,7 +108,7 @@ export default function PostDetailScreen() {
                 <ScrollView contentContainerStyle={styles.content}>
                     <SkeletonFeed />
                     <View style={{ padding: 16 }}>
-                        <Skeleton variant="text" width={100} height={20} style={{ marginBottom: 16 }} />
+                        <Skeleton shape="text" width={100} height={20} style={{ marginBottom: 16 }} />
                         <SkeletonFeed />
                     </View>
                 </ScrollView>

@@ -22,10 +22,10 @@ export default function DissociationGuideScreen() {
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Qu'est-ce que la dissociation ?</Text>
                     <Text style={styles.text}>
-                        La dissociation est un mécanisme de défense qui crée une déconnexion entre les pensées, les souvenirs, les émotions, les actions ou le sens de l'identité.
+                        La dissociation est un mécanisme de défense qui crée une déconnexion entre les pensées, les souvenirs, les émotions, les actions ou le sens de l&apos;identité.
                     </Text>
                     <Text style={[styles.text, { marginTop: 8 }]}>
-                        C'est une réaction normale à un stress intense, mais qui peut devenir envahissante.
+                        C&apos;est une réaction normale à un stress intense, mais qui peut devenir envahissante.
                     </Text>
                 </View>
 

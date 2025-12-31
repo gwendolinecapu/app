@@ -175,8 +175,8 @@ export default function EmotionsScreen() {
                 {todayEmotion && (
                     <View style={styles.todayBanner}>
                         <Text style={styles.todayText}>
-                            Tu as déjà enregistré "{EMOTION_LABELS[todayEmotion.emotion as EmotionType]}"
-                            {' '}aujourd'hui
+nc                             Tu as déjà enregistré &quot;{EMOTION_LABELS[todayEmotion.emotion as EmotionType]}&quot;
+                            {' '}aujourd&apos;hui
                         </Text>
                     </View>
                 )}

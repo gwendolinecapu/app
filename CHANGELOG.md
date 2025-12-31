@@ -797,3 +797,24 @@ Ajouter les 7 receivers dans AndroidManifest.xml
 ### Improvements
 - **Dashboard**: Reorganized layout to include a "Tools" section with the new widgets.
 - **Date Handling**: Integrated `date-fns` with French locale for better date formatting in the calendar.
+
+### Phase 26: UI/UX & Security Polish
+- **UI/UX**:
+    - Fixed `typography.h4` missing definition in `theme.ts`.
+    - Enforced 44px minimum touch target size for `ProfileHeader` buttons and `AlterSpace` tab bar buttons for better accessibility.
+    - Added `hitSlop` to the "Back" button in `AlterSpace` for easier navigation.
+- **Security**:
+    - Migrated `AlterGallery` from `AsyncStorage` to `expo-secure-store` to better protect private user images.
+    - Prepared `AlterJournal` for `SecureStore` usage.
+    - Audited `firestore.rules` to ensure tight security controls on private collections.
+## [2025-12-31] Refactoring Alter Space (God Component Fix) 🏗️
+### Architecture Refactoring
+- **Split `AlterSpaceScreen`**: Decomposed the monolithic `index.tsx` into modular components: `ProfileHeader`, `AlterGrid`, `AlterJournal`, `AlterGallery`, `AlterEmotions`, `AlterSettings`.
+- **Logic Centralization**:
+  - Created `useAlterData` hook for centralized stats and profile data fetching.
+  - Created `AlterService` for fetching alter profiles by ID.
+- **Improvements**:
+  - Reduced main file size by ~80%.
+  - Improved data loading strategy for specific tabs.
+  - Standardized styling and typography usage.
+  - Extracted `FollowListModal` to handle follower/following lists independently.

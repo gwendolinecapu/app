@@ -113,6 +113,11 @@ export const typography = {
         fontWeight: '600' as const,
         color: colors.text,
     },
+    h4: {
+        fontSize: 16,
+        fontWeight: '600' as const,
+        color: colors.text,
+    },
     // Corps de texte
     body: {
         fontSize: 16,

@@ -1,0 +1,181 @@
+import React from 'react';
+import { Image } from 'expo-image';
+import { View, Text, TouchableOpacity, FlatList, RefreshControl, StyleSheet, Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { Post } from '../../types';
+import { colors, spacing, borderRadius, typography } from '../../lib/theme';
+
+const { width } = Dimensions.get('window');
+const MAX_WIDTH = 430;
+
+interface AlterGridProps {
+    posts: Post[];
+    refreshing: boolean;
+    onRefresh: () => void;
+    listHeaderComponent?: React.ReactElement;
+    alterName: string;
+}
+
+export const AlterGrid: React.FC<AlterGridProps> = ({
+    posts,
+    refreshing,
+    onRefresh,
+    listHeaderComponent,
+    alterName
+}) => {
+    if (posts.length === 0) {
+        return (
+            <FlatList
+                data={[]}
+                renderItem={() => null}
+                ListHeaderComponent={() => (
+                    <>
+                        {listHeaderComponent}
+                        <View style={styles.emptyState}>
+                            <View style={styles.emptyIcon}>
+                                <Ionicons name="camera-outline" size={32} color={colors.textMuted} />
+                            </View>
+                            <Text style={styles.emptyTitle}>Aucune publication</Text>
+                            <Text style={styles.emptySubtitle}>
+                                Les photos et posts de {alterName} apparaîtront ici.
+                            </Text>
+                        </View>
+                    </>
+                )}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor={colors.primary}
+                    />
+                }
+            />
+        );
+    }
+
+    return (
+        <FlatList
+            data={posts}
+            numColumns={3}
+            keyExtractor={(item) => item.id}
+            ListHeaderComponent={() => (
+                <>
+                    {listHeaderComponent}
+                    {/* Visual Tabs Strip */}
+                    <View style={styles.tabsStrip}>
+                        <TouchableOpacity style={[styles.tabIcon, styles.tabIconActive]}>
+                            <Ionicons name="grid" size={24} color={colors.text} />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.tabIcon}>
+                            <Ionicons name="person-circle-outline" size={26} color={colors.textMuted} />
+                        </TouchableOpacity>
+                    </View>
+                </>
+            )}
+            refreshControl={
+                <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    tintColor={colors.primary}
+                />
+            }
+            renderItem={({ item }) => (
+                <TouchableOpacity
+                    style={styles.gridItem}
+                    onPress={() => router.push(`/post/${item.id}`)}
+                >
+                    {item.media_url ? (
+                        <Image
+                            source={{ uri: item.media_url }}
+                            style={styles.gridImage}
+                            contentFit="cover"
+                            transition={200}
+                        />
+                    ) : (
+                        <View style={styles.gridTextContent}>
+                            <Text style={styles.gridText} numberOfLines={3}>
+                                {item.content}
+                            </Text>
+                        </View>
+                    )}
+                </TouchableOpacity>
+            )}
+            contentContainerStyle={styles.listContent}
+        />
+    );
+};
+
+const styles = StyleSheet.create({
+    listContent: {
+        paddingBottom: spacing.xxl,
+    },
+    emptyState: {
+        alignItems: 'center',
+        padding: spacing.xxl,
+        marginTop: spacing.xl,
+    },
+    emptyIcon: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        borderWidth: 2,
+        borderColor: colors.textMuted,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: spacing.md,
+        opacity: 0.5,
+    },
+    emptyTitle: {
+        ...typography.h3,
+        color: colors.text,
+        marginBottom: spacing.xs,
+    },
+    emptySubtitle: {
+        ...typography.body,
+        color: colors.textSecondary,
+        textAlign: 'center',
+        maxWidth: 250,
+    },
+    tabsStrip: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        borderTopWidth: 1,
+        borderBottomWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.surface,
+        marginTop: spacing.sm,
+    },
+    tabIcon: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: spacing.sm,
+    },
+    tabIconActive: {
+        borderBottomWidth: 2,
+        borderBottomColor: colors.text,
+    },
+    gridItem: {
+        width: width / 3,
+        height: width / 3,
+        borderWidth: 0.5,
+        borderColor: colors.background,
+    },
+    gridImage: {
+        width: '100%',
+        height: '100%',
+    },
+    gridTextContent: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: colors.surface,
+        padding: spacing.xs,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    gridText: {
+        fontSize: 10,
+        color: colors.text,
+        textAlign: 'center',
+    },
+});

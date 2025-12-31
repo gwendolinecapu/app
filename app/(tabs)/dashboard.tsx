@@ -27,7 +27,7 @@ import { useScrollToTop } from '@react-navigation/native';
 import { triggerHaptic } from '../../src/lib/haptics';
 
 import { DashboardHeader } from '../../src/components/dashboard/DashboardHeader';
-import { ToolsGrid } from '../../src/components/dashboard/ToolsGrid';
+import { SystemControlBar } from '../../src/components/dashboard/SystemControlBar';
 import { AlterBubble } from '../../src/components/dashboard/AlterBubble';
 import { AddAlterModal } from '../../src/components/dashboard/AddAlterModal';
 import { Alter } from '../../src/types';
@@ -221,7 +221,7 @@ export default function Dashboard() {
                 renderItem={renderItem}
                 keyExtractor={(item, index) => item.type === 'alter' ? item.data.id : item.type}
                 numColumns={NUM_COLUMNS}
-                contentContainerStyle={styles.gridContent}
+                contentContainerStyle={[styles.gridContent, { paddingBottom: 120 }]}
                 showsVerticalScrollIndicator={false}
                 ListHeaderComponent={
                     <DashboardHeader
@@ -231,9 +231,10 @@ export default function Dashboard() {
                         onModeChange={setSelectionMode}
                     />
                 }
-                ListFooterComponent={<ToolsGrid />}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
             />
+
+            <SystemControlBar />
 
             {selectionMode === 'multi' && selectedAlters.length > 0 && (
                 <View style={styles.fabContainer}>

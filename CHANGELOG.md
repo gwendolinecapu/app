@@ -1,7 +1,8 @@
 # Changelog
 
 ## [2025-12-31] - Dashboard Final Polish & Refactoring 💎
-- **Architectural Cleanup**: Split monolithic `dashboard.tsx` into modular components (`DashboardHeader`, `ToolsGrid`, `AlterBubble`, `AddAlterModal`).
+- **Architectural Cleanup**: Split monolithic `dashboard.tsx` into modular components (`DashboardHeader`, `SystemControlBar`, `AlterBubble`, `AddAlterModal`).
+- **System Control Bar**: Replaced the static toolkit grid with a premium floating bar using glassmorphism for better tool accessibility.
 - **Standardization**: Unified haptic feedback usage with the `triggerHaptic` utility across all dashboard components.
 - **Design System**: Added `surface` color alias to `theme.ts` for consistent card backgrounds.
 - **UX**: Improved the "Add Alter" flow with live color selection and premium blur effects.

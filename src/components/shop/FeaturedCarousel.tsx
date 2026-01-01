@@ -25,6 +25,7 @@ import { colors, spacing, borderRadius } from '../../lib/theme';
 import { ShopItem } from '../../services/MonetizationTypes';
 
 const { width } = Dimensions.get('window');
+const CARD_MARGIN = 16;
 const CARD_WIDTH = width - 32; // Full width minus padding
 
 // Featured item avec métadonnées supplémentaires
@@ -129,7 +130,7 @@ export function FeaturedCarousel({ onItemPress, userCredits = 0 }: FeaturedCarou
         ]).start();
 
         scrollRef.current?.scrollTo({
-            x: index * CARD_WIDTH,
+            x: index * (CARD_WIDTH + CARD_MARGIN),
             animated: true,
         });
         setActiveIndex(index);
@@ -137,7 +138,7 @@ export function FeaturedCarousel({ onItemPress, userCredits = 0 }: FeaturedCarou
 
     const handleScroll = (event: any) => {
         const offsetX = event.nativeEvent.contentOffset.x;
-        const index = Math.round(offsetX / CARD_WIDTH);
+        const index = Math.round(offsetX / (CARD_WIDTH + CARD_MARGIN));
         if (index !== activeIndex && index >= 0 && index < FEATURED_ITEMS.length) {
             setActiveIndex(index);
         }
@@ -180,7 +181,8 @@ export function FeaturedCarousel({ onItemPress, userCredits = 0 }: FeaturedCarou
                     showsHorizontalScrollIndicator={false}
                     onMomentumScrollEnd={handleScroll}
                     decelerationRate="fast"
-                    snapToInterval={CARD_WIDTH}
+                    snapToInterval={CARD_WIDTH + CARD_MARGIN}
+                    snapToAlignment="start"
                     contentContainerStyle={styles.scrollContent}
                 >
                     {FEATURED_ITEMS.map((featured, index) => (
@@ -314,11 +316,12 @@ const styles = StyleSheet.create({
         width: 20,
     },
     scrollContent: {
-        paddingRight: 16,
+        paddingLeft: CARD_MARGIN,
+        paddingRight: CARD_MARGIN,
     },
     card: {
         width: CARD_WIDTH,
-        marginRight: 16,
+        marginRight: CARD_MARGIN,
         borderRadius: borderRadius.xl,
         overflow: 'hidden',
         elevation: 8,

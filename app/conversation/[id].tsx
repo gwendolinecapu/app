@@ -140,7 +140,7 @@ export default function ConversationScreen() {
     };
 
     const sendImage = async (uri: string) => {
-        if (!senderAlter || !id || !user?.uid) return;
+        if (!currentAlter || !id || !user?.uid) return;
         setLoading(true);
 
         try {
@@ -152,9 +152,9 @@ export default function ConversationScreen() {
             await uploadBytes(storageRef, blob);
             const downloadURL = await getDownloadURL(storageRef);
 
-            const conversationId = getConversationId(senderAlter.id, id);
+            const conversationId = getConversationId(currentAlter.id, id);
             await addDoc(collection(db, 'messages'), {
-                sender_alter_id: senderAlter.id,
+                sender_alter_id: currentAlter.id,
                 receiver_alter_id: id,
                 systemId: user?.uid,
                 conversation_id: conversationId,
@@ -175,14 +175,14 @@ export default function ConversationScreen() {
     };
 
     const sendMessage = async () => {
-        if (!newMessage.trim() || !senderAlter || !id) return;
+        if (!newMessage.trim() || !currentAlter || !id) return;
 
         setLoading(true);
         try {
-            const conversationId = getConversationId(senderAlter.id, id);
+            const conversationId = getConversationId(currentAlter.id, id);
 
             await addDoc(collection(db, 'messages'), {
-                sender_alter_id: senderAlter.id,
+                sender_alter_id: currentAlter.id,
                 receiver_alter_id: id,
                 systemId: user?.uid,
                 conversation_id: conversationId,
@@ -338,20 +338,16 @@ export default function ConversationScreen() {
             />
 
             <View style={styles.inputContainer}>
-                {/* Sender Picker */}
-                <TouchableOpacity
-                    style={styles.senderPill}
-                    onPress={() => setShowSenderPicker(true)}
-                >
-                    {senderAlter?.avatar_url ? (
-                        <Image source={{ uri: senderAlter.avatar_url }} style={styles.senderPillAvatar} />
+                {/* Current Sender Avatar - not clickable, shows who is sending */}
+                <View style={styles.senderPill}>
+                    {currentAlter?.avatar_url ? (
+                        <Image source={{ uri: currentAlter.avatar_url }} style={styles.senderPillAvatar} />
                     ) : (
-                        <View style={[styles.senderPillPlaceholder, { backgroundColor: senderAlter?.color || colors.primary }]}>
-                            <Text style={styles.senderPillInitial}>{senderAlter?.name?.charAt(0) || '?'}</Text>
+                        <View style={[styles.senderPillPlaceholder, { backgroundColor: currentAlter?.color || colors.primary }]}>
+                            <Text style={styles.senderPillInitial}>{currentAlter?.name?.charAt(0) || '?'}</Text>
                         </View>
                     )}
-                    <Ionicons name="chevron-down" size={12} color={colors.textSecondary} style={{ marginLeft: 2 }} />
-                </TouchableOpacity>
+                </View>
 
                 <TouchableOpacity
                     style={styles.mediaButton}
@@ -389,67 +385,6 @@ export default function ConversationScreen() {
                     <Ionicons name="send" size={20} color={colors.text} />
                 </TouchableOpacity>
             </View>
-
-            {/* Sender Picker Modal */}
-            <Modal
-                visible={showSenderPicker}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setShowSenderPicker(false)}
-            >
-                <TouchableOpacity
-                    style={styles.modalOverlay}
-                    activeOpacity={1}
-                    onPress={() => setShowSenderPicker(false)}
-                >
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Parler en tant que...</Text>
-                        <View style={styles.searchContainer}>
-                            <Ionicons name="search" size={18} color={colors.textMuted} />
-                            <TextInput
-                                style={styles.searchInput}
-                                placeholder="Rechercher..."
-                                placeholderTextColor={colors.textMuted}
-                                value={senderSearch}
-                                onChangeText={setSenderSearch}
-                            />
-                            {senderSearch.length > 0 && (
-                                <TouchableOpacity onPress={() => setSenderSearch('')}>
-                                    <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                        <FlatList
-                            data={alters.filter(a => a.name.toLowerCase().includes(senderSearch.toLowerCase()))}
-                            keyExtractor={item => item.id}
-                            numColumns={4}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity
-                                    style={[styles.pickerItem, selectedSenderId === item.id && styles.pickerItemSelected]}
-                                    onPress={() => {
-                                        setSelectedSenderId(item.id);
-                                        setShowSenderPicker(false);
-                                        setSenderSearch('');
-                                    }}
-                                >
-                                    <View style={[styles.pickerAvatarContainer, selectedSenderId === item.id && { borderColor: item.color || colors.primary, borderWidth: 2 }]}>
-                                        {item.avatar_url ? (
-                                            <Image source={{ uri: item.avatar_url }} style={styles.pickerAvatar} />
-                                        ) : (
-                                            <View style={[styles.pickerPlaceholder, { backgroundColor: item.color || colors.primary }]}>
-                                                <Text style={styles.pickerInitial}>{item.name.charAt(0)}</Text>
-                                            </View>
-                                        )}
-                                    </View>
-                                    <Text style={[styles.pickerName, selectedSenderId === item.id && { color: colors.primary, fontWeight: 'bold' }]} numberOfLines={1}>
-                                        {item.name}
-                                    </Text>
-                                </TouchableOpacity>
-                            )}
-                        />
-                    </View>
-                </TouchableOpacity>
-            </Modal>
         </KeyboardAvoidingView>
     );
 }

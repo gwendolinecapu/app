@@ -1,6 +1,9 @@
 # Changelog
 
 ## [1.0.1+1] - 2026-01-01
+### Fixed
+- **Navigation**: Resolved persistent double headers by forcing `headerShown: false` in RootLayout and Settings route.
+- **Roadmap**: Fixed "Impossible to load" error by adding `isUnchanged` helper to Firestore rules and fixing logical operators.
 
 ### ✨ Nouveautés (Features)
 - **Système de Feedback** :

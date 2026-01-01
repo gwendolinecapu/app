@@ -1,5 +1,11 @@
 # Changelog
 
+## [2025-12-31] - Correction Persistance & Biométrie 🛡️
+- **Fix (Major)**: Correction du problème où l'application perdait la page en cours lors du passage en arrière-plan.
+  - **Cause**: Le `BiometricGuard` démontait toute la navigation lorsqu'il se verrouillait.
+  - **Solution**: Refactorisation pour utiliser un écran de verrouillage en superposition (overlay), ce qui maintient l'état de l'application actif en arrière-plan.
+- **Config**: Ajout de la clé API RevenueCat dans `.env`.
+
 ## [2025-12-31] - Correction Crash Galerie 📸
 - **Fix (Critical)**: Ajout des permissions manquantes (`NSPhotoLibraryUsageDescription`, `NSCameraUsageDescription`) dans `app.json` qui causaient un crash immédiat lors de l'ouverture de la galerie.
 - **Stabilité**: Cela résout également le problème de "retour en arrière" inattendu, car le crash réinitialisait la navigation.

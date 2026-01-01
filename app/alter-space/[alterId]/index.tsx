@@ -229,8 +229,11 @@ export default function AlterSpaceScreen() {
                 </TouchableOpacity>
                 <Text style={styles.headerTitle} numberOfLines={1}>{alter.name}</Text>
                 <View style={styles.headerRight}>
-                    <TouchableOpacity onPress={() => router.push('/search' as any)} style={{ marginRight: 15 }}>
+                    <TouchableOpacity onPress={() => router.push('/search' as any)} style={{ marginRight: 12 }}>
                         <Ionicons name="search-outline" size={24} color={colors.text} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push('/shop' as any)} style={{ marginRight: 12 }}>
+                        <Ionicons name="storefront-outline" size={24} color="#A855F7" />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => router.push({ pathname: '/conversation/[id]', params: { id: alterId } })}>
                         <Ionicons name="chatbubble-ellipses-outline" size={24} color={colors.text} />
@@ -251,10 +254,10 @@ export default function AlterSpaceScreen() {
                     <Text style={{ fontSize: 10, color: activeTab === 'feed' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Accueil</Text>
                 </TouchableOpacity>
 
-                {/* 2. Boutique */}
-                <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('shop')}>
-                    <Ionicons name={activeTab === 'shop' ? "basket" : "basket-outline"} size={24} color={activeTab === 'shop' ? colors.primary : colors.textSecondary} />
-                    <Text style={{ fontSize: 10, color: activeTab === 'shop' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Boutique</Text>
+                {/* 2. Emotions */}
+                <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('emotions')}>
+                    <Ionicons name={activeTab === 'emotions' ? "heart" : "heart-outline"} size={24} color={activeTab === 'emotions' ? colors.primary : colors.textSecondary} />
+                    <Text style={{ fontSize: 10, color: activeTab === 'emotions' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Émotions</Text>
                 </TouchableOpacity>
 
                 {/* 3. Post (+) */}

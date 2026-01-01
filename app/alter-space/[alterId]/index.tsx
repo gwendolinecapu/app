@@ -62,7 +62,16 @@ export default function AlterSpaceScreen() {
     const [showFollowersModal, setShowFollowersModal] = useState(false);
     const [showFollowingModal, setShowFollowingModal] = useState(false);
 
-    const isOwner = alter && user ? user.uid === (alter.systemId || alter.system_id || alter.userId) : false;
+    // Logic updated per user request: Even if we are the System Admin (user.uid === systemId),
+    // if we are currently "fronting" as Alter A (Mona) and viewing Alter B (Zeph),
+    // we should see the profile as a VISITOR, not as an owner.
+    // "Owner" view is restricted to when the viewed alter IS the current active alter.
+    const isSystemOwner = alter && user ? (user.uid === (alter.systemId || alter.system_id || alter.userId)) : false;
+    const isSameAlter = alter && currentAlter ? alter.id === currentAlter.id : false;
+
+    // Fallback: If no custom status is active (System Mode), we might allow editing, 
+    // but assuming strict roleplay: isOwner requires matching IDs.
+    const isOwner = isSystemOwner && isSameAlter;
 
     // Check relationship status
     useFocusEffect(

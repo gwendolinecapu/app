@@ -186,7 +186,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                         <AnimatedPressable
                             containerStyle={{ flex: 1 }}
                             style={styles.actionButton}
-                            onPress={() => router.push({ pathname: '/conversation/[id]', params: { id: alter.id } })}
+                            onPress={() => router.push({ pathname: '/conversation/[id]', params: { id: alter.id, receiver: alter.id } })}
                         >
                             <Text style={styles.actionButtonText}>Message</Text>
                         </AnimatedPressable>

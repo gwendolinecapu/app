@@ -95,6 +95,7 @@ export type CreditTransactionType =
     | 'spend_decoration' // Achat décoration
     | 'spend_ad_free'   // Achat sans pub
     | 'spend_premium'   // Achat premium temp
+    | 'bug_report_reward' // Récompense pour rapport de bug
     | 'refund'          // Remboursement
     | 'gift';           // Cadeau admin
 

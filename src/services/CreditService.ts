@@ -310,6 +310,35 @@ class CreditService {
     }
 
     /**
+     * ADMIN: Ajoute des crédits à n'importe quel utilisateur
+     */
+    async addCreditsToUser(targetUserId: string, amount: number, type: CreditTransactionType, description?: string): Promise<void> {
+        try {
+            // Transaction Firestore
+            const transaction: Omit<CreditTransaction, 'id'> = {
+                userId: targetUserId,
+                amount,
+                type,
+                description,
+                timestamp: Date.now(),
+            };
+
+            const transactionsRef = collection(db, FIRESTORE_COLLECTION, targetUserId, TRANSACTIONS_SUBCOLLECTION);
+            await addDoc(transactionsRef, transaction);
+
+            // Update User Balance
+            const userRef = doc(db, FIRESTORE_COLLECTION, targetUserId);
+            // Use increment for safety
+            await setDoc(userRef, { credits: increment(amount) }, { merge: true });
+
+
+        } catch (error) {
+            console.error('[CreditService] Failed to add credits to user:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Retire des crédits avec transaction
      */
     private async spendCredits(

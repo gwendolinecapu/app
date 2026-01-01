@@ -138,7 +138,7 @@ export default function SettingsScreen() {
                         router.push('/settings/notifications' as any);
                     })}
                     {renderSettingItem("Verrouillage Biométrique (FaceID)", "scan-outline", toggleBiometric, isBiometricEnabled)}
-                    {renderSettingItem("Flou de confidentialité", "eye-off-outline", async () => {
+                    {renderSettingItem("Flouter l'écran (App Switcher)", "eye-off-outline", async () => {
                         try {
                             const newVal = !privacyBlurEnabled;
                             setPrivacyBlurEnabled(newVal);

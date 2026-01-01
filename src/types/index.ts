@@ -9,6 +9,7 @@ export interface System {
     headspace?: string; // 'sunny', 'cloudy', 'rainy', 'stormy', 'night', etc.
     created_at: string;
     alter_count?: number; // Pre-filled from onboarding
+    isAdmin?: boolean; // Admin privilege
 }
 
 // Rôle d'un alter dans le système (ex: Protecteur, Gatekeeper)

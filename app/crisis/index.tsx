@@ -38,6 +38,9 @@ export default function CrisisModeScreen() {
                 colors={['#FF5252', '#B71C1C']} // Red gradient for crisis mode
                 style={styles.header}
             >
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <Ionicons name="chevron-back" size={28} color="white" />
+                </TouchableOpacity>
                 <Text style={styles.headerTitle}>Mode Crise / S.O.S</Text>
                 <Text style={styles.headerSubtitle}>Respire. Tu es en sécurité.</Text>
             </LinearGradient>
@@ -159,6 +162,12 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: borderRadius.xl,
         borderBottomRightRadius: borderRadius.xl,
         alignItems: 'center',
+    },
+    backButton: {
+        position: 'absolute',
+        top: 60,
+        left: spacing.md,
+        padding: 4,
     },
     headerTitle: {
         fontSize: 28,

@@ -92,7 +92,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
     // États dérivés des services
     const [tier, setTier] = useState<UserTier>('free');
-    const [credits, setCredits] = useState(0);
+    const [credits, setCredits] = useState(10000); // TODO: Remove this for production - TEST MODE
     const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
     const [isConversionModalVisible, setConversionModalVisible] = useState(false);
 

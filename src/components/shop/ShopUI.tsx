@@ -139,16 +139,27 @@ export function ShopUI({ isEmbedded = false }: ShopUIProps) {
     const getFilteredItems = useCallback(() => {
         let items = [...shopItems];
 
-        // Filter by category
+        // If showing inventory, filter to only owned items
+        if (showInventory) {
+            items = items.filter(item => ownedItems.includes(item.id));
+            // Still respect sort
+            if (sortBy === 'price_asc') {
+                items.sort((a, b) => (a.priceCredits || 0) - (b.priceCredits || 0));
+            } else if (sortBy === 'price_desc') {
+                items.sort((a, b) => (b.priceCredits || 0) - (a.priceCredits || 0));
+            } else if (sortBy === 'name') {
+                items.sort((a, b) => a.name.localeCompare(b.name));
+            }
+            return items;
+        }
+
+        // Filter by category (shop mode)
         if (selectedCategory === 'themes') {
             items = items.filter(item => item.type === 'theme');
         } else if (selectedCategory === 'frames') {
             items = items.filter(item => item.type === 'frame');
         } else if (selectedCategory === 'bubbles') {
             items = items.filter(item => item.type === 'bubble');
-        } else if (selectedCategory === 'inventory') {
-            // Show only owned items
-            items = items.filter(item => ownedItems.includes(item.id));
         }
 
         // Apply filter
@@ -170,7 +181,7 @@ export function ShopUI({ isEmbedded = false }: ShopUIProps) {
         }
 
         return items;
-    }, [shopItems, selectedCategory, filterBy, sortBy, credits, ownedItems]);
+    }, [shopItems, selectedCategory, filterBy, sortBy, credits, ownedItems, showInventory]);
 
     const filteredItems = getFilteredItems();
 

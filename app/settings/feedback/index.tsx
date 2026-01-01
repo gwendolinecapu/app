@@ -5,12 +5,21 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../src/contexts/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { spacing, typography, borderRadius } from '../../../src/lib/theme';
 
 export default function FeedbackMenuScreen() {
-    const { colors, spacing, typography, borderRadius } = useTheme();
+    const { colors } = useTheme();
     const router = useRouter();
 
     const menuItems = [
+        {
+            title: "Roadmap Publique",
+            description: "Votez pour les prochaines fonctionnalités !",
+            icon: "map-outline",
+            type: "ROADMAP",
+            color: "#8B5CF6", // Violet
+            gradient: ['#A78BFA', '#8B5CF6']
+        },
         {
             title: "Signaler un Bug",
             description: "Quelque chose ne fonctionne pas comme prévu ?",
@@ -65,10 +74,16 @@ export default function FeedbackMenuScreen() {
                                 { backgroundColor: colors.surface }
                             ]}
                             activeOpacity={0.9}
-                            onPress={() => router.push({
-                                pathname: "/settings/feedback/create",
-                                params: { type: item.type }
-                            })}
+                            onPress={() => {
+                                if (item.type === 'ROADMAP') {
+                                    router.push('/settings/feedback/roadmap' as any);
+                                } else {
+                                    router.push({
+                                        pathname: "/settings/feedback/create",
+                                        params: { type: item.type }
+                                    });
+                                }
+                            }}
                         >
                             <LinearGradient
                                 colors={item.gradient as any}
@@ -90,7 +105,7 @@ export default function FeedbackMenuScreen() {
                     ))}
                 </View>
 
-                <View style={[styles.infoBox, { backgroundColor: colors.surfaceVariant || 'rgba(100, 100, 100, 0.1)' }]}>
+                <View style={[styles.infoBox, { backgroundColor: 'rgba(100, 100, 100, 0.1)' }]}>
                     <Ionicons name="information-circle-outline" size={24} color={colors.primary} />
                     <Text style={[styles.infoText, { color: colors.textSecondary }]}>
                         Nous lisons tous les retours, mais nous ne pouvons pas répondre individuellement à chacun. Merci de votre compréhension.

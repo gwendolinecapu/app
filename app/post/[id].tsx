@@ -17,7 +17,7 @@ import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
 
 export default function PostDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const insets = useSafeAreaInsets();
     const [post, setPost] = useState<Post | null>(null);
     const [comments, setComments] = useState<Comment[]>([]);
@@ -28,10 +28,16 @@ export default function PostDetailScreen() {
     const headerHeight = 60 + (insets.top || 0);
 
     useEffect(() => {
-        if (id) {
+        if (authLoading) return;
+
+        if (id && user) {
             fetchPostData();
+        } else if (!user && !authLoading) {
+            // User not authenticated
+            setLoading(false);
+            // Optionally redirect or show error
         }
-    }, [id]);
+    }, [id, user, authLoading]);
 
     const fetchPostData = async () => {
         try {

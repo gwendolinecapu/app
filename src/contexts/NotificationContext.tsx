@@ -17,6 +17,8 @@ import {
     NotificationFrequency,
 } from '../services/NotificationTypes';
 import { Alter } from '../types';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db, auth } from '../lib/firebase';
 
 // Types pour le front
 interface FrontData {
@@ -29,6 +31,7 @@ interface NotificationContextType {
     // Settings
     settings: NotificationSettings | null;
     loading: boolean;
+    unreadCount: number;
 
     // Global
     setGlobalEnabled: (enabled: boolean) => Promise<void>;
@@ -70,15 +73,38 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     const [isPersistentActive, setIsPersistentActive] = useState(false);
     const [isDynamicIslandActive, setIsDynamicIslandActive] = useState(false);
 
+    const [unreadCount, setUnreadCount] = useState(0);
+
     // ==================== INITIALIZATION ====================
 
     useEffect(() => {
         initializeNotifications();
     }, []);
 
+    // Subscribe to unread notifications count
+    useEffect(() => {
+        if (!auth.currentUser) {
+            setUnreadCount(0);
+            return;
+        }
+
+        const q = query(
+            collection(db, 'notifications'),
+            where('recipientId', '==', auth.currentUser.uid),
+            where('read', '==', false)
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            setUnreadCount(snapshot.size);
+        }, (error) => {
+            console.error("Error listening to notifications:", error);
+        });
+
+        return () => unsubscribe();
+    }, [auth.currentUser]); // Re-subscribe if user changes (though usually handled by provider unmount/remount if auth changes top level, but explicit dep is safer if provider persists)
+
     const initializeNotifications = async () => {
         try {
-            // Charger les settings
             // Charger les settings
             const loadedSettings = await NotificationService.loadSettings();
             if (loadedSettings) {
@@ -304,6 +330,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     const value: NotificationContextType = {
         settings,
         loading,
+        unreadCount, // Exposed here
         setGlobalEnabled,
         setPersistentEnabled,
         isPersistentActive,

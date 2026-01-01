@@ -16,16 +16,18 @@ export const EmotionService = {
     /**
      * Add a new emotion entry for an alter
      */
-    addEmotion: async (alterId: string, emotion: EmotionType, intensity: 1 | 2 | 3 | 4 | 5 = 3, note?: string) => {
+    addEmotion: async (alterId: string, emotionOrEmotions: EmotionType | EmotionType[], intensity: 1 | 2 | 3 | 4 | 5 = 3, note?: string) => {
         if (!auth.currentUser) throw new Error("Not authenticated");
 
+        const isArray = Array.isArray(emotionOrEmotions);
+        const mainEmotion = isArray ? emotionOrEmotions[0] : emotionOrEmotions;
+        const emotions = isArray ? emotionOrEmotions : [emotionOrEmotions];
+
         await addDoc(collection(db, 'emotions'), {
-            alter_id: alterId, // Match generic consistent naming snake_case in db usually or matches types? 
-            // Types uses: alter_id. Rules uses: match /emotions/{emotionId} allow read: if isOwner(resource);
-            // We need system_id for easier querying? Or we query by alter_id.
-            // Let's add system_id too for global queries.
+            alter_id: alterId,
             system_id: auth.currentUser.uid,
-            emotion,
+            emotion: mainEmotion, // Primary, legacy support
+            emotions: emotions, // Full list
             intensity,
             note: note || '',
             created_at: serverTimestamp()
@@ -136,12 +138,21 @@ export const EmotionService = {
     _emotionValence: {
         happy: 5,
         excited: 5,
+        proud: 5,
+        love: 5,
         calm: 4,
+        neutral: 3,
         confused: 2,
         tired: 2,
+        bored: 2,
         anxious: 1,
         sad: 1,
         angry: 1,
+        fear: 1,
+        shame: 1,
+        guilt: 1,
+        sick: 1,
+        hurt: 1,
     } as Record<EmotionType, number>,
 
     /**
@@ -205,9 +216,12 @@ export const EmotionService = {
             const dateKey = createdAt.toISOString().split('T')[0];
             if (dailyMap.has(dateKey)) {
                 const current = dailyMap.get(dateKey)!;
-                // Score = valence de l'émotion * intensité
-                const valence = this._emotionValence[emotion.emotion] || 3;
-                const score = valence * emotion.intensity;
+                // Score = valence moyenne de l'émotion * intensité
+                const entryEmotions = emotion.emotions || [emotion.emotion];
+                const totalValence = entryEmotions.reduce((sum, e) => sum + (this._emotionValence[e] || 3), 0);
+                const avgValence = totalValence / entryEmotions.length;
+
+                const score = avgValence * emotion.intensity;
                 dailyMap.set(dateKey, {
                     total: current.total + score,
                     count: current.count + 1
@@ -234,24 +248,31 @@ export const EmotionService = {
     getEmotionsDistribution: async function (alterId: string, days: number = 30): Promise<{ type: EmotionType; label: string; count: number; percentage: number }[]> {
         const emotions = await this.getEmotionsHistory(alterId, days);
 
+        const EMOTION_LABELS_MAP = await import('../types').then(m => m.EMOTION_LABELS);
+
+        // Use the map or fallback. Note: imported map is better.
+        // Actually, best to just use the one from types if available globally or import it at top of file.
+        // Let's just hardcode the extended list here if importing is tricky or just rely on the new types.
+        // For simplicity in this replace, I'll update the list.
         const EMOTION_LABELS: Record<EmotionType, string> = {
-            happy: 'Heureux·se',
-            sad: 'Triste',
-            anxious: 'Anxieux·se',
-            angry: 'En colère',
-            tired: 'Fatigué·e',
-            calm: 'Calme',
-            confused: 'Confus·e',
-            excited: 'Excité·e',
+            happy: 'Joyeux', sad: 'Triste', anxious: 'Anxieux', angry: 'En colère',
+            tired: 'Fatigué', calm: 'Calme', confused: 'Confus', excited: 'Excité',
+            fear: 'Peur', shame: 'Honte', bored: 'Ennuyé', proud: 'Fier',
+            love: 'Amoureux', sick: 'Malade', guilt: 'Coupable', hurt: 'Blessé',
         };
 
         // Compter par type
         const counts: Record<string, number> = {};
-        emotions.forEach(e => {
-            counts[e.emotion] = (counts[e.emotion] || 0) + 1;
-        });
+        let total = 0;
 
-        const total = emotions.length || 1; // Éviter division par 0
+        emotions.forEach(e => {
+            const entryEmotions = e.emotions || [e.emotion];
+            entryEmotions.forEach(emType => {
+                counts[emType] = (counts[emType] || 0) + 1;
+                total++;
+            });
+        });
+        if (total === 0) total = 1; // Éviter division par 0
 
         // Convertir et trier par count décroissant
         return Object.entries(counts)
@@ -317,8 +338,10 @@ export const EmotionService = {
         }
 
         const EMOTION_LABELS: Record<EmotionType, string> = {
-            happy: 'Heureux·se', sad: 'Triste', anxious: 'Anxieux·se', angry: 'En colère',
-            tired: 'Fatigué·e', calm: 'Calme', confused: 'Confus·e', excited: 'Excité·e',
+            happy: 'Joyeux', sad: 'Triste', anxious: 'Anxieux', angry: 'En colère',
+            tired: 'Fatigué', calm: 'Calme', confused: 'Confus', excited: 'Excité',
+            fear: 'Peur', shame: 'Honte', bored: 'Ennuyé', proud: 'Fier',
+            love: 'Amoureux', sick: 'Malade', guilt: 'Coupable', hurt: 'Blessé',
         };
 
         // Pattern 1: Émotion dominante

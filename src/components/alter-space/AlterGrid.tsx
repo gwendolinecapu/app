@@ -14,7 +14,7 @@ interface AlterGridProps {
     loading?: boolean;
     refreshing: boolean;
     onRefresh: () => void;
-    listHeaderComponent?: React.ReactElement;
+    listHeaderComponent?: React.ReactNode;
     alterName: string;
 }
 

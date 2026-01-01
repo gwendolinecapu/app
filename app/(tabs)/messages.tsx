@@ -49,74 +49,45 @@ export default function MessagesScreen() {
     }, [activeTab, system, currentAlter]);
 
     const loadFriends = async () => {
-        if (!currentAlter) return;
+        if (!currentAlter || !system) return;
         setLoadingFriends(true);
         try {
             const friendIds = await FriendService.getFriends(currentAlter.id);
-            if (friendIds.length === 0) {
+            // Deduplicate IDs
+            const uniqueFriendIds = [...new Set(friendIds)];
+
+            if (uniqueFriendIds.length === 0) {
                 setFriends([]);
-            } else {
-                // Fetch alters data
-                // Note: Firestore 'in' query limit is 10. For now using parallel getDocs or multiple queries if needed.
-                // Simpler approach for now: fetch all alters matching the IDs.
-                // Since IDs usually match document IDs.
-                // We'll use Promise.all for simplicity if list is small, or batches.
-                // "in" query with documentId() is best but limited to 10 (or 30?).
-                // Let's use chunks of 10.
-
-                const chunks = [];
-                for (let i = 0; i < friendIds.length; i += 10) {
-                    chunks.push(friendIds.slice(i, i + 10));
-                }
-
-                let allFriends: Alter[] = [];
-
-                for (const chunk of chunks) {
-                    // We need to import documentId from firebase/firestore which might not be imported yet. 
-                    // Alternatively, just map getDoc requests.
-                    /* 
-                    const q = query(collection(db, 'alters'), where(documentId(), 'in', chunk));
-                    const snap = await getDocs(q);
-                    ...
-                    */
-                    // Actually, we don't have documentId imported. Let's rely on mapping getDoc for now or add import.
-                    // I will update imports in a separate Edit if needed or just use parallel fetches which is fine for < 20 friends.
-                    // But to be robust let's assume I can use `where('__name__', 'in', chunk)` which is the same as documentId().
-
-                    // Importing documentId might be annoying if I don't check imports.
-                    // Let's use parallel fetching for now, it's safe.
-                    // Actually, better:
-                }
-                // Wait, I can't easily change imports in this chunk if they are at the top.
-                // I will add the fetching logic using what is available or assumed available.
-                // If getDoc is available (it is not imported in messages.tsx I think).
-                // Let's check imports first or assume I need to add them.
-                // messages.tsx has no firestore imports shown in previous context (it was truncated or I didn't see).
-                // Wait, messages.tsx DOES NOT have firestore imports in the lines I saw? 
-                // Ah, line 15-16 import services.
-                // I need to add imports.
-
-                // Let's just use a loop with manual fetching for now to be safe without messing up imports too much, 
-                // OR better: use a service method if one existed.
-                // Since I can't see imports, I will assume I need to add them effectively. 
-                // BUT multi_replace allows multiple chunks. I'll add imports in another chunk.
+                setLoadingFriends(false);
+                return;
             }
-            // Real implementation below using a helper or assuming imports will be added.
 
-            // Actually, I'll put the fetching logic inside FriendService in a future step or just do it here properly.
-            // Let's try to do it here.
-
-            const friendsData = await Promise.all(friendIds.map(async (fid) => {
-                // We need getDoc.
-                // I will add getDoc to imports.
-                const docRef = doc(db, 'alters', fid);
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) {
-                    return { id: docSnap.id, ...docSnap.data() } as Alter;
+            const friendsData = await Promise.all(uniqueFriendIds.map(async (fid) => {
+                try {
+                    const docRef = doc(db, 'alters', fid);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        return { id: docSnap.id, ...docSnap.data() } as Alter;
+                    }
+                    return null;
+                } catch (e) {
+                    console.error("Error fetching friend:", fid, e);
+                    return null;
                 }
-                return null;
             }));
-            setFriends(friendsData.filter(f => f !== null) as Alter[]);
+
+            // Filter out nulls AND internal alters to strictly respect "Amis = External"
+            const validFriends = friendsData.filter((f): f is Alter => {
+                if (!f) return false;
+                // Check if alter belongs to same system
+                // Use all potential field names for system ID
+                const isInternal = (f.systemId === system.id) ||
+                    (f.system_id === system.id) ||
+                    (f.userId === system.id);
+                return !isInternal;
+            });
+
+            setFriends(validFriends);
 
         } catch (error) {
             console.error("Failed to load friends", error);

@@ -191,12 +191,13 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
             <View style={styles.actions}>
                 <View style={styles.leftActions}>
                     <AnimatedPressable style={styles.actionButton} onPress={handleHeartPress}>
-                        <AnimatedIcon
-                            name={isLiked ? "heart" : "heart-outline"}
-                            size={26}
-                            color={isLiked ? colors.error : colors.textSecondary}
-                            style={{ transform: [{ scale: heartScale }] }}
-                        />
+                        <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+                            <Ionicons
+                                name={isLiked ? "heart" : "heart-outline"}
+                                size={26}
+                                color={isLiked ? colors.error : colors.textSecondary}
+                            />
+                        </Animated.View>
                         {(post.likes?.length || 0) > 0 && (
                             <Text style={styles.actionText}>{post.likes?.length}</Text>
                         )}

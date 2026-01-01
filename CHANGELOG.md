@@ -5,6 +5,7 @@
 - **[iOS Widgets]** Implémentation complète des 3 widgets iOS (Fronter, Quick Switch, Daily Stats).
 - **[Dynamic Island]** Live Activity pour afficher le fronter actuel dans le Dynamic Island (iPhone 14 Pro+).
 - **[Fronting Check-In]** Notifications périodiques (toutes les 4h) pour demander qui est en front.
+- **[Shop]** Ajout section "En Vedette" avec carrousel auto-scroll, badges promos, et bundles.
 - **[Shop]** Refonte complète de la Boutique et ajout des récompenses (`DailyReward`, `AdReward`).
 - **[Fix]** Correction du crash RevenueCat et des erreurs Backend (Firestore Index, Credits).
 - **Navigation**: Resolved persistent double headers by forcing `headerShown: false` in RootLayout and Settings route.

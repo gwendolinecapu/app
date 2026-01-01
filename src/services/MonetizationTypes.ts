@@ -129,7 +129,8 @@ export type ShopItemType =
     | 'credit_pack'     // Pack de crédits (IAP)
     | 'theme'           // Thème d'application
     | 'frame'           // Cadre d'avatar
-    | 'bubble';         // Bulle de chat
+    | 'bubble'          // Bulle de chat
+    | 'bundle';         // Pack groupé (thème + cadre + bulle)
 
 /** Produit en boutique */
 export interface ShopItem {

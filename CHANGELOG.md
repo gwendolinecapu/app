@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.0.1+1] - 2026-01-01
+
+### ✨ Nouveautés (Features)
+- **Système de Feedback** :
+    - Nouvel écran "Donner son avis" dans les paramètres.
+    - Possibilité de signaler des **Bugs** 🐞 ou de suggérer des **Idées** 💡.
+    - Formulaire intuitif avec étapes de reproduction (pour les bugs) ou "problème à résoudre" (pour les idées).
+    - Envoi direct à l'équipe administrative.
+
+### 🎨 UI/UX (Design)
+- **Refonte des Paramètres** :
+    - Nouvelle entête avec **dégradé Premium** pour une immersion immédiate.
+    - Carte d'identité système repensée.
+    - Banner "Premium" plus attractive.
+    - Ajustement des typographies et espacements pour un rendu plus épuré.
+    - Ajout d'une section claire "Support & Retours".
+
 ## [2025-12-31] - Système de Feedback & Admin 📢
 - **Nouvelle Fonctionnalité**: Ajout d'un système complet de feedback (Bugs et Idées) accessible via Paramètres.
 - **Admin UI**: Interface dédiée pour gérer les retours, changer les statuts et récompenser les utilisateurs.

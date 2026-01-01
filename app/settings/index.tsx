@@ -173,7 +173,6 @@ export default function SettingsScreen() {
                 <Text style={styles.sectionTitle}>Compte & Système</Text>
                 <View style={styles.section}>
                     {renderSettingItem("Modifier le Système", "create-outline", () => router.push('/settings/edit-system' as any))}
-                    {renderSettingItem("Utilisateurs bloqués", "shield-outline", () => router.push('/settings/blocked' as any))}
                     {renderSettingItem("Sécurité et données", "lock-closed-outline", () => router.push('/settings/security' as any))}
                 </View>
 

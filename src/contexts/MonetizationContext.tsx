@@ -21,6 +21,7 @@ import {
     ShopItem,
     CREDIT_ITEMS,
     CREDIT_PACKS,
+    COSMETIC_ITEMS,
 } from '../services/MonetizationTypes';
 
 interface MonetizationContextType {
@@ -365,7 +366,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         currentStreak,
         claimDailyLogin,
 
-        shopItems: CREDIT_ITEMS,
+        shopItems: [...COSMETIC_ITEMS, ...CREDIT_ITEMS],
         creditPacks: CREDIT_PACKS,
         purchaseItem,
         purchaseIAP,

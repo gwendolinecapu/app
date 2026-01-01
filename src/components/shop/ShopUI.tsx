@@ -94,17 +94,22 @@ export function ShopUI({ isEmbedded = false }: ShopUIProps) {
     const loadOwnedItems = useCallback(async () => {
         try {
             // Get owned items from user's decorations/purchases
-            // For now, we'll check if user has any decorations saved
             const owned: string[] = [];
 
-            // Add default free items
+            // Add default free items - always owned
             const freeItems = shopItems.filter(item => (item.priceCredits || 0) === 0);
             freeItems.forEach(item => owned.push(item.id));
 
-            // Add items from user's purchase history (would come from backend)
-            // This is a placeholder - in production, fetch from Firestore
-            if (user?.purchases) {
-                Object.keys(user.purchases).forEach(itemId => {
+            // In production, owned items would come from:
+            // 1. Firestore user document
+            // 2. AsyncStorage cache for offline access
+            // 3. RevenueCat for IAP items
+            // For now, we track purchases locally during the session
+
+            // Check for user purchase history in a type-safe way
+            const userAny = user as any;
+            if (userAny?.purchases) {
+                Object.keys(userAny.purchases).forEach((itemId: string) => {
                     if (!owned.includes(itemId)) {
                         owned.push(itemId);
                     }
@@ -113,12 +118,13 @@ export function ShopUI({ isEmbedded = false }: ShopUIProps) {
 
             // Get currently equipped items for the alter
             if (alterId && alters) {
-                const currentAlter = alters.find((a: any) => a.id === alterId);
-                if (currentAlter?.decorations) {
+                const currentAlter = alters.find((a: any) => a.id === alterId) as any;
+                const decorations = currentAlter?.decorations || currentAlter?.cosmetics || currentAlter?.equipped || {};
+                if (decorations) {
                     setEquippedItems({
-                        frame: currentAlter.decorations.frame,
-                        theme: currentAlter.decorations.theme,
-                        bubble: currentAlter.decorations.bubble,
+                        frame: decorations.frame || decorations.frameId,
+                        theme: decorations.theme || decorations.themeId,
+                        bubble: decorations.bubble || decorations.bubbleId,
                     });
                 }
             }

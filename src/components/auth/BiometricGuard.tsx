@@ -83,27 +83,28 @@ export function BiometricGuard({ children }: BiometricGuardProps) {
         }
     };
 
-    if (isLocked && user) {
-        return (
-            <View style={styles.container}>
-                <Ionicons name="lock-closed" size={64} color={colors.primary} />
-                <Text style={styles.title}>Verrouillé</Text>
-                <Text style={styles.subtitle} onPress={authenticate}>
-                    Touchez pour déverrouiller
-                </Text>
-            </View>
-        );
-    }
-
-    return <>{children}</>;
+    return (
+        <View style={{ flex: 1 }}>
+            {children}
+            {isLocked && user && (
+                <View style={[StyleSheet.absoluteFill, styles.container]}>
+                    <Ionicons name="lock-closed" size={64} color={colors.primary} />
+                    <Text style={styles.title}>Verrouillé</Text>
+                    <Text style={styles.subtitle} onPress={authenticate}>
+                        Touchez pour déverrouiller
+                    </Text>
+                </View>
+            )}
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: colors.background,
+        zIndex: 9999, // Ensure it's on top
     },
     title: {
         ...typography.h2,

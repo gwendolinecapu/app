@@ -369,7 +369,7 @@ class CreditService {
                 amount,
                 type,
                 description,
-                itemId,
+                ...(itemId ? { itemId } : {}),
                 timestamp: Date.now(),
             };
 

@@ -31,13 +31,15 @@ const { width } = Dimensions.get('window');
 
 // Liste des émotions disponibles
 const EMOTIONS: EmotionType[] = [
-    'happy', 'sad', 'anxious', 'angry',
-    'tired', 'calm', 'confused', 'excited'
+    'happy', 'love', 'excited', 'proud',
+    'calm', 'bored', 'tired', 'sad',
+    'anxious', 'fear', 'confused', 'angry',
+    'shame', 'guilt', 'hurt', 'sick'
 ];
 
 export default function EmotionsScreen() {
     const { currentAlter, user } = useAuth();
-    const [selectedEmotion, setSelectedEmotion] = useState<EmotionType | null>(null);
+    const [selectedEmotions, setSelectedEmotions] = useState<EmotionType[]>([]);
     const [intensity, setIntensity] = useState<number>(3);
     const [note, setNote] = useState('');
     const [loading, setLoading] = useState(false);
@@ -87,8 +89,8 @@ export default function EmotionsScreen() {
 
     // Enregistrer une nouvelle émotion
     const handleSaveEmotion = async () => {
-        if (!selectedEmotion) {
-            Alert.alert('Erreur', 'Veuillez sélectionner une émotion');
+        if (selectedEmotions.length === 0) {
+            Alert.alert('Erreur', 'Veuillez sélectionner au moins une émotion');
             return;
         }
 
@@ -99,19 +101,18 @@ export default function EmotionsScreen() {
 
         setLoading(true);
         try {
-            const newEmotion = {
+            await addDoc(collection(db, 'emotions'), {
                 system_id: user?.uid,
                 alter_id: currentAlter.id,
-                emotion: selectedEmotion,
+                emotion: selectedEmotions[0], // Primary for legacy
+                emotions: selectedEmotions, // Full list
                 intensity,
                 note: note.trim() || null,
                 created_at: new Date().toISOString(),
-            };
+            });
 
-            await addDoc(collection(db, 'emotions'), newEmotion);
-
-            Alert.alert('✨', 'Émotion enregistrée !');
-            setSelectedEmotion(null);
+            Alert.alert('✨', 'Émotions enregistrées !');
+            setSelectedEmotions([]);
             setIntensity(3);
             setNote('');
             fetchRecentEmotions();
@@ -175,7 +176,7 @@ export default function EmotionsScreen() {
                 {todayEmotion && (
                     <View style={styles.todayBanner}>
                         <Text style={styles.todayText}>
-nc                             Tu as déjà enregistré &quot;{EMOTION_LABELS[todayEmotion.emotion as EmotionType]}&quot;
+                            nc                             Tu as déjà enregistré &quot;{EMOTION_LABELS[todayEmotion.emotion as EmotionType]}&quot;
                             {' '}aujourd&apos;hui
                         </Text>
                     </View>
@@ -183,30 +184,41 @@ nc                             Tu as déjà enregistré &quot;{EMOTION_LABELS[to
 
                 {/* Grille des émotions */}
                 <View style={styles.emotionsGrid}>
-                    {EMOTIONS.map((emotion) => (
-                        <TouchableOpacity
-                            key={emotion}
-                            style={[
-                                styles.emotionButton,
-                                selectedEmotion === emotion && styles.emotionButtonSelected,
-                            ]}
-                            onPress={() => setSelectedEmotion(emotion)}
-                        >
-                            <Text style={styles.emotionEmoji}>
-                                {EMOTION_EMOJIS[emotion]}
-                            </Text>
-                            <Text style={[
-                                styles.emotionLabel,
-                                selectedEmotion === emotion && styles.emotionLabelSelected,
-                            ]}>
-                                {EMOTION_LABELS[emotion]}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
+                    {EMOTIONS.map((emotion) => {
+                        const isSelected = selectedEmotions.includes(emotion);
+                        return (
+                            <TouchableOpacity
+                                key={emotion}
+                                style={[
+                                    styles.emotionButton,
+                                    isSelected && styles.emotionButtonSelected,
+                                ]}
+                                onPress={() => {
+                                    setSelectedEmotions(prev => {
+                                        if (prev.includes(emotion)) {
+                                            return prev.filter(e => e !== emotion);
+                                        } else {
+                                            return [...prev, emotion];
+                                        }
+                                    });
+                                }}
+                            >
+                                <Text style={styles.emotionEmoji}>
+                                    {EMOTION_EMOJIS[emotion]}
+                                </Text>
+                                <Text style={[
+                                    styles.emotionLabel,
+                                    isSelected && styles.emotionLabelSelected,
+                                ]}>
+                                    {EMOTION_LABELS[emotion]}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
                 </View>
 
                 {/* Intensité */}
-                {selectedEmotion && (
+                {selectedEmotions.length > 0 && (
                     <View style={styles.intensitySection}>
                         <Text style={styles.sectionTitle}>Intensité</Text>
                         <View style={styles.intensityRow}>
@@ -236,7 +248,7 @@ nc                             Tu as déjà enregistré &quot;{EMOTION_LABELS[to
                 )}
 
                 {/* Note optionnelle */}
-                {selectedEmotion && (
+                {selectedEmotions.length > 0 && (
                     <View style={styles.noteSection}>
                         <Text style={styles.sectionTitle}>Note (optionnel)</Text>
                         <TextInput
@@ -252,7 +264,7 @@ nc                             Tu as déjà enregistré &quot;{EMOTION_LABELS[to
                 )}
 
                 {/* Bouton enregistrer */}
-                {selectedEmotion && (
+                {selectedEmotions.length > 0 && (
                     <TouchableOpacity
                         style={[styles.saveButton, loading && styles.saveButtonDisabled]}
                         onPress={handleSaveEmotion}
@@ -282,11 +294,17 @@ nc                             Tu as déjà enregistré &quot;{EMOTION_LABELS[to
                             {recentEmotions.slice(0, 5).map((emotion) => (
                                 <View key={emotion.id} style={styles.historyItem}>
                                     <Text style={styles.historyEmoji}>
-                                        {EMOTION_EMOJIS[emotion.emotion as EmotionType]}
+                                        {emotion.emotions
+                                            ? emotion.emotions.map(e => EMOTION_EMOJIS[e]).join(' ')
+                                            : EMOTION_EMOJIS[emotion.emotion as EmotionType]
+                                        }
                                     </Text>
                                     <View style={styles.historyInfo}>
                                         <Text style={styles.historyLabel}>
-                                            {EMOTION_LABELS[emotion.emotion as EmotionType]}
+                                            {emotion.emotions
+                                                ? emotion.emotions.map(e => EMOTION_LABELS[e]).join(', ')
+                                                : EMOTION_LABELS[emotion.emotion as EmotionType]
+                                            }
                                         </Text>
                                         <Text style={styles.historyDate}>
                                             {formatDate(emotion.created_at)}

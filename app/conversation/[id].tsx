@@ -11,11 +11,12 @@ import {
     Platform,
     Image,
     Alert,
+    ActionSheetIOS,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { db } from '../../src/lib/firebase';
-import { collection, addDoc, query, where, getDocs, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, getDoc, deleteDoc } from 'firebase/firestore';
 import { Message, Alter } from '../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,6 +26,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../src/lib/firebase';
 
+import { GifPicker } from '../../src/components/messaging/GifPicker';
+
 export default function ConversationScreen() {
     const { id, internal } = useLocalSearchParams<{ id: string; internal?: string }>();
     const { alters, currentAlter, user } = useAuth();
@@ -32,6 +35,7 @@ export default function ConversationScreen() {
     const [newMessage, setNewMessage] = useState('');
     const [otherAlter, setOtherAlter] = useState<Alter | null>(null);
     const [loading, setLoading] = useState(false);
+    const [showGifPicker, setShowGifPicker] = useState(false);
 
     // Hooks
     const insets = useSafeAreaInsets();
@@ -201,6 +205,75 @@ export default function ConversationScreen() {
         }
     };
 
+    const sendGif = async (url: string) => {
+        if (!currentAlter || !id || !user?.uid) return;
+        setLoading(true);
+
+        try {
+            const conversationId = getConversationId(currentAlter.id, id);
+            await addDoc(collection(db, 'messages'), {
+                sender_alter_id: currentAlter.id,
+                receiver_alter_id: id,
+                systemId: user?.uid,
+                conversation_id: conversationId,
+                content: 'GIF',
+                imageUrl: url,
+                type: 'image', // Treating GIF as image for now
+                is_internal: internal === 'true',
+                is_read: false,
+                created_at: new Date().toISOString(),
+                system_tag: null,
+            });
+        } catch (error) {
+            console.error('Error sending GIF:', error);
+            Alert.alert('Erreur', 'Erreur lors de l\'envoi du GIF');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const deleteMessage = async (messageId: string) => {
+        try {
+            await deleteDoc(doc(db, 'messages', messageId));
+        } catch (error) {
+            console.error("Error deleting message:", error);
+            Alert.alert('Erreur', "Impossible d'effacer le message");
+        }
+    };
+
+    const handleLongPress = (item: Message, isMine: boolean) => {
+        if (!isMine) return; // Only allow deleting own messages for now
+
+        if (Platform.OS === 'ios') {
+            ActionSheetIOS.showActionSheetWithOptions(
+                {
+                    options: ['Annuler', 'Effacer ce message'],
+                    destructiveButtonIndex: 1,
+                    cancelButtonIndex: 0,
+                    title: 'Actions',
+                },
+                (buttonIndex) => {
+                    if (buttonIndex === 1) {
+                        deleteMessage(item.id);
+                    }
+                }
+            );
+        } else {
+            Alert.alert(
+                'Actions',
+                'Que voulez-vous faire ?',
+                [
+                    { text: 'Annuler', style: 'cancel' },
+                    {
+                        text: 'Effacer ce message',
+                        style: 'destructive',
+                        onPress: () => deleteMessage(item.id),
+                    }
+                ]
+            );
+        }
+    };
+
     const renderMessage = ({ item }: { item: Message }) => {
         const isMine = item.sender_alter_id === currentAlter?.id;
         const senderAlter = alters.find((a) => a.id === item.sender_alter_id);
@@ -223,6 +296,7 @@ export default function ConversationScreen() {
             <TouchableOpacity
                 activeOpacity={1}
                 onPress={handleDoubleTap}
+                onLongPress={() => handleLongPress(item, isMine)}
                 style={[
                     styles.messageContainer,
                     isMine ? styles.messageContainerMine : styles.messageContainerOther,
@@ -269,7 +343,7 @@ export default function ConversationScreen() {
                     )}
 
                     <View style={styles.messageFooter}>
-                        <Text style={styles.messageTime}>
+                        <Text style={[styles.messageTime, isMine ? { color: 'rgba(255,255,255,0.7)' } : { color: colors.textSecondary }]}>
                             {new Date(item.created_at).toLocaleTimeString('fr-FR', {
                                 hour: '2-digit',
                                 minute: '2-digit',
@@ -309,22 +383,27 @@ export default function ConversationScreen() {
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
 
-                <View
-                    style={[
-                        styles.avatar,
-                        { backgroundColor: otherAlter?.color || colors.primary },
-                    ]}
+                <TouchableOpacity
+                    style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+                    onPress={() => router.push(`/alter-space/${id}`)}
                 >
-                    <Text style={styles.avatarText}>
-                        {otherAlter?.name?.charAt(0).toUpperCase() || '?'}
-                    </Text>
-                </View>
-                <View style={styles.headerInfo}>
-                    <Text style={styles.headerName}>{otherAlter?.name || 'Conversation'}</Text>
-                    <Text style={styles.headerSubtitle}>
-                        {internal === 'true' ? '💜 Discussion interne' : '🌐 Discussion externe'}
-                    </Text>
-                </View>
+                    <View
+                        style={[
+                            styles.avatar,
+                            { backgroundColor: otherAlter?.color || colors.primary },
+                        ]}
+                    >
+                        <Text style={styles.avatarText}>
+                            {otherAlter?.name?.charAt(0).toUpperCase() || '?'}
+                        </Text>
+                    </View>
+                    <View style={styles.headerInfo}>
+                        <Text style={styles.headerName}>{otherAlter?.name || 'Conversation'}</Text>
+                        <Text style={styles.headerSubtitle}>
+                            {internal === 'true' ? '💜 Discussion interne' : '🌐 Discussion externe'}
+                        </Text>
+                    </View>
+                </TouchableOpacity>
             </View>
 
             <FlatList
@@ -358,7 +437,7 @@ export default function ConversationScreen() {
 
                 <TouchableOpacity
                     style={styles.mediaButton}
-                    onPress={() => Alert.alert('Info', 'Fonctionnalité GIF à venir !')}
+                    onPress={() => setShowGifPicker(true)}
                     disabled={loading}
                 >
                     <Ionicons name="happy-outline" size={24} color={colors.primary} />
@@ -384,6 +463,15 @@ export default function ConversationScreen() {
                     <Ionicons name="send" size={20} color={colors.text} />
                 </TouchableOpacity>
             </View>
+
+            <GifPicker
+                visible={showGifPicker}
+                onClose={() => setShowGifPicker(false)}
+                onSelect={(url) => {
+                    sendGif(url);
+                    setShowGifPicker(false);
+                }}
+            />
         </KeyboardAvoidingView>
     );
 }

@@ -24,9 +24,11 @@ import { db, storage } from '../../../src/lib/firebase';
 import { Alter } from '../../../src/types';
 import { alterColors, freeAlterColors, premiumAlterColors, colors, spacing, borderRadius, typography } from '../../../src/lib/theme';
 import PremiumService from '../../../src/services/PremiumService';
+import { useAuth } from '../../../src/contexts/AuthContext';
 
 export default function EditAlterProfileScreen() {
     const { alterId } = useLocalSearchParams<{ alterId: string }>();
+    const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -61,6 +63,15 @@ export default function EditAlterProfileScreen() {
 
             if (docSnap.exists()) {
                 const data = docSnap.data() as Alter;
+
+                // Security Check
+                const alterSystemId = data.systemId || data.system_id || data.userId;
+                if (user && alterSystemId !== user.uid) {
+                    Alert.alert('Accès refusé', 'Vous ne pouvez pas modifier cet alter.');
+                    router.back();
+                    return;
+                }
+
                 setInitialAlter(data);
                 setName(data.name);
                 setPronouns(data.pronouns || '');
@@ -138,8 +149,8 @@ export default function EditAlterProfileScreen() {
                 color,
                 avatar_url: finalAvatarUrl || '',
                 custom_fields: customFields,
-                birthDate: birthDate ? birthDate.toISOString().split('T')[0] : null,
-                arrivalDate: arrivalDate ? arrivalDate.toISOString().split('T')[0] : null,
+                birthDate: birthDate ? birthDate.toISOString().split('T')[0] : undefined,
+                arrivalDate: arrivalDate ? arrivalDate.toISOString().split('T')[0] : undefined,
             };
 
             const docRef = doc(db, 'alters', alterId!);

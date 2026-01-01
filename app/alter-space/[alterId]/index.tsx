@@ -1,13 +1,24 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+    View,
+    StyleSheet,
+    ActivityIndicator,
+    Alert,
+    TouchableOpacity,
+    Text,
+    ScrollView,
+    Platform,
+    ActionSheetIOS
+} from 'react-native';
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../../src/contexts/AuthContext';
+import { useNotificationContext } from '../../../src/contexts/NotificationContext';
 import { FriendService } from '../../../src/services/friends';
+import { Feed } from '../../../src/components/Feed';
 import { StoriesBar } from '../../../src/components/StoriesBar';
 import { colors, spacing, typography } from '../../../src/lib/theme';
 import { triggerHaptic } from '../../../src/lib/haptics';
 import { Ionicons } from '@expo/vector-icons';
-import { getThemeColors } from '../../../src/lib/cosmetics';
 
 // Components
 import { ProfileHeader } from '../../../src/components/alter-space/ProfileHeader';
@@ -25,7 +36,12 @@ type TabType = 'feed' | 'profile' | 'journal' | 'gallery' | 'emotions' | 'settin
 
 export default function AlterSpaceScreen() {
     const { alterId, tab } = useLocalSearchParams<{ alterId: string; tab?: string }>();
-    const { alters, currentAlter } = useAuth(); // currentAlter is the one viewing
+    const { alters, currentAlter, user } = useAuth(); // currentAlter is the one viewing
+    const { unreadCount } = useNotificationContext();
+
+    // We can't determine isOwner immediately inside useState because user might be loading, but we can default safely
+    // However, it's safer to use an effect or derived state if possible. 
+    // For now, let's keep it simple: if we are visiting, we likely want 'profile' by default unless specified.
     const [activeTab, setActiveTab] = useState<TabType>((tab as TabType) || 'feed');
 
     // Custom Hook for Data Fetching
@@ -46,6 +62,17 @@ export default function AlterSpaceScreen() {
     const [showFollowersModal, setShowFollowersModal] = useState(false);
     const [showFollowingModal, setShowFollowingModal] = useState(false);
 
+    // Logic updated per user request: Even if we are the System Admin (user.uid === systemId),
+    // if we are currently "fronting" as Alter A (Mona) and viewing Alter B (Zeph),
+    // we should see the profile as a VISITOR, not as an owner.
+    // "Owner" view is restricted to when the viewed alter IS the current active alter.
+    const isSystemOwner = alter && user ? (user.uid === (alter.systemId || alter.system_id || alter.userId)) : false;
+    const isSameAlter = alter && currentAlter ? alter.id === currentAlter.id : false;
+
+    // Fallback: If no custom status is active (System Mode), we might allow editing, 
+    // but assuming strict roleplay: isOwner requires matching IDs.
+    const isOwner = isSystemOwner && isSameAlter;
+
     // Check relationship status
     useFocusEffect(
         useCallback(() => {
@@ -55,52 +82,92 @@ export default function AlterSpaceScreen() {
         }, [alterId, currentAlter])
     );
 
-    const isOwner = alter ? alters.some(a => a.id === alter.id) : false;
+    // Enforce "Profile" view for visitors (Insta-like)
+    useEffect(() => {
+        if (!loading && !isOwner) {
+            setActiveTab('profile');
+        }
+    }, [loading, isOwner]);
 
     // Handle Friend Actions (Follow/Unfollow)
     const handleFriendAction = async () => {
-        if (!currentAlter) {
-            Alert.alert('Action impossible', 'Vous devez sélectionner un alter actif pour suivre quelqu\'un.');
-            return;
-        }
+        if (!currentAlter || !alterId) return;
 
         try {
-            if (friendStatus === 'none') {
-                await FriendService.sendRequest(currentAlter.id, alterId as string);
+            if (friendStatus === 'friends') {
+                // Determine display name (prefer system name if available)
+                const targetName = alter ? (alter.name || 'ce profil') : 'ce profil';
+
+                if (Platform.OS === 'ios') {
+                    ActionSheetIOS.showActionSheetWithOptions(
+                        {
+                            options: ['Annuler', 'Se désabonner'],
+                            destructiveButtonIndex: 1,
+                            cancelButtonIndex: 0,
+                            title: `Gérer l'abonnement à ${targetName}`,
+                        },
+                        async (buttonIndex) => {
+                            if (buttonIndex === 1) {
+                                await FriendService.removeFriend(currentAlter.id, alterId);
+                                setFriendStatus('none');
+                                refresh();
+                            }
+                        }
+                    );
+                } else {
+                    Alert.alert(
+                        `Se désabonner de ${targetName} ?`,
+                        "Vous ne verrez plus ses publications dans votre fil d'actualité.",
+                        [
+                            { text: "Annuler", style: "cancel" },
+                            {
+                                text: "Se désabonner",
+                                style: "destructive",
+                                onPress: async () => {
+                                    await FriendService.removeFriend(currentAlter.id, alterId);
+                                    setFriendStatus('none');
+                                    refresh();
+                                }
+                            }
+                        ]
+                    );
+                }
+            } else if (friendStatus === 'received') {
+                // ... Accept logic (keep existing if detailed logic exists, otherwise default accept)
+                await FriendService.acceptRequestByPair(currentAlter.id, alterId);
+                setFriendStatus('friends');
+                refresh();
+            } else if (friendStatus === 'pending') {
+                // Cancel request
+                await FriendService.cancelRequest(currentAlter.id, alterId);
+                setFriendStatus('none');
+            } else {
+                // Send request
+                await FriendService.sendRequest(currentAlter.id, alterId);
                 setFriendStatus('pending');
-                triggerHaptic.success();
-                Alert.alert('Succès', 'Demande envoyée !');
-            } else if (friendStatus === 'friends') {
-                // Already friends/following
-                Alert.alert('Abonné', 'Vous suivez déjà ce profil.');
             }
-        } catch (e: any) {
-            Alert.alert('Erreur', e.message);
+        } catch (error) {
+            console.error('Error handling friend action:', error);
+            Alert.alert('Erreur', "Une erreur est survenue lors de l'action.");
         }
     };
 
-    // --- THEME & COSMETICS ---
-    const themeColors = getThemeColors(alter?.equipped_items?.theme);
-    const backgroundStyle = { backgroundColor: themeColors?.background || colors.background };
-    const textStyle = { color: themeColors?.text || colors.text };
-    const iconColor = themeColors?.text || colors.text;
-
     if (loading) {
         return (
-            <View style={[styles.loadingContainer, backgroundStyle]}>
-                <ActivityIndicator size="large" color={themeColors?.primary || colors.primary} />
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
             </View>
         );
     }
 
     if (error || !alter) {
         return (
-            <View style={[styles.container, backgroundStyle]}>
-                <View style={[styles.header, backgroundStyle]}>
+            <View style={styles.container}>
+                <View style={styles.header}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={28} color={iconColor} />
+                        <Ionicons name="chevron-back" size={28} color={colors.text} />
                     </TouchableOpacity>
-                    <Text style={[styles.notFoundText, textStyle]}>{error || "Alter non trouvé"}</Text>
+                    <Text style={styles.notFoundText}>{error || "Alter non trouvé"}</Text>
                 </View>
             </View>
         );
@@ -108,191 +175,230 @@ export default function AlterSpaceScreen() {
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'feed':
+            case 'profile':
+                // Grid View
                 return (
-                    <ScrollView
-                        style={[styles.tabContent, backgroundStyle]}
-                        showsVerticalScrollIndicator={false}
-                    >
-                        {/* Stories Bar placed here effectively */}
-                        <View style={styles.feedHeaderContainer}>
-                            {/* Add stories or quick actions if needed */}
-                        </View>
-                        <AlterGrid
-                            posts={posts}
-                            loading={loading || refreshing}
-                            refreshing={refreshing}
-                            onRefresh={refresh}
-                            alterName={alter.name}
-                            listHeaderComponent={
-                                <ProfileHeader
-                                    alter={alter}
-                                    isOwner={isOwner}
-                                    stats={{
-                                        posts: posts.length,
-                                        followers: friendCount,
-                                        following: followingCount
-                                    }}
-                                    friendStatus={friendStatus}
-                                    onFriendAction={handleFriendAction}
-                                    onFollowersPress={() => setShowFollowersModal(true)}
-                                    onFollowingPress={() => setShowFollowingModal(true)}
-                                />
+                    <AlterGrid
+                        posts={posts}
+                        loading={loading}
+                        refreshing={refreshing}
+                        onRefresh={refresh}
+                        alterName={alter.name}
+                        listHeaderComponent={
+                            <ProfileHeader
+                                alter={alter}
+                                loading={loading}
+                                isOwner={isOwner}
+                                stats={{ posts: posts.length, followers: friendCount, following: followingCount }}
+                                friendStatus={friendStatus}
+                                onFriendAction={handleFriendAction}
+                                onFollowersPress={() => setShowFollowersModal(true)}
+                                onFollowingPress={() => setShowFollowingModal(true)}
+                            />
+                        }
+                    />
+                );
+            case 'feed':
+                // Social Feed View
+                return (
+                    <View style={styles.tabContent}>
+                        <Feed
+                            type="friends"
+                            alterId={alterId}
+                            ListHeaderComponent={
+                                <>
+                                    <View style={styles.feedHeaderContainer}>
+                                        <ProfileHeader
+                                            alter={alter}
+                                            loading={loading}
+                                            isOwner={isOwner}
+                                            stats={{ posts: posts.length, followers: friendCount, following: followingCount }}
+                                            friendStatus={friendStatus}
+                                            onFriendAction={handleFriendAction}
+                                            onFollowersPress={() => setShowFollowersModal(true)}
+                                            onFollowingPress={() => setShowFollowingModal(true)}
+                                        />
+                                    </View>
+                                    <StoriesBar
+                                        friendIds={friendIds}
+                                        onStoryPress={(authorId) => router.push({ pathname: '/story/view', params: { authorId } })}
+                                    />
+                                </>
                             }
                         />
-                    </ScrollView>
+                    </View>
                 );
-            case 'profile':
-                // Profile is essentially the feed with header for now, or detailed info?
-                // Usually Profile tab sends user to 'feed' view but focused on info. 
-                // Let's reuse AlterGrid but maybe scrolled to info?
-                // Actually in this app 'Profile' usually means the main view provided by 'feed' case generally.
-                // Let's just render the Feed view again for now to match default behavior or specific profile details.
+
+            case 'shop':
+                return <ShopUI isEmbedded={true} />;
+
+            case 'menu':
                 return (
-                    <ScrollView style={[styles.tabContent, backgroundStyle]}>
-                        <ProfileHeader
-                            alter={alter}
-                            isOwner={isOwner}
-                            stats={{
-                                posts: posts.length,
-                                followers: friendCount,
-                                following: followingCount
-                            }}
-                            friendStatus={friendStatus}
-                            onFriendAction={handleFriendAction}
-                            onFollowersPress={() => setShowFollowersModal(true)}
-                            onFollowingPress={() => setShowFollowingModal(true)}
-                        />
+                    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+                        <Text style={{ fontSize: 28, fontWeight: 'bold', marginBottom: 24, color: colors.text }}>Menu</Text>
+
+                        {isOwner ? (
+                            <>
+                                {/* Section: Espace Personnel - Only for owner */}
+                                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Espace Personnel</Text>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('journal')}>
+                                    <Ionicons name="book-outline" size={24} color={colors.primary} style={{ marginRight: 15 }} />
+                                    <Text style={styles.menuItemText}>Journal</Text>
+                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('gallery')}>
+                                    <Ionicons name="images-outline" size={24} color={colors.primary} style={{ marginRight: 15 }} />
+                                    <Text style={styles.menuItemText}>Galerie</Text>
+                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('emotions')}>
+                                    <Ionicons name="heart-outline" size={24} color={colors.primary} style={{ marginRight: 15 }} />
+                                    <Text style={styles.menuItemText}>Émotions</Text>
+                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                </TouchableOpacity>
+
+                                <View style={{ height: 30 }} />
+                                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Système</Text>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('settings')}>
+                                    <Ionicons name="settings-outline" size={24} color={colors.text} style={{ marginRight: 15 }} />
+                                    <Text style={styles.menuItemText}>Paramètres</Text>
+                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                </TouchableOpacity>
+                            </>
+                        ) : (
+                            <>
+                                {/* For visitors - only show public actions */}
+                                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Actions</Text>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={handleFriendAction}>
+                                    <Ionicons name={friendStatus === 'friends' ? "checkmark-circle" : "person-add-outline"} size={24} color={colors.primary} style={{ marginRight: 15 }} />
+                                    <Text style={styles.menuItemText}>
+                                        {friendStatus === 'friends' ? 'Abonné' : friendStatus === 'pending' ? 'Demande envoyée' : "S'abonner"}
+                                    </Text>
+                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname: '/(tabs)/messages', params: { senderId: alter.id } })}>
+                                    <Ionicons name="chatbubble-outline" size={24} color={colors.primary} style={{ marginRight: 15 }} />
+                                    <Text style={styles.menuItemText}>Messages</Text>
+                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                </TouchableOpacity>
+                            </>
+                        )}
                     </ScrollView>
                 );
             case 'journal':
                 return <AlterJournal alter={alter} />;
             case 'gallery':
-                return <AlterGallery alter={alter} />;
+                return <AlterGallery alter={alter} isCloudEnabled={false} />;
             case 'emotions':
                 return <AlterEmotions alterId={alter.id} alterName={alter.name} />;
             case 'settings':
                 return <AlterSettings alter={alter} />;
-            case 'shop':
-                return <ShopUI />;
-            case 'menu':
-                return (
-                    <ScrollView style={[styles.tabContent, { padding: spacing.md }, backgroundStyle]}>
-                        <Text style={[typography.h3, { marginBottom: spacing.md, color: textStyle.color }]}>Menu</Text>
-                        {isOwner && (
-                            <>
-                                <TouchableOpacity style={[styles.menuItem, { borderBottomColor: themeColors?.border || colors.border }]} onPress={() => setActiveTab('journal')}>
-                                    <Ionicons name="book-outline" size={24} color={iconColor} style={{ marginRight: 10 }} />
-                                    <Text style={[styles.menuItemText, textStyle]}>Journal</Text>
-                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[styles.menuItem, { borderBottomColor: themeColors?.border || colors.border }]} onPress={() => setActiveTab('gallery')}>
-                                    <Ionicons name="images-outline" size={24} color={iconColor} style={{ marginRight: 10 }} />
-                                    <Text style={[styles.menuItemText, textStyle]}>Galerie Privée</Text>
-                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[styles.menuItem, { borderBottomColor: themeColors?.border || colors.border }]} onPress={() => setActiveTab('emotions')}>
-                                    <Ionicons name="happy-outline" size={24} color={iconColor} style={{ marginRight: 10 }} />
-                                    <Text style={[styles.menuItemText, textStyle]}>Humeur & Émotions</Text>
-                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[styles.menuItem, { borderBottomColor: themeColors?.border || colors.border }]} onPress={() => setActiveTab('shop')}>
-                                    <Ionicons name="cart-outline" size={24} color={iconColor} style={{ marginRight: 10 }} />
-                                    <Text style={[styles.menuItemText, textStyle]}>Boutique</Text>
-                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[styles.menuItem, { borderBottomColor: themeColors?.border || colors.border }]} onPress={() => router.push('/settings')}>
-                                    <Ionicons name="settings-outline" size={24} color={iconColor} style={{ marginRight: 10 }} />
-                                    <Text style={[styles.menuItemText, textStyle]}>Paramètres Système</Text>
-                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                                </TouchableOpacity>
-                            </>
-                        )}
-                        {!isOwner && (
-                            <TouchableOpacity style={[styles.menuItem, { borderBottomColor: themeColors?.border || colors.border }]} onPress={() => { }}>
-                                <Ionicons name="flag-outline" size={24} color={colors.error} style={{ marginRight: 10 }} />
-                                <Text style={[styles.menuItemText, { color: colors.error }]}>Signaler ce profil</Text>
-                            </TouchableOpacity>
-                        )}
-                    </ScrollView>
-                );
             default:
                 return null;
         }
     };
 
     return (
-        <View style={[styles.container, backgroundStyle]}>
-            {/* Header */}
-            <View style={[styles.header, backgroundStyle, { borderBottomColor: themeColors?.border || colors.border }]}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color={iconColor} />
+        <View style={styles.container}>
+            {/* Main Header (Navigation) */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.push('/(tabs)/dashboard')} style={styles.backButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <Ionicons name="chevron-back" size={28} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, textStyle]}>{alter.name}</Text>
+                <Text style={styles.headerTitle} numberOfLines={1}>{alter.name}</Text>
                 <View style={styles.headerRight}>
-                    {/* Search / Notifications placeholders */}
-                    <TouchableOpacity style={{ padding: 4 }}>
-                        <Ionicons name="search-outline" size={24} color={iconColor} />
+                    <TouchableOpacity onPress={() => router.push('/search' as any)} style={{ marginRight: 12 }}>
+                        <Ionicons name="search-outline" size={24} color={colors.text} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push('/(tabs)/notifications')} style={{ marginRight: 12 }}>
+                        <View>
+                            <Ionicons name="notifications-outline" size={24} color={colors.text} />
+                            {unreadCount > 0 && (
+                                <View style={{
+                                    position: 'absolute',
+                                    top: -2,
+                                    right: -2,
+                                    backgroundColor: 'red',
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: 5,
+                                    borderWidth: 1,
+                                    borderColor: colors.background
+                                }} />
+                            )}
+                        </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push({ pathname: '/shop', params: { alterId } })} style={{ marginRight: 12 }}>
+                        <Ionicons name="storefront-outline" size={24} color="#A855F7" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push({ pathname: '/(tabs)/messages', params: { senderId: alterId } })}>
+                        <Ionicons name="chatbubble-ellipses-outline" size={24} color={colors.text} />
                     </TouchableOpacity>
                 </View>
             </View>
 
-            {/* Main Content */}
+            {/* Content Area */}
             <ErrorBoundary>
                 {renderContent()}
             </ErrorBoundary>
 
-            {/* Bottom Bar (Custom Navigation) */}
-            <View style={[styles.bottomBar, {
-                backgroundColor: themeColors?.backgroundCard || colors.surface,
-                borderTopColor: themeColors?.border || colors.border
-            }]}>
-                {/* 1. Home / Feed */}
-                <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('feed')}>
-                    <Ionicons name={activeTab === 'feed' ? "home" : "home-outline"} size={24} color={activeTab === 'feed' ? (themeColors?.primary || colors.primary) : (themeColors?.textSecondary || colors.textSecondary)} />
-                    <Text style={{ fontSize: 10, color: activeTab === 'feed' ? (themeColors?.primary || colors.primary) : (themeColors?.textSecondary || colors.textSecondary), marginTop: 4 }}>Accueil</Text>
-                </TouchableOpacity>
+            {/* Bottom Tab Bar (Custom for Alter Space navigation) - Only for Owner */}
+            {isOwner && (
+                <View style={styles.bottomBar}>
+                    {/* 1. Accueil / Feed */}
+                    <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('feed')}>
+                        <Ionicons name={activeTab === 'feed' ? "home" : "home-outline"} size={24} color={activeTab === 'feed' ? colors.primary : colors.textSecondary} />
+                        <Text style={{ fontSize: 10, color: activeTab === 'feed' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Accueil</Text>
+                    </TouchableOpacity>
 
-                {/* 2. Message (Quick Access) */}
-                <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => router.push('/messages')}>
-                    <Ionicons name="chatbubble-outline" size={24} color={themeColors?.textSecondary || colors.textSecondary} />
-                    <Text style={{ fontSize: 10, color: themeColors?.textSecondary || colors.textSecondary, marginTop: 4 }}>Messages</Text>
-                </TouchableOpacity>
+                    {/* 2. Emotions */}
+                    <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('emotions')}>
+                        <Ionicons name={activeTab === 'emotions' ? "heart" : "heart-outline"} size={24} color={activeTab === 'emotions' ? colors.primary : colors.textSecondary} />
+                        <Text style={{ fontSize: 10, color: activeTab === 'emotions' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Émotions</Text>
+                    </TouchableOpacity>
 
-                {/* 3. Post (+) Button - Prominent */}
-                <TouchableOpacity
-                    style={{ top: -20 }}
-                    onPress={() => router.push('/post/create')}
-                >
-                    <View style={{
-                        width: 56,
-                        height: 56,
-                        borderRadius: 28,
-                        backgroundColor: themeColors?.primary || colors.primary,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        shadowColor: themeColors?.primary || colors.primary,
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.3,
-                        shadowRadius: 8,
-                        elevation: 5,
+                    {/* 3. Post (+) */}
+                    <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => {
+                        // Navigate to create post, possibly passing alterId if supported or relying on global context
+                        router.push('/post/create');
                     }}>
-                        <Ionicons name="add" size={32} color="white" />
-                    </View>
-                </TouchableOpacity>
+                        <View style={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: 24,
+                            backgroundColor: colors.primary,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginTop: -24,
+                            shadowColor: colors.primary,
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 8,
+                            elevation: 5,
+                        }}>
+                            <Ionicons name="add" size={32} color="white" />
+                        </View>
+                    </TouchableOpacity>
 
-                {/* 4. Profil */}
-                <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('profile')}>
-                    <Ionicons name={activeTab === 'profile' ? "person" : "person-outline"} size={24} color={activeTab === 'profile' ? (themeColors?.primary || colors.primary) : (themeColors?.textSecondary || colors.textSecondary)} />
-                    <Text style={{ fontSize: 10, color: activeTab === 'profile' ? (themeColors?.primary || colors.primary) : (themeColors?.textSecondary || colors.textSecondary), marginTop: 4 }}>Profil</Text>
-                </TouchableOpacity>
+                    {/* 4. Profil */}
+                    <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('profile')}>
+                        <Ionicons name={activeTab === 'profile' ? "person" : "person-outline"} size={24} color={activeTab === 'profile' ? colors.primary : colors.textSecondary} />
+                        <Text style={{ fontSize: 10, color: activeTab === 'profile' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Profil</Text>
+                    </TouchableOpacity>
 
-                {/* 5. Menu */}
-                <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('menu')}>
-                    <Ionicons name={activeTab === 'menu' ? "menu" : "menu-outline"} size={24} color={activeTab === 'menu' ? (themeColors?.primary || colors.primary) : (themeColors?.textSecondary || colors.textSecondary)} />
-                    <Text style={{ fontSize: 10, color: activeTab === 'menu' ? (themeColors?.primary || colors.primary) : (themeColors?.textSecondary || colors.textSecondary), marginTop: 4 }}>Menu</Text>
-                </TouchableOpacity>
-            </View>
+                    {/* 5. Menu */}
+                    <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('menu')}>
+                        <Ionicons name={activeTab === 'menu' ? "menu" : "menu-outline"} size={24} color={activeTab === 'menu' ? colors.primary : colors.textSecondary} />
+                        <Text style={{ fontSize: 10, color: activeTab === 'menu' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Menu</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
 
             {/* Modals */}
             <FollowListModal

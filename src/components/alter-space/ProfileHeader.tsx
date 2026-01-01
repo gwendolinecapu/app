@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image } from 'expo-image';
 import Animated from 'react-native-reanimated';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { AnimatedPressable } from '../ui/AnimatedPressable';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -9,9 +9,8 @@ import { Alter } from '../../types';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { AlterPrimers } from '../AlterPrimers';
 import { SystemRelationships } from '../SystemRelationships';
-
 import { Skeleton } from '../ui/Skeleton';
-import { Alert } from 'react-native';
+import { getFrameStyle } from '../../lib/cosmetics';
 
 const ROLE_DEFINITIONS: Record<string, string> = {
     'host': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
@@ -115,13 +114,19 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         );
     }
 
+    const frameStyle = getFrameStyle(alter.equipped_items?.frame);
+
     return (
         <View style={styles.container}>
             {/* Top Section: Avatar + Stats */}
             <View style={styles.topSection}>
                 {/* Avatar Column */}
                 <View style={styles.avatarColumn}>
-                    <View style={[styles.avatarContainer, { borderColor: alter.color || colors.primary }]}>
+                    <View style={[
+                        styles.avatarContainer,
+                        { borderColor: alter.color || colors.primary },
+                        frameStyle.containerStyle
+                    ]}>
                         <View style={[styles.avatar, { backgroundColor: alter.color || colors.primary }]}>
 
                             {alter.avatar_url ? (
@@ -274,7 +279,9 @@ const styles = StyleSheet.create({
         paddingBottom: spacing.lg,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
-        backgroundColor: colors.background,
+        // backgroundColor: colors.background, // Let container decide or transparent
+        // For consistent look with AlterSpaceScreen theme:
+        backgroundColor: 'transparent',
     },
     topSection: {
         flexDirection: 'row',

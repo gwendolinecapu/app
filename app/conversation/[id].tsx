@@ -11,7 +11,6 @@ import {
     Platform,
     Image,
     Alert,
-    Modal,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -33,9 +32,6 @@ export default function ConversationScreen() {
     const [newMessage, setNewMessage] = useState('');
     const [otherAlter, setOtherAlter] = useState<Alter | null>(null);
     const [loading, setLoading] = useState(false);
-    const [selectedSenderId, setSelectedSenderId] = useState<string | null>(null);
-    const [showSenderPicker, setShowSenderPicker] = useState(false);
-    const [senderSearch, setSenderSearch] = useState('');
 
     // Hooks
     const insets = useSafeAreaInsets();
@@ -50,19 +46,6 @@ export default function ConversationScreen() {
         const alter = alters.find((a) => a.id === id);
         setOtherAlter(alter || null);
     }, [id, alters]);
-
-    // Initialize sender
-    useEffect(() => {
-        if (!selectedSenderId && alters.length > 0) {
-            if (currentAlter) {
-                setSelectedSenderId(currentAlter.id);
-            } else {
-                setSelectedSenderId(alters[0].id);
-            }
-        }
-    }, [alters, currentAlter, selectedSenderId]);
-
-    const senderAlter = alters.find(a => a.id === selectedSenderId) || currentAlter || alters[0];
 
     useEffect(() => {
         if (!currentAlter || !id) return;

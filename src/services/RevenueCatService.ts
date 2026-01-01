@@ -36,19 +36,32 @@ class RevenueCatService {
     async initialize(userId?: string): Promise<void> {
         if (this.initialized) return;
 
-        Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
-
-        if (Platform.OS === 'ios') {
-            Purchases.configure({ apiKey: API_KEYS.ios });
-        } else if (Platform.OS === 'android') {
-            Purchases.configure({ apiKey: API_KEYS.android });
+        // Ensure keys exist, otherwise mock or warn
+        if (!API_KEYS.ios && !API_KEYS.android) {
+            console.warn('[RevenueCat] No API keys found. Skipping initialization.');
+            this.initialized = true;
+            return;
         }
 
-        if (userId) {
-            await Purchases.logIn(userId);
-        }
+        try {
+            Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
 
-        this.initialized = true;
+            if (Platform.OS === 'ios') {
+                if (API_KEYS.ios) Purchases.configure({ apiKey: API_KEYS.ios });
+            } else if (Platform.OS === 'android') {
+                if (API_KEYS.android) Purchases.configure({ apiKey: API_KEYS.android });
+            }
+
+            if (userId) {
+                await Purchases.logIn(userId);
+            }
+
+            this.initialized = true;
+        } catch (error) {
+            console.warn('[RevenueCat] Initialization failed (likely running in Expo Go without native code).', error);
+            // Mark as initialized to prevent repeated failed attempts in loop
+            this.initialized = true;
+        }
     }
 
     /**

@@ -24,9 +24,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../lib/theme';
 import { ShopItem } from '../../services/MonetizationTypes';
 
-const { width } = Dimensions.get('window');
-const CARD_MARGIN = 16;
-const CARD_WIDTH = width - 32; // Full width minus padding
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+// La ShopUI a un padding horizontal de 16 (spacing.lg)
+// Le carrousel est dans ce container, donc on doit soustraire le padding parent
+const HORIZONTAL_PADDING = 16; // padding de ShopUI scrollContent
+const CARD_WIDTH = SCREEN_WIDTH - (HORIZONTAL_PADDING * 2); // = screen width - 32
+const CARD_GAP = 12; // Espace entre les cartes
 
 // Featured item avec métadonnées supplémentaires
 interface FeaturedItem {
@@ -130,7 +133,7 @@ export function FeaturedCarousel({ onItemPress, userCredits = 0 }: FeaturedCarou
         ]).start();
 
         scrollRef.current?.scrollTo({
-            x: index * (CARD_WIDTH + CARD_MARGIN),
+            x: index * (CARD_WIDTH + CARD_GAP),
             animated: true,
         });
         setActiveIndex(index);
@@ -138,7 +141,7 @@ export function FeaturedCarousel({ onItemPress, userCredits = 0 }: FeaturedCarou
 
     const handleScroll = (event: any) => {
         const offsetX = event.nativeEvent.contentOffset.x;
-        const index = Math.round(offsetX / (CARD_WIDTH + CARD_MARGIN));
+        const index = Math.round(offsetX / (CARD_WIDTH + CARD_GAP));
         if (index !== activeIndex && index >= 0 && index < FEATURED_ITEMS.length) {
             setActiveIndex(index);
         }
@@ -181,7 +184,7 @@ export function FeaturedCarousel({ onItemPress, userCredits = 0 }: FeaturedCarou
                     showsHorizontalScrollIndicator={false}
                     onMomentumScrollEnd={handleScroll}
                     decelerationRate="fast"
-                    snapToInterval={CARD_WIDTH + CARD_MARGIN}
+                    snapToInterval={CARD_WIDTH + CARD_GAP}
                     snapToAlignment="start"
                     contentContainerStyle={styles.scrollContent}
                 >
@@ -285,13 +288,15 @@ export function FeaturedCarousel({ onItemPress, userCredits = 0 }: FeaturedCarou
 const styles = StyleSheet.create({
     container: {
         marginBottom: spacing.lg,
+        // Negative margins to break out of parent padding (ShopUI scrollContent has padding: 16)
+        marginHorizontal: -HORIZONTAL_PADDING,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: spacing.sm,
-        paddingHorizontal: spacing.xs,
+        paddingHorizontal: HORIZONTAL_PADDING, // Match parent scroll content padding
     },
     title: {
         fontSize: 18,
@@ -316,12 +321,12 @@ const styles = StyleSheet.create({
         width: 20,
     },
     scrollContent: {
-        paddingLeft: CARD_MARGIN,
-        paddingRight: CARD_MARGIN,
+        // Padding pour que la première et dernière carte soient bien alignées
+        paddingHorizontal: HORIZONTAL_PADDING,
     },
     card: {
         width: CARD_WIDTH,
-        marginRight: CARD_MARGIN,
+        marginRight: CARD_GAP,
         borderRadius: borderRadius.xl,
         overflow: 'hidden',
         elevation: 8,

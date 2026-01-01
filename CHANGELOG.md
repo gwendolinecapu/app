@@ -11,6 +11,8 @@
 - **[Shop]** Inventaire fonctionnel avec articles acquis.
 - **[Shop]** Previews réalistes améliorées (thèmes, cadres, bulles).
 - **[Shop]** Ajout de 26 items cosmétiques (10 thèmes, 8 cadres, 8 bulles).
+- **[Shop/Fix]** DailyReward et AdReward fonctionnent maintenant sans alterId spécifique.
+- **[Shop/Fix]** Carrousel "En Vedette" corrigé (padding, snap alignment).
 - **[Shop]** Refonte complète de la Boutique et ajout des récompenses (`DailyReward`, `AdReward`).
 - **[Fix]** Correction du crash RevenueCat et des erreurs Backend (Firestore Index, Credits).
 - **Navigation**: Resolved persistent double headers by forcing `headerShown: false` in RootLayout and Settings route.

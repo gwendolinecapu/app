@@ -19,11 +19,13 @@ export function AdRewardCard({ alterId }: AdRewardCardProps) {
 
     const [watching, setWatching] = useState(false);
 
+    // Use 'default' if no alterId for generic reward claiming
+    const effectiveAlterId = alterId || 'default';
+
     const handleWatch = async () => {
-        if (!alterId) return;
         setWatching(true);
         try {
-            const result = await watchRewardAd(alterId);
+            const result = await watchRewardAd(effectiveAlterId);
             if (result.completed) {
                 Alert.alert('Récompense', `Vous avez gagné +${result.rewardAmount} crédits !`);
             } else {
@@ -36,12 +38,7 @@ export function AdRewardCard({ alterId }: AdRewardCardProps) {
         }
     };
 
-    if (!alterId) return null;
-
-    // S'il ne reste plus de pubs, on masque ou on grise
-    if (rewardAdsRemaining <= 0) {
-        return null;
-    }
+    const isDisabled = rewardAdsRemaining <= 0 || watching || loading;
 
     return (
         <LinearGradient
@@ -66,12 +63,14 @@ export function AdRewardCard({ alterId }: AdRewardCardProps) {
                 </View>
 
                 <TouchableOpacity
-                    style={[styles.button, (!canWatchRewardAd || watching) && styles.buttonDisabled]}
+                    style={[styles.button, isDisabled && styles.buttonDisabled]}
                     onPress={handleWatch}
-                    disabled={!canWatchRewardAd || watching}
+                    disabled={isDisabled}
                 >
                     {watching ? (
                         <ActivityIndicator color={colors.primary} size="small" />
+                    ) : rewardAdsRemaining <= 0 ? (
+                        <Text style={styles.buttonText}>✓</Text>
                     ) : (
                         <Text style={styles.buttonText}>Voir</Text>
                     )}

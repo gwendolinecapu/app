@@ -48,12 +48,12 @@ export const AddAlterModal: React.FC<AddAlterModalProps> = ({
     const [image, setImage] = useState<string | null>(null);
 
     const handleCreate = async () => {
-        console.log('[AddAlterModal] handleCreate triggered', { name, hasOnCreate: !!onCreate });
+
         if (!name.trim()) return;
 
         try {
             await onCreate({ name, pronouns, bio, color, image });
-            console.log('[AddAlterModal] Alter created successfully');
+
             // Reset form after creation
             setName('');
             setPronouns('');
@@ -192,18 +192,30 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     modalOverlayWeb: {
+        justifyContent: 'center',
+        alignItems: 'center',
         backgroundColor: 'rgba(0,0,0,0.5)',
+        padding: spacing.md,
     },
     keyboardView: {
         width: '100%',
+        alignItems: Platform.OS === 'web' ? 'center' : 'stretch',
     },
     modalContent: {
         backgroundColor: colors.surface,
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
+        // Web: rounded all corners
+        borderRadius: Platform.OS === 'web' ? 24 : 0,
+        borderBottomLeftRadius: Platform.OS === 'web' ? 24 : 0,
+        borderBottomRightRadius: Platform.OS === 'web' ? 24 : 0,
+
         paddingTop: spacing.lg,
         paddingBottom: Platform.OS === 'ios' ? 40 : spacing.xl,
-        maxHeight: '90%',
+        maxHeight: Platform.OS === 'web' ? '85%' : '90%',
+        width: Platform.OS === 'web' ? '100%' : undefined,
+        maxWidth: Platform.OS === 'web' ? 500 : undefined,
+
         shadowColor: "#000",
         shadowOffset: { width: 0, height: -4 },
         shadowOpacity: 0.1,

@@ -1,5 +1,14 @@
 # Changelog
 
+## [2025-12-31] - Système de Feedback & Admin 📢
+- **Nouvelle Fonctionnalité**: Ajout d'un système complet de feedback (Bugs et Idées) accessible via Paramètres.
+- **Admin UI**: Interface dédiée pour gérer les retours, changer les statuts et récompenser les utilisateurs.
+- **Récompenses**: Intégration directe avec le système de crédits pour récompenser les chasseurs de bugs (Bug Bounty).
+- **Technique**:
+  - Service `FeedbackService` avec filtrage et pagination.
+  - Sécurisation via `isAdmin` flag dans le contexte utilisateur.
+  - Types partagés `Feedback` et `FeedbackStatus`.
+
 ## [2025-12-31] - Correction Persistance & Biométrie 🛡️
 - **Fix (Major)**: Correction du problème où l'application perdait la page en cours lors du passage en arrière-plan.
   - **Cause**: Le `BiometricGuard` démontait toute la navigation lorsqu'il se verrouillait.

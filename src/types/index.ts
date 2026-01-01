@@ -196,6 +196,7 @@ export interface Emotion {
     id: string;
     alter_id: string;
     emotion: EmotionType;
+    emotions?: EmotionType[]; // Support for multiple emotions
     intensity: 1 | 2 | 3 | 4 | 5; // 1 = faible, 5 = très forte
     note?: string;
     created_at: string;
@@ -214,7 +215,15 @@ export type EmotionType =
     | 'tired'     // 😴
     | 'calm'      // 😌
     | 'confused'  // 😕
-    | 'excited';  // 🤩
+    | 'excited'   // 🤩
+    | 'fear'      // 😨
+    | 'shame'     // 😳
+    | 'bored'     // 😐
+    | 'proud'     // 🦁
+    | 'love'      // 🥰
+    | 'sick'      // 🤢
+    | 'guilt'     // 😔
+    | 'hurt';     // 🤕
 
 /**
  * Mapping émotion -> emoji pour l'affichage
@@ -228,20 +237,36 @@ export const EMOTION_EMOJIS: Record<EmotionType, string> = {
     calm: '😌',
     confused: '😕',
     excited: '🤩',
+    fear: '😨',
+    shame: '😳',
+    bored: '😐',
+    proud: '🦁',
+    love: '🥰',
+    sick: '🤢',
+    guilt: '😔',
+    hurt: '🤕',
 };
 
 /**
  * Mapping émotion -> label en français
  */
 export const EMOTION_LABELS: Record<EmotionType, string> = {
-    happy: 'Heureux·se',
+    happy: 'Joyeux',
     sad: 'Triste',
-    anxious: 'Anxieux·se',
+    anxious: 'Anxieux',
     angry: 'En colère',
-    tired: 'Fatigué·e',
+    tired: 'Fatigué',
     calm: 'Calme',
-    confused: 'Confus·e',
-    excited: 'Excité·e',
+    confused: 'Confus',
+    excited: 'Excité',
+    fear: 'Peur',
+    shame: 'Honte',
+    bored: 'Ennuyé',
+    proud: 'Fier',
+    love: 'Amoureux',
+    sick: 'Malade',
+    guilt: 'Coupable',
+    hurt: 'Blessé',
 };
 
 /**

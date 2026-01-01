@@ -18,6 +18,8 @@ import {
     Image,
     SectionList,
 } from 'react-native';
+import { collection, query, where, getDocs, orderBy, limit, writeBatch } from 'firebase/firestore';
+import { db } from '../../src/lib/firebase';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -60,54 +62,77 @@ export default function NotificationsScreen() {
         if (!currentAlter || !user) return;
 
         try {
-            // Charger les demandes d'amis
-            const pending = await FriendService.getPendingRequests(currentAlter.id);
-            setFriendRequests(pending);
+            // 2. Charger les demandes d'amis (pending et accepted)
+            const requests = await FriendService.getRequests(currentAlter.id, ['pending', 'accepted']);
 
-            // Notifications futures : Likes, Comments, Follows
-            // Nécessite une structure Firestore 'notifications' non encore implémentée.
-            const mockNotifications: Notification[] = [];
+            // Sort by date descending
+            requests.sort((a, b) => {
+                const dateA = a.createdAt?.seconds ? new Date(a.createdAt.seconds * 1000) : new Date();
+                const dateB = b.createdAt?.seconds ? new Date(b.createdAt.seconds * 1000) : new Date();
+                return dateB.getTime() - dateA.getTime();
+            });
 
-            /*
-                        // Mock likes and comments
-                        mockNotifications.push({
-                            id: 'mock_like_1',
-                            type: 'like',
-                            title: 'Nouveau like',
-                            subtitle: 'Alex a aimé votre post',
-                            timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 mins ago
-                            isRead: false,
-                        });
-                        mockNotifications.push({
-                            id: 'mock_comment_1',
-                            type: 'comment',
-                            title: 'Nouveau commentaire',
-                            subtitle: 'Sarah a commenté: "Super photo !"',
-                            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-                            isRead: true,
-                        });
-            */
+            setFriendRequests(requests);
 
-            // Convertir les demandes d'amis en notifications
-            pending.forEach(req => {
-                mockNotifications.push({
+            // Charger les notifications
+            // FIX: Removed orderBy temporarily to avoid "index required" error while deploying
+            const q = query(
+                collection(db, 'notifications'),
+                where('recipientId', '==', user.uid),
+                limit(50)
+            );
+
+            const snapshot = await getDocs(q);
+            const loadedNotifications: Notification[] = [];
+
+            snapshot.forEach((doc) => {
+                loadedNotifications.push({ id: doc.id, ...doc.data() } as Notification);
+            });
+
+            // Ajouter les demandes d'amis comme notifications (si non dupliquées)
+            requests.forEach(req => {
+                // Check duplication logic if needed, or just push
+                loadedNotifications.push({
                     id: `friend_${req.id}`,
                     type: 'friend_request',
                     title: 'Nouvelle demande d\'ami',
                     subtitle: `De: ${req.senderId}`,
-                    timestamp: new Date(req.createdAt),
+                    timestamp: req.createdAt?.seconds ? new Date(req.createdAt.seconds * 1000) : new Date(),
                     isRead: false,
                     actionData: req,
                 });
             });
 
-            setNotifications(mockNotifications);
+            // Trier par date
+            loadedNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+            setNotifications(loadedNotifications);
+
+            // Marquer comme lu
+            markAllAsRead(snapshot.docs);
+
         } catch (error) {
             console.error('[Notifications] Error loading data:', error);
         } finally {
             setLoading(false);
         }
     }, [currentAlter, user]);
+
+    const markAllAsRead = async (docs: any[]) => {
+        const batch = writeBatch(db);
+        let hasUpdates = false;
+
+        docs.forEach(doc => {
+            if (!doc.data().read) {
+                batch.update(doc.ref, { read: true });
+                hasUpdates = true;
+            }
+        });
+
+        if (hasUpdates) {
+            await batch.commit();
+        }
+    };
 
     useEffect(() => {
         loadData();
@@ -153,10 +178,11 @@ export default function NotificationsScreen() {
     // Rendu d'une demande d'ami
     const renderFriendRequest = ({ item }: { item: FriendRequest }) => {
         const senderName = getAlterName(item.senderId);
+        const isAccepted = item.status === 'accepted';
 
         return (
-            <View style={styles.requestCard}>
-                <View style={styles.requestAvatar}>
+            <View style={[styles.requestCard, isAccepted && { opacity: 0.6, backgroundColor: colors.backgroundLight + '40' }]}>
+                <View style={[styles.requestAvatar, isAccepted && { backgroundColor: colors.textMuted }]}>
                     <Text style={styles.requestAvatarText}>
                         {senderName.charAt(0).toUpperCase()}
                     </Text>
@@ -164,22 +190,33 @@ export default function NotificationsScreen() {
                 <View style={styles.requestContent}>
                     <Text style={styles.requestTitle}>{senderName}</Text>
                     <Text style={styles.requestSubtitle}>
-                        Veut être ton ami
+                        {isAccepted
+                            ? "Demande acceptée"
+                            : "Veut être ton ami"
+                        }
                     </Text>
                 </View>
                 <View style={styles.requestActions}>
-                    <AnimatedPressable
-                        style={styles.acceptButton}
-                        onPress={() => handleAcceptRequest(item.id)}
-                    >
-                        <Text style={styles.acceptButtonText}>Accepter</Text>
-                    </AnimatedPressable>
-                    <AnimatedPressable
-                        style={styles.rejectButton}
-                        onPress={() => handleRejectRequest(item.id)}
-                    >
-                        <Text style={styles.rejectButtonText}>Refuser</Text>
-                    </AnimatedPressable>
+                    {isAccepted ? (
+                        <View style={[styles.acceptButton, { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.success }]}>
+                            <Text style={[styles.acceptButtonText, { color: colors.success }]}>Amis</Text>
+                        </View>
+                    ) : (
+                        <>
+                            <AnimatedPressable
+                                style={styles.acceptButton}
+                                onPress={() => handleAcceptRequest(item.id)}
+                            >
+                                <Text style={styles.acceptButtonText}>Accepter</Text>
+                            </AnimatedPressable>
+                            <AnimatedPressable
+                                style={styles.rejectButton}
+                                onPress={() => handleRejectRequest(item.id)}
+                            >
+                                <Text style={styles.rejectButtonText}>Refuser</Text>
+                            </AnimatedPressable>
+                        </>
+                    )}
                 </View>
             </View>
         );

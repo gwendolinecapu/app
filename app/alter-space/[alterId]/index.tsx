@@ -6,10 +6,13 @@ import {
     Alert,
     TouchableOpacity,
     Text,
-    ScrollView
+    ScrollView,
+    Platform,
+    ActionSheetIOS
 } from 'react-native';
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../../src/contexts/AuthContext';
+import { useNotificationContext } from '../../../src/contexts/NotificationContext';
 import { FriendService } from '../../../src/services/friends';
 import { Feed } from '../../../src/components/Feed';
 import { StoriesBar } from '../../../src/components/StoriesBar';
@@ -33,7 +36,12 @@ type TabType = 'feed' | 'profile' | 'journal' | 'gallery' | 'emotions' | 'settin
 
 export default function AlterSpaceScreen() {
     const { alterId, tab } = useLocalSearchParams<{ alterId: string; tab?: string }>();
-    const { alters, currentAlter } = useAuth(); // currentAlter is the one viewing
+    const { alters, currentAlter, user } = useAuth(); // currentAlter is the one viewing
+    const { unreadCount } = useNotificationContext();
+
+    // We can't determine isOwner immediately inside useState because user might be loading, but we can default safely
+    // However, it's safer to use an effect or derived state if possible. 
+    // For now, let's keep it simple: if we are visiting, we likely want 'profile' by default unless specified.
     const [activeTab, setActiveTab] = useState<TabType>((tab as TabType) || 'feed');
 
     // Custom Hook for Data Fetching
@@ -54,6 +62,8 @@ export default function AlterSpaceScreen() {
     const [showFollowersModal, setShowFollowersModal] = useState(false);
     const [showFollowingModal, setShowFollowingModal] = useState(false);
 
+    const isOwner = alter && user ? user.uid === (alter.systemId || alter.system_id || alter.userId) : false;
+
     // Check relationship status
     useFocusEffect(
         useCallback(() => {
@@ -63,27 +73,73 @@ export default function AlterSpaceScreen() {
         }, [alterId, currentAlter])
     );
 
-    const isOwner = alter ? alters.some(a => a.id === alter.id) : false;
+    // Enforce "Profile" view for visitors (Insta-like)
+    useEffect(() => {
+        if (!loading && !isOwner) {
+            setActiveTab('profile');
+        }
+    }, [loading, isOwner]);
 
     // Handle Friend Actions (Follow/Unfollow)
     const handleFriendAction = async () => {
-        if (!currentAlter) {
-            Alert.alert('Action impossible', 'Vous devez sélectionner un alter actif pour suivre quelqu\'un.');
-            return;
-        }
+        if (!currentAlter || !alterId) return;
 
         try {
-            if (friendStatus === 'none') {
-                await FriendService.sendRequest(currentAlter.id, alterId as string);
+            if (friendStatus === 'friends') {
+                // Determine display name (prefer system name if available)
+                const targetName = alter ? (alter.name || 'ce profil') : 'ce profil';
+
+                if (Platform.OS === 'ios') {
+                    ActionSheetIOS.showActionSheetWithOptions(
+                        {
+                            options: ['Annuler', 'Se désabonner'],
+                            destructiveButtonIndex: 1,
+                            cancelButtonIndex: 0,
+                            title: `Gérer l'abonnement à ${targetName}`,
+                        },
+                        async (buttonIndex) => {
+                            if (buttonIndex === 1) {
+                                await FriendService.removeFriend(currentAlter.id, alterId);
+                                setFriendStatus('none');
+                                refresh();
+                            }
+                        }
+                    );
+                } else {
+                    Alert.alert(
+                        `Se désabonner de ${targetName} ?`,
+                        "Vous ne verrez plus ses publications dans votre fil d'actualité.",
+                        [
+                            { text: "Annuler", style: "cancel" },
+                            {
+                                text: "Se désabonner",
+                                style: "destructive",
+                                onPress: async () => {
+                                    await FriendService.removeFriend(currentAlter.id, alterId);
+                                    setFriendStatus('none');
+                                    refresh();
+                                }
+                            }
+                        ]
+                    );
+                }
+            } else if (friendStatus === 'received') {
+                // ... Accept logic (keep existing if detailed logic exists, otherwise default accept)
+                await FriendService.acceptRequestByPair(currentAlter.id, alterId);
+                setFriendStatus('friends');
+                refresh();
+            } else if (friendStatus === 'pending') {
+                // Cancel request
+                await FriendService.cancelRequest(currentAlter.id, alterId);
+                setFriendStatus('none');
+            } else {
+                // Send request
+                await FriendService.sendRequest(currentAlter.id, alterId);
                 setFriendStatus('pending');
-                triggerHaptic.success();
-                Alert.alert('Succès', 'Demande envoyée !');
-            } else if (friendStatus === 'friends') {
-                // Already friends/following
-                Alert.alert('Abonné', 'Vous suivez déjà ce profil.');
             }
-        } catch (e: any) {
-            Alert.alert('Erreur', e.message);
+        } catch (error) {
+            console.error('Error handling friend action:', error);
+            Alert.alert('Erreur', "Une erreur est survenue lors de l'action.");
         }
     };
 
@@ -252,7 +308,22 @@ export default function AlterSpaceScreen() {
                         <Ionicons name="search-outline" size={24} color={colors.text} />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => router.push('/(tabs)/notifications')} style={{ marginRight: 12 }}>
-                        <Ionicons name="notifications-outline" size={24} color={colors.text} />
+                        <View>
+                            <Ionicons name="notifications-outline" size={24} color={colors.text} />
+                            {unreadCount > 0 && (
+                                <View style={{
+                                    position: 'absolute',
+                                    top: -2,
+                                    right: -2,
+                                    backgroundColor: 'red',
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: 5,
+                                    borderWidth: 1,
+                                    borderColor: colors.background
+                                }} />
+                            )}
+                        </View>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => router.push('/shop' as any)} style={{ marginRight: 12 }}>
                         <Ionicons name="storefront-outline" size={24} color="#A855F7" />
@@ -268,55 +339,57 @@ export default function AlterSpaceScreen() {
                 {renderContent()}
             </ErrorBoundary>
 
-            {/* Bottom Tab Bar (Custom for Alter Space navigation) */}
-            <View style={styles.bottomBar}>
-                {/* 1. Accueil / Feed */}
-                <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('feed')}>
-                    <Ionicons name={activeTab === 'feed' ? "home" : "home-outline"} size={24} color={activeTab === 'feed' ? colors.primary : colors.textSecondary} />
-                    <Text style={{ fontSize: 10, color: activeTab === 'feed' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Accueil</Text>
-                </TouchableOpacity>
+            {/* Bottom Tab Bar (Custom for Alter Space navigation) - Only for Owner */}
+            {isOwner && (
+                <View style={styles.bottomBar}>
+                    {/* 1. Accueil / Feed */}
+                    <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('feed')}>
+                        <Ionicons name={activeTab === 'feed' ? "home" : "home-outline"} size={24} color={activeTab === 'feed' ? colors.primary : colors.textSecondary} />
+                        <Text style={{ fontSize: 10, color: activeTab === 'feed' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Accueil</Text>
+                    </TouchableOpacity>
 
-                {/* 2. Emotions */}
-                <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('emotions')}>
-                    <Ionicons name={activeTab === 'emotions' ? "heart" : "heart-outline"} size={24} color={activeTab === 'emotions' ? colors.primary : colors.textSecondary} />
-                    <Text style={{ fontSize: 10, color: activeTab === 'emotions' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Émotions</Text>
-                </TouchableOpacity>
+                    {/* 2. Emotions */}
+                    <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('emotions')}>
+                        <Ionicons name={activeTab === 'emotions' ? "heart" : "heart-outline"} size={24} color={activeTab === 'emotions' ? colors.primary : colors.textSecondary} />
+                        <Text style={{ fontSize: 10, color: activeTab === 'emotions' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Émotions</Text>
+                    </TouchableOpacity>
 
-                {/* 3. Post (+) */}
-                <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => {
-                    // Navigate to create post, possibly passing alterId if supported or relying on global context
-                    router.push('/post/create');
-                }}>
-                    <View style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 24,
-                        backgroundColor: colors.primary,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        marginTop: -24,
-                        shadowColor: colors.primary,
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.3,
-                        shadowRadius: 8,
-                        elevation: 5,
+                    {/* 3. Post (+) */}
+                    <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => {
+                        // Navigate to create post, possibly passing alterId if supported or relying on global context
+                        router.push('/post/create');
                     }}>
-                        <Ionicons name="add" size={32} color="white" />
-                    </View>
-                </TouchableOpacity>
+                        <View style={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: 24,
+                            backgroundColor: colors.primary,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginTop: -24,
+                            shadowColor: colors.primary,
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 8,
+                            elevation: 5,
+                        }}>
+                            <Ionicons name="add" size={32} color="white" />
+                        </View>
+                    </TouchableOpacity>
 
-                {/* 4. Profil */}
-                <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('profile')}>
-                    <Ionicons name={activeTab === 'profile' ? "person" : "person-outline"} size={24} color={activeTab === 'profile' ? colors.primary : colors.textSecondary} />
-                    <Text style={{ fontSize: 10, color: activeTab === 'profile' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Profil</Text>
-                </TouchableOpacity>
+                    {/* 4. Profil */}
+                    <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('profile')}>
+                        <Ionicons name={activeTab === 'profile' ? "person" : "person-outline"} size={24} color={activeTab === 'profile' ? colors.primary : colors.textSecondary} />
+                        <Text style={{ fontSize: 10, color: activeTab === 'profile' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Profil</Text>
+                    </TouchableOpacity>
 
-                {/* 5. Menu */}
-                <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('menu')}>
-                    <Ionicons name={activeTab === 'menu' ? "menu" : "menu-outline"} size={24} color={activeTab === 'menu' ? colors.primary : colors.textSecondary} />
-                    <Text style={{ fontSize: 10, color: activeTab === 'menu' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Menu</Text>
-                </TouchableOpacity>
-            </View>
+                    {/* 5. Menu */}
+                    <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('menu')}>
+                        <Ionicons name={activeTab === 'menu' ? "menu" : "menu-outline"} size={24} color={activeTab === 'menu' ? colors.primary : colors.textSecondary} />
+                        <Text style={{ fontSize: 10, color: activeTab === 'menu' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Menu</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
 
             {/* Modals */}
             <FollowListModal

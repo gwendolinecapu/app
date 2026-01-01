@@ -248,10 +248,13 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                             style={[styles.actionButton, styles.primaryActionButton]}
                             onPress={onFriendAction}
                         >
-                            <Text style={[styles.actionButtonText, styles.primaryActionButtonText]}>
-                                {friendStatus === 'friends' ? 'Abonnés' :
-                                    friendStatus === 'pending' ? 'Demande envoyée' : 'S\'abonner'}
-                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                {friendStatus === 'friends' && <Ionicons name="checkmark" size={16} color="white" />}
+                                <Text style={[styles.actionButtonText, styles.primaryActionButtonText]}>
+                                    {friendStatus === 'friends' ? 'Abonné' :
+                                        friendStatus === 'pending' ? 'Demande envoyée' : 'S\'abonner'}
+                                </Text>
+                            </View>
                         </AnimatedPressable>
                         <AnimatedPressable
                             containerStyle={{ flex: 1 }}

@@ -138,8 +138,8 @@ export default function EditAlterProfileScreen() {
                 color,
                 avatar_url: finalAvatarUrl || '',
                 custom_fields: customFields,
-                birthDate: birthDate?.toISOString().split('T')[0],
-                arrivalDate: arrivalDate?.toISOString().split('T')[0],
+                birthDate: birthDate ? birthDate.toISOString().split('T')[0] : null,
+                arrivalDate: arrivalDate ? arrivalDate.toISOString().split('T')[0] : null,
             };
 
             const docRef = doc(db, 'alters', alterId!);
@@ -395,11 +395,57 @@ export default function EditAlterProfileScreen() {
                     </View>
                 </View>
 
-                {showBirthPicker && (
+                {/* iOS Date Picker Modals */}
+                <Modal visible={showBirthPicker && Platform.OS === 'ios'} transparent animationType="fade">
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.datePickerContainer}>
+                            <View style={styles.datePickerHeader}>
+                                <Text style={styles.datePickerTitle}>Date de naissance</Text>
+                                <TouchableOpacity onPress={() => setShowBirthPicker(false)}>
+                                    <Text style={styles.doneButton}>OK</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <DateTimePicker
+                                value={birthDate || new Date()}
+                                mode="date"
+                                display="spinner"
+                                onChange={(_, date) => {
+                                    if (date) setBirthDate(date);
+                                }}
+                                textColor={colors.text}
+                            />
+                        </View>
+                    </View>
+                </Modal>
+
+                <Modal visible={showArrivalPicker && Platform.OS === 'ios'} transparent animationType="fade">
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.datePickerContainer}>
+                            <View style={styles.datePickerHeader}>
+                                <Text style={styles.datePickerTitle}>Date d'arrivée</Text>
+                                <TouchableOpacity onPress={() => setShowArrivalPicker(false)}>
+                                    <Text style={styles.doneButton}>OK</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <DateTimePicker
+                                value={arrivalDate || new Date()}
+                                mode="date"
+                                display="spinner"
+                                onChange={(_, date) => {
+                                    if (date) setArrivalDate(date);
+                                }}
+                                textColor={colors.text}
+                            />
+                        </View>
+                    </View>
+                </Modal>
+
+                {/* Android Date Pickers (Invisible, handled by system) */}
+                {showBirthPicker && Platform.OS === 'android' && (
                     <DateTimePicker
                         value={birthDate || new Date()}
                         mode="date"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        display="default"
                         onChange={(_, date) => {
                             setShowBirthPicker(false);
                             if (date) setBirthDate(date);
@@ -407,11 +453,11 @@ export default function EditAlterProfileScreen() {
                     />
                 )}
 
-                {showArrivalPicker && (
+                {showArrivalPicker && Platform.OS === 'android' && (
                     <DateTimePicker
                         value={arrivalDate || new Date()}
                         mode="date"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        display="default"
                         onChange={(_, date) => {
                             setShowArrivalPicker(false);
                             if (date) setArrivalDate(date);
@@ -501,6 +547,43 @@ const styles = StyleSheet.create({
         color: colors.primary,
         fontWeight: '600',
         fontSize: 14,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    datePickerContainer: {
+        backgroundColor: colors.backgroundCard,
+        borderTopLeftRadius: borderRadius.xl,
+        borderTopRightRadius: borderRadius.xl,
+        paddingBottom: spacing.xl,
+    },
+    datePickerHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+    },
+    datePickerTitle: {
+        ...typography.body,
+        fontWeight: 'bold',
+        color: colors.text,
+    },
+    doneButton: {
+        ...typography.body,
+        fontWeight: 'bold',
+        color: colors.primary,
     },
     sectionHeader: {
         flexDirection: 'row',

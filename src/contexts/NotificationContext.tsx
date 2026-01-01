@@ -79,8 +79,23 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     const initializeNotifications = async () => {
         try {
             // Charger les settings
+            // Charger les settings
             const loadedSettings = await NotificationService.loadSettings();
-            setSettings(loadedSettings);
+            if (loadedSettings) {
+                setSettings(loadedSettings);
+            } else {
+                // Initialize defaults if null
+                const defaults: NotificationSettings = {
+                    globalEnabled: true,
+                    quietHoursEnabled: false,
+                    persistentNotification: false,
+                    dynamicIslandEnabled: false,
+                    quietHoursStart: 22 * 60, // 22:00
+                    quietHoursEnd: 7 * 60, // 07:00
+                    preferences: [] // Service handles defaults
+                };
+                setSettings(defaults);
+            }
 
             // Setup notification response listener
             const subscription = Notifications.addNotificationResponseReceivedListener(
@@ -136,13 +151,15 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     // ==================== SETTINGS METHODS ====================
 
     const setGlobalEnabled = useCallback(async (enabled: boolean) => {
+        if (!settings) return;
+        setSettings({ ...settings, globalEnabled: enabled });
         await NotificationService.saveSettings({ globalEnabled: enabled });
-        setSettings(prev => prev ? { ...prev, globalEnabled: enabled } : null);
     }, []);
 
     const setPersistentEnabled = useCallback(async (enabled: boolean) => {
+        if (!settings) return;
+        setSettings({ ...settings, persistentNotification: enabled });
         await NotificationService.saveSettings({ persistentNotification: enabled });
-        setSettings(prev => prev ? { ...prev, persistentNotification: enabled } : null);
 
         if (!enabled) {
             await PersistentNotificationService.stop();

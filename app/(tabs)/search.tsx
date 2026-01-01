@@ -120,7 +120,7 @@ export default function SearchScreen() {
     // Check friend status for all results
     useEffect(() => {
         const checkStatuses = async () => {
-            if (!currentAlter || results.length === 0) return;
+            if (!currentAlter || !system || results.length === 0) return;
 
             const statuses: Record<string, string> = {};
             for (const result of results) {
@@ -168,7 +168,7 @@ export default function SearchScreen() {
                 });
                 setSuggestions(sugg.slice(0, 5));
             } catch (e) {
-
+                console.error("Error loading suggestions:", e);
             }
         };
         loadSuggestions();

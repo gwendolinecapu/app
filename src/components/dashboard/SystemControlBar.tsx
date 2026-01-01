@@ -37,7 +37,7 @@ export const SystemControlBar: React.FC<SystemControlBarProps> = ({
                     }}
                 >
                     <View style={styles.iconWrapper}>
-                        <Ionicons name="apps-outline" size={24} color="white" />
+                        <Ionicons name="apps-outline" size={24} color={colors.textSecondary} />
                     </View>
                     <Text style={styles.label}>Menu</Text>
                 </AnimatedPressable>
@@ -47,7 +47,7 @@ export const SystemControlBar: React.FC<SystemControlBarProps> = ({
                     onPress={() => router.push('/team-chat')}
                 >
                     <View style={styles.iconWrapper}>
-                        <Ionicons name="chatbubbles-outline" size={24} color={colors.primary} />
+                        <Ionicons name="chatbubbles-outline" size={24} color={colors.textSecondary} />
                     </View>
                     <Text style={styles.label}>Team</Text>
                 </AnimatedPressable>
@@ -81,7 +81,7 @@ export const SystemControlBar: React.FC<SystemControlBarProps> = ({
                     onPress={() => router.push('/history')}
                 >
                     <View style={styles.iconWrapper}>
-                        <Ionicons name="stats-chart-outline" size={24} color={colors.warning} />
+                        <Ionicons name="stats-chart-outline" size={24} color={colors.textSecondary} />
                     </View>
                     <Text style={styles.label}>Historique</Text>
                 </AnimatedPressable>

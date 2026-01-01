@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
@@ -12,6 +12,7 @@ import {
     Image,
     Platform,
     FlatList,
+    useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -31,15 +32,15 @@ import { EmotionService } from '../../src/services/emotions';
 import { Emotion, EMOTION_LABELS, EMOTION_EMOJIS } from '../../src/types';
 import { timeAgo } from '../../src/lib/date';
 
-const { width } = Dimensions.get('window');
 const MAX_WIDTH = 430;
-const containerWidth = width > MAX_WIDTH ? MAX_WIDTH : width;
 const BUBBLE_SIZE = 90;
 
 type SortOption = 'name' | 'recent' | 'created';
 
 export default function AltersScreen() {
     const { alters, currentAlter, setFronting, refreshAlters, user, togglePin, toggleArchive } = useAuth();
+    const { width } = useWindowDimensions();
+    const containerWidth = width > MAX_WIDTH ? MAX_WIDTH : width;
     const [modalVisible, setModalVisible] = useState(false);
 
     // UI State
@@ -83,9 +84,9 @@ export default function AltersScreen() {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const handleSwitchAlter = async (alter: Alter) => {
+    const handleSwitchAlter = useCallback(async (alter: Alter) => {
         await setFronting([alter], 'single');
-    };
+    }, [setFronting]);
 
     const pickImage = async () => {
         // Request permission
@@ -174,7 +175,7 @@ export default function AltersScreen() {
         setSelectedImage(null);
     };
 
-    const renderAlterItem = ({ item }: { item: Alter }) => (
+    const renderAlterItem = useCallback(({ item }: { item: Alter }) => (
         <View style={styles.gridItem}>
             <AlterBubble
                 alter={item}
@@ -184,7 +185,7 @@ export default function AltersScreen() {
                 size={BUBBLE_SIZE}
             />
         </View>
-    );
+    ), [currentAlter?.id, handleSwitchAlter]);
 
     const filteredAlters = React.useMemo(() => {
         let result = [...alters];

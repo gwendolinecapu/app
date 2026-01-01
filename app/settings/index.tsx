@@ -27,9 +27,11 @@ export default function SettingsScreen() {
     const [privacyBlurEnabled, setPrivacyBlurEnabled] = useState(true);
 
     React.useEffect(() => {
-        AsyncStorage.getItem('privacy_blur_enabled').then(val => {
-            if (val !== null) setPrivacyBlurEnabled(val === 'true');
-        });
+        AsyncStorage.getItem('privacy_blur_enabled')
+            .then(val => {
+                if (val !== null) setPrivacyBlurEnabled(val === 'true');
+            })
+            .catch(() => { });
     }, []);
 
     const handleSubscriptionAction = async () => {
@@ -68,7 +70,7 @@ export default function SettingsScreen() {
         Alert.alert("Copié !", "ID Système copié dans le presse-papier.");
     };
 
-    const renderSettingItem = (label: string, icon: any, action: () => void, value?: boolean | string, isDestructive = false) => (
+    const renderSettingItem = React.useCallback((label: string, icon: any, action: () => void, value?: boolean | string, isDestructive = false) => (
         <TouchableOpacity
             style={[styles.item, isDestructive && styles.destructiveItem]}
             onPress={action}
@@ -103,7 +105,7 @@ export default function SettingsScreen() {
                 </View>
             )}
         </TouchableOpacity>
-    );
+    ), []);
 
     return (
         <View style={styles.container}>

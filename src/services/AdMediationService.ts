@@ -99,6 +99,8 @@ class AdMediationService {
         dailyEarnings: 0,
     };
 
+    private isShowingAd: boolean = false;
+
     // Ads préchargées
     private preloadedRewarded: { network: AdNetwork; loaded: boolean }[] = [];
     private preloadedNative: NativeAdData | null = null;
@@ -230,10 +232,19 @@ class AdMediationService {
             };
         }
 
+        if (this.isShowingAd) {
+            return {
+                completed: false,
+                rewardType: 'credits',
+                rewardAmount: 0,
+                network: 'admob',
+            };
+        }
+
         // Trouver le premier réseau avec une pub chargée
         const available = this.preloadedRewarded.find(r => r.loaded);
         if (!available) {
-            console.warn('[AdMediation] No rewarded ad available');
+            console.log('[AdMediation] No rewarded ad available');
             return {
                 completed: false,
                 rewardType: 'credits',
@@ -243,12 +254,17 @@ class AdMediationService {
         }
 
         try {
+            this.isShowingAd = true;
+            // Mark as consumed immediately to prevent double-tapping
+            available.loaded = false;
+
             // Afficher la pub (à implémenter avec les vrais SDKs)
             const completed = await this.displayRewardedAd(available.network);
 
+            this.isShowingAd = false;
+
             if (completed) {
                 // Mettre à jour l'état
-                available.loaded = false;
                 this.state.rewardAdsToday++;
                 await this.saveState();
 
@@ -271,6 +287,7 @@ class AdMediationService {
             };
 
         } catch (error) {
+            this.isShowingAd = false;
             console.error('[AdMediation] Rewarded ad error:', error);
             return {
                 completed: false,

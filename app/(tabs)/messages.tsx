@@ -14,7 +14,10 @@ import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GroupService } from '../../src/services/groups';
 import { FriendService } from '../../src/services/friends';
+import { Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../src/lib/firebase';
 
 interface ConversationItem {
     id: string;
@@ -26,21 +29,101 @@ interface ConversationItem {
 
 export default function MessagesScreen() {
     const { alters, currentAlter, system } = useAuth();
-    const [activeTab, setActiveTab] = useState<'internal' | 'groups' | 'requests'>('internal');
+    const [activeTab, setActiveTab] = useState<'internal' | 'groups' | 'requests' | 'friends'>('internal');
     const [groups, setGroups] = useState<any[]>([]);
     const [requests, setRequests] = useState<any[]>([]);
+    const [friends, setFriends] = useState<Alter[]>([]);
     const [loadingGroups, setLoadingGroups] = useState(false);
     const [loadingRequests, setLoadingRequests] = useState(false);
+    const [loadingFriends, setLoadingFriends] = useState(false);
 
 
-    // Fetch data when tab changes
     React.useEffect(() => {
         if (activeTab === 'groups' && system) {
             loadGroups();
         } else if (activeTab === 'requests' && currentAlter) {
             loadRequests();
+        } else if (activeTab === 'friends' && currentAlter) {
+            loadFriends();
         }
     }, [activeTab, system, currentAlter]);
+
+    const loadFriends = async () => {
+        if (!currentAlter) return;
+        setLoadingFriends(true);
+        try {
+            const friendIds = await FriendService.getFriends(currentAlter.id);
+            if (friendIds.length === 0) {
+                setFriends([]);
+            } else {
+                // Fetch alters data
+                // Note: Firestore 'in' query limit is 10. For now using parallel getDocs or multiple queries if needed.
+                // Simpler approach for now: fetch all alters matching the IDs.
+                // Since IDs usually match document IDs.
+                // We'll use Promise.all for simplicity if list is small, or batches.
+                // "in" query with documentId() is best but limited to 10 (or 30?).
+                // Let's use chunks of 10.
+
+                const chunks = [];
+                for (let i = 0; i < friendIds.length; i += 10) {
+                    chunks.push(friendIds.slice(i, i + 10));
+                }
+
+                let allFriends: Alter[] = [];
+
+                for (const chunk of chunks) {
+                    // We need to import documentId from firebase/firestore which might not be imported yet. 
+                    // Alternatively, just map getDoc requests.
+                    /* 
+                    const q = query(collection(db, 'alters'), where(documentId(), 'in', chunk));
+                    const snap = await getDocs(q);
+                    ...
+                    */
+                    // Actually, we don't have documentId imported. Let's rely on mapping getDoc for now or add import.
+                    // I will update imports in a separate Edit if needed or just use parallel fetches which is fine for < 20 friends.
+                    // But to be robust let's assume I can use `where('__name__', 'in', chunk)` which is the same as documentId().
+
+                    // Importing documentId might be annoying if I don't check imports.
+                    // Let's use parallel fetching for now, it's safe.
+                    // Actually, better:
+                }
+                // Wait, I can't easily change imports in this chunk if they are at the top.
+                // I will add the fetching logic using what is available or assumed available.
+                // If getDoc is available (it is not imported in messages.tsx I think).
+                // Let's check imports first or assume I need to add them.
+                // messages.tsx has no firestore imports shown in previous context (it was truncated or I didn't see).
+                // Wait, messages.tsx DOES NOT have firestore imports in the lines I saw? 
+                // Ah, line 15-16 import services.
+                // I need to add imports.
+
+                // Let's just use a loop with manual fetching for now to be safe without messing up imports too much, 
+                // OR better: use a service method if one existed.
+                // Since I can't see imports, I will assume I need to add them effectively. 
+                // BUT multi_replace allows multiple chunks. I'll add imports in another chunk.
+            }
+            // Real implementation below using a helper or assuming imports will be added.
+
+            // Actually, I'll put the fetching logic inside FriendService in a future step or just do it here properly.
+            // Let's try to do it here.
+
+            const friendsData = await Promise.all(friendIds.map(async (fid) => {
+                // We need getDoc.
+                // I will add getDoc to imports.
+                const docRef = doc(db, 'alters', fid);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    return { id: docSnap.id, ...docSnap.data() } as Alter;
+                }
+                return null;
+            }));
+            setFriends(friendsData.filter(f => f !== null) as Alter[]);
+
+        } catch (error) {
+            console.error("Failed to load friends", error);
+        } finally {
+            setLoadingFriends(false);
+        }
+    };
 
     const loadRequests = async () => {
         if (!currentAlter) return;
@@ -108,9 +191,13 @@ export default function MessagesScreen() {
                 {item.id === 'system-general' ? (
                     <Ionicons name="people" size={24} color="white" />
                 ) : (
-                    <Text style={styles.avatarText}>
-                        {item.alter.name.charAt(0).toUpperCase()}
-                    </Text>
+                    item.alter.avatar_url ? (
+                        <Image source={{ uri: item.alter.avatar_url }} style={{ width: 50, height: 50, borderRadius: 25 }} />
+                    ) : (
+                        <Text style={styles.avatarText}>
+                            {item.alter.name.charAt(0).toUpperCase()}
+                        </Text>
+                    )
                 )}
             </View>
             <View style={styles.conversationContent}>
@@ -127,6 +214,31 @@ export default function MessagesScreen() {
                     <Text style={styles.unreadText}>{item.unread}</Text>
                 </View>
             )}
+        </TouchableOpacity>
+    );
+
+    const renderFriendConversation = ({ item }: { item: Alter }) => (
+        <TouchableOpacity
+            style={styles.conversationItem}
+            onPress={() => router.push(`/conversation/${item.id}?internal=false`)}
+        >
+            <View style={[styles.avatar, { backgroundColor: item.color || colors.primary }]}>
+                {item.avatar_url ? (
+                    <Image source={{ uri: item.avatar_url }} style={{ width: 50, height: 50, borderRadius: 25 }} />
+                ) : (
+                    <Text style={styles.avatarText}>
+                        {item.name.charAt(0).toUpperCase()}
+                    </Text>
+                )}
+            </View>
+            <View style={styles.conversationContent}>
+                <View style={styles.conversationHeader}>
+                    <Text style={styles.conversationName}>{item.name}</Text>
+                </View>
+                <Text style={styles.lastMessage} numberOfLines={1}>
+                    Démarrer une discussion
+                </Text>
+            </View>
         </TouchableOpacity>
     );
 
@@ -197,7 +309,8 @@ export default function MessagesScreen() {
             <Text style={styles.emptyEmoji}>💬</Text>
             <Text style={styles.emptyTitle}>
                 {activeTab === 'internal' ? 'Aucune conversation' :
-                    activeTab === 'groups' ? 'Aucun groupe' : 'Aucune demande'}
+                    activeTab === 'friends' ? 'Aucun ami ajouté' :
+                        activeTab === 'groups' ? 'Aucun groupe' : 'Aucune demande'}
             </Text>
             <Text style={styles.emptySubtitle}>
                 {activeTab === 'internal'
@@ -229,10 +342,14 @@ export default function MessagesScreen() {
                         <Text style={styles.title}>Messages</Text>
                     </View>
                     <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
+                        {activeTab === 'groups' && (
+                            <TouchableOpacity onPress={() => router.push('/groups/create' as any)}>
+                                <Ionicons name="add-circle-outline" size={28} color={colors.primary} />
+                            </TouchableOpacity>
+                        )}
                         <TouchableOpacity onPress={() => router.push('/crisis/index' as any)}>
                             <Ionicons name="warning-outline" size={28} color={colors.error || '#FF4444'} />
                         </TouchableOpacity>
-
                     </View>
                 </View>
 
@@ -272,40 +389,58 @@ export default function MessagesScreen() {
                     style={[styles.tab, activeTab === 'internal' && styles.tabActive]}
                     onPress={() => setActiveTab('internal')}
                 >
+                    <Text style={styles.tabEmoji}>💜</Text>
                     <Text style={[styles.tabText, activeTab === 'internal' && styles.tabTextActive]}>
-                        💜 Interne
+                        Interne
+                    </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'friends' && styles.tabActive]}
+                    onPress={() => setActiveTab('friends')}
+                >
+                    <Text style={styles.tabEmoji}>🤝</Text>
+                    <Text style={[styles.tabText, activeTab === 'friends' && styles.tabTextActive]}>
+                        Amis
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.tab, activeTab === 'groups' && styles.tabActive]}
                     onPress={() => setActiveTab('groups')}
                 >
+                    <Text style={styles.tabEmoji}>👥</Text>
                     <Text style={[styles.tabText, activeTab === 'groups' && styles.tabTextActive]}>
-                        👥 Groupes
+                        Groupes
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.tab, activeTab === 'requests' && styles.tabActive]}
                     onPress={() => setActiveTab('requests')}
                 >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <View style={{ alignItems: 'center' }}>
+                        <View style={{ flexDirection: 'row' }}>
+                            <Text style={styles.tabEmoji}>🔔</Text>
+                            {requests.length > 0 && (
+                                <View style={{ backgroundColor: colors.error, borderRadius: 10, minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, position: 'absolute', top: -4, right: -8 }}>
+                                    <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>{requests.length}</Text>
+                                </View>
+                            )}
+                        </View>
                         <Text style={[styles.tabText, activeTab === 'requests' && styles.tabTextActive]}>
-                            🔔 Demandes
+                            Demandes
                         </Text>
-                        {/* Start badge mock if needed */}
                     </View>
                 </TouchableOpacity>
             </View>
 
             {/* Conversations List */}
             <FlatList
-                data={activeTab === 'internal' ? internalConversations : activeTab === 'groups' ? groups : requests}
-                renderItem={activeTab === 'internal' ? renderConversation : activeTab === 'groups' ? renderGroup : renderRequest}
+                data={activeTab === 'internal' ? internalConversations : activeTab === 'friends' ? friends : activeTab === 'groups' ? groups : requests}
+                renderItem={activeTab === 'internal' ? renderConversation : activeTab === 'friends' ? renderFriendConversation : activeTab === 'groups' ? renderGroup : renderRequest}
                 keyExtractor={(item) => item.id}
                 ListEmptyComponent={renderEmptyState}
                 contentContainerStyle={styles.listContent}
-                refreshing={activeTab === 'groups' ? loadingGroups : activeTab === 'requests' ? loadingRequests : false}
-                onRefresh={activeTab === 'groups' ? loadGroups : activeTab === 'requests' ? loadRequests : undefined}
+                refreshing={activeTab === 'groups' ? loadingGroups : activeTab === 'requests' ? loadingRequests : activeTab === 'friends' ? loadingFriends : false}
+                onRefresh={activeTab === 'groups' ? loadGroups : activeTab === 'requests' ? loadRequests : activeTab === 'friends' ? loadFriends : undefined}
             />
         </SafeAreaView >
     );
@@ -376,6 +511,10 @@ const styles = StyleSheet.create({
     },
     tabTextActive: {
         color: colors.text,
+    },
+    tabEmoji: {
+        fontSize: 20,
+        marginBottom: 4,
     },
     listContent: {
         padding: spacing.md,

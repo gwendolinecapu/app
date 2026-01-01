@@ -251,6 +251,9 @@ export default function AlterSpaceScreen() {
                     <TouchableOpacity onPress={() => router.push('/search' as any)} style={{ marginRight: 12 }}>
                         <Ionicons name="search-outline" size={24} color={colors.text} />
                     </TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push('/(tabs)/notifications')} style={{ marginRight: 12 }}>
+                        <Ionicons name="notifications-outline" size={24} color={colors.text} />
+                    </TouchableOpacity>
                     <TouchableOpacity onPress={() => router.push('/shop' as any)} style={{ marginRight: 12 }}>
                         <Ionicons name="storefront-outline" size={24} color="#A855F7" />
                     </TouchableOpacity>

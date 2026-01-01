@@ -16,7 +16,7 @@ interface AlterBubbleProps {
 
 const AnimatedImage = Animated.createAnimatedComponent(Image);
 
-export const AlterBubble: React.FC<AlterBubbleProps> = ({
+export const AlterBubble: React.FC<AlterBubbleProps> = React.memo(({
     alter,
     isActive,
     onPress,
@@ -73,7 +73,7 @@ export const AlterBubble: React.FC<AlterBubbleProps> = ({
             )}
         </TouchableOpacity>
     );
-};
+});
 
 
 const styles = StyleSheet.create({

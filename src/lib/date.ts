@@ -44,7 +44,6 @@ export const formatRelativeTime = (dateString: string | number | Date | any): st
             .replace('années', 'an')
             .replace('année', 'an');
     } catch (error) {
-        console.warn('[formatRelativeTime] Error formatting date:', error);
         return 'récemment';
     }
 };

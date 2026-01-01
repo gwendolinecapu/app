@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -68,7 +68,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
     }
   };
 
-  const styles = getStyles(theme);
+  const styles = useMemo(() => getStyles(theme), [theme]);
 
   return (
     <View style={[styles.container, getShapeStyle(), style]}>
@@ -79,7 +79,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 
 export const SkeletonFeed: React.FC = () => {
   const theme = useTheme();
-  const styles = getStyles(theme);
+  const styles = useMemo(() => getStyles(theme), [theme]);
 
   return (
     <View style={styles.feedContainer}>
@@ -101,7 +101,7 @@ export const SkeletonFeed: React.FC = () => {
 
 export const SkeletonProfile: React.FC = () => {
   const theme = useTheme();
-  const styles = getStyles(theme);
+  const styles = useMemo(() => getStyles(theme), [theme]);
 
   return (
     <View style={styles.profileContainer}>

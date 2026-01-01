@@ -81,7 +81,6 @@ class PremiumService {
             await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(this.status));
 
             this.initialized = true;
-            this.initialized = true;
 
         } catch (error) {
             console.error('[PremiumService] Initialization failed:', error);
@@ -108,7 +107,6 @@ class PremiumService {
             trialEndDate,
         };
 
-        await this.saveStatus();
         await this.saveStatus();
     }
 
@@ -213,13 +211,13 @@ class PremiumService {
             return false;
         }
 
-        const premiumEndDate = Date.now() + (AD_CONFIG.FREE_MONTH_DAYS * 24 * 60 * 60 * 1000);
+        const currentEnd = this.status.premiumEndDate || Date.now();
+        const newEnd = Math.max(currentEnd, Date.now()) + (AD_CONFIG.FREE_MONTH_DAYS * 24 * 60 * 60 * 1000);
 
-        this.status.premiumEndDate = premiumEndDate;
+        this.status.premiumEndDate = newEnd;
         this.status.hasUsedFreeMonth = true;
-        this.status.tier = 'premium';
+        this.status.tier = 'premium'; // Update tier immediately
 
-        await this.saveStatus();
         await this.saveStatus();
 
         return true;
@@ -235,7 +233,6 @@ class PremiumService {
         this.status.premiumEndDate = newEnd;
         this.updateTierFromDates();
 
-        await this.saveStatus();
         await this.saveStatus();
     }
 

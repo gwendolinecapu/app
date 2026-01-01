@@ -6,7 +6,7 @@
  * Note: Nécessite iOS 16.1+ et configuration native
  */
 
-import { Platform, NativeModules, NativeEventEmitter } from 'react-native';
+import { Platform, NativeModules } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { LiveActivityModule } = NativeModules;

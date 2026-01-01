@@ -11,6 +11,50 @@ import { AlterPrimers } from '../AlterPrimers';
 import { SystemRelationships } from '../SystemRelationships';
 
 import { Skeleton } from '../ui/Skeleton';
+import { Alert } from 'react-native';
+
+const ROLE_DEFINITIONS: Record<string, string> = {
+    'host': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
+    'hote': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
+    'hôte': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
+    'protector': "Protège le système, le corps ou d'autres alters des menaces ou des traumas.",
+    'protecteur': "Protège le système, le corps ou d'autres alters des menaces ou des traumas.",
+    'gatekeeper': "Contrôle les switchs (changements), l'accès aux souvenirs ou aux zones du monde intérieur.",
+    'persecutor': "Peut agir de manière nuisible envers le système, souvent par mécanisme de défense déformé ou traumatisme.",
+    'persecuteur': "Peut agir de manière nuisible envers le système, souvent par mécanisme de défense déformé ou traumatisme.",
+    'persécuteur': "Peut agir de manière nuisible envers le système, souvent par mécanisme de défense déformé ou traumatisme.",
+    'little': "Un alter enfant, souvent porteur d'innocence ou de souvenirs traumatiques précoces.",
+    'caretaker': "Prend soin des autres alters (souvent les littles) ou apaise le système.",
+    'soigneur': "Prend soin des autres alters (souvent les littles) ou apaise le système.",
+    'trauma holder': "Détient les souvenirs ou les émotions liés aux traumas pour protéger les autres.",
+    'porteur de trauma': "Détient les souvenirs ou les émotions liés aux traumas pour protéger les autres.",
+    'fictive': "Introject basé sur un personnage de fiction.",
+    'factive': "Introject basé sur une personne réelle.",
+};
+
+const getRoleDefinition = (roleName: string) => {
+    const key = roleName.toLowerCase().trim();
+    if (ROLE_DEFINITIONS[key]) return ROLE_DEFINITIONS[key];
+    const found = Object.keys(ROLE_DEFINITIONS).find(k => key.includes(k));
+    if (found) return ROLE_DEFINITIONS[found];
+    return "Définition non disponible pour ce rôle spécifique.";
+};
+
+const formatDate = (date: any) => {
+    if (!date) return null;
+    try {
+        // Handle Firestore Timestamp
+        if (date.toDate && typeof date.toDate === 'function') {
+            return date.toDate().toLocaleDateString();
+        }
+        // Handle String or Date
+        const d = new Date(date);
+        if (isNaN(d.getTime())) return null; // Invalid date
+        return d.toLocaleDateString();
+    } catch (e) {
+        return null; // Fallback
+    }
+};
 
 interface ProfileHeaderProps {
     alter: Alter;
@@ -128,15 +172,41 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 ) : null}
 
                 {alter.custom_fields?.find(f => f.label === 'Role')?.value && (
-                    <View style={styles.roleRow}>
-                        <Ionicons name="information-circle-outline" size={14} color={colors.textSecondary} />
+                    <AnimatedPressable
+                        style={styles.roleRow}
+                        onPress={() => {
+                            const role = alter.custom_fields?.find(f => f.label === 'Role')?.value || '';
+                            Alert.alert("Définition du rôle", getRoleDefinition(role));
+                        }}
+                    >
+                        <Ionicons name="information-circle" size={14} color={colors.primaryLight} style={{ marginRight: 4 }} />
                         <Text style={styles.roleText}>{alter.custom_fields.find(f => f.label === 'Role')?.value}</Text>
-                    </View>
+                    </AnimatedPressable>
                 )}
 
                 {alter.bio ? (
                     <Text style={styles.bioText}>{alter.bio || "Aucune biographie"}</Text>
                 ) : null}
+
+                {/* Dates Display */}
+                <View style={{ flexDirection: 'row', gap: 16, marginTop: 8, flexWrap: 'wrap' }}>
+                    {formatDate(alter.birthDate) && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} style={{ marginRight: 4 }} />
+                            <Text style={[styles.bioText, { marginTop: 0, fontSize: 12, color: colors.textSecondary }]}>
+                                Né(e) le {formatDate(alter.birthDate)}
+                            </Text>
+                        </View>
+                    )}
+                    {formatDate(alter.arrivalDate) && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Ionicons name="airplane-outline" size={14} color={colors.textSecondary} style={{ marginRight: 4 }} />
+                            <Text style={[styles.bioText, { marginTop: 0, fontSize: 12, color: colors.textSecondary }]}>
+                                Arrivé(e) le {formatDate(alter.arrivalDate)}
+                            </Text>
+                        </View>
+                    )}
+                </View>
 
                 {/* Advanced Info */}
                 <View style={{ marginTop: spacing.md }}>

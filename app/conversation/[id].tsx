@@ -15,7 +15,7 @@ import {
 import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { db } from '../../src/lib/firebase';
-import { collection, addDoc, query, where, getDocs, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
 import { Message, Alter } from '../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -43,8 +43,24 @@ export default function ConversationScreen() {
 
     useEffect(() => {
         // Find other participant
-        const alter = alters.find((a) => a.id === id);
-        setOtherAlter(alter || null);
+        const findAlter = async () => {
+            const alter = alters.find((a) => a.id === id);
+            if (alter) {
+                setOtherAlter(alter);
+            } else if (id) {
+                // Try fetching from Firestore (external alter)
+                try {
+                    const docRef = doc(db, 'alters', id);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        setOtherAlter({ id: docSnap.id, ...docSnap.data() } as Alter);
+                    }
+                } catch (error) {
+                    console.error("Error fetching external alter:", error);
+                }
+            }
+        };
+        findAlter();
     }, [id, alters]);
 
     useEffect(() => {
@@ -151,7 +167,7 @@ export default function ConversationScreen() {
             });
         } catch (error) {
             console.error('Error sending image:', error);
-            alert('Erreur lors de l\'envoi de l\'image');
+            Alert.alert('Erreur', 'Erreur lors de l\'envoi de l\'image');
         } finally {
             setLoading(false);
         }
@@ -342,7 +358,7 @@ export default function ConversationScreen() {
 
                 <TouchableOpacity
                     style={styles.mediaButton}
-                    onPress={() => alert('Fonctionnalité GIF à venir !')}
+                    onPress={() => Alert.alert('Info', 'Fonctionnalité GIF à venir !')}
                     disabled={loading}
                 >
                     <Ionicons name="happy-outline" size={24} color={colors.primary} />

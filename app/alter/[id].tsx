@@ -11,6 +11,33 @@ import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../src/lib/firebase';
 import { Alter, Role } from '../../src/types';
 
+const ROLE_DEFINITIONS: Record<string, string> = {
+    'host': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
+    'hote': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
+    'hôte': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
+    'protector': "Protège le système, le corps ou d'autres alters des menaces ou des traumas.",
+    'protecteur': "Protège le système, le corps ou d'autres alters des menaces ou des traumas.",
+    'gatekeeper': "Contrôle les switchs (changements), l'accès aux souvenirs ou aux zones du monde intérieur.",
+    'persecutor': "Peut agir de manière nuisible envers le système, souvent par mécanisme de défense déformé ou traumatisme.",
+    'persecuteur': "Peut agir de manière nuisible envers le système, souvent par mécanisme de défense déformé ou traumatisme.",
+    'persécuteur': "Peut agir de manière nuisible envers le système, souvent par mécanisme de défense déformé ou traumatisme.",
+    'little': "Un alter enfant, souvent porteur d'innocence ou de souvenirs traumatiques précoces.",
+    'caretaker': "Prend soin des autres alters (souvent les littles) ou apaise le système.",
+    'soigneur': "Prend soin des autres alters (souvent les littles) ou apaise le système.",
+    'trauma holder': "Détient les souvenirs ou les émotions liés aux traumas pour protéger les autres.",
+    'porteur de trauma': "Détient les souvenirs ou les émotions liés aux traumas pour protéger les autres.",
+    'fictive': "Introject basé sur un personnage de fiction.",
+    'factive': "Introject basé sur une personne réelle.",
+};
+
+const getRoleDefinition = (roleName: string) => {
+    const key = roleName.toLowerCase().trim();
+    if (ROLE_DEFINITIONS[key]) return ROLE_DEFINITIONS[key];
+    const found = Object.keys(ROLE_DEFINITIONS).find(k => key.includes(k));
+    if (found) return ROLE_DEFINITIONS[found];
+    return "Définition non disponible pour ce rôle spécifique.";
+};
+
 export default function AlterProfileScreen() {
     const router = useRouter();
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -211,6 +238,10 @@ export default function AlterProfileScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
                     <Ionicons name="close-circle" size={32} color={colors.textSecondary} />
                 </TouchableOpacity>
+                <View style={{ flex: 1 }} />
+                <TouchableOpacity onPress={() => router.push('/(tabs)/notifications')} style={{ padding: 4 }}>
+                    <Ionicons name="notifications-outline" size={24} color={colors.text} />
+                </TouchableOpacity>
             </View>
             <ScrollView style={styles.scrollContent}>
                 <View style={styles.header}>
@@ -232,9 +263,13 @@ export default function AlterProfileScreen() {
                                 const role = getRoleDetails(roleId);
                                 if (!role) return null;
                                 return (
-                                    <View key={roleId} style={[styles.roleBadge, { backgroundColor: role.color }]}>
+                                    <TouchableOpacity
+                                        key={roleId}
+                                        style={[styles.roleBadge, { backgroundColor: role.color }]}
+                                        onPress={() => Alert.alert(role.name, getRoleDefinition(role.name))}
+                                    >
                                         <Text style={styles.roleBadgeText}>{role.name}</Text>
-                                    </View>
+                                    </TouchableOpacity>
                                 );
                             })}
                         </View>

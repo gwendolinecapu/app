@@ -2,7 +2,8 @@
  * DynamicIslandService.ts
  * Service pour gérer les Live Activities (Dynamic Island) sur iOS
  * 
- * Utilise ActivityKit via un module natif Swift
+ * Affiche le fronter actuel dans le Dynamic Island (iPhone 14 Pro+)
+ * Utilise ActivityKit via le module natif LiveActivityModule
  * Note: Nécessite iOS 16.1+ et configuration native
  */
 
@@ -12,18 +13,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const { LiveActivityModule } = NativeModules;
 const STORAGE_KEY = '@dynamic_island_enabled';
 
-export interface LiveActivityData {
-    currentAlterName: string;
-    currentAlterColor: string;
-    currentAlterInitial: string;
-    timeSinceSwitch: string;
-    coFronters?: string[];
+export interface LiveActivityAlterData {
+    name: string;
+    initial: string;
+    color: string;
+    coFronterCount?: number;
+    isCoFront?: boolean;
+    systemName?: string;
 }
 
 class DynamicIslandService {
     private static instance: DynamicIslandService;
     private isActive: boolean = false;
-    private activityId: string | null = null;
 
     private constructor() { }
 
@@ -35,36 +36,62 @@ class DynamicIslandService {
     }
 
     /**
-     * Vérifie si Dynamic Island est supporté
+     * Vérifie si Dynamic Island est disponible sur cet appareil
+     * Retourne { available: boolean, enabled: boolean }
      */
-    isSupported(): boolean {
-        return (
-            Platform.OS === 'ios' &&
-            LiveActivityModule != null &&
-            typeof LiveActivityModule.isSupported === 'function'
-        );
+    async checkAvailability(): Promise<{ available: boolean; enabled: boolean }> {
+        if (Platform.OS !== 'ios' || !LiveActivityModule) {
+            return { available: false, enabled: false };
+        }
+
+        try {
+            const result = await LiveActivityModule.isAvailable();
+            return result;
+        } catch (error) {
+            console.warn('[DynamicIsland] Error checking availability:', error);
+            return { available: false, enabled: false };
+        }
     }
 
     /**
-     * Démarre une Live Activity pour le front actuel
+     * Vérifie si le service est supporté
      */
-    async start(data: LiveActivityData): Promise<boolean> {
+    isSupported(): boolean {
+        return Platform.OS === 'ios' && LiveActivityModule != null;
+    }
+
+    /**
+     * Démarre une Live Activity pour afficher le fronter actuel
+     */
+    async startFronterActivity(data: LiveActivityAlterData): Promise<boolean> {
         if (!this.isSupported()) {
             console.warn('[DynamicIsland] Not supported on this device');
             return false;
         }
 
+        // Vérifier la préférence utilisateur
+        const enabled = await this.isEnabled();
+        if (!enabled) {
+            console.log('[DynamicIsland] Feature disabled by user');
+            return false;
+        }
+
         try {
-            // Appel au module natif Swift
-            this.activityId = await LiveActivityModule!.startLiveActivity({
-                alterName: data.currentAlterName,
-                alterColor: data.currentAlterColor,
-                alterInitial: data.currentAlterInitial,
-                timeSince: data.timeSinceSwitch,
-                coFronters: data.coFronters || [],
+            if (!LiveActivityModule) {
+                console.warn('[DynamicIsland] Native module not available');
+                return false;
+            }
+            await LiveActivityModule.startFronterActivity({
+                name: data.name,
+                initial: data.initial || data.name.charAt(0).toUpperCase(),
+                color: data.color || '#8B5CF6',
+                coFronterCount: data.coFronterCount || 0,
+                isCoFront: data.isCoFront || false,
+                systemName: data.systemName || 'Mon Système',
             });
 
             this.isActive = true;
+            console.log('[DynamicIsland] Started fronter activity for:', data.name);
             return true;
         } catch (error) {
             console.error('[DynamicIsland] Failed to start:', error);
@@ -73,26 +100,24 @@ class DynamicIslandService {
     }
 
     /**
-     * Met à jour la Live Activity existante
+     * Met à jour la Live Activity avec un nouvel alter (lors d'un switch)
      */
-    async update(data: LiveActivityData): Promise<boolean> {
-        if (!this.isActive || !this.activityId) {
-            console.warn('[DynamicIsland] No active Live Activity to update');
-            return false;
-        }
-
+    async updateFronterActivity(data: LiveActivityAlterData): Promise<boolean> {
         if (!this.isSupported()) return false;
 
         try {
-            await LiveActivityModule!.updateLiveActivity(this.activityId, {
-                alterName: data.currentAlterName,
-                alterColor: data.currentAlterColor,
-                alterInitial: data.currentAlterInitial,
-                timeSince: data.timeSinceSwitch,
-                coFronters: data.coFronters || [],
+            if (!LiveActivityModule) return false;
+            await LiveActivityModule.updateFronterActivity({
+                name: data.name,
+                initial: data.initial || data.name.charAt(0).toUpperCase(),
+                color: data.color || '#8B5CF6',
+                coFronterCount: data.coFronterCount || 0,
+                isCoFront: data.isCoFront || false,
+                systemName: data.systemName || 'Mon Système',
             });
 
-
+            this.isActive = true;
+            console.log('[DynamicIsland] Updated fronter to:', data.name);
             return true;
         } catch (error) {
             console.error('[DynamicIsland] Failed to update:', error);
@@ -103,17 +128,14 @@ class DynamicIslandService {
     /**
      * Arrête la Live Activity
      */
-    async stop(): Promise<boolean> {
-        if (!this.isActive || !this.activityId) {
-            return true;
-        }
-
+    async stopFronterActivity(): Promise<boolean> {
         if (!this.isSupported()) return false;
 
         try {
-            await LiveActivityModule!.endLiveActivity(this.activityId);
+            if (!LiveActivityModule) return false;
+            await LiveActivityModule.stopFronterActivity();
             this.isActive = false;
-            this.activityId = null;
+            console.log('[DynamicIsland] Stopped fronter activity');
             return true;
         } catch (error) {
             console.error('[DynamicIsland] Failed to stop:', error);
@@ -129,25 +151,31 @@ class DynamicIslandService {
     }
 
     /**
-     * Sauvegarde la préférence utilisateur
+     * Active/Désactive le Dynamic Island (préférence utilisateur)
      */
     async setEnabled(enabled: boolean): Promise<void> {
         try {
             await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(enabled));
+
+            // Si désactivé, arrêter l'activité en cours
+            if (!enabled && this.isActive) {
+                await this.stopFronterActivity();
+            }
         } catch (error) {
             console.error('[DynamicIsland] Failed to save preference:', error);
         }
     }
 
     /**
-     * Charge la préférence utilisateur
+     * Vérifie si le Dynamic Island est activé par l'utilisateur
      */
     async isEnabled(): Promise<boolean> {
         try {
             const stored = await AsyncStorage.getItem(STORAGE_KEY);
-            return stored ? JSON.parse(stored) : false;
+            // Par défaut activé si disponible
+            return stored ? JSON.parse(stored) : true;
         } catch (error) {
-            return false;
+            return true;
         }
     }
 }
@@ -155,26 +183,28 @@ class DynamicIslandService {
 // Export singleton
 export default DynamicIslandService.getInstance();
 
-// Types pour le module natif (à créer en Swift)
+// Types pour le module natif Swift
 declare module 'react-native' {
     interface NativeModulesStatic {
         LiveActivityModule?: {
-            isSupported: () => boolean;
-            startLiveActivity: (data: {
-                alterName: string;
-                alterColor: string;
-                alterInitial: string;
-                timeSince: string;
-                coFronters: string[];
-            }) => Promise<string>;
-            updateLiveActivity: (id: string, data: {
-                alterName: string;
-                alterColor: string;
-                alterInitial: string;
-                timeSince: string;
-                coFronters: string[];
-            }) => Promise<void>;
-            endLiveActivity: (id: string) => Promise<void>;
+            isAvailable: () => Promise<{ available: boolean; enabled: boolean }>;
+            startFronterActivity: (data: {
+                name: string;
+                initial: string;
+                color: string;
+                coFronterCount: number;
+                isCoFront: boolean;
+                systemName: string;
+            }) => Promise<{ activityId: string }>;
+            updateFronterActivity: (data: {
+                name: string;
+                initial: string;
+                color: string;
+                coFronterCount: number;
+                isCoFront: boolean;
+                systemName: string;
+            }) => Promise<{ success: boolean }>;
+            stopFronterActivity: () => Promise<{ success: boolean }>;
         };
     }
 }

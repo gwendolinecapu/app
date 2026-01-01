@@ -129,7 +129,8 @@ export type ShopItemType =
     | 'credit_pack'     // Pack de crédits (IAP)
     | 'theme'           // Thème d'application
     | 'frame'           // Cadre d'avatar
-    | 'bubble';         // Bulle de chat
+    | 'bubble'          // Bulle de chat
+    | 'bundle';         // Pack groupé (thème + cadre + bulle)
 
 /** Produit en boutique */
 export interface ShopItem {
@@ -266,6 +267,253 @@ export const CREDIT_ITEMS: ShopItem[] = [
     },
 ];
 
+// ==================== COSMÉTIQUES (THÈMES, CADRES, BULLES) ====================
+
+/** Items cosmétiques de la boutique */
+export const COSMETIC_ITEMS: ShopItem[] = [
+    // ========== THÈMES ==========
+    {
+        id: 'theme_default',
+        type: 'theme',
+        name: 'Classique',
+        description: 'Le thème par défaut de l\'application.',
+        priceCredits: 0,
+        preview: '#1a1a2e',
+    },
+    {
+        id: 'theme_ocean',
+        type: 'theme',
+        name: 'Océan',
+        description: 'Bleu profond comme les abysses.',
+        priceCredits: 50,
+        preview: '#0077b6',
+    },
+    {
+        id: 'theme_forest',
+        type: 'theme',
+        name: 'Forêt',
+        description: 'Vert naturel et apaisant.',
+        priceCredits: 50,
+        preview: '#2d6a4f',
+    },
+    {
+        id: 'theme_sunset',
+        type: 'theme',
+        name: 'Coucher de soleil',
+        description: 'Tons chauds orangés.',
+        priceCredits: 75,
+        preview: '#e85d04',
+    },
+    {
+        id: 'theme_lavender',
+        type: 'theme',
+        name: 'Lavande',
+        description: 'Violet doux et relaxant.',
+        priceCredits: 75,
+        preview: '#9d4edd',
+    },
+    {
+        id: 'theme_cyberpunk',
+        type: 'theme',
+        name: 'Cyberpunk',
+        description: 'Néons et haute technologie.',
+        priceCredits: 150,
+        preview: '#ff00ff',
+        isPremium: true,
+    },
+    {
+        id: 'theme_midnight',
+        type: 'theme',
+        name: 'Minuit',
+        description: 'Noir profond étoilé.',
+        priceCredits: 100,
+        preview: '#0d1b2a',
+    },
+    {
+        id: 'theme_cherry',
+        type: 'theme',
+        name: 'Cerisier',
+        description: 'Rose délicat du printemps.',
+        priceCredits: 100,
+        preview: '#ff758f',
+    },
+    {
+        id: 'theme_anim_aurora',
+        type: 'theme',
+        name: 'Aurore Boréale',
+        description: 'Lueurs nordiques vivantes.',
+        priceCredits: 300,
+        preview: '#00ff9d',
+        isPremium: true,
+        featured: true,
+    },
+    {
+        id: 'theme_anim_cosmos',
+        type: 'theme',
+        name: 'Cosmos',
+        description: 'Voyage interstellaire animé.',
+        priceCredits: 350,
+        preview: '#4b0082',
+        isPremium: true,
+    },
+
+    // ========== CADRES ==========
+    {
+        id: 'frame_default',
+        type: 'frame',
+        name: 'Simple',
+        description: 'Cadre basique et élégant.',
+        priceCredits: 0,
+        preview: '#6b7280',
+        icon: 'ellipse-outline',
+    },
+    {
+        id: 'frame_double',
+        type: 'frame',
+        name: 'Double',
+        description: 'Double bordure raffinée.',
+        priceCredits: 75,
+        preview: '#8b5cf6',
+        icon: 'radio-button-off-outline',
+    },
+    {
+        id: 'frame_square',
+        type: 'frame',
+        name: 'Carré',
+        description: 'Forme carrée moderne.',
+        priceCredits: 50,
+        preview: '#3b82f6',
+        icon: 'square-outline',
+    },
+    {
+        id: 'frame_neon',
+        type: 'frame',
+        name: 'Néon',
+        description: 'Lueur fluorescente.',
+        priceCredits: 150,
+        preview: '#00ff00',
+        icon: 'sunny-outline',
+        isPremium: true,
+    },
+    {
+        id: 'frame_gold',
+        type: 'frame',
+        name: 'Or',
+        description: 'Bordure dorée prestigieuse.',
+        priceCredits: 200,
+        preview: '#ffd700',
+        icon: 'star-outline',
+        isPremium: true,
+    },
+    {
+        id: 'frame_rainbow',
+        type: 'frame',
+        name: 'Arc-en-ciel',
+        description: 'Toutes les couleurs réunies.',
+        priceCredits: 175,
+        preview: '#ff6b6b',
+        icon: 'color-palette-outline',
+        isPremium: true,
+    },
+    {
+        id: 'frame_anim_galaxy',
+        type: 'frame',
+        name: 'Galaxie',
+        description: 'Rotation cosmique animée.',
+        priceCredits: 400,
+        preview: '#8b5cf6',
+        icon: 'planet-outline',
+        isPremium: true,
+        featured: true,
+    },
+    {
+        id: 'frame_flames',
+        type: 'frame',
+        name: 'Flammes',
+        description: 'Bordure enflammée.',
+        priceCredits: 250,
+        preview: '#ff4500',
+        icon: 'flame-outline',
+        isPremium: true,
+    },
+
+    // ========== BULLES ==========
+    {
+        id: 'bubble_default',
+        type: 'bubble',
+        name: 'Classique',
+        description: 'Bulle de chat standard.',
+        priceCredits: 0,
+        preview: '#6366f1',
+        icon: 'chatbubble-outline',
+    },
+    {
+        id: 'bubble_round',
+        type: 'bubble',
+        name: 'Ronde',
+        description: 'Formes arrondies douces.',
+        priceCredits: 50,
+        preview: '#22c55e',
+        icon: 'chatbubble-ellipses-outline',
+    },
+    {
+        id: 'bubble_square',
+        type: 'bubble',
+        name: 'Carrée',
+        description: 'Angles nets et modernes.',
+        priceCredits: 50,
+        preview: '#ef4444',
+        icon: 'chatbox-outline',
+    },
+    {
+        id: 'bubble_cloud',
+        type: 'bubble',
+        name: 'Nuage',
+        description: 'Comme dans les BD.',
+        priceCredits: 75,
+        preview: '#f59e0b',
+        icon: 'cloud-outline',
+    },
+    {
+        id: 'bubble_gradient',
+        type: 'bubble',
+        name: 'Dégradé',
+        description: 'Couleurs qui se fondent.',
+        priceCredits: 125,
+        preview: '#ec4899',
+        icon: 'color-wand-outline',
+        isPremium: true,
+    },
+    {
+        id: 'bubble_glass',
+        type: 'bubble',
+        name: 'Verre',
+        description: 'Effet glassmorphism.',
+        priceCredits: 150,
+        preview: '#06b6d4',
+        icon: 'cube-outline',
+        isPremium: true,
+    },
+    {
+        id: 'bubble_pixel',
+        type: 'bubble',
+        name: 'Pixel',
+        description: 'Style rétro 8-bits.',
+        priceCredits: 100,
+        preview: '#84cc16',
+        icon: 'grid-outline',
+    },
+    {
+        id: 'bubble_comic',
+        type: 'bubble',
+        name: 'BD',
+        description: 'Style bande dessinée.',
+        priceCredits: 100,
+        preview: '#fbbf24',
+        icon: 'newspaper-outline',
+    },
+];
+
 // ==================== DÉCORATIONS ====================
 
 /** Type de décoration */
@@ -339,6 +587,7 @@ export default {
     CREDIT_REWARDS,
     CREDIT_PACKS,
     CREDIT_ITEMS,
+    COSMETIC_ITEMS,
     DECORATION_PRICES,
     RARITY_COLORS,
     AD_CONFIG,

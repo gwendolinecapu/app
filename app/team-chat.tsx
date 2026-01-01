@@ -30,6 +30,7 @@ export default function TeamChatScreen() {
     const [inputText, setInputText] = useState('');
     const [selectedSenderId, setSelectedSenderId] = useState<string | null>(null);
     const [showSenderPicker, setShowSenderPicker] = useState(false);
+    const [senderSearch, setSenderSearch] = useState('');
     const flatListRef = useRef<FlatList>(null);
 
     // Initialize sender to current front or first alter
@@ -234,8 +235,24 @@ export default function TeamChatScreen() {
                 >
                     <View style={styles.modalContent}>
                         <Text style={styles.modalTitle}>Qui parle ?</Text>
+                        <View style={styles.searchContainer}>
+                            <Ionicons name="search" size={18} color={colors.textMuted} />
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder="Rechercher un alter..."
+                                placeholderTextColor={colors.textMuted}
+                                value={senderSearch}
+                                onChangeText={setSenderSearch}
+                                autoCapitalize="none"
+                            />
+                            {senderSearch.length > 0 && (
+                                <TouchableOpacity onPress={() => setSenderSearch('')}>
+                                    <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                                </TouchableOpacity>
+                            )}
+                        </View>
                         <FlatList
-                            data={alters}
+                            data={alters.filter(a => a.name.toLowerCase().includes(senderSearch.toLowerCase()))}
                             keyExtractor={item => item.id}
                             numColumns={4}
                             renderItem={({ item }) => (
@@ -247,6 +264,7 @@ export default function TeamChatScreen() {
                                     onPress={() => {
                                         setSelectedSenderId(item.id);
                                         setShowSenderPicker(false);
+                                        setSenderSearch('');
                                         triggerHaptic.selection();
                                     }}
                                 >
@@ -452,8 +470,24 @@ const styles = StyleSheet.create({
     modalTitle: {
         ...typography.h3,
         textAlign: 'center',
-        marginBottom: spacing.lg,
+        marginBottom: spacing.md,
         color: colors.text,
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.backgroundLight,
+        borderRadius: borderRadius.md,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs,
+        marginBottom: spacing.lg,
+        gap: spacing.xs,
+    },
+    searchInput: {
+        flex: 1,
+        color: colors.text,
+        fontSize: 14,
+        paddingVertical: spacing.xs,
     },
     pickerItem: {
         flex: 1,

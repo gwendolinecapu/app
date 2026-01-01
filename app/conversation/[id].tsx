@@ -11,6 +11,7 @@ import {
     Platform,
     Image,
     Alert,
+    Modal,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -32,6 +33,9 @@ export default function ConversationScreen() {
     const [newMessage, setNewMessage] = useState('');
     const [otherAlter, setOtherAlter] = useState<Alter | null>(null);
     const [loading, setLoading] = useState(false);
+    const [selectedSenderId, setSelectedSenderId] = useState<string | null>(null);
+    const [showSenderPicker, setShowSenderPicker] = useState(false);
+    const [senderSearch, setSenderSearch] = useState('');
 
     // Hooks
     const insets = useSafeAreaInsets();
@@ -46,6 +50,19 @@ export default function ConversationScreen() {
         const alter = alters.find((a) => a.id === id);
         setOtherAlter(alter || null);
     }, [id, alters]);
+
+    // Initialize sender
+    useEffect(() => {
+        if (!selectedSenderId && alters.length > 0) {
+            if (currentAlter) {
+                setSelectedSenderId(currentAlter.id);
+            } else {
+                setSelectedSenderId(alters[0].id);
+            }
+        }
+    }, [alters, currentAlter, selectedSenderId]);
+
+    const senderAlter = alters.find(a => a.id === selectedSenderId) || currentAlter || alters[0];
 
     useEffect(() => {
         if (!currentAlter || !id) return;
@@ -123,22 +140,21 @@ export default function ConversationScreen() {
     };
 
     const sendImage = async (uri: string) => {
-        if (!currentAlter || !id || !user?.uid) return; // Ensure user.uid is available
+        if (!senderAlter || !id || !user?.uid) return;
         setLoading(true);
 
         try {
             const response = await fetch(uri);
             const blob = await response.blob();
-            // Use a path that is likely to be allowed logic: chat/{userId}/{filename}
             const filename = `chat/${user.uid}/${Date.now()}.jpg`;
             const storageRef = ref(storage, filename);
 
             await uploadBytes(storageRef, blob);
             const downloadURL = await getDownloadURL(storageRef);
 
-            const conversationId = getConversationId(currentAlter.id, id);
+            const conversationId = getConversationId(senderAlter.id, id);
             await addDoc(collection(db, 'messages'), {
-                sender_alter_id: currentAlter.id,
+                sender_alter_id: senderAlter.id,
                 receiver_alter_id: id,
                 systemId: user?.uid,
                 conversation_id: conversationId,
@@ -159,16 +175,16 @@ export default function ConversationScreen() {
     };
 
     const sendMessage = async () => {
-        if (!newMessage.trim() || !currentAlter || !id) return;
+        if (!newMessage.trim() || !senderAlter || !id) return;
 
         setLoading(true);
         try {
-            const conversationId = getConversationId(currentAlter.id, id);
+            const conversationId = getConversationId(senderAlter.id, id);
 
             await addDoc(collection(db, 'messages'), {
-                sender_alter_id: currentAlter.id,
+                sender_alter_id: senderAlter.id,
                 receiver_alter_id: id,
-                systemId: user?.uid, // Add systemId for permissions
+                systemId: user?.uid,
                 conversation_id: conversationId,
                 content: newMessage.trim(),
                 is_internal: internal === 'true',
@@ -322,6 +338,21 @@ export default function ConversationScreen() {
             />
 
             <View style={styles.inputContainer}>
+                {/* Sender Picker */}
+                <TouchableOpacity
+                    style={styles.senderPill}
+                    onPress={() => setShowSenderPicker(true)}
+                >
+                    {senderAlter?.avatar_url ? (
+                        <Image source={{ uri: senderAlter.avatar_url }} style={styles.senderPillAvatar} />
+                    ) : (
+                        <View style={[styles.senderPillPlaceholder, { backgroundColor: senderAlter?.color || colors.primary }]}>
+                            <Text style={styles.senderPillInitial}>{senderAlter?.name?.charAt(0) || '?'}</Text>
+                        </View>
+                    )}
+                    <Ionicons name="chevron-down" size={12} color={colors.textSecondary} style={{ marginLeft: 2 }} />
+                </TouchableOpacity>
+
                 <TouchableOpacity
                     style={styles.mediaButton}
                     onPress={pickImage}
@@ -358,6 +389,67 @@ export default function ConversationScreen() {
                     <Ionicons name="send" size={20} color={colors.text} />
                 </TouchableOpacity>
             </View>
+
+            {/* Sender Picker Modal */}
+            <Modal
+                visible={showSenderPicker}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowSenderPicker(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowSenderPicker(false)}
+                >
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Parler en tant que...</Text>
+                        <View style={styles.searchContainer}>
+                            <Ionicons name="search" size={18} color={colors.textMuted} />
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder="Rechercher..."
+                                placeholderTextColor={colors.textMuted}
+                                value={senderSearch}
+                                onChangeText={setSenderSearch}
+                            />
+                            {senderSearch.length > 0 && (
+                                <TouchableOpacity onPress={() => setSenderSearch('')}>
+                                    <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                        <FlatList
+                            data={alters.filter(a => a.name.toLowerCase().includes(senderSearch.toLowerCase()))}
+                            keyExtractor={item => item.id}
+                            numColumns={4}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={[styles.pickerItem, selectedSenderId === item.id && styles.pickerItemSelected]}
+                                    onPress={() => {
+                                        setSelectedSenderId(item.id);
+                                        setShowSenderPicker(false);
+                                        setSenderSearch('');
+                                    }}
+                                >
+                                    <View style={[styles.pickerAvatarContainer, selectedSenderId === item.id && { borderColor: item.color || colors.primary, borderWidth: 2 }]}>
+                                        {item.avatar_url ? (
+                                            <Image source={{ uri: item.avatar_url }} style={styles.pickerAvatar} />
+                                        ) : (
+                                            <View style={[styles.pickerPlaceholder, { backgroundColor: item.color || colors.primary }]}>
+                                                <Text style={styles.pickerInitial}>{item.name.charAt(0)}</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                    <Text style={[styles.pickerName, selectedSenderId === item.id && { color: colors.primary, fontWeight: 'bold' }]} numberOfLines={1}>
+                                        {item.name}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+                        />
+                    </View>
+                </TouchableOpacity>
+            </Modal>
         </KeyboardAvoidingView>
     );
 }
@@ -552,5 +644,103 @@ const styles = StyleSheet.create({
     },
     reactionText: {
         fontSize: 10,
-    }
+    },
+    // Sender picker styles
+    senderPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginRight: spacing.sm,
+        padding: 4,
+        borderRadius: 20,
+        backgroundColor: colors.backgroundCard,
+    },
+    senderPillAvatar: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+    },
+    senderPillPlaceholder: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    senderPillInitial: {
+        color: 'white',
+        fontSize: 14,
+        fontWeight: 'bold',
+    },
+    // Modal styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: spacing.xl,
+    },
+    modalContent: {
+        width: '100%',
+        backgroundColor: colors.backgroundCard,
+        borderRadius: borderRadius.xl,
+        padding: spacing.lg,
+        maxHeight: '60%',
+    },
+    modalTitle: {
+        ...typography.h3,
+        textAlign: 'center',
+        marginBottom: spacing.md,
+        color: colors.text,
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.backgroundLight,
+        borderRadius: borderRadius.md,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs,
+        marginBottom: spacing.lg,
+        gap: spacing.xs,
+    },
+    searchInput: {
+        flex: 1,
+        color: colors.text,
+        fontSize: 14,
+        paddingVertical: spacing.xs,
+    },
+    pickerItem: {
+        flex: 1,
+        alignItems: 'center',
+        marginBottom: spacing.lg,
+    },
+    pickerItemSelected: {
+        opacity: 1,
+    },
+    pickerAvatarContainer: {
+        marginBottom: spacing.xs,
+        borderRadius: 24,
+        padding: 2,
+    },
+    pickerAvatar: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+    },
+    pickerPlaceholder: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    pickerInitial: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 18,
+    },
+    pickerName: {
+        ...typography.caption,
+        textAlign: 'center',
+        maxWidth: 60,
+    },
 });

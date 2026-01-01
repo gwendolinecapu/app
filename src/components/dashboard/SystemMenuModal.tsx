@@ -16,8 +16,6 @@ const MENU_ITEMS = [
     { id: 'team', label: 'Team', description: 'Chat & Discussions', icon: 'people', color: colors.secondary, route: '/messages' },
     { id: 'tasks', label: 'Tâches', description: 'Liste partagée', icon: 'list', color: colors.success, route: '/tasks' },
     { id: 'history', label: 'Historique', description: 'Stats & Fronts', icon: 'stats-chart', color: colors.warning, route: '/history' },
-    { id: 'journal', label: 'Journal', description: 'Notes privées', icon: 'book', color: colors.primary, route: '/journal' },
-    { id: 'vault', label: 'Coffre-fort', description: 'Espace sécurisé', icon: 'lock-closed', color: '#6C5CE7', route: '/vault' },
     { id: 'help', label: 'Aide & SOS', description: 'Support système', icon: 'help-circle', color: colors.error, route: '/help' },
 ];
 

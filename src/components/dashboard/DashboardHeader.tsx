@@ -10,6 +10,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 import { ModeIndicator } from './ModeIndicator';
+import { AlterWeatherBar } from './AlterWeatherBar';
 
 interface DashboardHeaderProps {
     searchQuery: string;
@@ -45,6 +46,9 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                     {/* Icons removed as per user request */}
                 </View>
             </View>
+
+            {/* Alter Weather Bar - Emotion indicators */}
+            <AlterWeatherBar />
 
             {/* Mode Switcher */}
             <View style={styles.modeSwitchContainer}>

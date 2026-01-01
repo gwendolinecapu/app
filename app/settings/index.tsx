@@ -182,6 +182,8 @@ export default function SettingsScreen() {
                 <Text style={styles.sectionTitle}>Préférences</Text>
                 <View style={styles.section}>
                     {renderSettingItem("Notifications", "notifications-outline", () => router.push('/settings/notifications' as any))}
+                    {renderSettingItem("Check-In automatique", "time-outline", () => router.push('/settings/checkin' as any))}
+                    {renderSettingItem("Widgets & Dynamic Island", "phone-portrait-outline", () => router.push('/settings/widgets' as any))}
                     {renderSettingItem("Verrouillage FaceID", "scan-outline", toggleBiometric, isBiometricEnabled)}
                     {renderSettingItem("Flouter l'écran (App Switcher)", "eye-off-outline", async () => {
                         try {

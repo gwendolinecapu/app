@@ -53,7 +53,8 @@ class FrontingCheckInService {
                 shouldShowAlert: true,
                 shouldPlaySound: true,
                 shouldSetBadge: false,
-                priority: Notifications.AndroidNotificationPriority.HIGH,
+                shouldShowBanner: true,
+                shouldShowList: true,
             }),
         });
 
@@ -158,6 +159,7 @@ class FrontingCheckInService {
                     sound: 'default',
                 },
                 trigger: {
+                    type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
                     seconds: settings.intervalHours * 3600,
                     repeats: true,
                 },

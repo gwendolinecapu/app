@@ -172,35 +172,54 @@ export default function AlterSpaceScreen() {
                     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
                         <Text style={{ fontSize: 28, fontWeight: 'bold', marginBottom: 24, color: colors.text }}>Menu</Text>
 
-                        {/* Section: Espace Personnel */}
-                        <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Espace Personnel</Text>
-
-                        <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('journal')}>
-                            <Ionicons name="book-outline" size={24} color={colors.primary} style={{ marginRight: 15 }} />
-                            <Text style={styles.menuItemText}>Journal</Text>
-                            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('gallery')}>
-                            <Ionicons name="images-outline" size={24} color={colors.primary} style={{ marginRight: 15 }} />
-                            <Text style={styles.menuItemText}>Galerie</Text>
-                            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('emotions')}>
-                            <Ionicons name="heart-outline" size={24} color={colors.primary} style={{ marginRight: 15 }} />
-                            <Text style={styles.menuItemText}>Émotions</Text>
-                            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                        </TouchableOpacity>
-
-                        {isOwner && (
+                        {isOwner ? (
                             <>
+                                {/* Section: Espace Personnel - Only for owner */}
+                                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Espace Personnel</Text>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('journal')}>
+                                    <Ionicons name="book-outline" size={24} color={colors.primary} style={{ marginRight: 15 }} />
+                                    <Text style={styles.menuItemText}>Journal</Text>
+                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('gallery')}>
+                                    <Ionicons name="images-outline" size={24} color={colors.primary} style={{ marginRight: 15 }} />
+                                    <Text style={styles.menuItemText}>Galerie</Text>
+                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('emotions')}>
+                                    <Ionicons name="heart-outline" size={24} color={colors.primary} style={{ marginRight: 15 }} />
+                                    <Text style={styles.menuItemText}>Émotions</Text>
+                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                </TouchableOpacity>
+
                                 <View style={{ height: 30 }} />
                                 <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Système</Text>
 
                                 <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('settings')}>
                                     <Ionicons name="settings-outline" size={24} color={colors.text} style={{ marginRight: 15 }} />
                                     <Text style={styles.menuItemText}>Paramètres</Text>
+                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                </TouchableOpacity>
+                            </>
+                        ) : (
+                            <>
+                                {/* For visitors - only show public actions */}
+                                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Actions</Text>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={handleFriendAction}>
+                                    <Ionicons name={friendStatus === 'friends' ? "checkmark-circle" : "person-add-outline"} size={24} color={colors.primary} style={{ marginRight: 15 }} />
+                                    <Text style={styles.menuItemText}>
+                                        {friendStatus === 'friends' ? 'Abonné' : friendStatus === 'pending' ? 'Demande envoyée' : "S'abonner"}
+                                    </Text>
+                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname: '/(tabs)/messages', params: { senderId: alter.id } })}>
+                                    <Ionicons name="chatbubble-outline" size={24} color={colors.primary} style={{ marginRight: 15 }} />
+                                    <Text style={styles.menuItemText}>Messages</Text>
                                     <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                                 </TouchableOpacity>
                             </>
@@ -235,7 +254,7 @@ export default function AlterSpaceScreen() {
                     <TouchableOpacity onPress={() => router.push('/shop' as any)} style={{ marginRight: 12 }}>
                         <Ionicons name="storefront-outline" size={24} color="#A855F7" />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => router.push({ pathname: '/conversation/[id]', params: { id: alterId } })}>
+                    <TouchableOpacity onPress={() => router.push({ pathname: '/(tabs)/messages', params: { senderId: alterId } })}>
                         <Ionicons name="chatbubble-ellipses-outline" size={24} color={colors.text} />
                     </TouchableOpacity>
                 </View>

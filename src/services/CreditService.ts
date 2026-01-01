@@ -33,7 +33,7 @@ const TRANSACTIONS_SUBCOLLECTION = 'credit_transactions';
 
 class CreditService {
     private static instance: CreditService;
-    private balance: number = 100; // Crédits de départ pour tous les utilisateurs
+    private balance: number = 10000; // Crédits de départ pour les tests
     private userId: string | null = null;
     private lastDailyClaimDate: string | null = null;
     private currentStreak: number = 0;
@@ -73,6 +73,9 @@ class CreditService {
                     : null;
                 this.currentStreak = data.loginStreak || 0;
             }
+
+            // TODO: Remove for production - Force 10000 credits for testing
+            this.balance = 10000;
 
             // Cache local
             await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({

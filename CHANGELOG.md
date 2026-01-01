@@ -14,6 +14,7 @@
 - **[Shop/Fix]** DailyReward et AdReward fonctionnent maintenant sans alterId spécifique.
 - **[Shop/Fix]** Carrousel "En Vedette" corrigé (padding, snap alignment).
 - **[Shop/UX]** Inventaire déplacé vers un bouton dans le header avec badge du nombre d'items possédés.
+- **[Shop/Fix]** Correction complète du flux d'achat : persistance Firestore, lecture `owned_items`/`equipped_items`, équipement fonctionnel.
 - **[Shop]** Refonte complète de la Boutique et ajout des récompenses (`DailyReward`, `AdReward`).
 - **[Fix]** Correction du crash RevenueCat et des erreurs Backend (Firestore Index, Credits).
 - **Navigation**: Resolved persistent double headers by forcing `headerShown: false` in RootLayout and Settings route.

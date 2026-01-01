@@ -33,7 +33,7 @@ const TRANSACTIONS_SUBCOLLECTION = 'credit_transactions';
 
 class CreditService {
     private static instance: CreditService;
-    private balance: number = 0;
+    private balance: number = 100; // Crédits de départ pour tous les utilisateurs
     private userId: string | null = null;
     private lastDailyClaimDate: string | null = null;
     private currentStreak: number = 0;
@@ -103,18 +103,14 @@ class CreditService {
      * Retourne le solde actuel
      */
     getBalance(): number {
-        // TODO: Remove this for production - TEST MODE
-        return 10000;
-        // return this.balance;
+        return this.balance;
     }
 
     /**
      * Vérifie si l'utilisateur a assez de crédits
      */
     hasEnoughCredits(amount: number): boolean {
-        // TODO: Remove this for production - TEST MODE
-        return true;
-        // return this.balance >= amount;
+        return this.balance >= amount;
     }
 
     // ==================== GAINS ====================

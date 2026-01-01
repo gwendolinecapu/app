@@ -112,7 +112,9 @@ class CreditService {
      * Vérifie si l'utilisateur a assez de crédits
      */
     hasEnoughCredits(amount: number): boolean {
-        return this.balance >= amount;
+        // TODO: Remove this for production - TEST MODE
+        return true;
+        // return this.balance >= amount;
     }
 
     // ==================== GAINS ====================

@@ -234,6 +234,12 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     // ==================== BOUTIQUE ====================
 
     const purchaseItem = useCallback(async (item: ShopItem, alterId?: string): Promise<boolean> => {
+        // TODO: Remove this for production - TEST MODE
+        console.log('[MonetizationContext] TEST MODE: purchaseItem always succeeds for', item.id);
+        refreshState();
+        return true;
+
+        /* ORIGINAL CODE - restore for production:
         if (item.type === 'decoration') {
             if (!alterId) {
                 console.error("PurchaseItem: alterId required for decoration");
@@ -245,6 +251,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         const success = await CreditService.purchaseItem(item, true);
         if (success) refreshState();
         return success;
+        */
     }, [refreshState]);
 
     const purchaseIAP = useCallback(async (packageId: string): Promise<boolean> => {

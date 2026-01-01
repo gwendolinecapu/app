@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 // Components
 import { ProfileHeader } from '../../../src/components/alter-space/ProfileHeader';
+import { ShopUI } from '../../../src/components/shop/ShopUI';
 import { AlterGrid } from '../../../src/components/alter-space/AlterGrid';
 import { AlterJournal } from '../../../src/components/alter-space/AlterJournal';
 import { AlterGallery } from '../../../src/components/alter-space/AlterGallery';
@@ -28,7 +29,7 @@ import { FollowListModal } from '../../../src/components/alter-space/FollowListM
 import { useAlterData } from '../../../src/hooks/useAlterData';
 import { ErrorBoundary } from '../../../src/components/ErrorBoundary';
 
-type TabType = 'feed' | 'profile' | 'journal' | 'gallery' | 'emotions' | 'settings' | 'menu';
+type TabType = 'feed' | 'profile' | 'journal' | 'gallery' | 'emotions' | 'settings' | 'menu' | 'shop';
 
 export default function AlterSpaceScreen() {
     const { alterId, tab } = useLocalSearchParams<{ alterId: string; tab?: string }>();
@@ -162,29 +163,47 @@ export default function AlterSpaceScreen() {
                         />
                     </View>
                 );
+
+            case 'shop':
+                return <ShopUI isEmbedded={true} />;
+
             case 'menu':
                 return (
-                    <ScrollView style={{ flex: 1, padding: 20 }}>
-                        <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: colors.text }}>Menu</Text>
+                    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+                        <Text style={{ fontSize: 28, fontWeight: 'bold', marginBottom: 24, color: colors.text }}>Menu</Text>
+
+                        {/* Section: Espace Personnel */}
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Espace Personnel</Text>
+
+                        <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('journal')}>
+                            <Ionicons name="book-outline" size={24} color={colors.primary} style={{ marginRight: 15 }} />
+                            <Text style={styles.menuItemText}>Journal</Text>
+                            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                        </TouchableOpacity>
 
                         <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('gallery')}>
-                            <Ionicons name="images-outline" size={24} color={colors.text} style={{ marginRight: 15 }} />
+                            <Ionicons name="images-outline" size={24} color={colors.primary} style={{ marginRight: 15 }} />
                             <Text style={styles.menuItemText}>Galerie</Text>
                             <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                         </TouchableOpacity>
 
                         <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('emotions')}>
-                            <Ionicons name="heart-outline" size={24} color={colors.text} style={{ marginRight: 15 }} />
+                            <Ionicons name="heart-outline" size={24} color={colors.primary} style={{ marginRight: 15 }} />
                             <Text style={styles.menuItemText}>Émotions</Text>
                             <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                         </TouchableOpacity>
 
                         {isOwner && (
-                            <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('settings')}>
-                                <Ionicons name="settings-outline" size={24} color={colors.text} style={{ marginRight: 15 }} />
-                                <Text style={styles.menuItemText}>Paramètres</Text>
-                                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                            </TouchableOpacity>
+                            <>
+                                <View style={{ height: 30 }} />
+                                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Système</Text>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('settings')}>
+                                    <Ionicons name="settings-outline" size={24} color={colors.text} style={{ marginRight: 15 }} />
+                                    <Text style={styles.menuItemText}>Paramètres</Text>
+                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                </TouchableOpacity>
+                            </>
                         )}
                     </ScrollView>
                 );
@@ -232,10 +251,10 @@ export default function AlterSpaceScreen() {
                     <Text style={{ fontSize: 10, color: activeTab === 'feed' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Accueil</Text>
                 </TouchableOpacity>
 
-                {/* 2. Journal */}
-                <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('journal')}>
-                    <Ionicons name={activeTab === 'journal' ? "book" : "book-outline"} size={24} color={activeTab === 'journal' ? colors.primary : colors.textSecondary} />
-                    <Text style={{ fontSize: 10, color: activeTab === 'journal' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Journal</Text>
+                {/* 2. Boutique */}
+                <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('shop')}>
+                    <Ionicons name={activeTab === 'shop' ? "basket" : "basket-outline"} size={24} color={activeTab === 'shop' ? colors.primary : colors.textSecondary} />
+                    <Text style={{ fontSize: 10, color: activeTab === 'shop' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Boutique</Text>
                 </TouchableOpacity>
 
                 {/* 3. Post (+) */}

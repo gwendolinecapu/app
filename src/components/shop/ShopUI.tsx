@@ -27,12 +27,11 @@ import { ShopItem } from '../../services/MonetizationTypes';
 // Dimensions
 const { width } = Dimensions.get('window');
 
-// Categories
+// Categories (products only - inventory is in header)
 const CATEGORIES = [
     { id: 'themes', label: 'Thèmes', icon: 'color-palette-outline' },
     { id: 'frames', label: 'Cadres', icon: 'scan-outline' },
     { id: 'bubbles', label: 'Bulles', icon: 'chatbubble-outline' },
-    { id: 'inventory', label: 'Inventaire', icon: 'briefcase-outline' }
 ];
 
 // Sort options
@@ -75,6 +74,7 @@ export function ShopUI({ isEmbedded = false }: ShopUIProps) {
     const [sortBy, setSortBy] = useState('default');
     const [filterBy, setFilterBy] = useState('all');
     const [showFilters, setShowFilters] = useState(false);
+    const [showInventory, setShowInventory] = useState(false); // Toggle inventory view
 
     // Owned items - persisted in AsyncStorage + synced with purchases
     const [ownedItems, setOwnedItems] = useState<string[]>([]);
@@ -251,6 +251,19 @@ export function ShopUI({ isEmbedded = false }: ShopUIProps) {
                         <Text style={styles.headerSubtitle}>Personnalise ton espace</Text>
                     </View>
 
+                    {/* Inventory Button */}
+                    <TouchableOpacity
+                        style={[styles.inventoryButton, showInventory && styles.inventoryButtonActive]}
+                        onPress={() => setShowInventory(!showInventory)}
+                    >
+                        <Ionicons name="briefcase" size={18} color={showInventory ? '#FFF' : colors.text} />
+                        {ownedItems.length > 0 && (
+                            <View style={styles.inventoryBadge}>
+                                <Text style={styles.inventoryBadgeText}>{ownedItems.length}</Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+
                     {/* Credits Badge */}
                     <View style={styles.creditsBadge}>
                         <Ionicons name="diamond" size={16} color={colors.secondary} />
@@ -370,11 +383,11 @@ export function ShopUI({ isEmbedded = false }: ShopUIProps) {
                     />
                 )}
 
-                {/* Rewards Section - only if on themes tab */}
-                {selectedCategory === 'themes' && (
+                {/* Rewards Section - show on all categories except inventory */}
+                {selectedCategory !== 'inventory' && (
                     <View style={styles.sectionContainer}>
                         <Text style={styles.sectionTitle}>🎁 Récompenses</Text>
-                        {alterId && <DailyRewardCard alterId={alterId} />}
+                        <DailyRewardCard alterId={alterId} />
                         <AdRewardCard alterId={alterId} />
                     </View>
                 )}

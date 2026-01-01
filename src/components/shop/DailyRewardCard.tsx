@@ -17,10 +17,10 @@ export function DailyRewardCard({ alterId }: DailyRewardCardProps) {
         currentStreak,
         loading: contextLoading
     } = useMonetization();
+    const { user, currentAlter } = useAuth();
 
-    // If we can't identify the claimer, we likely shouldn't show this or should show a generic view
-    // But for now, we'll hide it if no alterId
-    if (!alterId) return null;
+    // Use currentAlter if no alterId provided
+    const effectiveAlterId = alterId || currentAlter?.id || 'default';
 
     const [canClaim, setCanClaim] = useState(false);
     const [claiming, setClaiming] = useState(false);
@@ -28,17 +28,17 @@ export function DailyRewardCard({ alterId }: DailyRewardCardProps) {
 
     useEffect(() => {
         checkStatus();
-    }, [alterId]);
+    }, [effectiveAlterId]);
 
     const checkStatus = async () => {
-        const status = await checkDailyLogin(alterId);
+        const status = await checkDailyLogin(effectiveAlterId);
         setCanClaim(status);
     };
 
     const handleClaim = async () => {
         setClaiming(true);
         try {
-            const result = await claimDailyLogin(alterId);
+            const result = await claimDailyLogin(effectiveAlterId);
             setReward(result);
             setCanClaim(false);
         } catch (error) {

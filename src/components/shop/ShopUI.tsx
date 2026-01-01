@@ -88,50 +88,43 @@ export function ShopUI({ isEmbedded = false }: ShopUIProps) {
     useEffect(() => {
         refresh();
         loadOwnedItems();
-    }, []);
+    }, [alterId]); // Re-load when alterId changes
 
-    // Load owned items from user's purchases (stored in Firestore or AsyncStorage)
+    // Load owned items from Firestore alters collection
     const loadOwnedItems = useCallback(async () => {
         try {
-            // Get owned items from user's decorations/purchases
             const owned: string[] = [];
 
             // Add default free items - always owned
             const freeItems = shopItems.filter(item => (item.priceCredits || 0) === 0);
             freeItems.forEach(item => owned.push(item.id));
 
-            // In production, owned items would come from:
-            // 1. Firestore user document
-            // 2. AsyncStorage cache for offline access
-            // 3. RevenueCat for IAP items
-            // For now, we track purchases locally during the session
+            // Fetch owned items from Firestore if alterId is available
+            if (alterId) {
+                const currentAlter = alters?.find((a: any) => a.id === alterId) as any;
 
-            // Check for user purchase history in a type-safe way
-            const userAny = user as any;
-            if (userAny?.purchases) {
-                Object.keys(userAny.purchases).forEach((itemId: string) => {
-                    if (!owned.includes(itemId)) {
-                        owned.push(itemId);
-                    }
-                });
-            }
+                // Read owned_items from the alter document (this is where DecorationService saves)
+                if (currentAlter?.owned_items && Array.isArray(currentAlter.owned_items)) {
+                    currentAlter.owned_items.forEach((itemId: string) => {
+                        if (!owned.includes(itemId)) {
+                            owned.push(itemId);
+                        }
+                    });
+                }
 
-            // Get currently equipped items for the alter
-            if (alterId && alters) {
-                const currentAlter = alters.find((a: any) => a.id === alterId) as any;
-                const decorations = currentAlter?.decorations || currentAlter?.cosmetics || currentAlter?.equipped || {};
-                if (decorations) {
+                // Read equipped items from equipped_items field
+                if (currentAlter?.equipped_items) {
                     setEquippedItems({
-                        frame: decorations.frame || decorations.frameId,
-                        theme: decorations.theme || decorations.themeId,
-                        bubble: decorations.bubble || decorations.bubbleId,
+                        frame: currentAlter.equipped_items.frame,
+                        theme: currentAlter.equipped_items.theme,
+                        bubble: currentAlter.equipped_items.bubble,
                     });
                 }
             }
 
             setOwnedItems(owned);
         } catch (error) {
-            console.error('Error loading owned items:', error);
+            console.error('[ShopUI] Error loading owned items:', error);
         }
     }, [shopItems, user, alterId, alters]);
 

@@ -334,7 +334,7 @@ export default function AlterSpaceScreen() {
                             )}
                         </View>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => router.push('/shop' as any)} style={{ marginRight: 12 }}>
+                    <TouchableOpacity onPress={() => router.push({ pathname: '/shop', params: { alterId } })} style={{ marginRight: 12 }}>
                         <Ionicons name="storefront-outline" size={24} color="#A855F7" />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => router.push({ pathname: '/(tabs)/messages', params: { senderId: alterId } })}>

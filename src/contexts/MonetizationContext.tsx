@@ -234,14 +234,18 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     // ==================== BOUTIQUE ====================
 
     const purchaseItem = useCallback(async (item: ShopItem, alterId?: string): Promise<boolean> => {
-        if (item.type === 'decoration') {
+        // For cosmetic items (theme, frame, bubble), use DecorationService
+        if (item.type === 'theme' || item.type === 'frame' || item.type === 'bubble' || item.type === 'decoration') {
             if (!alterId) {
-                console.error("PurchaseItem: alterId required for decoration");
+                console.error("[MonetizationContext] purchaseItem: alterId required for cosmetic");
                 return false;
             }
-            return DecorationService.purchaseDecoration(item.id, alterId);
+            const success = await DecorationService.purchaseDecoration(item.id, alterId);
+            if (success) refreshState();
+            return success;
         }
 
+        // For other items (ad_free, premium_days, etc.)
         const success = await CreditService.purchaseItem(item, true);
         if (success) refreshState();
         return success;

@@ -347,7 +347,7 @@ export default function EditAlterProfileScreen() {
                                                 'Cette couleur est réservée aux membres Premium. Passez à Premium pour débloquer toutes les couleurs !',
                                                 [
                                                     { text: 'Plus tard', style: 'cancel' },
-                                                    { text: 'Voir Premium', onPress: () => router.push('/shop') }
+                                                    { text: 'Voir Premium', onPress: () => router.push({ pathname: '/shop', params: { alterId } }) }
                                                 ]
                                             );
                                         }
@@ -364,14 +364,14 @@ export default function EditAlterProfileScreen() {
                     <View style={styles.formGroup}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }}>
                             <Text style={styles.label}>Équipement cosmétique</Text>
-                            <TouchableOpacity onPress={() => router.push('/shop')}>
+                            <TouchableOpacity onPress={() => router.push({ pathname: '/shop', params: { alterId } })}>
                                 <Text style={styles.linkText}>Boutique →</Text>
                             </TouchableOpacity>
                         </View>
 
                         <View style={styles.cosmeticGrid}>
                             {/* Theme Slot */}
-                            <TouchableOpacity style={styles.cosmeticCard} onPress={() => router.push('/shop')}>
+                            <TouchableOpacity style={styles.cosmeticCard} onPress={() => router.push({ pathname: '/shop', params: { alterId } })}>
                                 <View style={styles.cosmeticIconBg}>
                                     <Ionicons name="brush-outline" size={24} color={colors.primary} />
                                 </View>
@@ -382,7 +382,7 @@ export default function EditAlterProfileScreen() {
                             </TouchableOpacity>
 
                             {/* Frame Slot */}
-                            <TouchableOpacity style={styles.cosmeticCard} onPress={() => router.push('/shop')}>
+                            <TouchableOpacity style={styles.cosmeticCard} onPress={() => router.push({ pathname: '/shop', params: { alterId } })}>
                                 <View style={styles.cosmeticIconBg}>
                                     <Ionicons name="image-outline" size={24} color={colors.primary} />
                                 </View>
@@ -393,7 +393,7 @@ export default function EditAlterProfileScreen() {
                             </TouchableOpacity>
 
                             {/* Bubble Slot */}
-                            <TouchableOpacity style={styles.cosmeticCard} onPress={() => router.push('/shop')}>
+                            <TouchableOpacity style={styles.cosmeticCard} onPress={() => router.push({ pathname: '/shop', params: { alterId } })}>
                                 <View style={styles.cosmeticIconBg}>
                                     <Ionicons name="chatbubble-outline" size={24} color={colors.primary} />
                                 </View>

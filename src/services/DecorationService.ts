@@ -11,6 +11,8 @@ import {
     DecorationRarity,
     DECORATION_PRICES,
     RARITY_COLORS,
+    COSMETIC_ITEMS,
+    ShopItem,
 } from './MonetizationTypes';
 import CreditService from './CreditService';
 
@@ -239,6 +241,17 @@ class DecorationService {
         return DECORATIONS_CATALOG.find(d => d.id === decorationId);
     }
 
+    // Recherche dans DECORATIONS_CATALOG et COSMETIC_ITEMS (pour thèmes, frames, bulles)
+    getItem(itemId: string): ShopItem | Decoration | undefined {
+        // D'abord chercher dans les décorations
+        const decoration = DECORATIONS_CATALOG.find(d => d.id === itemId);
+        if (decoration) return decoration;
+
+        // Ensuite chercher dans les cosmétiques (thèmes, frames, bulles)
+        const cosmetic = COSMETIC_ITEMS.find(c => c.id === itemId);
+        return cosmetic;
+    }
+
     // ==================== OWNERSHIP (ALTER SPECIFIC) ====================
 
     /**
@@ -268,64 +281,60 @@ class DecorationService {
     }
 
     /**
-     * Achète une décoration pour un alter spécifique
+     * Achète une décoration ou un cosmétique pour un alter spécifique
      */
     async purchaseDecoration(decorationId: string, alterId: string): Promise<boolean> {
-        const decoration = this.getDecoration(decorationId);
-        if (!decoration) return false;
-
-        // Check ownership (Double check via Firestore to prevent client-side hacks)
-        const isOwned = await this.ownsDecoration(alterId, decorationId);
-        if (isOwned) {
-            console.warn('Already owned');
+        // Chercher dans les deux catalogues (décorations ET cosmétiques)
+        const item = this.getItem(decorationId);
+        if (!item) {
+            console.error('[DecorationService] Item not found:', decorationId);
             return false;
         }
 
-        if (decoration.priceCredits > 0) {
-            // Verify credits via CreditService (System wallet)
-            if (!CreditService.hasEnoughCredits(decoration.priceCredits)) {
+        // Check ownership
+        const isOwned = await this.ownsDecoration(alterId, decorationId);
+        if (isOwned) {
+            console.warn('[DecorationService] Already owned:', decorationId);
+            return false;
+        }
+
+        const price = item.priceCredits || 0;
+
+        if (price > 0) {
+            // Verify credits
+            if (!CreditService.hasEnoughCredits(price)) {
+                console.warn('[DecorationService] Not enough credits. Has:', CreditService.getBalance(), 'Needs:', price);
                 return false;
             }
 
-            // Transaction-like update: Deduct credits AND add item
-            // Note: Doing this separately has a risk of inconsistency, but Firestore batch is complex across services.
-            // We'll deduct first (system), then grant (alter). 
-            // If grant fails, user lost credits. Ideally should be batch.
-            // For this MVP, we will try to add item first, or just sequence safely.
-
-            // 1. Grant Item
+            // 1. Grant Item first
             try {
                 const alterRef = doc(db, 'alters', alterId);
                 await updateDoc(alterRef, {
                     owned_items: arrayUnion(decorationId)
                 });
             } catch (e) {
-                console.error('Failed to grant item', e);
+                console.error('[DecorationService] Failed to grant item:', e);
                 return false;
             }
 
             // 2. Deduct Credits
             await CreditService.purchaseItem({
                 id: decorationId,
-                type: 'decoration',
-                name: decoration.name,
-                description: decoration.description,
-                priceCredits: decoration.priceCredits,
-                // custom param to avoid recursive loops if purchaseItem calls back here
+                type: item.type as any,
+                name: item.name,
+                description: item.description,
+                priceCredits: price,
             }, false);
-            // Actually CreditService.purchaseItem calls grant logic? 
-            // We need to detangle this.
-            // CreditService.purchaseItem handles "Deduct credits" AND "Apply effect".
-            // We already applied effect (grant item).
-            // We should just call spendCredits directly or a safe method.
         } else {
-            // Free item (unlocked via achievement etc)
+            // Free item
             const alterRef = doc(db, 'alters', alterId);
             await updateDoc(alterRef, {
                 owned_items: arrayUnion(decorationId)
             });
         }
 
+        console.log('[DecorationService] Purchase successful:', decorationId);
         return true;
     }
 

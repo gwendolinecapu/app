@@ -103,7 +103,9 @@ class CreditService {
      * Retourne le solde actuel
      */
     getBalance(): number {
-        return this.balance;
+        // TODO: Remove this for production - TEST MODE
+        return 10000;
+        // return this.balance;
     }
 
     /**

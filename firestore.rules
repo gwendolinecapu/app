@@ -32,6 +32,11 @@ service cloud.firestore {
              get(/databases/$(database)/documents/systems/$(request.auth.uid)).data.isAdmin == true;
     }
 
+    // Check if a field is unchanged
+    function isUnchanged(field) {
+      return request.resource.data[field] == resource.data[field];
+    }
+
     // ============================================
     // Systems Collection
     // ============================================
@@ -334,7 +339,7 @@ service cloud.firestore {
         resource.data.system_id == request.auth.uid
       );
     }
-    }
+
 
     // ============================================
     // Feedbacks Collection
@@ -343,16 +348,23 @@ service cloud.firestore {
       // Create: Any auth user
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       
-      // Read: Owner or Admin
+      // Read: Owner, Admin, or PUBLIC if it's a FEATURE
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
+        resource.data.type == 'FEATURE' ||
         isAdmin()
       );
       
-      // Update: Admin only (for status/notes)
-      allow update: if isAdmin();
+      // Update: Admin (full access) OR User (Voting on Features)
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        (
+          resource.data.type == 'FEATURE' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votes', 'voteCount'])
+        )
+      );
       
-      // Delete: Admin only (optional)
+      // Delete: Admin only
       allow delete: if isAdmin();
     }
   }

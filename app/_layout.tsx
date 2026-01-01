@@ -49,9 +49,11 @@ export default function RootLayout() {
                                                                     backgroundColor: colors.background,
                                                                 },
                                                                 animation: 'fade',
+                                                                headerShown: false,
                                                             }}
                                                         >
                                                             <Stack.Screen name="index" options={{ headerShown: false }} />
+                                                            <Stack.Screen name="settings" options={{ headerShown: false }} />
                                                             <Stack.Screen name="alter-space" options={{ headerShown: false }} />
                                                             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
                                                             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

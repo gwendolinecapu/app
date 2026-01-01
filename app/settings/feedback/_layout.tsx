@@ -21,7 +21,7 @@ export default function FeedbackLayout() {
             <Stack.Screen
                 name="index"
                 options={{
-                    headerShown: true,
+                    headerShown: false,
                     title: "Retour & Idées",
                 }}
             />

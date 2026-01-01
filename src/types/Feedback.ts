@@ -41,4 +41,8 @@ export interface Feedback {
     adminNotes?: string;
     creditRewardAmount?: number; // distinct from transaction, just for memory
     screenshotUrl?: string; // Optional attachment
+
+    // Voting System
+    votes?: string[]; // Array of userIds who voted
+    voteCount?: number; // Denormalized count for sorting
 }

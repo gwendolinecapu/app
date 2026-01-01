@@ -11,7 +11,8 @@ import {
     doc,
     getDoc,
     startAfter,
-    DocumentSnapshot
+    DocumentSnapshot,
+    runTransaction
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Feedback, FeedbackStatus, FeedbackType } from '../types/Feedback';
@@ -134,6 +135,55 @@ class FeedbackService {
             return { id: snap.id, ...snap.data() } as Feedback;
         }
         return null;
+    }
+
+    /**
+     * PUBLIC: Get feature requests ordered by votes
+     */
+    async getPublicFeatures(pageSize: number = 50): Promise<Feedback[]> {
+        const q = query(
+            collection(db, COLLECTION),
+            where('type', '==', 'FEATURE'),
+            orderBy('voteCount', 'desc'),
+            orderBy('createdAt', 'desc'),
+            limit(pageSize)
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Feedback));
+    }
+
+    /**
+     * Toggle vote on a feature request
+     */
+    async voteFeedback(feedbackId: string, userId: string): Promise<void> {
+        const ref = doc(db, COLLECTION, feedbackId);
+
+        await runTransaction(db, async (transaction) => {
+            const docSnap = await transaction.get(ref);
+            if (!docSnap.exists()) throw new Error("Feedback not found");
+
+            const data = docSnap.data() as Feedback;
+            if (data.type !== 'FEATURE') throw new Error("Can only vote on features");
+
+            const votes = data.votes || [];
+            const hasVoted = votes.includes(userId);
+
+            let newVotes;
+            let newCount;
+
+            if (hasVoted) {
+                newVotes = votes.filter(id => id !== userId);
+                newCount = Math.max(0, (data.voteCount || 0) - 1);
+            } else {
+                newVotes = [...votes, userId];
+                newCount = (data.voteCount || 0) + 1;
+            }
+
+            transaction.update(ref, {
+                votes: newVotes,
+                voteCount: newCount
+            });
+        });
     }
 }
 

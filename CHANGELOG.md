@@ -2,6 +2,8 @@
 
 ## [1.0.1+1] - 2026-01-01
 ### Fixed
+- **[Shop]** Refonte complète de la Boutique et ajout des récompenses (`DailyReward`, `AdReward`).
+- **[Fix]** Correction du crash RevenueCat et des erreurs Backend (Firestore Index, Credits).
 - **Navigation**: Resolved persistent double headers by forcing `headerShown: false` in RootLayout and Settings route.
 - **Roadmap**: Fixed "Impossible to load" error by adding `isUnchanged` helper to Firestore rules and fixing logical operators.
 

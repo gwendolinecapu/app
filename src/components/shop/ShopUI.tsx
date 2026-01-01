@@ -22,6 +22,7 @@ import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { AdRewardCard } from './AdRewardCard';
 import { DailyRewardCard } from './DailyRewardCard';
 import { ShopItemCard } from './ShopItemCard';
+import { FeaturedCarousel } from './FeaturedCarousel';
 import { ShopItem } from '../../services/MonetizationTypes';
 
 // Dimensions
@@ -179,6 +180,12 @@ export function ShopUI({ isEmbedded = false }: ShopUIProps) {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
+                {/* Featured Carousel - NEW */}
+                <FeaturedCarousel
+                    onItemPress={handlePurchase}
+                    userCredits={credits}
+                />
+
                 {/* Rewards Section */}
                 <View style={styles.sectionContainer}>
                     <Text style={styles.sectionTitle}>Récompenses</Text>

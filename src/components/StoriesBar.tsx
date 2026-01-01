@@ -65,7 +65,7 @@ export const StoriesBar = ({ onStoryPress, friendIds = [] }: StoriesBarProps) =>
             if (error?.code === 'permission-denied') {
                 // Ignore permissions error
             } else {
-                console.warn('[Stories] Erreur de chargement:', error?.message || error);
+                // Log silently or ignore
             }
             // Continuer avec des tableaux vides
             setMyStories([]);

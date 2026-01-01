@@ -31,7 +31,7 @@ import { triggerHaptic } from '../lib/haptics';
 import { Alter, System } from '../types';
 import { storage } from '../lib/storage';
 
-// Removed local Alter/System interfaces to use global ones from src/types
+
 
 
 interface FrontStatus {
@@ -83,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             setUser(firebaseUser);
             if (firebaseUser) {
+                setLoading(true); // Prevent flicker while fetching system/alters
 
                 const systemRef = doc(db, 'systems', firebaseUser.uid);
                 unsubscribeSystem = onSnapshot(systemRef, async (docSnap) => {

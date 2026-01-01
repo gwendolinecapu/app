@@ -27,7 +27,22 @@ export default function CrisisModeScreen() {
             'Voulez-vous appeler les secours (112) ?',
             [
                 { text: 'Annuler', style: 'cancel' },
-                { text: 'Appeler', style: 'destructive', onPress: () => Linking.openURL('tel:112') }
+                {
+                    text: 'Appeler',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const url = 'tel:112';
+                            if (await Linking.canOpenURL(url)) {
+                                await Linking.openURL(url);
+                            } else {
+                                Alert.alert('Erreur', 'Impossible de passer l\'appel sur cet appareil.');
+                            }
+                        } catch (err) {
+                            Alert.alert('Erreur', 'Impossible de lancer l\'appel.');
+                        }
+                    }
+                }
             ]
         );
     };

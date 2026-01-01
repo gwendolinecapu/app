@@ -1,22 +1,35 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { EmotionService } from '../../services/emotions';
 import { Emotion, EmotionType } from '../../types';
 import { colors, spacing, typography } from '../../lib/theme';
-import { router } from 'expo-router';
 
-const EMOTION_CONFIG: { type: EmotionType; emoji: string; color: string }[] = [
-    { type: 'happy', emoji: '😊', color: '#FFD93D' },
-    { type: 'sad', emoji: '😢', color: '#3498DB' },
-    { type: 'anxious', emoji: '😰', color: '#F39C12' },
-    { type: 'angry', emoji: '😡', color: '#E74C3C' },
-    { type: 'tired', emoji: '😴', color: '#A0AEC0' },
-    { type: 'calm', emoji: '😌', color: '#6BCB77' },
-    { type: 'confused', emoji: '😕', color: '#9B59B6' },
-    { type: 'excited', emoji: '🤩', color: '#FF6B6B' },
+const EMOTION_CONFIG: { type: EmotionType; emoji: string; color: string; label: string }[] = [
+    { type: 'happy', emoji: '😊', color: '#FFD93D', label: 'Joyeux(se)' },
+    { type: 'sad', emoji: '😢', color: '#3498DB', label: 'Triste' },
+    { type: 'anxious', emoji: '😰', color: '#F39C12', label: 'Anxieux(se)' },
+    { type: 'angry', emoji: '😡', color: '#E74C3C', label: 'En colère' },
+    { type: 'tired', emoji: '😴', color: '#A0AEC0', label: 'Fatigué(e)' },
+    { type: 'calm', emoji: '😌', color: '#6BCB77', label: 'Calme' },
+    { type: 'confused', emoji: '😕', color: '#9B59B6', label: 'Confus(e)' },
+    { type: 'excited', emoji: '🤩', color: '#FF6B6B', label: 'Excité(e)' },
 ];
+
+const formatTimeSince = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "à l'instant";
+    if (diffMins < 60) return `${diffMins} min`;
+    if (diffHours < 24) return `${diffHours}h`;
+    return `${diffDays}j`;
+};
 
 export const AlterWeatherBar: React.FC = () => {
     const { alters, user } = useAuth();
@@ -34,6 +47,17 @@ export const AlterWeatherBar: React.FC = () => {
 
     const getEmotionConfig = (emotionType: EmotionType) => {
         return EMOTION_CONFIG.find(e => e.type === emotionType);
+    };
+
+    const handleEmotionPress = (alterName: string, emotion: Emotion) => {
+        const config = getEmotionConfig(emotion.emotion);
+        const timeSince = formatTimeSince(emotion.created_at);
+
+        Alert.alert(
+            `${config?.emoji} ${alterName}`,
+            `${config?.label || emotion.emotion} depuis ${timeSince}${emotion.note ? `\n\n"${emotion.note}"` : ''}`,
+            [{ text: 'OK' }]
+        );
     };
 
     const altersWithEmotions = alters.filter(alter => alterEmotions[alter.id]);
@@ -61,9 +85,10 @@ export const AlterWeatherBar: React.FC = () => {
                         <TouchableOpacity
                             key={alter.id}
                             style={[styles.weatherItem, { borderColor: config?.color || colors.border }]}
-                            onPress={() => router.push(`/alter-space/${alter.id}?tab=profile`)}
+                            onPress={() => handleEmotionPress(alter.name, emotion)}
                         >
                             <Text style={styles.emoji}>{config?.emoji || '❔'}</Text>
+                            <Text style={styles.alterName} numberOfLines={1}>{alter.name}</Text>
                         </TouchableOpacity>
                     );
                 })}
@@ -95,18 +120,26 @@ const styles = StyleSheet.create({
     scrollContent: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
+        gap: 8,
     },
     weatherItem: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 20,
         backgroundColor: colors.backgroundCard,
         borderWidth: 2,
-        alignItems: 'center',
-        justifyContent: 'center',
+        gap: 4,
     },
     emoji: {
         fontSize: 16,
+    },
+    alterName: {
+        ...typography.caption,
+        color: colors.text,
+        fontWeight: '500',
+        fontSize: 12,
+        maxWidth: 60,
     },
 });

@@ -32,7 +32,7 @@ export const ImportService = {
             const existingDocs = await getDocs(existingAltersQuery);
             const existingNames = new Set(existingDocs.docs.map(d => d.data().name?.toLowerCase()));
 
-            const batch = writeBatch(db);
+            let batch = writeBatch(db);
             let operationCount = 0;
 
             for (const member of members) {
@@ -69,6 +69,7 @@ export const ImportService = {
                 // Commit batch par lots de 500
                 if (operationCount >= 450) {
                     await batch.commit();
+                    batch = writeBatch(db);
                     operationCount = 0;
                 }
             }
@@ -108,6 +109,7 @@ export const ImportService = {
 
                 if (operationCount >= 450) {
                     await batch.commit();
+                    batch = writeBatch(db);
                     operationCount = 0;
                 }
             }

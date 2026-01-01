@@ -13,6 +13,7 @@ import {
     Dimensions,
     FlatList,
     RefreshControl,
+    useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -33,25 +34,23 @@ import { AddAlterModal } from '../../src/components/dashboard/AddAlterModal';
 import { DashboardGrid, GridItem } from '../../src/components/dashboard/DashboardGrid';
 import { Alter } from '../../src/types';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CONTAINER_PADDING = 16;
-const AVAILABLE_WIDTH = SCREEN_WIDTH - (CONTAINER_PADDING * 2);
 
-const getBubbleConfig = (alterCount: number) => {
+const getBubbleConfig = (alterCount: number, availableWidth: number) => {
     if (alterCount <= 5) {
         const size = 80;
         const spacing = 20;
-        const columns = Math.floor(AVAILABLE_WIDTH / (size + spacing));
+        const columns = Math.floor(availableWidth / (size + spacing));
         return { size, spacing, columns: Math.max(3, columns) };
     } else if (alterCount <= 20) {
         const size = 64;
         const spacing = 14;
-        const columns = Math.floor(AVAILABLE_WIDTH / (size + spacing));
+        const columns = Math.floor(availableWidth / (size + spacing));
         return { size, spacing, columns: Math.max(4, columns) };
     } else {
         const size = 48;
         const spacing = 10;
-        const columns = Math.floor(AVAILABLE_WIDTH / (size + spacing));
+        const columns = Math.floor(availableWidth / (size + spacing));
         return { size, spacing, columns: Math.max(5, columns) };
     }
 };
@@ -69,6 +68,9 @@ export default function Dashboard() {
     const [searchQuery, setSearchQuery] = useState('');
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    const { width } = useWindowDimensions();
+    const availableWidth = width - (CONTAINER_PADDING * 2);
 
     // const scrollRef = useRef<FlatList<GridItem>>(null);
     // useScrollToTop(scrollRef as any);
@@ -91,7 +93,7 @@ export default function Dashboard() {
         }
     }, [refreshAlters]);
 
-    const bubbleConfig = useMemo(() => getBubbleConfig(alters.length), [alters.length]);
+    const bubbleConfig = useMemo(() => getBubbleConfig(alters.length, availableWidth), [alters.length, availableWidth]);
     const { size: BUBBLE_SIZE, spacing: BUBBLE_SPACING, columns: NUM_COLUMNS } = bubbleConfig;
 
     const filteredAlters = useMemo(() => {
@@ -299,7 +301,7 @@ const styles = StyleSheet.create({
         marginBottom: spacing.xl,
     },
     toolItem: {
-        width: (AVAILABLE_WIDTH - spacing.md * 2) / 4, // 4 tools per row
+        width: '25%', // Use percentage instead of fixed math
         alignItems: 'center',
         gap: 8,
     },

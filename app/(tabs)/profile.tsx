@@ -10,6 +10,7 @@ import {
     FlatList,
     RefreshControl,
     Image,
+    useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -27,12 +28,43 @@ import { triggerHaptic } from '../../src/lib/haptics';
 import { SkeletonProfile } from '../../src/components/ui/Skeleton';
 import { EmptyState } from '../../src/components/ui/EmptyState';
 import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
+import { Alert } from 'react-native';
 
-const { width } = Dimensions.get('window');
-const GRID_SIZE = (width - 4) / 3;
+const ROLE_DEFINITIONS: Record<string, string> = {
+    'host': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
+    'hote': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
+    'hôte': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
+    'protector': "Protège le système, le corps ou d'autres alters des menaces ou des traumas.",
+    'protecteur': "Protège le système, le corps ou d'autres alters des menaces ou des traumas.",
+    'gatekeeper': "Contrôle les switchs (changements), l'accès aux souvenirs ou aux zones du monde intérieur.",
+    'persecutor': "Peut agir de manière nuisible envers le système, souvent par mécanisme de défense déformé ou traumatisme.",
+    'persecuteur': "Peut agir de manière nuisible envers le système, souvent par mécanisme de défense déformé ou traumatisme.",
+    'persécuteur': "Peut agir de manière nuisible envers le système, souvent par mécanisme de défense déformé ou traumatisme.",
+    'little': "Un alter enfant, souvent porteur d'innocence ou de souvenirs traumatiques précoces.",
+    'caretaker': "Prend soin des autres alters (souvent les littles) ou apaise le système.",
+    'soigneur': "Prend soin des autres alters (souvent les littles) ou apaise le système.",
+    'trauma holder': "Détient les souvenirs ou les émotions liés aux traumas pour protéger les autres.",
+    'porteur de trauma': "Détient les souvenirs ou les émotions liés aux traumas pour protéger les autres.",
+    'fictive': "Introject basé sur un personnage de fiction.",
+    'factive': "Introject basé sur une personne réelle.",
+};
+
+const getRoleDefinition = (role: string) => {
+    const key = role.toLowerCase().trim();
+    // Try exact match
+    if (ROLE_DEFINITIONS[key]) return ROLE_DEFINITIONS[key];
+    // Try partial match
+    const found = Object.keys(ROLE_DEFINITIONS).find(k => key.includes(k));
+    if (found) return ROLE_DEFINITIONS[found];
+    return "Définition non disponible pour ce rôle spécifique.";
+};
+
+const getGridSize = (width: number) => (width - 4) / 3;
 
 export default function ProfileScreen() {
     const { currentAlter, system, alters, user } = useAuth();
+    const { width } = useWindowDimensions();
+    const GRID_SIZE = getGridSize(width);
     const [posts, setPosts] = useState<Post[]>([]);
     const [stats, setStats] = useState({ posts: 0, followers: 0, following: 0 });
     const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
@@ -163,6 +195,23 @@ export default function ProfileScreen() {
             await PostService.toggleLike(postId, user.uid);
         } catch (error) {
             console.error('Like failed', error);
+            // Revert optimistic update
+            setPosts(prev => prev.map(post => {
+                if (post.id === postId) {
+                    const likes = post.likes || [];
+                    const isLiked = likes.includes(user.uid);
+                    // Reversing the logic: if we "liked" it and it failed, we remove our ID. If we unliked, we add it back.
+                    // Wait, the prev state above WAS the optimistic update.
+                    // But here we are in catch block, so 'prev' inside setPosts might be the optimistic state or newer.
+                    // To revert, we toggle again.
+                    return {
+                        ...post,
+                        likes: isLiked ? likes.filter(id => id !== user.uid) : [...likes, user.uid]
+                    };
+                }
+                return post;
+            }));
+            triggerHaptic.error();
         }
     };
 
@@ -216,6 +265,9 @@ export default function ProfileScreen() {
                         <TouchableOpacity onPress={() => router.push('/(tabs)/search')}>
                             <Ionicons name="search-outline" size={24} color={colors.text} />
                         </TouchableOpacity>
+                        <TouchableOpacity onPress={() => router.push('/(tabs)/notifications')}>
+                            <Ionicons name="notifications-outline" size={24} color={colors.text} />
+                        </TouchableOpacity>
                         <TouchableOpacity onPress={() => router.push('/settings/index' as any)}>
                             <Ionicons name="settings-outline" size={24} color={colors.text} />
                         </TouchableOpacity>
@@ -264,9 +316,48 @@ export default function ProfileScreen() {
                     {currentAlter.pronouns && (
                         <Text style={styles.pronouns}>{currentAlter.pronouns}</Text>
                     )}
+
+                    {/* Role Display */}
+                    {currentAlter.custom_fields?.find(f => f.label === 'Role') && (
+                        <TouchableOpacity
+                            style={styles.roleBadge}
+                            activeOpacity={0.7}
+                            onPress={() => {
+                                const role = currentAlter.custom_fields?.find(f => f.label === 'Role')?.value || '';
+                                Alert.alert("Définition du rôle", getRoleDefinition(role));
+                            }}
+                        >
+                            <Ionicons name="information-circle" size={14} color={colors.primaryLight} style={{ marginRight: 4 }} />
+                            <Text style={styles.roleText}>
+                                {currentAlter.custom_fields.find(f => f.label === 'Role')?.value}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+
+                    {/* Bio */}
                     {currentAlter.bio && (
                         <Text style={styles.bio}>{currentAlter.bio}</Text>
                     )}
+
+                    {/* Dates Display */}
+                    <View style={{ flexDirection: 'row', gap: 16, marginTop: 8, flexWrap: 'wrap' }}>
+                        {currentAlter.birthDate && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} style={{ marginRight: 4 }} />
+                                <Text style={[styles.bio, { marginTop: 0, fontSize: 12, color: colors.textSecondary }]}>
+                                    Né(e) le {new Date(currentAlter.birthDate).toLocaleDateString()}
+                                </Text>
+                            </View>
+                        )}
+                        {currentAlter.arrivalDate && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Ionicons name="airplane-outline" size={14} color={colors.textSecondary} style={{ marginRight: 4 }} />
+                                <Text style={[styles.bio, { marginTop: 0, fontSize: 12, color: colors.textSecondary }]}>
+                                    Arrivé(e) le {new Date(currentAlter.arrivalDate).toLocaleDateString()}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
                 </View>
 
                 {/* Action Buttons */}
@@ -533,8 +624,8 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
     },
     gridItem: {
-        width: GRID_SIZE,
-        height: GRID_SIZE,
+        width: '33.33%',
+        aspectRatio: 1,
         borderWidth: 1,
         borderColor: colors.background,
     },
@@ -612,5 +703,22 @@ const styles = StyleSheet.create({
     modalTitle: {
         ...typography.h3,
         color: colors.text,
+    },
+    roleBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        alignSelf: 'flex-start',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+        marginTop: 6,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.2)',
+    },
+    roleText: {
+        ...typography.caption,
+        color: colors.primaryLight,
+        fontWeight: '600',
     },
 });

@@ -6,6 +6,7 @@ import Purchases, {
 } from 'react-native-purchases';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import { Platform } from 'react-native';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 
 // API Key provided by user (test key for now)
 // API Keys from environment
@@ -20,6 +21,7 @@ const ENTITLEMENT_ID = 'Plural Connect Pro';
 class RevenueCatService {
     private static instance: RevenueCatService;
     private initialized: boolean = false;
+    private configured: boolean = false;
 
     private constructor() { }
 
@@ -36,9 +38,12 @@ class RevenueCatService {
     async initialize(userId?: string): Promise<void> {
         if (this.initialized) return;
 
+        // Check for Expo Go
+        const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
         // Ensure keys exist, otherwise mock or warn
         if (!API_KEYS.ios && !API_KEYS.android) {
-            console.warn('[RevenueCat] No API keys found. Skipping initialization.');
+            console.log('[RevenueCat] No API keys found. Skipping initialization.');
             this.initialized = true;
             return;
         }
@@ -47,43 +52,63 @@ class RevenueCatService {
             Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
 
             if (Platform.OS === 'ios') {
-                if (API_KEYS.ios) Purchases.configure({ apiKey: API_KEYS.ios });
+                if (API_KEYS.ios) {
+                    Purchases.configure({ apiKey: API_KEYS.ios });
+                    this.configured = true;
+                }
             } else if (Platform.OS === 'android') {
-                if (API_KEYS.android) Purchases.configure({ apiKey: API_KEYS.android });
+                if (API_KEYS.android) {
+                    Purchases.configure({ apiKey: API_KEYS.android });
+                    this.configured = true;
+                }
             }
 
-            if (userId) {
+            if (this.configured && userId) {
                 await Purchases.logIn(userId);
             }
 
             this.initialized = true;
         } catch (error) {
-            console.warn('[RevenueCat] Initialization failed (likely running in Expo Go without native code).', error);
-            // Mark as initialized to prevent repeated failed attempts in loop
+            console.warn('[RevenueCat] Initialization failed (likely running in Expo Go without native code). Safe to ignore in dev.', error);
+            // Mark as initialized but NOT configured to prevent repeated failed attempts in loop
             this.initialized = true;
+            this.configured = false;
         }
     }
 
     /**
      * Identify user (e.g. on login)
      */
-    async login(userId: string): Promise<CustomerInfo> {
-        const { customerInfo } = await Purchases.logIn(userId);
-        return customerInfo;
+    async login(userId: string): Promise<CustomerInfo | null> {
+        if (!this.configured) return null;
+        try {
+            const { customerInfo } = await Purchases.logIn(userId);
+            return customerInfo;
+        } catch (e) {
+            console.warn('[RevenueCat] Login failed:', e);
+            return null;
+        }
     }
 
     /**
      * Logout user (reset to anonymous)
      */
-    async logout(): Promise<CustomerInfo> {
-        const customerInfo = await Purchases.logOut();
-        return customerInfo;
+    async logout(): Promise<CustomerInfo | null> {
+        if (!this.configured) return null;
+        try {
+            const customerInfo = await Purchases.logOut();
+            return customerInfo;
+        } catch (e) {
+            console.warn('[RevenueCat] Logout failed:', e);
+            return null;
+        }
     }
 
     /**
      * Get current offerings (products to display)
      */
     async getOfferings(): Promise<PurchasesOffering | null> {
+        if (!this.configured) return null;
         try {
             const offerings = await Purchases.getOfferings();
             if (offerings.current !== null) {
@@ -91,7 +116,7 @@ class RevenueCatService {
             }
             return null;
         } catch (e) {
-            console.error('[RevenueCat] Error fetching offerings:', e);
+            console.warn('[RevenueCat] Error fetching offerings:', e);
             return null;
         }
     }
@@ -102,12 +127,13 @@ class RevenueCatService {
     async purchasePackage(
         packageToPurchase: PurchasesPackage
     ): Promise<{ customerInfo: CustomerInfo; paymentSuccessful: boolean }> {
+        if (!this.configured) return { customerInfo: null as any, paymentSuccessful: false };
         try {
             const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
             return { customerInfo, paymentSuccessful: true };
         } catch (e: any) {
             if (!e.userCancelled) {
-                console.error('[RevenueCat] Purchase error:', e);
+                console.warn('[RevenueCat] Purchase error:', e);
             }
             return { customerInfo: null as any, paymentSuccessful: false };
         }
@@ -117,6 +143,7 @@ class RevenueCatService {
      * Present the native RevenueCat Paywall
      */
     async presentPaywall(): Promise<boolean> {
+        if (!this.configured) return false;
         try {
             const paywallResult: PAYWALL_RESULT = await RevenueCatUI.presentPaywall();
 
@@ -131,7 +158,7 @@ class RevenueCatService {
                     return false;
             }
         } catch (error) {
-            console.error('[RevenueCat] Paywall error:', error);
+            console.warn('[RevenueCat] Paywall error:', error);
             return false;
         }
     }
@@ -140,29 +167,37 @@ class RevenueCatService {
      * Present the Customer Center
      */
     async presentCustomerCenter(): Promise<void> {
+        if (!this.configured) return;
         try {
             await RevenueCatUI.presentCustomerCenter();
         } catch (error) {
-            console.error('[RevenueCat] Customer Center error:', error);
+            console.warn('[RevenueCat] Customer Center error:', error);
         }
     }
 
     /**
      * Restore purchases
      */
-    async restorePurchases(): Promise<CustomerInfo> {
-        return await Purchases.restorePurchases();
+    async restorePurchases(): Promise<CustomerInfo | null> {
+        if (!this.configured) return null;
+        try {
+            return await Purchases.restorePurchases();
+        } catch (e) {
+            console.warn('[RevenueCat] Restore failed:', e);
+            return null;
+        }
     }
 
     /**
      * Check if user has active entitlement
      */
     async isPro(customerInfo?: CustomerInfo): Promise<boolean> {
+        if (!this.configured) return false;
         try {
             const info = customerInfo || await Purchases.getCustomerInfo();
             return typeof info.entitlements.active[ENTITLEMENT_ID] !== "undefined";
         } catch (e) {
-            console.error('[RevenueCat] Error checking entitlement:', e);
+            console.warn('[RevenueCat] Error checking entitlement:', e);
             return false;
         }
     }
@@ -170,9 +205,16 @@ class RevenueCatService {
     /**
      * Get generic generic raw customer info
      */
-    async getCustomerInfo(): Promise<CustomerInfo> {
-        return await Purchases.getCustomerInfo();
+    async getCustomerInfo(): Promise<CustomerInfo | null> {
+        if (!this.configured) return null;
+        try {
+            return await Purchases.getCustomerInfo();
+        } catch (e) {
+            console.warn('RevenueCat] Error getting info', e);
+            return null;
+        }
     }
 }
 
 export default RevenueCatService.getInstance();
+

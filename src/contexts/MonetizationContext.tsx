@@ -145,14 +145,18 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
     const refreshState = useCallback(() => {
         setTier(PremiumService.getCurrentTier());
-        // Note: Credits are now managed via subscription to currentAlter
-        // setCredits(CreditService.getBalance()); // REMOVED - this always returns 0 now
 
         // Fetch owned items for CURRENT ALTER only (Alter-specific inventory)
         if (currentAlter) {
+            console.log(`[MonetizationContext] refreshing state for alter ${currentAlter.id}`);
             const defaults = ['theme_default', 'frame_simple', 'bubble_classic', 'bubble_default', 'border_none'];
             const alterOwned = currentAlter.owned_items || [];
+
+            console.log(`[MonetizationContext] Owned items from currentAlter: ${alterOwned.length} items`);
+
             setOwnedItems([...new Set([...defaults, ...alterOwned])]);
+        } else {
+            console.log('[MonetizationContext] No currentAlter available for refreshState');
         }
 
         refreshAlters();

@@ -29,6 +29,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { colors, typography, spacing } from '../../lib/theme';
 import { useMonetization } from '../../contexts/MonetizationContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { LootBoxService, LOOT_BOX } from '../../services/LootBoxService';
 import { ShopItem, ShopItemType, COSMETIC_ITEMS, CREDIT_PACKS } from '../../services/MonetizationTypes';
 import { ShopItemCard } from './ShopItemCard';
@@ -46,6 +47,7 @@ interface ShopUIProps {
 
 export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
     const insets = useSafeAreaInsets();
+    const { currentAlter } = useAuth();
     const {
         credits,
         isPremium,
@@ -120,8 +122,8 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
     };
 
     const handlePurchase = async () => {
-        if (selectedItem) {
-            const success = await purchaseItem(selectedItem);
+        if (selectedItem && currentAlter) {
+            const success = await purchaseItem(selectedItem, currentAlter.id);
             if (success) setModalVisible(false);
             return success;
         }
@@ -139,10 +141,15 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
     const onModalPurchase = async (item: ShopItem) => {
         // We use the item passed from modal or the selectedItem state?
         // Safer to use the passed item argument
-        const success = await purchaseItem(item);
+        if (!currentAlter) {
+            console.error('[ShopUI] No current alter for purchase');
+            return false;
+        }
+        const success = await purchaseItem(item, currentAlter.id);
         if (success) setModalVisible(false);
         return success;
     };
+
 
     const onModalEquip = async (item: ShopItem) => {
         await equipItem(item.id, item.type);

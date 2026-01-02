@@ -9,7 +9,7 @@
  * 3. CATALOG: Le reste, en bas, plus discret
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -30,7 +30,7 @@ import { useRouter } from 'expo-router';
 import { colors, typography, spacing } from '../../lib/theme';
 import { useMonetization } from '../../contexts/MonetizationContext';
 import { LootBoxService, LOOT_BOX } from '../../services/LootBoxService';
-import { ShopItem, ShopItemType } from '../../services/MonetizationTypes';
+import { ShopItem, ShopItemType, COSMETIC_ITEMS, CREDIT_PACKS } from '../../services/MonetizationTypes';
 import { ShopItemCard } from './ShopItemCard';
 import { ShopItemModal } from './ShopItemModal';
 import { LootBoxOpening } from './LootBoxOpening';
@@ -50,6 +50,7 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
         credits,
         isPremium,
         purchaseItem,
+        purchaseIAP,
         equipItem,
         ownedItems,
         equippedItems,
@@ -68,22 +69,45 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
 
     // Catalog State
     const [catalogFilter, setCatalogFilter] = useState<'all' | 'theme' | 'frame' | 'bubble'>('all');
+    const [catalogExpanded, setCatalogExpanded] = useState(false);
+    const [bankModalVisible, setBankModalVisible] = useState(false);
 
-    // Data
-    const dailyItems = useMemo(() => LootBoxService.getDailyItems(), []);
-    const catalogItems = useMemo(() => {
-        // Filtrer les items qui ne sont PAS dans le daily (pour éviter doublons visuels ?) 
-        // ou juste tout afficher.
-        // On affiche tout le catalogue dans l'onglet Catalogue.
-        return LootBoxService.getReward('common').item ? [] : []; // Hack to access static items? No we need import.
-        // Actually we need to import COSMETIC_ITEMS from types, or expose them via Service.
-        // Let's assume we can get them or use a mock for now if not exported. 
-        // Wait, LootBoxService doesn't export getAllItems. 
-        // I'll fix this in next step or use what I have.
-        // For now let's assume I can import COSMETIC_ITEMS from where it was used before.
-        // It was imported from MonetizationTypes in previous ShopUI.
-        return [];
+    // Live Countdown Timer State
+    const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0 });
+
+    // Calculate time until midnight
+    const updateCountdown = useCallback(() => {
+        const now = new Date();
+        const midnight = new Date(now);
+        midnight.setHours(24, 0, 0, 0); // Next midnight
+        const diff = midnight.getTime() - now.getTime();
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        setTimeLeft({ hours, minutes });
     }, []);
+
+    useEffect(() => {
+        updateCountdown();
+        const interval = setInterval(updateCountdown, 60000); // Update every minute
+        return () => clearInterval(interval);
+    }, [updateCountdown]);
+
+    // Data: Daily Items from LootBoxService (seeded rotation)
+    const dailyItems = useMemo(() => LootBoxService.getDailyItems(), []);
+
+    // Full Catalog Items (COSMETIC_ITEMS imported directly)
+    const catalogItems = useMemo(() => {
+        // Filter out items already in daily rotation to avoid duplicates
+        const dailyIds = dailyItems.map(d => d.id);
+        let items = COSMETIC_ITEMS.filter(item => !dailyIds.includes(item.id));
+
+        // Apply category filter
+        if (catalogFilter !== 'all') {
+            items = items.filter(item => item.type === catalogFilter);
+        }
+
+        return items;
+    }, [dailyItems, catalogFilter]);
 
     // Helper check
     const isOwned = (id: string) => ownedItems.includes(id);
@@ -222,7 +246,9 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                     <Text style={styles.sectionTitle}>FLASH QUOTIDIEN</Text>
                     <View style={styles.timerBadge}>
                         <Ionicons name="time-outline" size={12} color="#AAA" />
-                        <Text style={styles.timerText}>23H 59M</Text>
+                        <Text style={styles.timerText}>
+                            {timeLeft.hours}H {timeLeft.minutes.toString().padStart(2, '0')}M
+                        </Text>
                     </View>
                 </View>
 
@@ -288,11 +314,93 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                     ))}
                 </ScrollView>
 
-                {/* 3. SECTION CATALOG TEASER */}
-                <TouchableOpacity style={styles.catalogButton} onPress={() => { /* Navigate or Expand */ }}>
-                    <Text style={styles.catalogBtnText}>VOIR TOUT LE CATALOGUE</Text>
-                    <Ionicons name="grid-outline" size={20} color="#FFF" />
+                {/* 3. SECTION CATALOG TEASER / EXPANDED */}
+                <TouchableOpacity
+                    style={styles.catalogButton}
+                    onPress={() => setCatalogExpanded(!catalogExpanded)}
+                >
+                    <Text style={styles.catalogBtnText}>
+                        {catalogExpanded ? 'MASQUER LE CATALOGUE' : 'VOIR TOUT LE CATALOGUE'}
+                    </Text>
+                    <Ionicons
+                        name={catalogExpanded ? 'chevron-up' : 'grid-outline'}
+                        size={20}
+                        color="#FFF"
+                    />
                 </TouchableOpacity>
+
+                {/* CATALOG EXPANDED SECTION */}
+                {catalogExpanded && (
+                    <View style={styles.catalogSection}>
+                        {/* Filter Tabs */}
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterTabs}>
+                            {(['all', 'theme', 'frame', 'bubble'] as const).map((filter) => (
+                                <TouchableOpacity
+                                    key={filter}
+                                    style={[
+                                        styles.filterTab,
+                                        catalogFilter === filter && styles.filterTabActive
+                                    ]}
+                                    onPress={() => setCatalogFilter(filter)}
+                                >
+                                    <Text style={[
+                                        styles.filterTabText,
+                                        catalogFilter === filter && styles.filterTabTextActive
+                                    ]}>
+                                        {filter === 'all' ? 'TOUT' : filter.toUpperCase()}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+
+                        {/* Catalog Grid */}
+                        <View style={styles.catalogGrid}>
+                            {catalogItems.map((item, index) => (
+                                <View key={item.id} style={styles.catalogItemWrapper}>
+                                    <ShopItemCard
+                                        item={item}
+                                        userCredits={credits}
+                                        isOwned={isOwned(item.id)}
+                                        isEquipped={isEquipped(item.id, item.type)}
+                                        onPress={handleItemPress}
+                                    />
+                                </View>
+                            ))}
+                        </View>
+                    </View>
+                )}
+
+                {/* 4. SECTION BANQUE (Credit Packs) */}
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>💎 BANQUE</Text>
+                    <TouchableOpacity onPress={() => setBankModalVisible(true)}>
+                        <Text style={styles.seeAllText}>Voir plus</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bankScroll}>
+                    {CREDIT_PACKS.map((pack) => (
+                        <TouchableOpacity
+                            key={pack.id}
+                            style={styles.bankCard}
+                            onPress={() => purchaseIAP(pack.revenueCatPackageId || pack.priceIAP || pack.id)}
+                        >
+                            <LinearGradient
+                                colors={pack.featured ? ['#F59E0B', '#D97706'] : ['#374151', '#1F2937']}
+                                style={styles.bankCardGradient}
+                            >
+                                {pack.discount && (
+                                    <View style={styles.discountBadge}>
+                                        <Text style={styles.discountText}>-{pack.discount}%</Text>
+                                    </View>
+                                )}
+                                <Ionicons name="diamond" size={32} color={pack.featured ? '#FFF' : '#F59E0B'} />
+                                <Text style={styles.bankCardTitle}>{pack.name}</Text>
+                                <Text style={styles.bankCardPrice}>{pack.priceFiat?.toFixed(2)}€</Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
 
             </ScrollView>
 
@@ -630,5 +738,92 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: 'bold',
         letterSpacing: 1,
+    },
+
+    // CATALOG EXPANDED
+    catalogSection: {
+        marginTop: spacing.md,
+        paddingHorizontal: spacing.md,
+    },
+    filterTabs: {
+        flexDirection: 'row',
+        marginBottom: spacing.md,
+    },
+    filterTab: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 20,
+        marginRight: 8,
+    },
+    filterTabActive: {
+        backgroundColor: '#F59E0B',
+    },
+    filterTabText: {
+        color: '#AAA',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    filterTabTextActive: {
+        color: '#000',
+    },
+    catalogGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+    },
+    catalogItemWrapper: {
+        width: '48%',
+        marginBottom: spacing.md,
+    },
+
+    // BANK / CREDIT PACKS
+    seeAllText: {
+        color: '#F59E0B',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    bankScroll: {
+        paddingHorizontal: spacing.md,
+        gap: spacing.md,
+        paddingBottom: spacing.lg,
+    },
+    bankCard: {
+        width: 130,
+        height: 160,
+        borderRadius: 16,
+        overflow: 'hidden',
+    },
+    bankCardGradient: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 12,
+        gap: 8,
+    },
+    bankCardTitle: {
+        color: '#FFF',
+        fontWeight: 'bold',
+        fontSize: 14,
+        textAlign: 'center',
+    },
+    bankCardPrice: {
+        color: 'rgba(255,255,255,0.8)',
+        fontSize: 16,
+        fontWeight: '900',
+    },
+    discountBadge: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        backgroundColor: '#EF4444',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+    },
+    discountText: {
+        color: '#FFF',
+        fontSize: 10,
+        fontWeight: 'bold',
     },
 });

@@ -142,24 +142,18 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
     const refreshState = useCallback(() => {
         setTier(PremiumService.getCurrentTier());
-        setCredits(CreditService.getBalance());
+        // Note: Credits are now managed via subscription to currentAlter
+        // setCredits(CreditService.getBalance()); // REMOVED - this always returns 0 now
 
-        // Fetch owned items for ALL alters (System Inventory)
-        if (alters && alters.length > 0) {
-            Promise.all(alters.map(a => DecorationService.getOwnedDecorationIds(a.id)))
-                .then((results) => {
-                    const allOwned = new Set<string>();
-                    // Add default items
-                    ['theme_default', 'frame_simple', 'bubble_classic', 'bubble_default', 'border_none'].forEach(id => allOwned.add(id));
-
-                    results.forEach(ids => ids.forEach(id => allOwned.add(id)));
-                    setOwnedItems(Array.from(allOwned));
-                })
-                .catch(err => console.error("Error syncing owned items", err));
+        // Fetch owned items for CURRENT ALTER only (Alter-specific inventory)
+        if (currentAlter) {
+            const defaults = ['theme_default', 'frame_simple', 'bubble_classic', 'bubble_default', 'border_none'];
+            const alterOwned = currentAlter.owned_items || [];
+            setOwnedItems([...new Set([...defaults, ...alterOwned])]);
         }
 
         refreshAlters();
-    }, [refreshAlters, alters]);
+    }, [refreshAlters, currentAlter]);
 
     const refresh = useCallback(async () => {
         if (user?.uid) {

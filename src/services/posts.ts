@@ -69,6 +69,44 @@ export const PostService = {
      * Fetch posts for a specific system (or global feed if we implemented that)
      * currently fetching all posts for the system to show in their feed
      */
+    /**
+     * Enrich posts with author details (alter name/avatar)
+     */
+    _enrichPostsWithAuthors: async (posts: Post[]): Promise<Post[]> => {
+        const alterIds = new Set(posts.map(p => p.alter_id).filter(id => id));
+        if (alterIds.size === 0) return posts;
+
+        const altersMap = new Map<string, any>();
+        await Promise.all(Array.from(alterIds).map(async (id) => {
+            try {
+                if (!id) return;
+                const alterDoc = await getDoc(doc(db, 'alters', id));
+                if (alterDoc.exists()) {
+                    altersMap.set(id, alterDoc.data());
+                }
+            } catch (e) {
+                console.warn(`Failed to fetch author alter ${id}`, e);
+            }
+        }));
+
+        return posts.map(post => {
+            if (post.alter_id && altersMap.has(post.alter_id)) {
+                const alter = altersMap.get(post.alter_id);
+                return {
+                    ...post,
+                    author_name: alter.name,
+                    author_avatar: alter.avatar_url || alter.avatar,
+                    alter: { id: post.alter_id, ...alter } // Attach full alter object if needed
+                };
+            }
+            return post;
+        });
+    },
+
+    /**
+     * Fetch posts for a specific system (or global feed if we implemented that)
+     * currently fetching all posts for the system to show in their feed
+     */
     fetchPosts: async (systemId: string, lastVisible: QueryDocumentSnapshot | null = null, pageSize: number = 20) => {
         try {
             let q = query(
@@ -95,8 +133,10 @@ export const PostService = {
                 } as Post);
             });
 
+            const enrichedPosts = await PostService._enrichPostsWithAuthors(posts);
+
             return {
-                posts,
+                posts: enrichedPosts,
                 lastVisible: querySnapshot.docs[querySnapshot.docs.length - 1]
             };
         } catch (error) {
@@ -134,8 +174,10 @@ export const PostService = {
                 } as Post);
             });
 
+            const enrichedPosts = await PostService._enrichPostsWithAuthors(posts);
+
             return {
-                posts,
+                posts: enrichedPosts,
                 lastVisible: querySnapshot.docs[querySnapshot.docs.length - 1]
             };
         } catch (error) {
@@ -187,8 +229,10 @@ export const PostService = {
                 } as Post);
             });
 
+            const enrichedPosts = await PostService._enrichPostsWithAuthors(posts);
+
             return {
-                posts,
+                posts: enrichedPosts,
                 lastVisible: querySnapshot.docs[querySnapshot.docs.length - 1]
             };
         } catch (error) {

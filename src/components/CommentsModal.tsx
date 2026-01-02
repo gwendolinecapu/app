@@ -13,6 +13,7 @@ import {
     Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius, typography } from '../lib/theme';
 import { CommentsService, Comment } from '../services/comments';
 import { timeAgo } from '../lib/date';
@@ -37,6 +38,7 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
     const [sending, setSending] = useState(false);
     const [newComment, setNewComment] = useState('');
     const inputRef = useRef<TextInput>(null);
+    const insets = useSafeAreaInsets();
 
     // Charger les commentaires quand le modal s'ouvre
     useEffect(() => {
@@ -165,7 +167,7 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
                     )}
 
                     {/* Input */}
-                    <View style={styles.inputContainer}>
+                    <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 20) + spacing.md }]}>
                         {currentAlter?.avatar || currentAlter?.avatar_url ? (
                             <Image
                                 source={{ uri: currentAlter.avatar || currentAlter.avatar_url }}
@@ -321,7 +323,6 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
         borderTopColor: colors.border,
         gap: spacing.sm,
-        paddingBottom: Platform.OS === 'ios' ? 30 : spacing.md,
     },
     inputAvatar: {
         width: 32,

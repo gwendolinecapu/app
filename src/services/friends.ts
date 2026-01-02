@@ -231,6 +231,23 @@ export const FriendService = {
     },
 
     /**
+     * Get system IDs of friends (for feed)
+     */
+    getFriendSystemIds: async (alterId: string) => {
+        if (!auth.currentUser) return [];
+
+        const q = query(
+            collection(db, 'friendships'),
+            where('alterId', '==', alterId),
+            where('systemId', '==', auth.currentUser.uid)
+        );
+        const snapshot = await getDocs(q);
+        // Use Set to dedup
+        const systemIds = new Set(snapshot.docs.map(d => d.data().friendSystemId as string));
+        return Array.from(systemIds).filter(id => id); // Filter undefined
+    },
+
+    /**
      * Get following list (people this alter follows)
      */
     getFollowing: async (alterId: string): Promise<string[]> => {

@@ -116,6 +116,23 @@ export default function EditAlterProfileScreen() {
         }
     };
 
+    // Helper for robust blob creation
+    const getBlobFromUri = async (uri: string): Promise<Blob> => {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.onload = function () {
+                resolve(xhr.response);
+            };
+            xhr.onerror = function (e) {
+                console.error("XHR Error:", e);
+                reject(new TypeError("Network request failed"));
+            };
+            xhr.responseType = "blob";
+            xhr.open("GET", uri, true);
+            xhr.send(null);
+        });
+    };
+
     const handleSave = async () => {
         if (!name.trim()) {
             Alert.alert('Erreur', 'Le nom est requis');
@@ -128,12 +145,29 @@ export default function EditAlterProfileScreen() {
 
             // Upload image if changed (local URI)
             if (avatarUrl && !avatarUrl.startsWith('http')) {
-                const response = await fetch(avatarUrl);
-                const blob = await response.blob();
-                const fileName = `avatars/${alterId}/${Date.now()}.jpg`;
-                const storageRef = ref(storage, fileName);
-                await uploadBytes(storageRef, blob);
-                finalAvatarUrl = await getDownloadURL(storageRef);
+                console.log('Starting image upload...', avatarUrl);
+                try {
+                    const blob = await getBlobFromUri(avatarUrl) as any; // Cast to any to avoid TS issues with RN Blob vs Web Blob
+                    const fileName = `avatars/${alterId}/${Date.now()}.jpg`;
+                    const storageRef = ref(storage, fileName);
+
+                    console.log('Uploading bytes to:', fileName);
+                    await uploadBytes(storageRef, blob);
+                    console.log('Upload complete, getting URL...');
+
+                    finalAvatarUrl = await getDownloadURL(storageRef);
+                    console.log('Got download URL:', finalAvatarUrl);
+
+                    // Required for some RN environments to release memory
+                    if (blob.close) {
+                        blob.close();
+                    }
+                } catch (uploadError) {
+                    console.error('Upload failed:', uploadError);
+                    Alert.alert('Erreur Upload', 'Impossible de télécharger l\'image. Veuillez réessayer.');
+                    setSaving(false);
+                    return;
+                }
             }
 
             // Prepare Custom Fields (Role)
@@ -160,7 +194,7 @@ export default function EditAlterProfileScreen() {
                 { text: 'OK', onPress: () => router.back() }
             ]);
         } catch (error) {
-            console.error(error);
+            console.error('Save error:', error);
             Alert.alert('Erreur', 'Impossible de sauvegarder');
         } finally {
             setSaving(false);

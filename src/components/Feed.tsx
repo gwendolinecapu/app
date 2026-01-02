@@ -108,10 +108,17 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
             let response;
 
             if (type === 'friends' && alterId) {
-                // Fetch friends first to get their IDs
-                const friends = await FriendService.getFriends(alterId);
-                // Fetch feed based on friends IDs
-                response = await PostService.fetchFeed(friends, refresh ? null : lastVisible);
+                // Fetch friend system IDs first
+                const friendSystemIds = await FriendService.getFriendSystemIds(alterId);
+
+                // Add current user's system ID to include internal posts ("mes alters")
+                const targetSystemIds = [...friendSystemIds];
+                if (user?.uid && !targetSystemIds.includes(user.uid)) {
+                    targetSystemIds.push(user.uid);
+                }
+
+                // Fetch feed based on System IDs
+                response = await PostService.fetchFeed(targetSystemIds, refresh ? null : lastVisible);
             } else if (type === 'global') {
                 response = await PostService.fetchGlobalFeed(refresh ? null : lastVisible);
             } else {

@@ -27,7 +27,7 @@ export const AlterPrimers = ({ alter, editable = false, themeColors }: Props) =>
     const primers = alter.primers || [];
 
     const handleAddPrimer = async () => {
-        if (!label.trim() || !content.trim()) return;
+        if (!label.trim()) return; // Content is now optional
         setLoading(true);
 
         try {
@@ -85,7 +85,7 @@ export const AlterPrimers = ({ alter, editable = false, themeColors }: Props) =>
                     style={[styles.noteIconButton, themeColors && { backgroundColor: `${themeColors.primary}15` }]}
                     disabled={!editable}
                 >
-                    <Ionicons name="document-text" size={18} color={themeColors?.primary || colors.primary} />
+                    <Ionicons name="document-text" size={16} color={themeColors?.primary || colors.primary} />
                     {primers.length > 0 && (
                         <View style={styles.badge}>
                             <Text style={styles.badgeText}>{primers.length}</Text>
@@ -113,11 +113,13 @@ export const AlterPrimers = ({ alter, editable = false, themeColors }: Props) =>
                                     style={styles.deleteButton}
                                     onPress={() => handleDeletePrimer(primer.id)}
                                 >
-                                    <Ionicons name="close-circle" size={20} color={colors.error} />
+                                    <Ionicons name="close-circle" size={16} color={colors.error} />
                                 </TouchableOpacity>
                             )}
-                            <Text style={[styles.cardLabel, themeColors && { color: themeColors.text }]}>{primer.label}</Text>
-                            <Text style={[styles.cardContent, themeColors && { color: themeColors.textSecondary }]} numberOfLines={3}>{primer.content}</Text>
+                            <Text style={[styles.cardLabel, themeColors && { color: themeColors.text }]} numberOfLines={2}>{primer.label}</Text>
+                            {primer.content ? (
+                                <Text style={[styles.cardContent, themeColors && { color: themeColors.textSecondary }]} numberOfLines={2}>{primer.content}</Text>
+                            ) : null}
                         </View>
                     ))}
                 </ScrollView>
@@ -126,7 +128,7 @@ export const AlterPrimers = ({ alter, editable = false, themeColors }: Props) =>
             <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Nouveau Primer</Text>
+                        <Text style={styles.modalTitle}>Nouvelle Note</Text>
 
                         <TextInput
                             style={styles.input}
@@ -137,7 +139,7 @@ export const AlterPrimers = ({ alter, editable = false, themeColors }: Props) =>
                         />
                         <TextInput
                             style={[styles.input, styles.textArea]}
-                            placeholder="Contenu..."
+                            placeholder="Contenu (optionnel)..."
                             placeholderTextColor={colors.textMuted}
                             value={content}
                             onChangeText={setContent}
@@ -161,73 +163,78 @@ export const AlterPrimers = ({ alter, editable = false, themeColors }: Props) =>
 
 const styles = StyleSheet.create({
     container: {
-        marginBottom: spacing.sm,
+        marginBottom: spacing.xs,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.sm,
         paddingHorizontal: spacing.md,
-        marginBottom: spacing.xs,
+        marginBottom: 2, // Minimal margin
     },
     noteIconButton: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: `${colors.primary}15`,
-        padding: spacing.xs,
-        paddingHorizontal: spacing.sm,
+        padding: 4,
+        paddingHorizontal: 8,
         borderRadius: borderRadius.full,
     },
     badge: {
         backgroundColor: colors.primary,
-        borderRadius: 10,
-        minWidth: 18,
-        height: 18,
+        borderRadius: 8,
+        minWidth: 16,
+        height: 16,
         justifyContent: 'center',
         alignItems: 'center',
         marginLeft: 4,
     },
     badgeText: {
         color: 'white',
-        fontSize: 11,
+        fontSize: 9,
         fontWeight: 'bold',
     },
     addHint: {
         ...typography.caption,
         color: colors.textMuted,
         fontStyle: 'italic',
+        fontSize: 11,
     },
     list: {
         paddingLeft: spacing.md,
     },
     card: {
-        width: 140,
-        height: 100,
+        width: 100, // Reduced width
+        height: 60, // Significantly reduced height
         backgroundColor: colors.backgroundCard,
         borderRadius: borderRadius.md,
-        padding: spacing.sm,
+        padding: 6, // Reduced padding
         marginRight: spacing.sm,
-        borderLeftWidth: 3,
-        justifyContent: 'flex-start',
+        borderLeftWidth: 2, // Thinner border
+        justifyContent: 'center',
         position: 'relative',
     },
     deleteButton: {
         position: 'absolute',
-        top: 4,
-        right: 4,
+        top: 1,
+        right: 1,
         zIndex: 1,
     },
     cardLabel: {
         ...typography.caption,
         fontWeight: 'bold',
         color: colors.text,
-        marginBottom: 2,
-        marginRight: 20,
+        marginBottom: 0,
+        fontSize: 11, // Smaller font
+        marginRight: 14,
+        lineHeight: 14,
     },
     cardContent: {
         ...typography.caption,
         color: colors.textSecondary,
-        fontSize: 11,
+        fontSize: 9, // Smaller font
+        lineHeight: 11,
+        marginTop: 2,
     },
     modalOverlay: {
         flex: 1,
@@ -241,7 +248,7 @@ const styles = StyleSheet.create({
         padding: spacing.lg,
     },
     modalTitle: {
-        ...typography.h2,
+        ...typography.h3,
         marginBottom: spacing.md,
         textAlign: 'center',
     },
@@ -255,7 +262,7 @@ const styles = StyleSheet.create({
         borderColor: colors.border
     },
     textArea: {
-        height: 100,
+        height: 80,
         textAlignVertical: 'top'
     },
     modalActions: {

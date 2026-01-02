@@ -14,6 +14,7 @@ import { Post, Comment } from '../../src/types';
 import { triggerHaptic } from '../../src/lib/haptics';
 import { timeAgo } from '../../src/lib/date';
 import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
+import { getThemeColors } from '../../src/lib/cosmetics';
 
 export default function PostDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -124,10 +125,25 @@ export default function PostDetailScreen() {
 
     if (!post) return null;
 
+
+    // Derive theme colors from post author
+    const themeColors = post?.alter?.equipped_items?.theme
+        ? getThemeColors(post.alter.equipped_items.theme)
+        : post?.alter?.color
+            ? {
+                background: colors.background,
+                backgroundCard: colors.backgroundCard,
+                primary: post.alter.color,
+                text: colors.text,
+                textSecondary: colors.textSecondary,
+                border: post.alter.color
+            }
+            : null;
+
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.container}
+            style={[styles.container, themeColors && { backgroundColor: themeColors.background }]}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
             <Stack.Screen options={{ headerShown: false }} />
@@ -135,12 +151,16 @@ export default function PostDetailScreen() {
             <BlurView
                 intensity={80}
                 tint="dark"
-                style={[styles.headerAbsolute, { paddingTop: insets.top || 16, height: headerHeight }]}
+                style={[
+                    styles.headerAbsolute,
+                    { paddingTop: insets.top || 16, height: headerHeight },
+                    themeColors && { borderBottomColor: themeColors.border }
+                ]}
             >
                 <AnimatedPressable onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={28} color={colors.text} />
+                    <Ionicons name="chevron-back" size={28} color={themeColors?.text || colors.text} />
                 </AnimatedPressable>
-                <Text style={styles.headerTitle}>Publications</Text>
+                <Text style={[styles.headerTitle, themeColors && { color: themeColors.text }]}>Publications</Text>
                 <View style={{ width: 40 }} />
             </BlurView>
 
@@ -150,6 +170,7 @@ export default function PostDetailScreen() {
                     onLike={handleLike}
                     currentUserId={user?.uid}
                     showAuthor={true}
+                    themeColors={themeColors}
                 />
 
                 {/* Comments Section */}

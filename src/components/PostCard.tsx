@@ -48,6 +48,9 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
     const hasMultipleImages = post.media_urls && post.media_urls.length > 1;
     const allImages = hasMultipleImages ? post.media_urls : post.media_url ? [post.media_url] : [];
 
+    // Theme color from alter
+    const themeColor = post.alter?.color;
+
     const onDoubleTap = (event: any) => {
         if (event.nativeEvent.state === State.ACTIVE) {
             triggerHaptic.success();
@@ -133,7 +136,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
 
     return (
         <TouchableOpacity
-            style={styles.card}
+            style={[styles.card, themeColor ? { borderLeftColor: themeColor, borderLeftWidth: 3 } : null]}
             activeOpacity={0.9}
             onPress={() => router.push(`/post/${post.id}` as any)}
         >
@@ -142,18 +145,25 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                     <AnimatedPressable style={styles.authorInfo} onPress={handleAuthorPress}>
                         <FrontIndicator isFronting={post.is_author_fronting || false}>
                             {post.author_avatar ? (
-                                <Image source={{ uri: post.author_avatar }} style={styles.avatar} />
+                                <Image
+                                    source={{ uri: post.author_avatar }}
+                                    style={[styles.avatar, themeColor ? { borderColor: themeColor, borderWidth: 2 } : null]}
+                                />
                             ) : (
-                                <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
+                                <View style={[styles.avatarPlaceholder, { backgroundColor: themeColor || colors.primary }]}>
                                     <Text style={styles.avatarInitial}>{post.author_name?.charAt(0)}</Text>
                                 </View>
                             )}
                         </FrontIndicator>
                         <View>
                             <View style={styles.authorNameRow}>
-                                <Text style={styles.authorName}>{post.author_name || 'Système'}</Text>
+                                <Text style={[styles.authorName, themeColor ? { color: themeColor } : null]}>
+                                    {post.author_name || 'Système'}
+                                </Text>
                                 {post.is_author_fronting && (
-                                    <View style={styles.frontBadge}><Text style={styles.frontBadgeText}>En front</Text></View>
+                                    <View style={[styles.frontBadge, themeColor ? { backgroundColor: themeColor } : null]}>
+                                        <Text style={styles.frontBadgeText}>En front</Text>
+                                    </View>
                                 )}
                             </View>
                             <Text style={styles.timestamp}>{timeAgo(post.created_at)}</Text>

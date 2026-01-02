@@ -187,9 +187,14 @@ export default function EditAlterProfileScreen() {
                 color,
                 avatar_url: finalAvatarUrl || '',
                 custom_fields: customFields,
-                birthDate: birthDate ? birthDate.toISOString().split('T')[0] : undefined,
-                arrivalDate: arrivalDate ? arrivalDate.toISOString().split('T')[0] : undefined,
             };
+
+            if (birthDate) {
+                updateData.birthDate = birthDate.toISOString().split('T')[0];
+            }
+            if (arrivalDate) {
+                updateData.arrivalDate = arrivalDate.toISOString().split('T')[0];
+            }
 
             const docRef = doc(db, 'alters', alterId!);
             await updateDoc(docRef, updateData);

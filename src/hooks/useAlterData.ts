@@ -60,10 +60,10 @@ export const useAlterData = (alterId: string | undefined): AlterData => {
                 FriendService.getFriends(alterId),
                 FriendService.getFollowing(alterId).catch(() => [])
             ]);
-            setFriendCount(friends.length);
-            setFollowingCount(following.length);
-            setFriendIds(friends);
-            setFollowingIds(following);
+            setFriendCount(following.length); // friendCount maps to Followers in UI
+            setFollowingCount(friends.length); // followingCount maps to Following in UI
+            setFriendIds(following); // friendIds used for followers list
+            setFollowingIds(friends); // followingIds used for following list
         } catch (err) {
             console.error('Error fetching stats:', err);
         }

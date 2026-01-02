@@ -317,7 +317,7 @@ export default function AlterSpaceScreen() {
             case 'journal':
                 return <AlterJournal alter={alter} themeColors={themeColors} />;
             case 'gallery':
-                return <AlterGallery alter={alter} isCloudEnabled={false} />;
+                return <AlterGallery alter={alter} isCloudEnabled={false} themeColors={themeColors} />;
             case 'emotions':
                 return <AlterEmotions alterId={alter.id} alterName={alter.name} themeColors={themeColors} />;
             case 'settings':

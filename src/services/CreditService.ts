@@ -106,6 +106,14 @@ class CreditService {
         }
     }
 
+    /**
+     * Vérifie si l'utilisateur a assez de crédits (Async)
+     */
+    async hasEnoughCredits(alterId: string, amount: number): Promise<boolean> {
+        const bal = await this.getAlterBalance(alterId);
+        return bal >= amount;
+    }
+
     // ==================== GAINS ====================
 
     // ==================== GAINS ====================

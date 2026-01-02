@@ -216,15 +216,16 @@ export const FriendService = {
     },
 
     /**
-     * Get friends list (people who follow this alter)
+     * Get friends list (people who follow this alter) -> actually "people this alter follows" (Following)
      */
     getFriends: async (alterId: string) => {
-        if (!auth.currentUser) return [];
+        // Removed auth check to allow viewing other profiles' following list
+        // if (!auth.currentUser) return [];
 
         const q = query(
             collection(db, 'friendships'),
-            where('alterId', '==', alterId),
-            where('systemId', '==', auth.currentUser.uid) // Add systemId check
+            where('alterId', '==', alterId)
+            // Removed systemId check to allow reading any alter's friendships (assuming public/rules allow)
         );
         const snapshot = await getDocs(q);
         return snapshot.docs.map(d => d.data().friendId as string);
@@ -248,15 +249,17 @@ export const FriendService = {
     },
 
     /**
-     * Get following list (people this alter follows)
+     * Get following list (people this alter follows) -> actually "people who follow this alter" (Followers)
+     * Naming is confusing in original code, but logic searches for friendId == alterId
      */
     getFollowing: async (alterId: string): Promise<string[]> => {
-        if (!auth.currentUser) return [];
+        // Removed auth check
+        // if (!auth.currentUser) return [];
 
         const q = query(
             collection(db, 'friendships'),
-            where('friendId', '==', alterId),
-            where('friendSystemId', '==', auth.currentUser.uid)
+            where('friendId', '==', alterId)
+            // Removed friendSystemId check to count ALL followers, not just those from my system
         );
         const snapshot = await getDocs(q);
         return snapshot.docs.map(d => d.data().alterId as string);

@@ -131,13 +131,14 @@ export interface Message {
     group_id?: string; // ID du groupe si c'est un message de groupe
     conversation_id?: string; // ID conversation privée
     content: string;
-    type: 'text' | 'image' | 'poll' | 'note';
+    type: 'text' | 'image' | 'poll' | 'note' | 'post';
     is_internal: boolean;
     is_read: boolean;
     created_at: string;
     system_tag?: string; // Tag optionnel (ex: "[Leo]")
     media_url?: string; // URL de l'image/média si type === 'image'
     imageUrl?: string; // Alias for media_url or specific for photos
+    post_id?: string; // ID du post partagé
 
     // Enrichissements
     poll_options?: { label: string; id: string }[];

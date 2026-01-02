@@ -127,6 +127,15 @@ export const getThemeColors = (themeId?: string): ThemeColors | null => {
                 textSecondary: '#D7CCC8',  // Beige
                 border: '#6D4C41'          // Dark Mocha
             };
+        case 'theme_pink_cute':
+            return {
+                background: '#FFF0F5',     // Lavender Blush
+                backgroundCard: '#FFFFFF', // White
+                primary: '#FFA6C9',        // Carnation Pink
+                text: '#6D4C41',           // Soft Brown
+                textSecondary: '#A1887F',  // Light Brown
+                border: '#FFCDD2'          // Pink Border
+            };
         default:
             // Fallback générique si on a juste la couleur preview
             return {

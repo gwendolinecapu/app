@@ -66,28 +66,28 @@ export const FriendService = {
      * Accept a friend request
      */
     acceptRequest: async (requestId: string) => {
-        console.log(`[FriendService] Accepting request ${requestId} START`);
+
         const reqRef = doc(db, 'friend_requests', requestId);
         const reqSnap = await getDoc(reqRef);
 
         if (!reqSnap.exists()) throw new Error('Request not found');
         const data = reqSnap.data() as any;
-        console.log(`[FriendService] Request Data:`, JSON.stringify(data));
+
 
         const { senderId, receiverId, systemId: senderSystemId } = data as { senderId: string, receiverId: string, systemId: string };
         const currentSystemId = auth.currentUser?.uid;
-        console.log(`[FriendService] Current User: ${currentSystemId}`);
+
 
         if (!currentSystemId) throw new Error('Not authenticated');
 
         // 1. Update request status
-        console.log('[FriendService] 1. Updating request status to accepted...');
+
         await updateDoc(reqRef, { status: 'accepted' });
-        console.log('[FriendService] 1. Request updated.');
+
 
         // 2. Create bilateral friendship
         // Doc for Receiver (US) - linked to logic: "My friend X"
-        console.log('[FriendService] 2. Creating Friendship (Receiver side)...');
+
         await addDoc(collection(db, 'friendships'), {
             systemId: currentSystemId, // Owned by us
             alterId: receiverId, // Me (receiver)
@@ -95,11 +95,11 @@ export const FriendService = {
             friendSystemId: senderSystemId, // Their system
             createdAt: serverTimestamp()
         });
-        console.log('[FriendService] 2. Friendship (Receiver) created.');
+
 
         // Doc for Sender (THEM) - linked to logic: "Your friend Y"
         // We create it on their behalf (allowed by relaxed rules)
-        console.log('[FriendService] 3. Creating Friendship (Sender side)...');
+
         await addDoc(collection(db, 'friendships'), {
             systemId: senderSystemId, // Owned by them
             alterId: senderId, // Them (sender)
@@ -107,10 +107,10 @@ export const FriendService = {
             friendSystemId: currentSystemId, // My system
             createdAt: serverTimestamp()
         });
-        console.log('[FriendService] 3. Friendship (Sender) created.');
+
 
         // 3. Notify the sender (THEM) that we accepted
-        console.log('[FriendService] 4. Creating Notification...');
+
         await addDoc(collection(db, 'notifications'), {
             recipientId: senderSystemId, // The system receiving the notification
             type: 'FRIEND_REQUEST_ACCEPTED',
@@ -123,7 +123,7 @@ export const FriendService = {
             read: false,
             createdAt: serverTimestamp()
         });
-        console.log('[FriendService] 4. Notification created. DONE.');
+
     },
 
     /**

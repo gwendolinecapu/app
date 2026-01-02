@@ -10,9 +10,12 @@ import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { useToast } from '../ui/Toast';
 import { triggerHaptic } from '../../lib/haptics';
 
+import { ThemeColors } from '../../lib/cosmetics';
+
 interface AlterGalleryProps {
     alter: Alter;
     isCloudEnabled?: boolean;
+    themeColors?: ThemeColors | null;
 }
 
 interface GalleryImage {
@@ -21,15 +24,13 @@ interface GalleryImage {
     createdAt: Date;
 }
 
-export const AlterGallery: React.FC<AlterGalleryProps> = ({ alter, isCloudEnabled = false }) => {
+export const AlterGallery: React.FC<AlterGalleryProps> = ({ alter, isCloudEnabled = false, themeColors }) => {
     const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
     const [loading, setLoading] = useState(false);
     const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
     const toast = useToast();
 
-    useEffect(() => {
-        loadGallery();
-    }, [alter.id]);
+    // ... (keep logic same)
 
     const loadGallery = async () => {
         try {
@@ -85,16 +86,16 @@ export const AlterGallery: React.FC<AlterGalleryProps> = ({ alter, isCloudEnable
             <View style={styles.container}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <Text style={styles.title}>Ma Galerie Privée</Text>
+                    <Text style={[styles.title, themeColors && { color: themeColors.text }]}>Ma Galerie Privée</Text>
                     <TouchableOpacity style={styles.addButton} onPress={handleAddPhoto}>
-                        <Ionicons name="add-circle" size={28} color={colors.primary} />
+                        <Ionicons name="add-circle" size={28} color={themeColors?.primary || colors.primary} />
                     </TouchableOpacity>
                 </View>
 
                 {/* Info Stockage */}
                 <View style={styles.infoBar}>
-                    <Ionicons name="phone-portrait-outline" size={16} color={colors.textSecondary} />
-                    <Text style={styles.infoText}>Stockage local uniquement</Text>
+                    <Ionicons name="phone-portrait-outline" size={16} color={themeColors?.textSecondary || colors.textSecondary} />
+                    <Text style={[styles.infoText, themeColors && { color: themeColors.textSecondary }]}>Stockage local uniquement</Text>
                     {!isCloudEnabled && (
                         <TouchableOpacity
                             style={styles.premiumBadge}
@@ -131,13 +132,13 @@ export const AlterGallery: React.FC<AlterGalleryProps> = ({ alter, isCloudEnable
                     </ScrollView>
                 ) : (
                     <View style={styles.emptyState}>
-                        <Ionicons name="images-outline" size={64} color={colors.textMuted} />
-                        <Text style={styles.emptyTitle}>Galerie Privée</Text>
-                        <Text style={styles.emptySubtitle}>
+                        <Ionicons name="images-outline" size={64} color={themeColors?.textSecondary || colors.textMuted} />
+                        <Text style={[styles.emptyTitle, themeColors && { color: themeColors.text }]}>Galerie Privée</Text>
+                        <Text style={[styles.emptySubtitle, themeColors && { color: themeColors.textSecondary }]}>
                             Ajoutez des photos personnelles à la galerie de {alter.name}.{'\n'}
                             Les photos sont stockées uniquement sur votre téléphone.
                         </Text>
-                        <TouchableOpacity style={styles.ctaButton} onPress={handleAddPhoto}>
+                        <TouchableOpacity style={[styles.ctaButton, themeColors && { backgroundColor: themeColors.primary }]} onPress={handleAddPhoto}>
                             <Ionicons name="add" size={20} color="#fff" />
                             <Text style={styles.ctaText}>Ajouter une photo</Text>
                         </TouchableOpacity>

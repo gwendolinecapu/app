@@ -148,15 +148,15 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
         // Fetch owned items for CURRENT ALTER only (Alter-specific inventory)
         if (currentAlter) {
-            console.log(`[MonetizationContext] refreshing state for alter ${currentAlter.id}`);
-            const defaults = ['theme_default', 'frame_simple', 'bubble_classic', 'bubble_default', 'border_none'];
+            const defaults = ['theme_default', 'frame_simple', 'bubble_default', 'border_none'];
             const alterOwned = currentAlter.owned_items || [];
-
-            console.log(`[MonetizationContext] Owned items from currentAlter: ${alterOwned.length} items`);
-
-            setOwnedItems([...new Set([...defaults, ...alterOwned])]);
+            console.log('[MonetizationContext] refreshState - CurrentAlter:', currentAlter.id);
+            console.log('[MonetizationContext] refreshState - AlterOwned from DB:', alterOwned);
+            const merged = [...new Set([...defaults, ...alterOwned])];
+            console.log('[MonetizationContext] refreshState - Merged OwnedItems:', merged);
+            setOwnedItems(merged);
         } else {
-            console.log('[MonetizationContext] No currentAlter available for refreshState');
+            console.log('[MonetizationContext] refreshState - No CurrentAlter');
         }
 
         refreshAlters();
@@ -379,9 +379,9 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     }, [refreshState]);
 
     const equipDecoration = useCallback(async (alterId: string, decorationId: string, type: 'frame' | 'theme' | 'bubble'): Promise<boolean> => {
-        console.log(`[equipDecoration] Attempting to equip ${decorationId} (${type}) for alter ${alterId}`);
+
         const success = await DecorationService.equipDecoration(alterId, decorationId, type);
-        console.log(`[equipDecoration] Result: ${success}`);
+
         if (success) {
             // Update local state for immediate UI feedback
             setEquippedItems(prev => ({ ...prev, [type]: decorationId }));

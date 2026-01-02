@@ -369,13 +369,19 @@ class DecorationService {
     // ==================== EQUIPMENT ====================
 
     async equipDecoration(alterId: string, decorationId: string, type: 'frame' | 'theme' | 'bubble'): Promise<boolean> {
+        console.log(`[DecorationService.equipDecoration] Checking ownership of ${decorationId} for alter ${alterId}`);
         const isOwned = await this.ownsDecoration(alterId, decorationId);
-        if (!isOwned) return false;
+        console.log(`[DecorationService.equipDecoration] isOwned: ${isOwned}`);
+        if (!isOwned) {
+            console.warn(`[DecorationService.equipDecoration] Item ${decorationId} not owned, cannot equip`);
+            return false;
+        }
 
         const alterRef = doc(db, 'alters', alterId);
         await updateDoc(alterRef, {
             [`equipped_items.${type}`]: decorationId
         });
+        console.log(`[DecorationService.equipDecoration] Successfully equipped ${decorationId} as ${type}`);
         return true;
     }
 

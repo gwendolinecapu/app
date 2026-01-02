@@ -56,7 +56,9 @@ interface MonetizationContextType {
     claimRewardAd: (alterId: string) => Promise<number>;
 
     // Crédits
-    checkDailyLogin: (alterId: string) => Promise<boolean>;
+    // checkDailyLogin: (alterId: string) => Promise<boolean>; // Legacy
+    // checkDailyLogin is likely not used directly in UI as much as claim button
+
     currentStreak: number;
     claimDailyLogin: (alterId: string) => Promise<{ amount: number; streak: number; streakBonus: number }>;
 
@@ -89,7 +91,7 @@ interface MonetizationContextType {
 const MonetizationContext = createContext<MonetizationContextType | undefined>(undefined);
 
 export function MonetizationProvider({ children }: { children: React.ReactNode }) {
-    const { user, refreshAlters } = useAuth();
+    const { user, alters, currentAlter, refreshAlters } = useAuth();
     const [loading, setLoading] = useState(true);
 
     // États dérivés des services
@@ -142,12 +144,22 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         setTier(PremiumService.getCurrentTier());
         setCredits(CreditService.getBalance());
 
-        // Mock owned items for now or fetch from service if available
-        // In real app: setOwnedItems(DecorationService.getAllOwnedIds(currentAlterId?))
-        // For now we trust DecorationService state but access is async.
-        // Let's implement a quick sync if user is logged in.
+        // Fetch owned items for ALL alters (System Inventory)
+        if (alters && alters.length > 0) {
+            Promise.all(alters.map(a => DecorationService.getOwnedDecorationIds(a.id)))
+                .then((results) => {
+                    const allOwned = new Set<string>();
+                    // Add default items
+                    ['theme_default', 'frame_simple', 'bubble_classic', 'bubble_default', 'border_none'].forEach(id => allOwned.add(id));
+
+                    results.forEach(ids => ids.forEach(id => allOwned.add(id)));
+                    setOwnedItems(Array.from(allOwned));
+                })
+                .catch(err => console.error("Error syncing owned items", err));
+        }
+
         refreshAlters();
-    }, [refreshAlters]);
+    }, [refreshAlters, alters]);
 
     const refresh = useCallback(async () => {
         if (user?.uid) {
@@ -172,15 +184,15 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     }, [refreshState]);
 
     const addCredits = useCallback(async (amount: number, reason: string): Promise<boolean> => {
+        if (!currentAlter) return false;
         try {
-            await CreditService.addCredits(amount, 'gift', reason);
-            refreshState();
+            await CreditService.addCredits(currentAlter.id, amount, 'gift', reason);
+            // State updates via subscription
             return true;
         } catch (error) {
-            console.error('[MonetizationContext] addCredits failed:', error);
             return false;
         }
-    }, [refreshState]);
+    }, [currentAlter]);
 
     // ==================== PREMIUM ====================
 
@@ -256,11 +268,17 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
             return success;
         }
 
+        if (!currentAlter) {
+            console.error("Cannot purchase non-cosmetic item without active alter context");
+            return false;
+        }
+
         // For other items (ad_free, premium_days, etc.)
-        const success = await CreditService.purchaseItem(item, true);
+        // Note: CreditService.purchaseItem now expects (alterId, item, ...)
+        const success = await CreditService.purchaseItem(currentAlter.id, item, true);
         if (success) refreshState();
         return success;
-    }, [refreshState]);
+    }, [refreshState, currentAlter]);
 
     const purchaseIAP = useCallback(async (packageId: string): Promise<boolean> => {
         try {
@@ -283,8 +301,8 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
                     const pack = CREDIT_PACKS.find(p => p.revenueCatPackageId === packageId || p.id === packageId);
                     if (pack && pack.id.includes('credits_')) {
                         const amount = parseInt(pack.id.replace('credits_', ''), 10);
-                        if (!isNaN(amount)) {
-                            await CreditService.addCredits(amount, 'purchase_iap', 'Achat IAP');
+                        if (!isNaN(amount) && currentAlter) {
+                            await CreditService.addCredits(currentAlter.id, amount, 'purchase_iap', 'Achat IAP');
                         }
                     }
                 }
@@ -293,11 +311,12 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
             }
             return false;
         } catch (error) {
+            console.error('Purchase IAP error:', error);
             return false;
         } finally {
             setLoading(false);
         }
-    }, [refresh]);
+    }, [refresh, currentAlter]);
 
     const restorePurchases = useCallback(async (): Promise<boolean> => {
         try {
@@ -341,15 +360,23 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
     // Alias for ShopUI
     const equipItem = useCallback(async (itemId: string, type: any) => {
-        // Assume current alter context or pass it? 
-        // ShopUI context usually implies "current user/alter editing".
-        // For simplicity, we might need to know WHICH alter.
-        // But ShopUI currently calls it without alterId. 
-        // We'll stub it or fetch active alter from another context?
-        // Actually ShopUI should pass alterId or we rely on AuthContext active alter (not standard).
-        console.warn("equipItem called without specific alterId, defaulting to first or error");
+        if (!currentAlter) {
+            console.warn("equipItem: No current alter selected");
+            return false;
+        }
+
+        // Map Shop types to Decoration types
+        let decoType: 'theme' | 'frame' | 'bubble' | undefined;
+        if (type === 'theme') decoType = 'theme';
+        if (type === 'frame') decoType = 'frame';
+        if (type === 'bubble') decoType = 'bubble';
+
+        if (decoType) {
+            return equipDecoration(currentAlter.id, itemId, decoType);
+        }
+
         return false;
-    }, []);
+    }, [currentAlter, equipDecoration]);
 
     const getEquippedDecorationId = useCallback((alter: any, type: 'frame' | 'theme' | 'bubble'): string | undefined => {
         return DecorationService.getEquippedDecorationId(alter, type);
@@ -394,7 +421,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         watchRewardAd,
         claimRewardAd,
 
-        checkDailyLogin: canClaimDaily,
+        checkDailyLogin: canClaimDaily, // Keeping compatible signature
         currentStreak,
         claimDailyLogin,
 

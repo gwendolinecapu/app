@@ -289,6 +289,24 @@ class DecorationService {
     }
 
     /**
+     * Récupère la liste des IDs de décorations possédées par un alter
+     */
+    async getOwnedDecorationIds(alterId: string): Promise<string[]> {
+        try {
+            const docRef = doc(db, 'alters', alterId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                return data.owned_items || [];
+            }
+            return [];
+        } catch (e) {
+            console.error('[DecorationService] Error fetching owned items:', e);
+            return [];
+        }
+    }
+
+    /**
      * Achète une décoration ou un cosmétique pour un alter spécifique
      */
     async purchaseDecoration(decorationId: string, alterId: string): Promise<boolean> {
@@ -310,8 +328,9 @@ class DecorationService {
 
         if (price > 0) {
             // Verify credits
-            if (!CreditService.hasEnoughCredits(price)) {
-                console.warn('[DecorationService] Not enough credits. Has:', CreditService.getBalance(), 'Needs:', price);
+            const hasCredits = await CreditService.hasEnoughCredits(alterId, price);
+            if (!hasCredits) {
+                console.warn('[DecorationService] Not enough credits.');
                 return false;
             }
 
@@ -327,7 +346,8 @@ class DecorationService {
             }
 
             // 2. Deduct Credits
-            await CreditService.purchaseItem({
+            // Note: purchaseItem expects valid item structure.
+            await CreditService.purchaseItem(alterId, {
                 id: decorationId,
                 type: item.type as any,
                 name: item.name,

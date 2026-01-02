@@ -175,7 +175,7 @@ export default function AlterSpaceScreen() {
     }
 
     // --- THEME & COSMETICS ---
-    console.log('[AlterSpace] Equipped items:', alter?.equipped_items);
+
     const themeColors = getThemeColors(alter?.equipped_items?.theme);
     const backgroundStyle = { backgroundColor: themeColors?.background || colors.background };
     const activeColor = themeColors?.primary || colors.primary;
@@ -193,6 +193,7 @@ export default function AlterSpaceScreen() {
                             refreshing={refreshing}
                             onRefresh={refresh}
                             alterName={alter.name}
+                            themeColors={themeColors}
                             listHeaderComponent={
                                 <ProfileHeader
                                     alter={alter}
@@ -203,6 +204,7 @@ export default function AlterSpaceScreen() {
                                     onFriendAction={handleFriendAction}
                                     onFollowersPress={() => setShowFollowersModal(true)}
                                     onFollowingPress={() => setShowFollowingModal(true)}
+                                    themeColors={themeColors}
                                 />
                             }
                         />
@@ -215,6 +217,7 @@ export default function AlterSpaceScreen() {
                         <Feed
                             type="friends"
                             alterId={alterId}
+                            themeColors={themeColors}
                             ListHeaderComponent={
                                 <>
                                     <View style={styles.feedHeaderContainer}>
@@ -227,6 +230,7 @@ export default function AlterSpaceScreen() {
                                             onFriendAction={handleFriendAction}
                                             onFollowersPress={() => setShowFollowersModal(true)}
                                             onFollowingPress={() => setShowFollowingModal(true)}
+                                            themeColors={themeColors}
                                         />
                                     </View>
                                     <StoriesBar
@@ -306,7 +310,7 @@ export default function AlterSpaceScreen() {
             case 'gallery':
                 return <AlterGallery alter={alter} isCloudEnabled={false} />;
             case 'emotions':
-                return <AlterEmotions alterId={alter.id} alterName={alter.name} />;
+                return <AlterEmotions alterId={alter.id} alterName={alter.name} themeColors={themeColors} />;
             case 'settings':
                 return <AlterSettings alter={alter} />;
             default:
@@ -315,20 +319,20 @@ export default function AlterSpaceScreen() {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, backgroundStyle]}>
             {/* Main Header (Navigation) */}
-            <View style={styles.header}>
+            <View style={[styles.header, backgroundStyle, { borderBottomColor: themeColors?.border || colors.border }]}>
                 <TouchableOpacity onPress={() => router.push('/(tabs)/dashboard')} style={styles.backButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <Ionicons name="chevron-back" size={28} color={colors.text} />
+                    <Ionicons name="chevron-back" size={28} color={themeColors?.text || colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle} numberOfLines={1}>{alter.name}</Text>
+                <Text style={[styles.headerTitle, { color: themeColors?.text || colors.text }]} numberOfLines={1}>{alter.name}</Text>
                 <View style={styles.headerRight}>
                     <TouchableOpacity onPress={() => router.push('/search' as any)} style={{ marginRight: 12 }}>
-                        <Ionicons name="search-outline" size={24} color={colors.text} />
+                        <Ionicons name="search-outline" size={24} color={themeColors?.text || colors.text} />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => router.push('/(tabs)/notifications')} style={{ marginRight: 12 }}>
                         <View>
-                            <Ionicons name="notifications-outline" size={24} color={colors.text} />
+                            <Ionicons name="notifications-outline" size={24} color={themeColors?.text || colors.text} />
                             {unreadCount > 0 && (
                                 <View style={{
                                     position: 'absolute',
@@ -348,7 +352,7 @@ export default function AlterSpaceScreen() {
                         <Ionicons name="storefront-outline" size={24} color="#A855F7" />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => router.push({ pathname: '/(tabs)/messages', params: { senderId: alterId } })}>
-                        <Ionicons name="chatbubble-ellipses-outline" size={24} color={colors.text} />
+                        <Ionicons name="chatbubble-ellipses-outline" size={24} color={themeColors?.text || colors.text} />
                     </TouchableOpacity>
                 </View>
             </View>

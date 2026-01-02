@@ -75,17 +75,17 @@ export const getThemeColors = (themeId?: string): ThemeColors | null => {
             };
         case 'theme_cyberpunk':
             return {
-                background: '#0a0a0a',
-                backgroundCard: '#1a1a1a',
-                primary: '#ff00ff',
-                text: '#00ff9d',
-                textSecondary: '#ff00ff',
-                border: '#00ff9d'
+                background: '#120024',     // Deep Synthwave Purple (was Black)
+                backgroundCard: '#2a0a3b', // Darker Purple
+                primary: '#ff00ff',        // Magenta Neon
+                text: '#ead1ea',           // Pale Pink (Readable) - WAS Neon Green (Clash)
+                textSecondary: '#00eaff',  // Cyan Neon (Accent)
+                border: '#d900d9'          // Magenta Dark
             };
         case 'theme_midnight':
             return {
-                background: '#000000',
-                backgroundCard: '#111111',
+                background: '#050a14',     // Deep Night Blue (was Pure Black)
+                backgroundCard: '#111b2b',
                 primary: '#3a506b',
                 text: '#e0e1dd',
                 textSecondary: '#778da9',
@@ -99,6 +99,24 @@ export const getThemeColors = (themeId?: string): ThemeColors | null => {
                 text: '#fff0f3',
                 textSecondary: '#ffb3c1',
                 border: '#a4133c'
+            };
+        case 'theme_anim_aurora':
+            return {
+                background: '#001a14',     // Deep Aurora Green
+                backgroundCard: '#00332a',
+                primary: '#00ff9d',        // Neon Mint
+                text: '#ccffee',
+                textSecondary: '#5eead4',
+                border: '#0f766e'
+            };
+        case 'theme_anim_cosmos':
+            return {
+                background: '#0b001a',     // Void Purple
+                backgroundCard: '#1f0a33', // Deep Purple
+                primary: '#9d4edd',        // Lavender Neon
+                text: '#f3e8ff',
+                textSecondary: '#c4b5fd',
+                border: '#6d28d9'
             };
         default:
             // Fallback générique si on a juste la couleur preview

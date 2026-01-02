@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Emotion, EmotionType } from '../../types';
 import { EmotionService } from '../../services/emotions';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import { ThemeColors } from '../../lib/cosmetics';
 import { useToast } from '../ui/Toast';
 import { triggerHaptic } from '../../lib/haptics';
 import { timeAgo } from '../../lib/date';
@@ -11,6 +12,7 @@ import { timeAgo } from '../../lib/date';
 interface AlterEmotionsProps {
     alterId: string;
     alterName: string;
+    themeColors?: ThemeColors | null;
 }
 
 const EMOTION_CONFIG: { type: EmotionType; icon: keyof typeof Ionicons.glyphMap; label: string; color: string }[] = [
@@ -32,7 +34,7 @@ const EMOTION_CONFIG: { type: EmotionType; icon: keyof typeof Ionicons.glyphMap;
     { type: 'sick', icon: 'medkit-outline', label: 'Malade', color: '#00B894' },
 ];
 
-export const AlterEmotions: React.FC<AlterEmotionsProps> = ({ alterId, alterName }) => {
+export const AlterEmotions: React.FC<AlterEmotionsProps> = ({ alterId, alterName, themeColors }) => {
     const [latestEmotion, setLatestEmotion] = useState<Emotion | null>(null);
     const [selectedEmotions, setSelectedEmotions] = useState<EmotionType[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,7 +92,7 @@ export const AlterEmotions: React.FC<AlterEmotionsProps> = ({ alterId, alterName
 
     return (
         <ScrollView style={styles.container}>
-            <Text style={styles.title}>Comment te sens-tu, {alterName} ?</Text>
+            <Text style={[styles.title, themeColors && { color: themeColors.text }]}>Comment te sens-tu, {alterName} ?</Text>
 
             {/* Emotion Grid */}
             <View style={styles.grid}>
@@ -135,8 +137,8 @@ export const AlterEmotions: React.FC<AlterEmotionsProps> = ({ alterId, alterName
 
             {latestEmotion ? (
                 <View style={styles.statusSection}>
-                    <Text style={styles.sectionTitle}>Dernier ressenti</Text>
-                    <View style={[styles.statusContainer, { borderLeftColor: primaryConfig?.color || colors.primary }]}>
+                    <Text style={[styles.sectionTitle, themeColors && { color: themeColors.textSecondary }]}>Dernier ressenti</Text>
+                    <View style={[styles.statusContainer, themeColors && { backgroundColor: themeColors.backgroundCard }, { borderLeftColor: primaryConfig?.color || colors.primary }]}>
                         <View style={[styles.statusIcon, { backgroundColor: (primaryConfig?.color || colors.primary) + '20' }]}>
                             <Ionicons name={primaryConfig?.icon || 'heart-outline'} size={24} color={primaryConfig?.color || colors.primary} />
                         </View>

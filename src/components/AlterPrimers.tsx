@@ -6,13 +6,15 @@ import { colors, spacing, borderRadius, typography } from '../lib/theme';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { ThemeColors } from '../lib/cosmetics';
 
 interface Props {
     alter: Alter;
     editable?: boolean;
+    themeColors?: ThemeColors | null;
 }
 
-export const AlterPrimers = ({ alter, editable = false }: Props) => {
+export const AlterPrimers = ({ alter, editable = false, themeColors }: Props) => {
     const { refreshAlters } = useAuth();
     const [modalVisible, setModalVisible] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -20,7 +22,7 @@ export const AlterPrimers = ({ alter, editable = false }: Props) => {
     // Form
     const [label, setLabel] = useState('');
     const [content, setContent] = useState('');
-    const [selectedColor, setSelectedColor] = useState(colors.primary);
+    const [selectedColor, setSelectedColor] = useState(themeColors?.primary || colors.primary);
 
     const primers = alter.primers || [];
 
@@ -80,10 +82,10 @@ export const AlterPrimers = ({ alter, editable = false }: Props) => {
             <View style={styles.header}>
                 <TouchableOpacity
                     onPress={() => editable && setModalVisible(true)}
-                    style={styles.noteIconButton}
+                    style={[styles.noteIconButton, themeColors && { backgroundColor: `${themeColors.primary}15` }]}
                     disabled={!editable}
                 >
-                    <Ionicons name="document-text" size={18} color={colors.primary} />
+                    <Ionicons name="document-text" size={18} color={themeColors?.primary || colors.primary} />
                     {primers.length > 0 && (
                         <View style={styles.badge}>
                             <Text style={styles.badgeText}>{primers.length}</Text>
@@ -91,7 +93,7 @@ export const AlterPrimers = ({ alter, editable = false }: Props) => {
                     )}
                 </TouchableOpacity>
                 {editable && primers.length === 0 && (
-                    <Text style={styles.addHint}>Ajouter une note</Text>
+                    <Text style={[styles.addHint, themeColors && { color: themeColors.textSecondary }]}>Ajouter une note</Text>
                 )}
             </View>
 
@@ -100,7 +102,11 @@ export const AlterPrimers = ({ alter, editable = false }: Props) => {
                     {primers.map(primer => (
                         <View
                             key={primer.id}
-                            style={[styles.card, { borderLeftColor: primer.color || colors.primary }]}
+                            style={[
+                                styles.card,
+                                { borderLeftColor: primer.color || themeColors?.primary || colors.primary },
+                                themeColors && { backgroundColor: themeColors.backgroundCard }
+                            ]}
                         >
                             {editable && (
                                 <TouchableOpacity
@@ -110,8 +116,8 @@ export const AlterPrimers = ({ alter, editable = false }: Props) => {
                                     <Ionicons name="close-circle" size={20} color={colors.error} />
                                 </TouchableOpacity>
                             )}
-                            <Text style={styles.cardLabel}>{primer.label}</Text>
-                            <Text style={styles.cardContent} numberOfLines={3}>{primer.content}</Text>
+                            <Text style={[styles.cardLabel, themeColors && { color: themeColors.text }]}>{primer.label}</Text>
+                            <Text style={[styles.cardContent, themeColors && { color: themeColors.textSecondary }]} numberOfLines={3}>{primer.content}</Text>
                         </View>
                     ))}
                 </ScrollView>

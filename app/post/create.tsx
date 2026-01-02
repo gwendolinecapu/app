@@ -18,6 +18,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { PostService } from '../../src/services/posts';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
+import { getThemeColors } from '../../src/lib/cosmetics';
 import { VoiceNoteRecorder } from '../../src/components/ui/VoiceNoteRecorder';
 import { VideoPlayer } from '../../src/components/ui/VideoPlayer';
 import { AudioPlayer } from '../../src/components/ui/AudioPlayer';
@@ -39,6 +40,11 @@ export default function CreatePostScreen() {
     const [audioUri, setAudioUri] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+
+    // --- COSMETICS ---
+    const themeId = activeFront?.type === 'single' ? activeFront?.alters[0]?.equipped_items?.theme : undefined;
+    const themeColors = getThemeColors(themeId);
+    const backgroundStyle = { backgroundColor: themeColors?.background || colors.background };
 
     useEffect(() => {
         checkDraft();
@@ -233,7 +239,7 @@ export default function CreatePostScreen() {
     };
 
     const renderTypeSelector = () => (
-        <View style={styles.typeSelector}>
+        <View style={[styles.typeSelector, themeColors && { backgroundColor: themeColors.backgroundCard }]}>
             <TouchableOpacity
                 style={[styles.typeButton, postType === 'text' && styles.typeButtonActive]}
                 onPress={() => {
@@ -278,13 +284,13 @@ export default function CreatePostScreen() {
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.container}
+            style={[styles.container, backgroundStyle]}
         >
-            <View style={styles.header}>
+            <View style={[styles.header, backgroundStyle, { borderBottomColor: themeColors?.border || colors.border }]}>
                 <TouchableOpacity onPress={() => router.back()}>
-                    <Text style={styles.cancelText}>Annuler</Text>
+                    <Text style={[styles.cancelText, themeColors && { color: themeColors.textSecondary }]}>Annuler</Text>
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Nouveau post</Text>
+                <Text style={[styles.headerTitle, themeColors && { color: themeColors.text }]}>Nouveau post</Text>
                 <TouchableOpacity
                     onPress={handlePost}
                     disabled={loading || (!content.trim() && !mediaUri && !audioUri)}
@@ -363,9 +369,9 @@ export default function CreatePostScreen() {
                     )}
 
                     <TextInput
-                        style={styles.input}
+                        style={[styles.input, themeColors && { color: themeColors.text }]}
                         placeholder={postType === 'audio' ? "Ajoutez une description..." : (postType === 'text' ? "Quoi de neuf ?" : "Ajoutez une légende...")}
-                        placeholderTextColor={colors.textMuted}
+                        placeholderTextColor={themeColors?.textSecondary || colors.textMuted}
                         value={content}
                         onChangeText={setContent}
                         multiline

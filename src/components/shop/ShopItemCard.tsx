@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ShopItem } from '../../services/MonetizationTypes';
 import { colors, spacing, borderRadius } from '../../lib/theme';
+import { getThemeColors } from '../../lib/cosmetics';
 
 interface ShopItemCardProps {
     item: ShopItem;
@@ -32,26 +33,57 @@ export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits }
     // Render preview based on item type
     const renderPreview = () => {
         if (item.type === 'theme') {
-            // Theme preview: mini app mockup with the theme color
-            const themeColor = item.preview || '#1a1a2e';
+            // Theme preview: mini app mockup with ACTUAL theme colors
+            const themeColors = getThemeColors(item.id);
+            // Fallback to preview color if no theme defined (should not happen for listed themes)
+            const bgColor = themeColors?.background || item.preview || '#1a1a2e';
+            const cardColor = themeColors?.backgroundCard || 'rgba(255,255,255,0.15)';
+            const primaryColor = themeColors?.primary || colors.primary;
+            const textColor = themeColors?.text || 'rgba(255,255,255,0.5)';
+            const borderColor = themeColors?.border || 'rgba(255,255,255,0.2)';
+
             return (
-                <View style={[styles.themePreview, { backgroundColor: themeColor }]}>
+                <View style={[styles.themePreview, { backgroundColor: bgColor, borderColor: borderColor }]}>
                     {/* Mini app mockup */}
                     <View style={styles.mockHeader}>
                         <View style={styles.mockStatusBar}>
-                            <View style={styles.mockNotch} />
+                            <View style={[styles.mockNotch, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
                         </View>
-                        <View style={styles.mockTitleBar} />
+                        {/* Title Bar - simulating active tab or header */}
+                        <View style={[styles.mockTitleBar, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
                     </View>
                     <View style={styles.mockBody}>
-                        <View style={[styles.mockCard1, { backgroundColor: 'rgba(255,255,255,0.15)' }]} />
-                        <View style={[styles.mockCard2, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
-                        <View style={[styles.mockCard3, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
+                        {/* Card 1 - representing a post */}
+                        <View style={[styles.mockCard1, { backgroundColor: cardColor }]}>
+                            {/* Mini text lines */}
+                            <View style={{ height: 2, width: '40%', backgroundColor: textColor, opacity: 0.7, marginBottom: 2, borderRadius: 1 }} />
+                            <View style={{ height: 2, width: '80%', backgroundColor: textColor, opacity: 0.4, borderRadius: 1 }} />
+                        </View>
+                        {/* Card 2 */}
+                        <View style={[styles.mockCard2, { backgroundColor: cardColor }]} />
+                        {/* Card 3 */}
+                        <View style={[styles.mockCard3, { backgroundColor: cardColor }]} />
                     </View>
-                    <View style={styles.mockTabBar}>
-                        <View style={styles.mockTab} />
-                        <View style={[styles.mockTab, styles.mockTabActive]} />
-                        <View style={styles.mockTab} />
+
+                    {/* Floating Action Button simulation */}
+                    <View style={{
+                        position: 'absolute',
+                        bottom: 16,
+                        alignSelf: 'center',
+                        width: 14,
+                        height: 14,
+                        borderRadius: 7,
+                        backgroundColor: primaryColor,
+                        shadowColor: primaryColor,
+                        shadowOpacity: 0.5,
+                        shadowRadius: 2,
+                        elevation: 2
+                    }} />
+
+                    <View style={[styles.mockTabBar, { backgroundColor: themeColors?.backgroundCard || 'rgba(0,0,0,0.2)' }]}>
+                        <View style={[styles.mockTab, { backgroundColor: textColor, opacity: 0.3 }]} />
+                        <View style={[styles.mockTab, { backgroundColor: primaryColor }]} />
+                        <View style={[styles.mockTab, { backgroundColor: textColor, opacity: 0.3 }]} />
                     </View>
 
                     {/* Animated indicator */}

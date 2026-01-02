@@ -397,6 +397,15 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         preview: '#8D6E63',
         isPremium: false,
     },
+    {
+        id: 'theme_pink_cute',
+        type: 'theme',
+        name: 'Pink Cute',
+        description: 'Douceur pastel et ambiance kawaii.',
+        priceCredits: 2000,
+        preview: '#FFB7C5',
+        isPremium: false,
+    },
 
     // ========== CADRES ==========
     {

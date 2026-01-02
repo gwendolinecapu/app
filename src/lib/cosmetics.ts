@@ -132,8 +132,8 @@ export const getThemeColors = (themeId?: string): ThemeColors | null => {
                 background: '#FFF0F5',     // Lavender Blush
                 backgroundCard: '#FFFFFF', // White
                 primary: '#FFA6C9',        // Carnation Pink
-                text: '#6D4C41',           // Soft Brown
-                textSecondary: '#A1887F',  // Light Brown
+                text: '#4E342E',           // Very Dark Brown (High Contrast)
+                textSecondary: '#795548',  // Medium Brown
                 border: '#FFCDD2'          // Pink Border
             };
         case 'theme_cute_mint':
@@ -141,8 +141,8 @@ export const getThemeColors = (themeId?: string): ThemeColors | null => {
                 background: '#F0FFF4',     // Mint Cream
                 backgroundCard: '#FFFFFF',
                 primary: '#B4F8C8',        // Pastel Mint
-                text: '#1B5E20',           // Dark Green
-                textSecondary: '#4CAF50',
+                text: '#004D40',           // Deep Teal/Green
+                textSecondary: '#2E7D32',  // Forest Green
                 border: '#C8E6C9'
             };
         case 'theme_cute_sky':
@@ -150,8 +150,8 @@ export const getThemeColors = (themeId?: string): ThemeColors | null => {
                 background: '#F0F8FF',     // Alice Blue
                 backgroundCard: '#FFFFFF',
                 primary: '#A0E7E5',        // Pastel Sky
-                text: '#0D47A1',           // Dark Blue
-                textSecondary: '#64B5F6',
+                text: '#01579B',           // Deep Blue
+                textSecondary: '#0277BD',  // Dark Blue
                 border: '#BBDEFB'
             };
         case 'theme_cute_lavender':
@@ -159,8 +159,8 @@ export const getThemeColors = (themeId?: string): ThemeColors | null => {
                 background: '#F3E5F5',     // Purple Mist
                 backgroundCard: '#FFFFFF',
                 primary: '#E6E6FA',        // Lavender
-                text: '#4A148C',           // Dark Purple
-                textSecondary: '#BA68C8',
+                text: '#311B92',           // Deep Indigo
+                textSecondary: '#512DA8',  // Dark Purple
                 border: '#E1BEE7'
             };
         case 'theme_cute_peach':
@@ -168,8 +168,8 @@ export const getThemeColors = (themeId?: string): ThemeColors | null => {
                 background: '#FFF3E0',     // Orange Mist
                 backgroundCard: '#FFFFFF',
                 primary: '#FFDAB9',        // Peach Puff
-                text: '#E65100',           // Dark Orange
-                textSecondary: '#FFB74D',
+                text: '#BF360C',           // Deep Burnt Orange
+                textSecondary: '#E64A19',  // Dark Orange
                 border: '#FFE0B2'
             };
         case 'theme_cute_lemon':
@@ -177,8 +177,8 @@ export const getThemeColors = (themeId?: string): ThemeColors | null => {
                 background: '#FFFDE7',     // Yellow Mist
                 backgroundCard: '#FFFFFF',
                 primary: '#FFFACD',        // Lemon Chiffon
-                text: '#F57F17',           // Dark Yellow/Orange
-                textSecondary: '#FBC02D',
+                text: '#F57F17',           // Dark Gold/Orange
+                textSecondary: '#F9A825',  // Dark Yellow
                 border: '#FFF9C4'
             };
         case 'theme_cute_aqua':
@@ -186,8 +186,8 @@ export const getThemeColors = (themeId?: string): ThemeColors | null => {
                 background: '#E0F7FA',     // Cyan Mist
                 backgroundCard: '#FFFFFF',
                 primary: '#E0FFFF',        // Light Cyan
-                text: '#006064',           // Dark Cyan
-                textSecondary: '#4DD0E1',
+                text: '#004D40',           // Deep Teal (Cyan dark)
+                textSecondary: '#00838F',  // Dark Cyan
                 border: '#B2EBF2'
             };
         case 'theme_cute_cream':
@@ -195,8 +195,8 @@ export const getThemeColors = (themeId?: string): ThemeColors | null => {
                 background: '#FDF5E6',     // Old Lace
                 backgroundCard: '#FFFFFF',
                 primary: '#FAEBD7',        // Antique White
-                text: '#5D4037',           // Brown
-                textSecondary: '#8D6E63',
+                text: '#3E2723',           // Very Dark Espresso
+                textSecondary: '#5D4037',  // Dark Brown
                 border: '#D7CCC8'
             };
         case 'theme_cute_coral':
@@ -204,8 +204,8 @@ export const getThemeColors = (themeId?: string): ThemeColors | null => {
                 background: '#FFEBEE',     // Red Mist
                 backgroundCard: '#FFFFFF',
                 primary: '#FFB7B2',        // Pastel Coral
-                text: '#B71C1C',           // Dark Red
-                textSecondary: '#EF5350',
+                text: '#B71C1C',           // Deep Red
+                textSecondary: '#C62828',  // Dark Red
                 border: '#FFCDD2'
             };
         default:

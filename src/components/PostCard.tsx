@@ -17,7 +17,6 @@ import { FrontIndicator } from './ui/ActiveFrontBadge';
 import { ShareService } from '../services/share';
 import { AnimatedPressable } from './ui/AnimatedPressable';
 import { ReportModal } from './ReportModal';
-import { SharePostModal } from './SharePostModal';
 import { ReportingService, ReportReason } from '../services/reporting';
 import { Alert, ActionSheetIOS, Platform } from 'react-native';
 
@@ -29,12 +28,13 @@ interface PostCardProps {
     onAuthorPress?: (authorId: string, systemId?: string) => void;
     currentUserId?: string;
     showAuthor?: boolean;
+    themeColors?: any; // ThemeColors
 }
 
 const { width } = Dimensions.get('window');
 const AnimatedIcon = Animated.createAnimatedComponent(Ionicons);
 
-export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthorPress, currentUserId, showAuthor = true }: PostCardProps) => {
+export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthorPress, currentUserId, showAuthor = true, themeColors }: PostCardProps) => {
     const doubleTapRef = useRef(null);
     const likeScale = useRef(new Animated.Value(0)).current;
     const heartScale = useRef(new Animated.Value(1)).current;
@@ -42,14 +42,10 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
     const [lightboxVisible, setLightboxVisible] = useState(false);
     const [lightboxImageUrl, setLightboxImageUrl] = useState('');
     const [reportModalVisible, setReportModalVisible] = useState(false);
-    const [shareModalVisible, setShareModalVisible] = useState(false);
 
     const isLiked = currentUserId && post.likes?.includes(currentUserId);
     const hasMultipleImages = post.media_urls && post.media_urls.length > 1;
     const allImages = hasMultipleImages ? post.media_urls : post.media_url ? [post.media_url] : [];
-
-    // Theme color from alter
-    const themeColor = post.alter?.color;
 
     const onDoubleTap = (event: any) => {
         if (event.nativeEvent.state === State.ACTIVE) {
@@ -88,7 +84,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
     const handleShare = async () => {
         triggerHaptic.selection();
         if (onShare) onShare(post.id);
-        else setShareModalVisible(true);
+        else await ShareService.sharePost(post.id, post.content, post.author_name || 'Utilisateur');
     };
 
     const handleImagePress = (index: number, imageUrl: string) => {
@@ -136,7 +132,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
 
     return (
         <TouchableOpacity
-            style={[styles.card, themeColor ? { borderLeftColor: themeColor, borderLeftWidth: 3 } : null]}
+            style={[styles.card, themeColors && { backgroundColor: themeColors.backgroundCard, borderBottomColor: themeColors.border }]}
             activeOpacity={0.9}
             onPress={() => router.push(`/post/${post.id}` as any)}
         >
@@ -145,25 +141,18 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                     <AnimatedPressable style={styles.authorInfo} onPress={handleAuthorPress}>
                         <FrontIndicator isFronting={post.is_author_fronting || false}>
                             {post.author_avatar ? (
-                                <Image
-                                    source={{ uri: post.author_avatar }}
-                                    style={[styles.avatar, themeColor ? { borderColor: themeColor, borderWidth: 2 } : null]}
-                                />
+                                <Image source={{ uri: post.author_avatar }} style={styles.avatar} />
                             ) : (
-                                <View style={[styles.avatarPlaceholder, { backgroundColor: themeColor || colors.primary }]}>
+                                <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
                                     <Text style={styles.avatarInitial}>{post.author_name?.charAt(0)}</Text>
                                 </View>
                             )}
                         </FrontIndicator>
                         <View>
                             <View style={styles.authorNameRow}>
-                                <Text style={[styles.authorName, themeColor ? { color: themeColor } : null]}>
-                                    {post.author_name || 'Système'}
-                                </Text>
+                                <Text style={[styles.authorName, themeColors && { color: themeColors.text }]}>{post.author_name || 'Système'}</Text>
                                 {post.is_author_fronting && (
-                                    <View style={[styles.frontBadge, themeColor ? { backgroundColor: themeColor } : null]}>
-                                        <Text style={styles.frontBadgeText}>En front</Text>
-                                    </View>
+                                    <View style={styles.frontBadge}><Text style={styles.frontBadgeText}>En front</Text></View>
                                 )}
                             </View>
                             <Text style={styles.timestamp}>{timeAgo(post.created_at)}</Text>
@@ -175,7 +164,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                 </View >
             )}
 
-            {post.content && <Text style={styles.content}>{post.content}</Text>}
+            {post.content && <Text style={[styles.content, themeColors && { color: themeColors.text }]}>{post.content}</Text>}
 
             {(post.media_url || hasMultipleImages) && (
                 <TapGestureHandler ref={doubleTapRef} numberOfTaps={2} onHandlerStateChange={onDoubleTap}>
@@ -207,32 +196,27 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                             <Ionicons
                                 name={isLiked ? "heart" : "heart-outline"}
                                 size={26}
-                                color={isLiked ? colors.error : colors.textSecondary}
+                                color={isLiked ? colors.error : (themeColors?.textSecondary || colors.textSecondary)}
                             />
                         </Animated.View>
                         {(post.likes?.length || 0) > 0 && (
-                            <Text style={styles.actionText}>{post.likes?.length}</Text>
+                            <Text style={[styles.actionText, themeColors && { color: themeColors.text }]}>{post.likes?.length}</Text>
                         )}
                     </AnimatedPressable>
                     <AnimatedPressable style={styles.actionButton} onPress={() => onComment && onComment(post.id)}>
-                        <Ionicons name="chatbubble-outline" size={24} color={colors.textSecondary} />
+                        <Ionicons name="chatbubble-outline" size={24} color={themeColors?.textSecondary || colors.textSecondary} />
                         {(post.comments_count || 0) > 0 && (
-                            <Text style={styles.actionText}>{post.comments_count}</Text>
+                            <Text style={[styles.actionText, themeColors && { color: themeColors.text }]}>{post.comments_count}</Text>
                         )}
                     </AnimatedPressable>
                     <AnimatedPressable style={styles.actionButton} onPress={handleShare}>
-                        <Ionicons name="share-social-outline" size={24} color={colors.textSecondary} />
+                        <Ionicons name="share-social-outline" size={24} color={themeColors?.textSecondary || colors.textSecondary} />
                     </AnimatedPressable>
                 </View>
             </View>
 
             <ImageLightbox visible={lightboxVisible} imageUrl={lightboxImageUrl || post.media_url || ''} onClose={() => setLightboxVisible(false)} />
             <ReportModal isVisible={reportModalVisible} onClose={() => setReportModalVisible(false)} onSubmit={handleReportSubmit} />
-            <SharePostModal
-                visible={shareModalVisible}
-                onClose={() => setShareModalVisible(false)}
-                post={post}
-            />
         </TouchableOpacity >
     );
 });

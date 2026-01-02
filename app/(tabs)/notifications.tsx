@@ -109,8 +109,12 @@ export default function NotificationsScreen() {
                 });
             });
 
-            // Trier par date
-            loadedNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+            // Trier par date (with null check for timestamp)
+            loadedNotifications.sort((a, b) => {
+                const timeA = a.timestamp?.getTime?.() || 0;
+                const timeB = b.timestamp?.getTime?.() || 0;
+                return timeB - timeA;
+            });
 
             setNotifications(loadedNotifications);
 

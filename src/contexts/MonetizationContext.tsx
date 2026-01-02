@@ -375,13 +375,17 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     }, [refreshState]);
 
     const equipDecoration = useCallback(async (alterId: string, decorationId: string, type: 'frame' | 'theme' | 'bubble'): Promise<boolean> => {
+        console.log(`[equipDecoration] Attempting to equip ${decorationId} (${type}) for alter ${alterId}`);
         const success = await DecorationService.equipDecoration(alterId, decorationId, type);
+        console.log(`[equipDecoration] Result: ${success}`);
         if (success) {
             // Update local state for immediate UI feedback
             setEquippedItems(prev => ({ ...prev, [type]: decorationId }));
+            // Refresh alters to sync Firestore changes back to UI
+            refreshAlters();
         }
         return success;
-    }, []);
+    }, [refreshAlters]);
 
     // Alias for ShopUI
     const equipItem = useCallback(async (itemId: string, type: any) => {

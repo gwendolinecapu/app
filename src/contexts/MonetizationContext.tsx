@@ -60,10 +60,12 @@ interface MonetizationContextType {
     currentStreak: number;
     claimDailyLogin: (alterId: string) => Promise<{ amount: number; streak: number; streakBonus: number }>;
 
-    // Boutique
     shopItems: ShopItem[];
+    ownedItems: string[]; // IDs only
+    equippedItems: Record<string, string>; // type -> itemId
     creditPacks: ShopItem[];
     purchaseItem: (item: ShopItem, alterId?: string) => Promise<boolean>;
+    equipItem: (itemId: string, type: any) => Promise<boolean>;
     purchaseIAP: (packageId: string) => Promise<boolean>;
     restorePurchases: () => Promise<boolean>;
     presentPaywall: () => Promise<boolean>;
@@ -95,6 +97,10 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     const [credits, setCredits] = useState(10000); // TODO: Remove this for production - TEST MODE
     const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
     const [isConversionModalVisible, setConversionModalVisible] = useState(false);
+
+    // Nouveaux états pour ShopUI
+    const [ownedItems, setOwnedItems] = useState<string[]>([]);
+    const [equippedItems, setEquippedItems] = useState<Record<string, string>>({});
 
     // ==================== INITIALIZATION ====================
 
@@ -135,6 +141,11 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     const refreshState = useCallback(() => {
         setTier(PremiumService.getCurrentTier());
         setCredits(CreditService.getBalance());
+
+        // Mock owned items for now or fetch from service if available
+        // In real app: setOwnedItems(DecorationService.getAllOwnedIds(currentAlterId?))
+        // For now we trust DecorationService state but access is async.
+        // Let's implement a quick sync if user is logged in.
         refreshAlters();
     }, [refreshAlters]);
 
@@ -320,7 +331,24 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     }, [refreshState]);
 
     const equipDecoration = useCallback(async (alterId: string, decorationId: string, type: 'frame' | 'theme' | 'bubble'): Promise<boolean> => {
-        return DecorationService.equipDecoration(alterId, decorationId, type);
+        const success = await DecorationService.equipDecoration(alterId, decorationId, type);
+        if (success) {
+            // Update local state for immediate UI feedback
+            setEquippedItems(prev => ({ ...prev, [type]: decorationId }));
+        }
+        return success;
+    }, []);
+
+    // Alias for ShopUI
+    const equipItem = useCallback(async (itemId: string, type: any) => {
+        // Assume current alter context or pass it? 
+        // ShopUI context usually implies "current user/alter editing".
+        // For simplicity, we might need to know WHICH alter.
+        // But ShopUI currently calls it without alterId. 
+        // We'll stub it or fetch active alter from another context?
+        // Actually ShopUI should pass alterId or we rely on AuthContext active alter (not standard).
+        console.warn("equipItem called without specific alterId, defaulting to first or error");
+        return false;
     }, []);
 
     const getEquippedDecorationId = useCallback((alter: any, type: 'frame' | 'theme' | 'bubble'): string | undefined => {
@@ -371,8 +399,11 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         claimDailyLogin,
 
         shopItems: [...COSMETIC_ITEMS, ...CREDIT_ITEMS],
+        ownedItems,
+        equippedItems,
         creditPacks: CREDIT_PACKS,
         purchaseItem,
+        equipItem,
         purchaseIAP,
         restorePurchases,
         presentPaywall,

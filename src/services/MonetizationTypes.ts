@@ -9,7 +9,7 @@
 
 // ==================== LOOT BOXES ====================
 
-export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
+export type Rarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
 
 export interface DropRate {
     rarity: Rarity;
@@ -568,7 +568,7 @@ export type DecorationType =
     | 'background';     // Fond de carte alter
 
 /** Rareté de décoration */
-export type DecorationRarity = 'common' | 'rare' | 'epic' | 'legendary';
+export type DecorationRarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
 
 /** Couleurs par rareté */
 export const RARITY_COLORS: Record<DecorationRarity, string> = {
@@ -576,6 +576,7 @@ export const RARITY_COLORS: Record<DecorationRarity, string> = {
     rare: '#3B82F6',       // Bleu
     epic: '#8B5CF6',       // Violet
     legendary: '#F59E0B',  // Or
+    mythic: '#FF0000',     // Rouge (si on ajoute des décos mythiques plus tard)
 };
 
 /** Décoration cosmétique */
@@ -597,6 +598,7 @@ export const DECORATION_PRICES: Record<DecorationRarity, number> = {
     rare: 250,
     epic: 500,
     legendary: 1000,
+    mythic: 2000,
 };
 
 // ==================== CONFIGURATION PUBS ====================

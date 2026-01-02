@@ -24,7 +24,7 @@ import { Snowfall } from '../../../src/components/effects/Snowfall';
 
 // Components
 import { ProfileHeader } from '../../../src/components/alter-space/ProfileHeader';
-import { ShopUI } from '../../../src/components/shop/ShopUI';
+import ShopUI from '../../../src/components/shop/ShopUI';
 import { AlterGrid } from '../../../src/components/alter-space/AlterGrid';
 import { AlterJournal } from '../../../src/components/alter-space/AlterJournal';
 import { AlterGallery } from '../../../src/components/alter-space/AlterGallery';

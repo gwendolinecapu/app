@@ -90,7 +90,7 @@ export const DEFAULT_MONETIZATION_STATUS: MonetizationStatus = {
     trialEndDate: null,
     premiumEndDate: null,
     adFreeUntil: null,
-    credits: 0,
+    credits: 100, // Adjusted default as per user feedback
     lastDailyLogin: null,
     rewardAdsToday: 0,
     rewardAdsForAdFree: 0,

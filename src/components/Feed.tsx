@@ -219,6 +219,7 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
                 onComment={handleComment}
                 onAuthorPress={handleAuthorPress}
                 currentUserId={user?.uid}
+                themeColors={themeColors}
             />
         );
     };

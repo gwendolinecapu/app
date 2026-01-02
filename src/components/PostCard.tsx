@@ -28,12 +28,13 @@ interface PostCardProps {
     onAuthorPress?: (authorId: string, systemId?: string) => void;
     currentUserId?: string;
     showAuthor?: boolean;
+    themeColors?: any; // ThemeColors
 }
 
 const { width } = Dimensions.get('window');
 const AnimatedIcon = Animated.createAnimatedComponent(Ionicons);
 
-export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthorPress, currentUserId, showAuthor = true }: PostCardProps) => {
+export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthorPress, currentUserId, showAuthor = true, themeColors }: PostCardProps) => {
     const doubleTapRef = useRef(null);
     const likeScale = useRef(new Animated.Value(0)).current;
     const heartScale = useRef(new Animated.Value(1)).current;
@@ -131,7 +132,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
 
     return (
         <TouchableOpacity
-            style={styles.card}
+            style={[styles.card, themeColors && { backgroundColor: themeColors.backgroundCard, borderBottomColor: themeColors.border }]}
             activeOpacity={0.9}
             onPress={() => router.push(`/post/${post.id}` as any)}
         >
@@ -149,7 +150,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                         </FrontIndicator>
                         <View>
                             <View style={styles.authorNameRow}>
-                                <Text style={styles.authorName}>{post.author_name || 'Système'}</Text>
+                                <Text style={[styles.authorName, themeColors && { color: themeColors.text }]}>{post.author_name || 'Système'}</Text>
                                 {post.is_author_fronting && (
                                     <View style={styles.frontBadge}><Text style={styles.frontBadgeText}>En front</Text></View>
                                 )}
@@ -163,7 +164,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                 </View >
             )}
 
-            {post.content && <Text style={styles.content}>{post.content}</Text>}
+            {post.content && <Text style={[styles.content, themeColors && { color: themeColors.text }]}>{post.content}</Text>}
 
             {(post.media_url || hasMultipleImages) && (
                 <TapGestureHandler ref={doubleTapRef} numberOfTaps={2} onHandlerStateChange={onDoubleTap}>
@@ -195,21 +196,21 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                             <Ionicons
                                 name={isLiked ? "heart" : "heart-outline"}
                                 size={26}
-                                color={isLiked ? colors.error : colors.textSecondary}
+                                color={isLiked ? colors.error : (themeColors?.textSecondary || colors.textSecondary)}
                             />
                         </Animated.View>
                         {(post.likes?.length || 0) > 0 && (
-                            <Text style={styles.actionText}>{post.likes?.length}</Text>
+                            <Text style={[styles.actionText, themeColors && { color: themeColors.text }]}>{post.likes?.length}</Text>
                         )}
                     </AnimatedPressable>
                     <AnimatedPressable style={styles.actionButton} onPress={() => onComment && onComment(post.id)}>
-                        <Ionicons name="chatbubble-outline" size={24} color={colors.textSecondary} />
+                        <Ionicons name="chatbubble-outline" size={24} color={themeColors?.textSecondary || colors.textSecondary} />
                         {(post.comments_count || 0) > 0 && (
-                            <Text style={styles.actionText}>{post.comments_count}</Text>
+                            <Text style={[styles.actionText, themeColors && { color: themeColors.text }]}>{post.comments_count}</Text>
                         )}
                     </AnimatedPressable>
                     <AnimatedPressable style={styles.actionButton} onPress={handleShare}>
-                        <Ionicons name="share-social-outline" size={24} color={colors.textSecondary} />
+                        <Ionicons name="share-social-outline" size={24} color={themeColors?.textSecondary || colors.textSecondary} />
                     </AnimatedPressable>
                 </View>
             </View>

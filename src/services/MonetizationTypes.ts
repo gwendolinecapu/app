@@ -404,9 +404,8 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         name: 'Pink Cute',
         description: 'Douceur pastel et ambiance kawaii.',
         priceCredits: 2000,
-        preview: '#FF99BB',
+        preview: '#FFB7C5',
         isPremium: false,
-        isAnimated: true,
     },
     {
         id: 'theme_cute_mint',
@@ -415,9 +414,8 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         description: 'Fraîcheur menthe douce.',
         priceCredits: 5000,
         rarity: 'mythic',
-        preview: '#98FB98',
+        preview: '#B4F8C8',
         isPremium: false,
-        isAnimated: true,
     },
     {
         id: 'theme_cute_sky',
@@ -426,9 +424,8 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         description: 'Douceur céleste.',
         priceCredits: 5000,
         rarity: 'mythic',
-        preview: '#81D4FA',
+        preview: '#A0E7E5',
         isPremium: false,
-        isAnimated: true,
     },
     {
         id: 'theme_cute_lavender',
@@ -437,9 +434,8 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         description: 'Sérénité lavande.',
         priceCredits: 5000,
         rarity: 'mythic',
-        preview: '#D1C4E9',
+        preview: '#E6E6FA',
         isPremium: false,
-        isAnimated: true,
     },
     {
         id: 'theme_cute_peach',
@@ -448,9 +444,8 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         description: 'Pêche sucrée.',
         priceCredits: 5000,
         rarity: 'mythic',
-        preview: '#FFCCBC',
+        preview: '#FFDAB9',
         isPremium: false,
-        isAnimated: true,
     },
     {
         id: 'theme_cute_lemon',
@@ -459,9 +454,8 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         description: 'Zeste de citron doux.',
         priceCredits: 5000,
         rarity: 'mythic',
-        preview: '#FFF59D',
+        preview: '#FFFACD',
         isPremium: false,
-        isAnimated: true,
     },
     {
         id: 'theme_cute_aqua',
@@ -470,9 +464,8 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         description: 'Lagon pastel.',
         priceCredits: 5000,
         rarity: 'mythic',
-        preview: '#80DEEA',
+        preview: '#E0FFFF',
         isPremium: false,
-        isAnimated: true,
     },
     {
         id: 'theme_cute_cream',
@@ -481,9 +474,8 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         description: 'Douceur crème.',
         priceCredits: 5000,
         rarity: 'mythic',
-        preview: '#FFE0B2',
+        preview: '#FDF5E6',
         isPremium: false,
-        isAnimated: true,
     },
     {
         id: 'theme_cute_coral',
@@ -492,9 +484,8 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         description: 'Récif pastel.',
         priceCredits: 5000,
         rarity: 'mythic',
-        preview: '#FFAB91',
+        preview: '#FFB7B2',
         isPremium: false,
-        isAnimated: true,
     },
 
     // ========== CADRES ==========

@@ -5,7 +5,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { PurchasesOffering } from 'react-native-purchases';
-import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from './AuthContext';
 import AdMediationService from '../services/AdMediationService';
@@ -207,9 +207,12 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
         try {
             const alterRef = doc(db, 'alters', currentAlter.id);
-            await updateDoc(alterRef, {
+            console.log('[MonetizationContext] Adding to inventory:', itemId, 'for alter:', currentAlter.id);
+
+            // Use setDoc with merge to ensure the field is created if it doesn't exist
+            await setDoc(alterRef, {
                 owned_items: arrayUnion(itemId)
-            });
+            }, { merge: true });
 
             // Update local state immediately
             setOwnedItems(prev => [...new Set([...prev, itemId])]);

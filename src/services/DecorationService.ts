@@ -378,9 +378,12 @@ class DecorationService {
         }
 
         const alterRef = doc(db, 'alters', alterId);
-        await updateDoc(alterRef, {
-            [`equipped_items.${type}`]: decorationId
-        });
+        // Use setDoc with merge to ensure nested fields can be created if missing
+        await setDoc(alterRef, {
+            equipped_items: {
+                [type]: decorationId
+            }
+        }, { merge: true });
         console.log(`[DecorationService.equipDecoration] Successfully equipped ${decorationId} as ${type}`);
         return true;
     }

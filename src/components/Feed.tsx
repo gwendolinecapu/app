@@ -1,12 +1,12 @@
-// Placeholder to avoid empty content error, actual content in write_to_file
+/**
  * Feed Component V2
-    * 
+ * 
  * Features:
  * - Tri par Récent / Ancien / Populaire
-    * - Publicités intercalées entre les posts(pas à la fin)
-        * - Pagination infinie
-            * - Pull to refresh
-                */
+ * - Publicités intercalées entre les posts (pas à la fin)
+ * - Pagination infinie
+ * - Pull to refresh
+ */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, FlatList, StyleSheet, ActivityIndicator, Text, RefreshControl, TouchableOpacity } from 'react-native';
@@ -91,321 +91,276 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
 
             // Injecter une pub après chaque AD_INTERVAL posts (mais pas à la fin)
             if ((index + 1) % AD_INTERVAL === 0 && index < sortedPosts.length - 1) {
-                result.push({ type: 'ad', id: `ad-${index}` },
-                    systemButton: {
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: spacing.xs,
-                    paddingHorizontal: spacing.md,
-                    paddingVertical: spacing.sm,
-                    borderRadius: borderRadius.full,
-                    backgroundColor: colors.primary + '10',
-                },
-                    systemButtonText: {
-                    ...typography.bodySmall,
-                    color: colors.primary,
-                    fontWeight: '600',
-                },
-});
-    }
-            },
-    systemButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.xs,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        borderRadius: borderRadius.full,
-        backgroundColor: colors.primary + '10',
-    },
-systemButtonText: {
-        ...typography.bodySmall,
-        color: colors.primary,
-            fontWeight: '600',
-    },
-});
+                result.push({ type: 'ad', id: `ad-${index}` });
+            }
+        });
 
-return result;
+        return result;
     }, [sortedPosts]);
 
-const loadPosts = useCallback(async (refresh = false) => {
-    if (loadingMore && !refresh) return;
+    const loadPosts = useCallback(async (refresh = false) => {
+        if (loadingMore && !refresh) return;
 
-    try {
-        if (refresh) {
-            setRefreshing(true);
-            setHasMore(true);
-        } else {
-            setLoadingMore(true);
-        }
-
-        let response;
-
-        if (type === 'friends' && alterId) {
-            // Fetch friend system IDs first
-            const friendSystemIds = await FriendService.getFriendSystemIds(alterId);
-
-            // Add current user's system ID if explicitely requested or if it's a global feed, 
-            // BUT for 'friends' type, user requested to ONLY show friends, not self/system by default unless they are friends.
-            // The previous code forced user.uid into the list. We are removing it to respect "Only Friends".
-            const targetSystemIds = [...friendSystemIds];
-
-            // Note: If the user wants to see their OWN posts in the friends feed, they would need to be "friends" with themselves 
-            // or we'd add a setting. For now, strict "friends only" as requested.
-
-            // Fetch feed based on System IDs
-            response = await PostService.fetchFeed(targetSystemIds, refresh ? null : lastVisible);
-        } else if (type === 'global') {
-            response = await PostService.fetchGlobalFeed(refresh ? null : lastVisible);
-        } else {
-            // Fallback to global
-            response = await PostService.fetchGlobalFeed(refresh ? null : lastVisible);
-        }
-
-        if (refresh) {
-            setRawPosts(response.posts);
-        } else {
-            setRawPosts(prev => {
-                const newPosts = response.posts.filter(
-                    newPost => !prev.some(existingPost => existingPost.id === newPost.id)
-                );
-                return [...prev, ...newPosts];
-            },
-                systemButton: {
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: spacing.xs,
-                paddingHorizontal: spacing.md,
-                paddingVertical: spacing.sm,
-                borderRadius: borderRadius.full,
-                backgroundColor: colors.primary + '10',
-            },
-                systemButtonText: {
-                ...typography.bodySmall,
-                color: colors.primary,
-                fontWeight: '600',
-            },
-});
+        try {
+            if (refresh) {
+                setRefreshing(true);
+                setHasMore(true);
+            } else {
+                setLoadingMore(true);
             }
 
-setLastVisible(response.lastVisible);
-setHasMore(response.posts.length > 0);
+            let response;
+
+            if (type === 'friends' && alterId) {
+                // Fetch friend alter IDs (specific friends only)
+                const friendIds = await FriendService.getFriends(alterId);
+
+                // Fetch feed based on Alter IDs (Strict mode: only showing posts from friends we explicitly follow)
+                const targetIds = [...friendIds];
+
+                response = await PostService.fetchFeed(targetIds, refresh ? null : lastVisible);
+            } else if (type === 'global') {
+                response = await PostService.fetchGlobalFeed(refresh ? null : lastVisible);
+            } else {
+                // Fallback to global
+                response = await PostService.fetchGlobalFeed(refresh ? null : lastVisible);
+            }
+
+            if (refresh) {
+                setRawPosts(response.posts);
+            } else {
+                setRawPosts(prev => {
+                    const newPosts = response.posts.filter(
+                        newPost => !prev.some(existingPost => existingPost.id === newPost.id)
+                    );
+                    return [...prev, ...newPosts];
+                });
+            }
+
+            setLastVisible(response.lastVisible);
+            setHasMore(response.posts.length > 0);
 
         } catch (error) {
-    console.error('Error loading posts:', error);
-} finally {
-    setLoading(false);
-    setRefreshing(false);
-    setLoadingMore(false);
-}
+            console.error('Error loading posts:', error);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+            setLoadingMore(false);
+        }
     }, [lastVisible, loadingMore, type, alterId]);
 
-useEffect(() => {
-    loadPosts(true);
-}, []);
+    useEffect(() => {
+        loadPosts(true);
+    }, []);
 
-const handleLike = async (postId: string) => {
-    if (!user) return;
-    try {
-        // Optimistic update
-        setRawPosts(prev => prev.map(post => {
-            if (post.id === postId) {
-                const likes = post.likes || [];
-                const isLiked = likes.includes(user.uid);
+    const handleLike = async (postId: string) => {
+        if (!user) return;
+        try {
+            // Optimistic update
+            setRawPosts(prev => prev.map(post => {
+                if (post.id === postId) {
+                    const likes = post.likes || [];
+                    const isLiked = likes.includes(user.uid);
 
-                return {
-                    ...post,
-                    likes: isLiked
-                        ? likes.filter(id => id !== user.uid)
-                        : [...likes, user.uid]
-                };
-            }
-            return post;
-        }));
+                    return {
+                        ...post,
+                        likes: isLiked
+                            ? likes.filter(id => id !== user.uid)
+                            : [...likes, user.uid]
+                    };
+                }
+                return post;
+            }));
 
-        await PostService.toggleLike(postId, user.uid);
-    } catch (error) {
-        console.error('Like failed', error);
-    }
-};
+            await PostService.toggleLike(postId, user.uid);
+        } catch (error) {
+            console.error('Like failed', error);
+        }
+    };
 
-const handleComment = (postId: string) => {
-    setSelectedPostId(postId);
-    setCommentsModalVisible(true);
-};
+    const handleComment = (postId: string) => {
+        setSelectedPostId(postId);
+        setCommentsModalVisible(true);
+    };
 
-const handleAuthorPress = (authorId: string, authorSystemId?: string) => {
-    if (authorSystemId) {
-        router.push(`/alter-space/${authorId}` as any);
-    } else {
-        router.push(`/profile/${authorId}` as any);
-    }
-};
+    const handleAuthorPress = (authorId: string, authorSystemId?: string) => {
+        if (authorSystemId) {
+            router.push(`/alter-space/${authorId}` as any);
+        } else {
+            router.push(`/profile/${authorId}` as any);
+        }
+    };
 
-const handleSortChange = (option: SortOption) => {
-    triggerHaptic.selection();
-    setSortBy(option);
-    setShowSortMenu(false);
-};
+    const handleSortChange = (option: SortOption) => {
+        triggerHaptic.selection();
+        setSortBy(option);
+        setShowSortMenu(false);
+    };
 
-const getSortLabel = (option: SortOption): string => {
-    switch (option) {
-        case 'recent': return '📅 Plus récent';
-        case 'oldest': return '📆 Plus ancien';
-        case 'popular': return '🔥 Populaire';
-    }
-};
+    const getSortLabel = (option: SortOption): string => {
+        switch (option) {
+            case 'recent': return '📅 Plus récent';
+            case 'oldest': return '📆 Plus ancien';
+            case 'popular': return '🔥 Populaire';
+        }
+    };
 
-const renderItem = ({ item, index }: { item: any, index: number }) => {
-    // Render publicité
-    if (item.type === 'ad') {
-        return <NativeAdCard />;
-    }
+    const renderItem = ({ item, index }: { item: any, index: number }) => {
+        // Render publicité
+        if (item.type === 'ad') {
+            return <NativeAdCard />;
+        }
 
-    // Render Post
-    return (
-        <PostCard
-            post={item}
-            onLike={handleLike}
-            onComment={handleComment}
-            onAuthorPress={handleAuthorPress}
-            currentUserId={user?.uid}
-            themeColors={themeColors}
-        />
-    );
-};
-
-const renderHeader = () => (
-    <View style={[styles.headerContainer, themeColors && { backgroundColor: themeColors.background, borderBottomColor: themeColors.border }]}>
-        {/* Bouton de tri */}
-        <TouchableOpacity
-            style={[styles.sortButton, themeColors && { backgroundColor: themeColors.backgroundCard }]}
-            onPress={() => {
-                triggerHaptic.selection();
-                setShowSortMenu(!showSortMenu);
-            }}
-        >
-            <Ionicons name="filter" size={18} color={themeColors?.text || colors.text} />
-            <Text style={[styles.sortButtonText, themeColors && { color: themeColors.text }]}>{getSortLabel(sortBy)}</Text>
-            <Ionicons
-                name={showSortMenu ? "chevron-up" : "chevron-down"}
-                size={16}
-                color={themeColors?.textSecondary || colors.textSecondary}
+        // Render Post
+        return (
+            <PostCard
+                post={item}
+                onLike={handleLike}
+                onComment={handleComment}
+                onAuthorPress={handleAuthorPress}
+                currentUserId={user?.uid}
+                themeColors={themeColors}
             />
-        </TouchableOpacity>
+        );
+    };
 
-        {/* Menu de tri */}
-        {showSortMenu && (
-            <View style={[styles.sortMenu, themeColors && { backgroundColor: themeColors.backgroundCard }]}>
-                {(['recent', 'oldest', 'popular'] as SortOption[]).map(option => (
-                    <TouchableOpacity
-                        key={option}
-                        style={[
-                            styles.sortMenuItem,
-                            themeColors && { borderBottomColor: themeColors.border },
-                            sortBy === option && styles.sortMenuItemActive
-                        ]}
-                        onPress={() => handleSortChange(option)}
-                    >
-                        <Text style={[
-                            styles.sortMenuItemText,
-                            themeColors && { color: themeColors.text },
-                            sortBy === option && styles.sortMenuItemTextActive
-                        ]}>
-                            {getSortLabel(option)}
-                        </Text>
-                        {sortBy === option && (
-                            <Ionicons name="checkmark" size={18} color={themeColors?.primary || colors.primary} />
-                        )}
-                    </TouchableOpacity>
+    const renderHeader = () => (
+        <View style={[styles.headerContainer, themeColors && { backgroundColor: themeColors.background, borderBottomColor: themeColors.border }]}>
+            {/* Bouton de tri */}
+            <TouchableOpacity
+                style={[styles.sortButton, themeColors && { backgroundColor: themeColors.backgroundCard }]}
+                onPress={() => {
+                    triggerHaptic.selection();
+                    setShowSortMenu(!showSortMenu);
+                }}
+            >
+                <Ionicons name="filter" size={18} color={themeColors?.text || colors.text} />
+                <Text style={[styles.sortButtonText, themeColors && { color: themeColors.text }]}>{getSortLabel(sortBy)}</Text>
+                <Ionicons
+                    name={showSortMenu ? "chevron-up" : "chevron-down"}
+                    size={16}
+                    color={themeColors?.textSecondary || colors.textSecondary}
+                />
+            </TouchableOpacity>
+
+            {/* Menu de tri */}
+            {showSortMenu && (
+                <View style={[styles.sortMenu, themeColors && { backgroundColor: themeColors.backgroundCard }]}>
+                    {(['recent', 'oldest', 'popular'] as SortOption[]).map(option => (
+                        <TouchableOpacity
+                            key={option}
+                            style={[
+                                styles.sortMenuItem,
+                                themeColors && { borderBottomColor: themeColors.border },
+                                sortBy === option && styles.sortMenuItemActive
+                            ]}
+                            onPress={() => handleSortChange(option)}
+                        >
+                            <Text style={[
+                                styles.sortMenuItemText,
+                                themeColors && { color: themeColors.text },
+                                sortBy === option && styles.sortMenuItemTextActive
+                            ]}>
+                                {getSortLabel(option)}
+                            </Text>
+                            {sortBy === option && (
+                                <Ionicons name="checkmark" size={18} color={themeColors?.primary || colors.primary} />
+                            )}
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            )}
+
+            {/* Bouton Voir Système */}
+            {type === 'friends' && alterId && (
+                <TouchableOpacity
+                    style={[styles.systemButton, themeColors && { backgroundColor: themeColors.primary + '15' }]}
+                    onPress={() => setShowSystemSelector(true)}
+                >
+                    <Ionicons name="people" size={16} color={themeColors?.primary || colors.primary} />
+                    <Text style={[styles.systemButtonText, themeColors && { color: themeColors.primary }]}>Voir système</Text>
+                </TouchableOpacity>
+            )}
+        </View>
+    );
+
+    const renderFooter = () => {
+        if (!loadingMore) return <View style={{ height: 100 }} />;
+        return (
+            <View style={{ padding: spacing.md, alignItems: 'center', marginBottom: 50 }}>
+                <ActivityIndicator color={colors.primary} />
+            </View>
+        );
+    };
+
+    if (loading && !refreshing) {
+        return (
+            <View style={styles.loadingContainer}>
+                {[1, 2, 3].map(i => (
+                    <View key={i} style={{ marginBottom: spacing.md }}>
+                        <SkeletonFeed />
+                    </View>
                 ))}
             </View>
-        )}
+        );
+    }
 
-        {/* Bouton Voir Système */}
-        {type === 'friends' && alterId && (
-            <TouchableOpacity
-                style={[styles.systemButton, themeColors && { backgroundColor: themeColors.primary + '15' }]}
-                onPress={() => setShowSystemSelector(true)}
-            >
-                <Ionicons name="people" size={16} color={themeColors?.primary || colors.primary} />
-                <Text style={[styles.systemButtonText, themeColors && { color: themeColors.primary }]}>Voir système</Text>
-            </TouchableOpacity>
-        )}
-    </View>
-);
-
-const renderFooter = () => {
-    if (!loadingMore) return <View style={{ height: 100 }} />;
     return (
-        <View style={{ padding: spacing.md, alignItems: 'center', marginBottom: 50 }}>
-            <ActivityIndicator color={colors.primary} />
-        </View>
-    );
-};
-
-if (loading && !refreshing) {
-    return (
-        <View style={styles.loadingContainer}>
-            {[1, 2, 3].map(i => (
-                <View key={i} style={{ marginBottom: spacing.md }}>
-                    <SkeletonFeed />
-                </View>
-            ))}
-        </View>
-    );
-}
-
-return (
-    <>
-        <FlatList
-            data={postsWithAds}
-            renderItem={renderItem}
-            keyExtractor={(item: any, index: number) => item.id || `item-${index}`}
-            ListHeaderComponent={renderHeader}
-            stickyHeaderIndices={[0]}
-            refreshControl={
-                <RefreshControl
-                    refreshing={refreshing}
-                    onRefresh={() => loadPosts(true)}
-                    tintColor={colors.primary}
-                />
-            }
-            onEndReached={() => {
-                if (hasMore && !loadingMore) {
-                    loadPosts();
+        <>
+            <FlatList
+                data={postsWithAds}
+                renderItem={renderItem}
+                keyExtractor={(item: any, index: number) => item.id || `item-${index}`}
+                ListHeaderComponent={renderHeader}
+                stickyHeaderIndices={[0]}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={() => loadPosts(true)}
+                        tintColor={colors.primary}
+                    />
                 }
-            }}
-            onEndReachedThreshold={0.5}
-            ListFooterComponent={renderFooter}
-            ListEmptyComponent={
-                <EmptyState
-                    icon="newspaper-outline"
-                    title="Rien à voir ici !"
-                    message={
-                        type === 'friends'
-                            ? "Suivez d'autres systèmes pour voir leurs posts ici."
-                            : type === 'system'
-                                ? "Ce système n'a pas encore posté."
-                                : "Aucun post public pour le moment."
+                onEndReached={() => {
+                    if (hasMore && !loadingMore) {
+                        loadPosts();
                     }
-                    themeColors={themeColors}
-                />
-            }
-            contentContainerStyle={styles.listContent}
-        />
+                }}
+                onEndReachedThreshold={0.5}
+                ListFooterComponent={renderFooter}
+                ListEmptyComponent={
+                    <EmptyState
+                        icon="newspaper-outline"
+                        title="Rien à voir ici !"
+                        message={
+                            type === 'friends'
+                                ? "Suivez d'autres systèmes pour voir leurs posts ici."
+                                : type === 'system'
+                                    ? "Ce système n'a pas encore posté."
+                                    : "Aucun post public pour le moment."
+                        }
+                        themeColors={themeColors}
+                    />
+                }
+                contentContainerStyle={styles.listContent}
+            />
 
-        {/* Comments Modal */}
-        <CommentsModal
-            visible={commentsModalVisible}
-            postId={selectedPostId}
-            onClose={() => {
-                setCommentsModalVisible(false);
-                setSelectedPostId(null);
-            }}
-        />
-    </>
-);
+            {/* Comments Modal */}
+            <CommentsModal
+                visible={commentsModalVisible}
+                postId={selectedPostId}
+                onClose={() => {
+                    setCommentsModalVisible(false);
+                    setSelectedPostId(null);
+                }}
+            />
+            {/* System Friend Selector Logic Modal */}
+            <SystemFriendSelector
+                visible={showSystemSelector}
+                onClose={() => setShowSystemSelector(false)}
+                currentAlterId={alterId || ''}
+            />
+        </>
+    );
 };
 
 const styles = StyleSheet.create({
@@ -489,19 +444,18 @@ const styles = StyleSheet.create({
         color: colors.textMuted,
         marginTop: spacing.xs,
     },
-},
     systemButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.primary + '10',
-},
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.full,
+        backgroundColor: colors.primary + '10',
+    },
     systemButtonText: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '600',
-},
+        ...typography.bodySmall,
+        color: colors.primary,
+        fontWeight: '600',
+    },
 });

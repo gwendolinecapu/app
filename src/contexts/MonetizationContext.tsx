@@ -56,8 +56,8 @@ interface MonetizationContextType {
     claimRewardAd: (alterId: string) => Promise<number>;
 
     // Crédits
-    // checkDailyLogin: (alterId: string) => Promise<boolean>; // Legacy
     // checkDailyLogin is likely not used directly in UI as much as claim button
+    checkDailyLogin: (alterId: string) => Promise<boolean>;
 
     currentStreak: number;
     claimDailyLogin: (alterId: string) => Promise<{ amount: number; streak: number; streakBonus: number }>;

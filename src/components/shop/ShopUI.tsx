@@ -439,7 +439,9 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                     if (!currentAlter) return false;
 
                     // 1. Check Balance locally first for speed
+                    console.log('[ShopUI] Purchase Attempt - Credits:', credits, 'Price:', LOOT_BOX.price, 'Alter:', currentAlter?.id);
                     if (credits < LOOT_BOX.price) {
+                        console.warn('[ShopUI] Not enough credits (Local Check)');
                         // TODO: trigger purchase modal?
                         return false;
                     }
@@ -461,7 +463,9 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                 onReplay={async () => {
                     // Same logic as purchase
                     if (!currentAlter) return false;
+                    console.log('[ShopUI] Replay Attempt - Credits:', credits, 'Price:', LOOT_BOX.price);
                     if (credits < LOOT_BOX.price) {
+                        console.warn('[ShopUI] Not enough credits for replay (Local Check)');
                         return false;
                     }
                     try {

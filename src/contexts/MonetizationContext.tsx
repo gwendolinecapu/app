@@ -99,7 +99,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
     // États dérivés des services
     const [tier, setTier] = useState<UserTier>('free');
-    const [credits, setCredits] = useState(10000); // TODO: Remove this for production - TEST MODE
+    const [credits, setCredits] = useState(0);
     const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
     const [isConversionModalVisible, setConversionModalVisible] = useState(false);
 
@@ -146,17 +146,21 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     const refreshState = useCallback(() => {
         setTier(PremiumService.getCurrentTier());
 
-        // Fetch owned items for CURRENT ALTER only (Alter-specific inventory)
+        // Fetch owned items and credits for CURRENT ALTER only
         if (currentAlter) {
+            // Sync Credits
+            setCredits(currentAlter.credits || 0);
+
+            // Sync Inventory
             const defaults = ['theme_default', 'frame_simple', 'bubble_default', 'border_none'];
             const alterOwned = currentAlter.owned_items || [];
             console.log('[MonetizationContext] refreshState - CurrentAlter:', currentAlter.id);
-            console.log('[MonetizationContext] refreshState - AlterOwned from DB:', alterOwned);
+            console.log('[MonetizationContext] refreshState - Credits:', currentAlter.credits);
             const merged = [...new Set([...defaults, ...alterOwned])];
-            console.log('[MonetizationContext] refreshState - Merged OwnedItems:', merged);
             setOwnedItems(merged);
         } else {
             console.log('[MonetizationContext] refreshState - No CurrentAlter');
+            setCredits(0);
         }
 
         refreshAlters();

@@ -7,6 +7,24 @@
 
 // ==================== PUBLICITÉS ====================
 
+// ==================== LOOT BOXES ====================
+
+export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
+
+export interface DropRate {
+    rarity: Rarity;
+    chance: number;
+}
+
+export interface LootBoxType {
+    id: string;
+    name: string;
+    price: number;
+    description: string;
+    color: string;
+    dropRates: DropRate[];
+}
+
 /** Types de publicités disponibles */
 export type AdType = 'banner' | 'native' | 'interstitial' | 'rewarded';
 

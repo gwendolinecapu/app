@@ -23,6 +23,9 @@ import { ShopItemCard } from './ShopItemCard';
 import { FeaturedCarousel } from './FeaturedCarousel';
 import { ShopItemModal } from './ShopItemModal';
 import { ShopItem } from '../../services/MonetizationTypes';
+import { LootBoxOpening } from './LootBoxOpening';
+import { LOOT_BOXES } from '../../services/LootBoxService';
+import { LootBoxType } from '../../services/MonetizationTypes';
 
 // Dimensions
 const { width } = Dimensions.get('window');
@@ -83,6 +86,9 @@ export function ShopUI({ isEmbedded = false }: ShopUIProps) {
     // Modal state
     const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
+
+    // Loot Box state
+    const [selectedBox, setSelectedBox] = useState<LootBoxType | null>(null);
 
     // Load owned items from user data on mount
     useEffect(() => {
@@ -387,6 +393,53 @@ export function ShopUI({ isEmbedded = false }: ShopUIProps) {
                     />
                 )}
 
+                {/* LOOT BOXES SECTION */}
+                {selectedCategory !== 'inventory' && (
+                    <View style={[styles.sectionContainer, { marginTop: 20 }]}>
+                        <Text style={styles.sectionTitle}>🎲 Boîtes Mystères</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 0, gap: 15 }}>
+                            {LOOT_BOXES.map(box => (
+                                <TouchableOpacity
+                                    key={box.id}
+                                    style={{
+                                        width: 140,
+                                        height: 180,
+                                        backgroundColor: '#1E1E1E',
+                                        borderRadius: 16,
+                                        borderWidth: 2,
+                                        borderColor: box.color,
+                                        padding: 15,
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        shadowColor: box.color,
+                                        shadowOffset: { width: 0, height: 4 },
+                                        shadowOpacity: 0.3,
+                                        shadowRadius: 8,
+                                        elevation: 5
+                                    }}
+                                    onPress={() => setSelectedBox(box)}
+                                >
+                                    <View style={{
+                                        width: 80,
+                                        height: 80,
+                                        borderRadius: 40,
+                                        backgroundColor: box.color + '20',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        marginBottom: 10
+                                    }}>
+                                        <Text style={{ fontSize: 40 }}>🎁</Text>
+                                    </View>
+                                    <View style={{ alignItems: 'center' }}>
+                                        <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16, textAlign: 'center' }}>{box.name}</Text>
+                                        <Text style={{ color: '#AAA', fontSize: 12, textAlign: 'center', marginTop: 5 }}>{box.price} c</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
+
                 {/* Rewards Section - show on all categories except inventory */}
                 {selectedCategory !== 'inventory' && (
                     <View style={styles.sectionContainer}>
@@ -471,6 +524,7 @@ export function ShopUI({ isEmbedded = false }: ShopUIProps) {
             </ScrollView>
 
             {/* Item Detail Modal */}
+            {/* Shop Item Details Modal */}
             <ShopItemModal
                 visible={modalVisible}
                 item={selectedItem}
@@ -484,6 +538,20 @@ export function ShopUI({ isEmbedded = false }: ShopUIProps) {
                 }}
                 onPurchase={handlePurchase}
                 onEquip={handleEquip}
+            />
+
+            {/* Loot Box Opening Modal */}
+            <LootBoxOpening
+                visible={!!selectedBox}
+                box={selectedBox}
+                onClose={() => setSelectedBox(null)}
+                // @ts-ignore
+                onReward={(item) => {
+                    // Auto-unlock via context if implemented, currently just visual
+                    if (!ownedItems.includes(item.id)) {
+                        setOwnedItems(prev => [...prev, item.id]);
+                    }
+                }}
             />
         </View>
     );

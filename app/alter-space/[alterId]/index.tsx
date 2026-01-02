@@ -20,6 +20,7 @@ import { colors, spacing, typography } from '../../../src/lib/theme';
 import { getThemeColors } from '../../../src/lib/cosmetics';
 import { triggerHaptic } from '../../../src/lib/haptics';
 import { Ionicons } from '@expo/vector-icons';
+import { Snowfall } from '../../../src/components/effects/Snowfall';
 
 // Components
 import { ProfileHeader } from '../../../src/components/alter-space/ProfileHeader';
@@ -427,6 +428,9 @@ export default function AlterSpaceScreen() {
                 userIds={followingIds}
                 onClose={() => setShowFollowingModal(false)}
             />
+
+            {/* Effects */}
+            {alter?.equipped_items?.theme === 'theme_winter' && <Snowfall />}
         </View>
     );
 }

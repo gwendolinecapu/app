@@ -241,6 +241,22 @@ export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits }
                 <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
 
                 <View style={styles.priceRow}>
+                    {/* Badges Container */}
+                    {/* Badges Container */}
+                    <View style={styles.badgesContainer}>
+                        {item.isAnimated && (
+                            <View style={[styles.badge, styles.luxeBadge]}>
+                                <Ionicons name="sparkles" size={10} color="#FFFFFF" />
+                                <Text style={styles.badgeText}>LUXE</Text>
+                            </View>
+                        )}
+                        {item.isPremium && !item.isAnimated && (
+                            <View style={[styles.badge, styles.badgePremium]}>
+                                <Ionicons name="diamond" size={10} color="#FFD700" />
+                                <Text style={[styles.badgeText, { color: '#FFD700' }]}>PREMIUM</Text>
+                            </View>
+                        )}
+                    </View>
                     {isOwned ? (
                         <View style={styles.ownedBadge}>
                             <Ionicons name="checkmark" size={12} color={colors.success} />
@@ -468,7 +484,35 @@ const styles = StyleSheet.create({
     },
     priceRow: {
         flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
+        marginTop: 4,
+    },
+    badgesContainer: {
+        flexDirection: 'row',
+        gap: 4,
+        marginBottom: 4,
+    },
+    badge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        gap: 2,
+    },
+    luxeBadge: {
+        backgroundColor: '#8B5CF6', // Purple for Animated/Luxe
+    },
+    badgePremium: {
+        backgroundColor: 'rgba(255, 215, 0, 0.1)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 215, 0, 0.3)',
+    },
+    badgeText: {
+        fontSize: 9,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
     },
     priceTag: {
         flexDirection: 'row',

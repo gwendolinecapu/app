@@ -71,7 +71,7 @@ const DashboardGridComponent = ({
             renderItem={renderItem}
             keyExtractor={keyExtractor}
             numColumns={numColumns}
-            contentContainerStyle={[styles.gridContent, { paddingBottom: 120 }]}
+            contentContainerStyle={[styles.gridContent, { paddingBottom: 120, paddingHorizontal: CONTAINER_PADDING }]}
             showsVerticalScrollIndicator={false}
             ListHeaderComponent={ListHeaderComponent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}

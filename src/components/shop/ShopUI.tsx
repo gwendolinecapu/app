@@ -26,6 +26,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
+import { useRouter } from 'expo-router';
 import { colors, typography, spacing } from '../../lib/theme';
 import { useMonetization } from '../../contexts/MonetizationContext';
 import { LootBoxService, LOOT_BOX } from '../../services/LootBoxService';
@@ -34,6 +35,8 @@ import { ShopItemCard } from './ShopItemCard';
 import { ShopItemModal } from './ShopItemModal';
 import { LootBoxOpening } from './LootBoxOpening';
 import { ItemPreview } from './ItemPreview';
+
+import { InventoryModal } from './InventoryModal';
 
 const { width } = Dimensions.get('window');
 
@@ -49,13 +52,19 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
         purchaseItem,
         equipItem,
         ownedItems,
-        equippedItems
+        equippedItems,
+        canWatchRewardAd,
+        watchRewardAd
     } = useMonetization();
+
+    const router = useRouter();
 
     const [selectedCategory, setSelectedCategory] = useState<'daily' | 'catalog'>('daily');
     const [modalVisible, setModalVisible] = useState(false);
+    const [inventoryVisible, setInventoryVisible] = useState(false);
     const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
     const [lootBoxVisible, setLootBoxVisible] = useState(false);
+    const [loadingAd, setLoadingAd] = useState(false);
 
     // Catalog State
     const [catalogFilter, setCatalogFilter] = useState<'all' | 'theme' | 'frame' | 'bubble'>('all');
@@ -115,18 +124,47 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
         setModalVisible(false);
     };
 
+    const handleWatchAd = async () => {
+        if (!canWatchRewardAd || loadingAd) return;
+        setLoadingAd(true);
+        try {
+            await watchRewardAd('current_user'); // ID stub
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingAd(false);
+        }
+    };
+
     return (
         <View style={styles.container}>
+            {/* HERO HEADER - Only if not embedded */}
             {/* HERO HEADER - Only if not embedded */}
             {!isEmbedded && (
                 <View style={[styles.header, { paddingTop: insets.top }]}>
                     <View style={styles.headerTop}>
+                        {/* LEFT: BACK BUTTON */}
+                        <TouchableOpacity
+                            style={styles.iconBtn}
+                            onPress={() => router.back()}
+                        >
+                            <Ionicons name="arrow-back" size={24} color="#FFF" />
+                        </TouchableOpacity>
+
                         <Text style={styles.headerTitle}>BOUTIQUE</Text>
-                        <View style={styles.creditBadge}>
-                            <Ionicons name="diamond" size={16} color="#F59E0B" />
-                            <Text style={styles.creditText}>{credits}</Text>
-                            <TouchableOpacity style={styles.plusBtn}>
-                                <Ionicons name="add" size={16} color="#FFF" />
+
+                        {/* RIGHT: INVENTORY & CREDITS */}
+                        <View style={styles.headerRight}>
+                            <View style={styles.creditBadge}>
+                                <Ionicons name="diamond" size={14} color="#F59E0B" />
+                                <Text style={styles.creditText}>{credits}</Text>
+                            </View>
+
+                            <TouchableOpacity
+                                style={styles.iconBtn}
+                                onPress={() => setInventoryVisible(true)}
+                            >
+                                <Ionicons name="bag-handle-outline" size={24} color="#FFF" />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -189,6 +227,31 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                 </View>
 
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dailyScroll}>
+                    {/* AD CARD */}
+                    <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={handleWatchAd}
+                        disabled={!canWatchRewardAd || loadingAd}
+                        style={[styles.adCard, (!canWatchRewardAd) && { opacity: 0.5 }]}
+                    >
+                        <LinearGradient
+                            colors={['#059669', '#10B981']}
+                            style={styles.adGradient}
+                        >
+                            <View style={styles.adBadge}>
+                                <Text style={styles.adBadgeText}>GRATUIT</Text>
+                            </View>
+                            <Ionicons name="play-circle" size={48} color="#FFF" />
+                            <View style={styles.adContent}>
+                                <Text style={styles.adTitle}>Crédits Gratuits</Text>
+                                <View style={styles.adReward}>
+                                    <Ionicons name="diamond" size={14} color="#FFD700" />
+                                    <Text style={styles.adRewardText}>+50</Text>
+                                </View>
+                            </View>
+                        </LinearGradient>
+                    </TouchableOpacity>
+
                     {dailyItems.map((item, index) => (
                         <Animated.View
                             key={item.id}
@@ -237,6 +300,15 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                     // Handled by context usually, but ensure re-render
                 }}
             />
+
+            <InventoryModal
+                visible={inventoryVisible}
+                onClose={() => setInventoryVisible(false)}
+                onEquip={async (item) => {
+                    await equipItem(item.id, item.type);
+                    setInventoryVisible(false);
+                }}
+            />
         </View>
     );
 }
@@ -264,12 +336,25 @@ const styles = StyleSheet.create({
         color: '#FFF',
         letterSpacing: 1,
     },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    iconBtn: {
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+    },
     creditBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: 'rgba(255,255,255,0.1)',
         paddingHorizontal: 12,
-        paddingVertical: 6,
+        paddingVertical: 8,
         borderRadius: 20,
         gap: 6,
     },
@@ -285,6 +370,62 @@ const styles = StyleSheet.create({
         height: 20,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+
+    // AD CARD
+    adCard: {
+        width: 140,
+        height: 200, // Match ShopItemCard height roughly? ShopItemCard is set by container width but inside scrollview maybe explicit height is better? 
+        // Actually ShopItemCard doesn't enforce height but its contents do. 
+        // Let's match the visual height.
+        borderRadius: 16,
+        overflow: 'hidden',
+        marginRight: 4,
+    },
+    adGradient: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 12,
+        gap: 12,
+    },
+    adBadge: {
+        position: 'absolute',
+        top: 8,
+        left: 8,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+    },
+    adBadgeText: {
+        color: '#FFF',
+        fontSize: 10,
+        fontWeight: 'bold',
+    },
+    adContent: {
+        alignItems: 'center',
+        gap: 4,
+    },
+    adTitle: {
+        color: '#FFF',
+        fontWeight: 'bold',
+        fontSize: 14,
+        textAlign: 'center',
+    },
+    adReward: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.2)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+        gap: 4,
+    },
+    adRewardText: {
+        color: '#FFD700',
+        fontWeight: 'bold',
+        fontSize: 12,
     },
 
     // HERO LOOTBOX

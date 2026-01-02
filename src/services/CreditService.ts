@@ -15,6 +15,7 @@ import {
     orderBy,
     limit,
     getDocs,
+    onSnapshot,
     increment,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -33,11 +34,9 @@ const TRANSACTIONS_SUBCOLLECTION = 'credit_transactions';
 
 class CreditService {
     private static instance: CreditService;
-    private balance: number = 0;
     private userId: string | null = null;
-    private lastDailyClaimDate: string | null = null;
-    private currentStreak: number = 0;
-    private initialized: boolean = false;
+    private currentAlterId: string | null = null;
+    private unsubscribeBalance: (() => void) | null = null;
 
     private constructor() { }
 
@@ -53,66 +52,58 @@ class CreditService {
     /**
      * Initialise le service pour un utilisateur
      */
+    /**
+     * Initialise le service (User Context)
+     */
     async initialize(userId: string): Promise<void> {
-        if (!userId) {
-            console.warn('[CreditService] No userId provided, skipping initialization');
-            return;
+        this.userId = userId;
+    }
+
+    /**
+     * Subscribe to a specific Alter's credit balance
+     */
+    subscribeToAlterBalance(alterId: string, onUpdate: (balance: number) => void): () => void {
+        this.currentAlterId = alterId;
+
+        // Unsubscribe previous if exists
+        if (this.unsubscribeBalance) {
+            this.unsubscribeBalance();
         }
 
-        this.userId = userId;
-
-        try {
-            const docRef = doc(db, FIRESTORE_COLLECTION, userId);
-            const docSnap = await getDoc(docRef);
-
+        const docRef = doc(db, 'alters', alterId);
+        this.unsubscribeBalance = onSnapshot(docRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                this.balance = data.credits || 0;
-                this.lastDailyClaimDate = data.lastDailyLogin
-                    ? new Date(data.lastDailyLogin).toISOString().split('T')[0]
-                    : null;
-                this.currentStreak = data.loginStreak || 0;
+                onUpdate(data.credits || 0);
+            } else {
+                onUpdate(0);
             }
+        }, (error) => {
+            console.error('[CreditService] Balance sync error:', error);
+        });
 
-
-
-            // Cache local
-            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({
-                balance: this.balance,
-                lastDailyClaimDate: this.lastDailyClaimDate,
-                currentStreak: this.currentStreak,
-            }));
-
-            this.initialized = true;
-
-        } catch (error) {
-            console.error('[CreditService] Initialization failed:', error);
-
-            // Fallback cache local
-            const cached = await AsyncStorage.getItem(STORAGE_KEY);
-            if (cached) {
-                const data = JSON.parse(cached);
-                this.balance = data.balance || 0;
-                this.lastDailyClaimDate = data.lastDailyClaimDate;
-                this.currentStreak = data.currentStreak || 0;
-            }
-        }
+        return this.unsubscribeBalance;
     }
 
     // ==================== BALANCE ====================
 
     /**
-     * Retourne le solde actuel
+     * Retourne le solde actuel (synchronous if subscribed, else 0)
+     * Warning: prefer subscription or fetching fresh
      */
     getBalance(): number {
-        return this.balance;
+        // This is now legacy/unsafe as it depends on active subscription
+        // MonetizationContext will hold the state
+        return 0;
     }
 
-    /**
-     * Vérifie si l'utilisateur a assez de crédits
-     */
-    hasEnoughCredits(amount: number): boolean {
-        return this.balance >= amount;
+    async getAlterBalance(alterId: string): Promise<number> {
+        try {
+            const snap = await getDoc(doc(db, 'alters', alterId));
+            return snap.exists() ? (snap.data().credits || 0) : 0;
+        } catch {
+            return 0;
+        }
     }
 
     // ==================== GAINS ====================
@@ -186,8 +177,9 @@ class CreditService {
 
         const totalAmount = dailyAmount + streakBonus;
 
-        // Ajouter les crédits (Wallet Système)
+        // Ajouter les crédits (Wallet ALTER)
         await this.addCredits(
+            alterId,
             totalAmount,
             isPremium ? 'daily_login_premium' : 'daily_login',
             `Connexion jour ${currentStreak} (${alterData.name || 'Alter'})`
@@ -222,15 +214,18 @@ class CreditService {
             last_reward_ad: Date.now()
         });
 
-        await this.addCredits(amount, 'reward_ad', 'Vidéo publicitaire');
+        await this.addCredits(alterId, amount, 'reward_ad', 'Vidéo publicitaire');
         return amount;
     }
 
     /**
      * Ajoute des crédits (achat IAP)
      */
-    async addPurchasedCredits(amount: number, productId: string): Promise<void> {
-        await this.addCredits(amount, 'purchase_iap', `Achat: ${productId}`);
+    /**
+     * Ajoute des crédits (achat IAP)
+     */
+    async addPurchasedCredits(alterId: string, amount: number, productId: string): Promise<void> {
+        await this.addCredits(alterId, amount, 'purchase_iap', `Achat: ${productId}`);
     }
 
     // ==================== DÉPENSES ====================
@@ -239,7 +234,7 @@ class CreditService {
      * Achète un item de la boutique
      * @param applyEffect If true, triggers business logic (granting rights). If false, just deducts money.
      */
-    async purchaseItem(item: ShopItem, applyEffect: boolean = true): Promise<boolean> {
+    async purchaseItem(alterId: string, item: ShopItem, applyEffect: boolean = true): Promise<boolean> {
         if (!item.priceCredits) {
             // Free items should be handled by caller usually, but if 0 cost passed here:
             if (applyEffect) {
@@ -248,13 +243,15 @@ class CreditService {
             return true;
         }
 
-        if (!this.hasEnoughCredits(item.priceCredits)) {
+        const currentBalance = await this.getAlterBalance(alterId);
+        if (currentBalance < item.priceCredits) {
             console.warn('[CreditService] Not enough credits for:', item.id);
             return false;
         }
 
         // Retirer les crédits
         await this.spendCredits(
+            alterId,
             item.priceCredits,
             this.getTransactionType(item.type),
             item.name,
@@ -302,13 +299,21 @@ class CreditService {
      * Ajoute des crédits avec transaction
      */
     public async addCredits(
+        alterId: string,
         amount: number,
         type: CreditTransactionType,
         description?: string
     ): Promise<void> {
-        this.balance += amount;
-        await this.recordTransaction(amount, type, description);
-        await this.saveBalance();
+        try {
+            // Update Alter Doc
+            const alterRef = doc(db, 'alters', alterId);
+            await updateDoc(alterRef, { credits: increment(amount) });
+
+            // Record Transaction
+            await this.recordTransaction(alterId, amount, type, description);
+        } catch (e) {
+            console.error('[CreditService] Add credits failed', e);
+        }
     }
 
     /**
@@ -344,20 +349,29 @@ class CreditService {
      * Retire des crédits avec transaction
      */
     private async spendCredits(
+        alterId: string,
         amount: number,
         type: CreditTransactionType,
         description?: string,
         itemId?: string
     ): Promise<void> {
-        this.balance -= amount;
-        await this.recordTransaction(-amount, type, description, itemId);
-        await this.saveBalance();
+        try {
+            // Update Alter Doc
+            const alterRef = doc(db, 'alters', alterId);
+            await updateDoc(alterRef, { credits: increment(-amount) });
+
+            // Record Transaction
+            await this.recordTransaction(alterId, -amount, type, description, itemId);
+        } catch (e) {
+            console.error('[CreditService] Spend credits failed', e);
+        }
     }
 
     /**
      * Enregistre une transaction
      */
     private async recordTransaction(
+        alterId: string,
         amount: number,
         type: CreditTransactionType,
         description?: string,
@@ -375,10 +389,13 @@ class CreditService {
                 timestamp: Date.now(),
             };
 
+            // Store in subcollection of the ALTER now, to keep it organized per alter?
+            // User said "inventory is unique per alter", implied credits too.
+            // Let's store transactions in `alters/{alterId}/credit_transactions`
             const transactionsRef = collection(
                 db,
-                FIRESTORE_COLLECTION,
-                this.userId,
+                'alters',
+                alterId,
                 TRANSACTIONS_SUBCOLLECTION
             );
 
@@ -425,14 +442,13 @@ class CreditService {
 
     private async saveBalance(): Promise<void> {
         // Cache local
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({
-            balance: this.balance,
-            lastDailyClaimDate: this.lastDailyClaimDate,
-            currentStreak: this.currentStreak,
-        }));
+        // Deprecated: No more local caching of unified balance since we use live listener
+        // But we could cache per alter balance? For now, remove to avoid errors.
 
         // Firestore
-        await this.saveToFirestore({ credits: this.balance });
+        // Deprecated: No more unified user balance storage
+        if (!this.userId) return;
+        // Logic moved to addCredits/spendCredits direct updates
     }
 
     private async saveToFirestore(data: Record<string, any>): Promise<void> {
@@ -449,19 +465,22 @@ class CreditService {
     // ==================== STREAK ====================
 
     /**
-     * Retourne le streak actuel
+     * Retourne le streak actuel (Stub - requires alter context)
      */
-    getCurrentStreak(): number {
-        return this.currentStreak;
+    getCurrentStreak(alterId?: string): number {
+        // Since this is sync and we don't hold alter state here (MonetizationContext does),
+        // we can't return accurate streak synchronously without subscription.
+        // Returning 0 for safety. UI should rely on MonetizationContext.currentStreak
+        return 0;
     }
 
     /**
      * Retourne les jours jusqu'au prochain bonus streak
      */
-    getDaysToNextStreakBonus(): number {
-        if (this.currentStreak < 7) return 7 - this.currentStreak;
-        if (this.currentStreak < 30) return 30 - this.currentStreak;
-        return 30 - (this.currentStreak % 30); // Cycle tous les 30 jours après
+    getDaysToNextStreakBonus(currentStreak: number = 0): number {
+        if (currentStreak < 7) return 7 - currentStreak;
+        if (currentStreak < 30) return 30 - currentStreak;
+        return 30 - (currentStreak % 30);
     }
 }
 

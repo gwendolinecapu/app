@@ -232,7 +232,7 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                         activeOpacity={0.8}
                         onPress={handleWatchAd}
                         disabled={!canWatchRewardAd || loadingAd}
-                        style={[styles.adCard, (!canWatchRewardAd) && { opacity: 0.5 }]}
+                        style={styles.adCard}
                     >
                         <LinearGradient
                             colors={['#059669', '#10B981']}
@@ -241,7 +241,9 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                             <View style={styles.adBadge}>
                                 <Text style={styles.adBadgeText}>GRATUIT</Text>
                             </View>
+
                             <Ionicons name="play-circle" size={48} color="#FFF" />
+
                             <View style={styles.adContent}>
                                 <Text style={styles.adTitle}>Crédits Gratuits</Text>
                                 <View style={styles.adReward}>
@@ -249,6 +251,22 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                                     <Text style={styles.adRewardText}>+50</Text>
                                 </View>
                             </View>
+
+                            {/* LOADER / CHECKMARK OVERLAY */}
+                            {loadingAd && (
+                                <View style={styles.adOverlay}>
+                                    <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="dark" />
+                                    <Ionicons name="hourglass-outline" size={32} color="#FFF" />
+                                </View>
+                            )}
+
+                            {!canWatchRewardAd && !loadingAd && (
+                                <View style={styles.adOverlay}>
+                                    <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="dark" />
+                                    <Ionicons name="checkmark-circle" size={40} color="#FFF" />
+                                    <Text style={styles.adOverlayText}>REVIENS DEMAIN</Text>
+                                </View>
+                            )}
                         </LinearGradient>
                     </TouchableOpacity>
 
@@ -326,15 +344,22 @@ const styles = StyleSheet.create({
     },
     headerTop: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        justifyContent: 'space-between', // Keep space between for layout
         paddingVertical: 10,
+        height: 50, // Fixed height for absolute centering
     },
+    // Fix: Absolute center for the title
     headerTitle: {
-        fontSize: 28,
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        textAlign: 'center',
+        fontSize: 24, // Slightly smaller for better fit
         fontWeight: '900',
         color: '#FFF',
         letterSpacing: 1,
+        zIndex: -1, // Behind buttons click area
     },
     headerRight: {
         flexDirection: 'row',
@@ -375,12 +400,11 @@ const styles = StyleSheet.create({
     // AD CARD
     adCard: {
         width: 140,
-        height: 200, // Match ShopItemCard height roughly? ShopItemCard is set by container width but inside scrollview maybe explicit height is better? 
-        // Actually ShopItemCard doesn't enforce height but its contents do. 
-        // Let's match the visual height.
+        height: 200,
         borderRadius: 16,
         overflow: 'hidden',
         marginRight: 4,
+        backgroundColor: '#10B981', // Fallback color
     },
     adGradient: {
         flex: 1,
@@ -393,7 +417,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 8,
         left: 8,
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        backgroundColor: 'rgba(0,0,0,0.3)', // Darker background for contrast
         paddingHorizontal: 6,
         paddingVertical: 2,
         borderRadius: 4,
@@ -426,6 +450,22 @@ const styles = StyleSheet.create({
         color: '#FFD700',
         fontWeight: 'bold',
         fontSize: 12,
+    },
+    // New Overlay Styles
+    adOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        zIndex: 10,
+        gap: 8,
+    },
+    adOverlayText: {
+        color: '#FFF',
+        fontWeight: 'bold',
+        fontSize: 12,
+        textAlign: 'center',
+        paddingHorizontal: 8,
     },
 
     // HERO LOOTBOX

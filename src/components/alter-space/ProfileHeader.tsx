@@ -71,6 +71,7 @@ interface ProfileHeaderProps {
     onFollowersPress: () => void;
     onFollowingPress: () => void;
     themeColors?: ThemeColors | null;
+    onAvatarPress?: () => void;
 }
 
 const AnimatedImage = Animated.createAnimatedComponent(Image);
@@ -84,7 +85,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     onFriendAction,
     onFollowersPress,
     onFollowingPress,
-    themeColors
+    themeColors,
+    onAvatarPress
 }) => {
     if (loading) {
         return (
@@ -140,27 +142,35 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         </View>
     );
 
+    const renderAvatar = () => (
+        <>
+            {isSakuraFrame ? (
+                // Cadre Sakura animé avec pétales
+                <SakuraFrame size={88}>
+                    <AvatarContent />
+                </SakuraFrame>
+            ) : (
+                // Cadre standard
+                <View style={[
+                    styles.avatarContainer,
+                    { borderColor: alter.color || colors.primary },
+                    frameStyle.containerStyle
+                ]}>
+                    <AvatarContent />
+                </View>
+            )}
+        </>
+    );
+
     return (
         <View style={styles.container}>
             {/* Top Section: Avatar + Stats */}
             <View style={styles.topSection}>
                 {/* Avatar Column */}
                 <View style={styles.avatarColumn}>
-                    {isSakuraFrame ? (
-                        // Cadre Sakura animé avec pétales
-                        <SakuraFrame size={88}>
-                            <AvatarContent />
-                        </SakuraFrame>
-                    ) : (
-                        // Cadre standard
-                        <View style={[
-                            styles.avatarContainer,
-                            { borderColor: alter.color || colors.primary },
-                            frameStyle.containerStyle
-                        ]}>
-                            <AvatarContent />
-                        </View>
-                    )}
+                    <AnimatedPressable onPress={onAvatarPress} disabled={!onAvatarPress}>
+                        {renderAvatar()}
+                    </AnimatedPressable>
                     <Text style={styles.name} numberOfLines={1}>{alter.name}</Text>
                 </View>
 

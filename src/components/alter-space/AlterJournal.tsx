@@ -5,19 +5,22 @@ import { SecureContainer } from '../security/SecureContainer';
 import { Alter } from '../../types';
 import { colors, spacing, typography } from '../../lib/theme';
 
+import { ThemeColors } from '../../lib/cosmetics';
+
 interface AlterJournalProps {
     alter: Alter;
+    themeColors?: ThemeColors | null;
 }
 
-export const AlterJournal: React.FC<AlterJournalProps> = ({ alter }) => {
+export const AlterJournal: React.FC<AlterJournalProps> = ({ alter, themeColors }) => {
     return (
         <SecureContainer title="Journal Privé" subtitle="Authentification requise">
             <ScrollView style={styles.container}>
-                <Text style={styles.title}>Journal de {alter.name}</Text>
+                <Text style={[styles.title, themeColors && { color: themeColors.text }]}>Journal de {alter.name}</Text>
                 <View style={styles.emptyState}>
-                    <Ionicons name="book-outline" size={64} color={colors.textMuted} />
-                    <Text style={styles.emptyTitle}>Journal personnel</Text>
-                    <Text style={styles.emptySubtitle}>
+                    <Ionicons name="book-outline" size={64} color={themeColors?.textSecondary || colors.textMuted} />
+                    <Text style={[styles.emptyTitle, themeColors && { color: themeColors.text }]}>Journal personnel</Text>
+                    <Text style={[styles.emptySubtitle, themeColors && { color: themeColors.textSecondary }]}>
                         Les entrées du journal de {alter.name} apparaîtront ici.
                         Ce journal est privé et indépendant des autres alters.
                     </Text>

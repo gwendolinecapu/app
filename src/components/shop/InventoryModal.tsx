@@ -17,6 +17,7 @@ import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { ShopItem, ShopItemType, COSMETIC_ITEMS } from '../../services/MonetizationTypes';
+import DecorationService from '../../services/DecorationService';
 import { ShopItemCard } from './ShopItemCard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMonetization } from '../../contexts/MonetizationContext';
@@ -33,10 +34,29 @@ export function InventoryModal({ visible, onClose, onEquip }: InventoryModalProp
     const insets = useSafeAreaInsets();
     const { ownedItems, equippedItems } = useMonetization();
 
-    // Filter COSMETIC_ITEMS that are owned
-    const inventoryItems = useMemo(() => {
-        // Use COSMETIC_ITEMS directly since shopItems in context may be empty
-        return COSMETIC_ITEMS.filter(item => ownedItems.includes(item.id));
+    // Filter COSMETIC_ITEMS and DECORATIONS that are owned
+    // Filter COSMETIC_ITEMS and DECORATIONS that are owned
+    const inventoryItems = useMemo<ShopItem[]>(() => {
+        const decorationsAsShopItems = DecorationService.getCatalog().map(d => ({
+            ...d,
+            type: (d.type === 'profile_frame' ? 'frame' : 'decoration') as ShopItemType,
+            priceCredits: d.priceCredits,
+        }));
+
+        const allItems = [...COSMETIC_ITEMS, ...decorationsAsShopItems];
+
+        console.log('[InventoryModal] OwnedItems:', ownedItems);
+        const owned = allItems.filter(item => {
+            const isOwned = ownedItems.includes(item.id);
+            if (item.id === 'theme_cafe_cosy') console.log('Checking Cafe Cosy:', isOwned);
+            return isOwned;
+        });
+
+        // Remove duplicates if any ID exists in both lists
+        const uniqueItems = Array.from(new Map(owned.map(item => [item.id, item])).values());
+
+        console.log('[InventoryModal] Filtered Inventory Items:', uniqueItems.length);
+        return uniqueItems as ShopItem[];
     }, [ownedItems]);
 
     const isEquipped = (id: string, type: ShopItemType) => equippedItems[type] === id;

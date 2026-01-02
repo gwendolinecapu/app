@@ -83,9 +83,10 @@ interface ShopItemCardProps {
     isOwned?: boolean;
     isEquipped?: boolean;
     userCredits: number;
+    containerStyle?: import('react-native').ViewStyle;
 }
 
-export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits }: ShopItemCardProps) {
+export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits, containerStyle }: ShopItemCardProps) {
     const canAfford = (item.priceCredits || 0) <= userCredits;
     const isPremium = item.isPremium;
     const isFree = (item.priceCredits || 0) === 0;
@@ -289,6 +290,7 @@ export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits }
                 styles.container,
                 isEquipped && styles.containerEquipped,
                 isOwned && !isEquipped && styles.containerOwned,
+                containerStyle
             ]}
             onPress={() => onPress(item)}
             activeOpacity={0.8}

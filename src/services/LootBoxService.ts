@@ -1,122 +1,171 @@
-import { ShopItem, Rarity, LootBoxType, COSMETIC_ITEMS } from './MonetizationTypes';
+/**
+ * LootBoxService.ts
+ * 
+ * Système de "Chain Upgrade" (Style Clash Royale / Brawl Stars)
+ * 
+ * Flow:
+ * 1. Le joueur achète le coffre (prix fixe)
+ * 2. Le coffre commence en rareté COMMUNE
+ * 3. À chaque tap, probabilité d'UPGRADE le coffre vers la rareté supérieure
+ * 4. Si l'upgrade échoue, le coffre s'ouvre avec la rareté actuelle
+ */
 
-// Configuration des Box
-export const LOOT_BOXES: LootBoxType[] = [
-    {
-        id: 'box_mystery',
-        name: 'Mystery Box',
-        price: 100,
-        description: 'Une petite boîte pleine de surprises.',
-        color: '#BDC3C7', // Gris Argent
-        dropRates: [
-            { rarity: 'common', chance: 0.60 },
-            { rarity: 'rare', chance: 0.30 },
-            { rarity: 'epic', chance: 0.09 },
-            { rarity: 'legendary', chance: 0.01 },
-        ]
-    },
-    {
-        id: 'box_star',
-        name: 'Star Box',
-        price: 300,
-        description: 'Plus de chances d\'obtenir du rare !',
-        color: '#3498DB', // Bleu
-        dropRates: [
-            { rarity: 'common', chance: 0.20 },
-            { rarity: 'rare', chance: 0.50 },
-            { rarity: 'epic', chance: 0.25 },
-            { rarity: 'legendary', chance: 0.05 },
-        ]
-    },
-    {
-        id: 'box_luxe',
-        name: 'Luxe Box',
-        price: 800,
-        description: 'La crème de la crème. Garanties élevées.',
-        color: '#F1C40F', // Or
-        dropRates: [
-            { rarity: 'common', chance: 0.0 },
-            { rarity: 'rare', chance: 0.30 },
-            { rarity: 'epic', chance: 0.50 },
-            { rarity: 'legendary', chance: 0.20 },
-        ]
-    }
-];
+import { ShopItem, Rarity, COSMETIC_ITEMS } from './MonetizationTypes';
 
-// Items fictifs par rareté (pour l'instant, on mappe sur les items existants ou on en crée des génériques)
-// Dans une vraie app, chaque ShopItem aurait une propriété `rarity`.
-// Ici on va simuler.
+// ==================== CONFIGURATION ====================
 
-const RARITY_MAP: Record<string, Rarity> = {
-    'theme_default': 'common',
-    'theme_ocean': 'common',
-    'theme_forest': 'common',
-    'theme_sunset': 'rare',
-    'theme_lavender': 'rare',
-    'theme_cyberpunk': 'epic',
-    'theme_midnight': 'epic',
-    'theme_winter': 'epic',
-    'theme_anim_aurora': 'legendary',
-    'theme_anim_cosmos': 'legendary',
+export const LOOT_BOX = {
+    id: 'chain_chest',
+    name: 'Coffre Évolutif',
+    price: 150, // Prix un peu plus bas car on commence souvent en commun
+    description: 'Une chance d\'améliorer la rareté à chaque coup !',
+    color: '#9CA3AF', // Gris (Commun) au départ
+};
 
-    'frame_simple': 'common',
-    'frame_futuristic': 'rare',
-    'frame_nature': 'rare',
-    'frame_neon': 'epic',
-    'frame_anim_sakura': 'legendary', // Notre nouveau bébé
+/**
+ * Probabilités d'upgrade vers la rareté SUIVANTE
+ */
+const UPGRADE_CHANCES: Record<Rarity, number> = {
+    common: 0.30,   // 30% chance to pass Common -> Rare
+    rare: 0.30,     // 30% chance to pass Rare -> Epic
+    epic: 0.30,     // 30% chance to pass Epic -> Legendary
+    legendary: 0.30,// 30% chance to pass Legendary -> Mythic
+    mythic: 0,      // Max level
+};
 
-    'bubble_classic': 'common',
-    'bubble_comic': 'rare',
-    'bubble_neon': 'epic',
-    'bubble_gradient': 'epic',
+export const REFUND_VALUES: Record<Rarity, number> = {
+    common: 20,
+    rare: 50,
+    epic: 150,
+    legendary: 300,
+    mythic: 500
+};
+
+/**
+ * Classification des items par rareté (basée sur le prix)
+ */
+const getRarityFromPrice = (price: number): Rarity => {
+    if (price <= 50) return 'common';
+    if (price <= 150) return 'rare';
+    if (price <= 350) return 'epic';
+    if (price <= 600) return 'legendary';
+    return 'mythic'; // Prix > 600 = Mythic (ex: cadre sakura)
+};
+
+/**
+ * Items groupés par rareté
+ */
+const ITEMS_BY_RARITY: Record<Rarity, ShopItem[]> = {
+    common: COSMETIC_ITEMS.filter(item => getRarityFromPrice(item.priceCredits || 0) === 'common'),
+    rare: COSMETIC_ITEMS.filter(item => getRarityFromPrice(item.priceCredits || 0) === 'rare'),
+    epic: COSMETIC_ITEMS.filter(item => getRarityFromPrice(item.priceCredits || 0) === 'epic'),
+    legendary: COSMETIC_ITEMS.filter(item => getRarityFromPrice(item.priceCredits || 0) === 'legendary'),
+    mythic: COSMETIC_ITEMS.filter(item => getRarityFromPrice(item.priceCredits || 0) === 'mythic'),
 };
 
 export const LootBoxService = {
+    /**
+     * Tente d'améliorer le coffre
+     * Retourne la nouvelle rareté si succès, ou null si échec (doit ouvrir)
+     */
+    tryUpgrade(currentRarity: Rarity): Rarity | null {
+        // Empêcher upgrade si déjà au max
+        if (currentRarity === 'mythic') return null;
 
-    openBox(boxId: string): { item: ShopItem, rarity: Rarity } | null {
-        const box = LOOT_BOXES.find(b => b.id === boxId);
-        if (!box) return null;
+        const chance = UPGRADE_CHANCES[currentRarity];
+        const attempt = Math.random();
 
-        // 1. Déterminer la rareté
-        const rand = Math.random();
-        let accumulatedChance = 0;
-        let selectedRarity: Rarity = 'common';
-
-        for (const rate of box.dropRates) {
-            accumulatedChance += rate.chance;
-            if (rand <= accumulatedChance) {
-                selectedRarity = rate.rarity;
-                break;
-            }
+        if (attempt <= chance) {
+            // Success! Return next rarity
+            if (currentRarity === 'common') return 'rare';
+            if (currentRarity === 'rare') return 'epic';
+            if (currentRarity === 'epic') return 'legendary';
+            if (currentRarity === 'legendary') return 'mythic';
         }
 
-        // 2. Sélectionner un item de cette rareté
-        // Filtrer les items éligibles
-        const eligibleItems = COSMETIC_ITEMS.filter(item => {
-            const itemRarity = RARITY_MAP[item.id] || 'common'; // Default to common if not mapped
-            return itemRarity === selectedRarity;
-        });
-
-        // Si aucun item de cette rareté (fallback), prendre un common
-        if (eligibleItems.length === 0) {
-            const fallbackItems = COSMETIC_ITEMS.filter(item => (RARITY_MAP[item.id] || 'common') === 'common');
-            const fallbackItem = fallbackItems[Math.floor(Math.random() * fallbackItems.length)];
-            return { item: fallbackItem, rarity: 'common' };
-        }
-
-        // Pick random elite item
-        const selectedItem = eligibleItems[Math.floor(Math.random() * eligibleItems.length)];
-
-        return { item: selectedItem, rarity: selectedRarity };
+        // Failed upgrade
+        return null;
     },
 
+    /**
+     * Obtient une récompense pour une rareté donnée
+     * (Un seul item)
+     */
+    getReward(rarity: Rarity, ownedItemIds: string[] = []): { item: ShopItem, isNew: boolean } {
+        // Filtrer les items de cette rareté
+        const pool = ITEMS_BY_RARITY[rarity];
+
+        // Essayer de trouver un item non possédé
+        const unowned = pool.filter(item => !ownedItemIds.includes(item.id));
+
+        let selectedItem: ShopItem;
+        let isNew = false;
+
+        if (unowned.length > 0) {
+            // Priorité aux nouveaux items
+            selectedItem = unowned[Math.floor(Math.random() * unowned.length)];
+            isNew = true;
+        } else {
+            // Fallback: item déjà possédé (sera converti en crédits visuellement ou juste "doublon")
+            selectedItem = pool[Math.floor(Math.random() * pool.length)];
+            isNew = false;
+        }
+
+        return { item: selectedItem, isNew };
+    },
+
+    /**
+     * Couleur associée à une rareté
+     */
     getRarityColor(rarity: Rarity): string {
         switch (rarity) {
-            case 'common': return '#95A5A6'; // Gris
-            case 'rare': return '#3498DB';   // Bleu
-            case 'epic': return '#9B59B6';   // Violet
-            case 'legendary': return '#F1C40F'; // Or
-            default: return '#BDC3C7';
+            case 'common': return '#9CA3AF';    // Gris
+            case 'rare': return '#3B82F6';       // Bleu
+            case 'epic': return '#A855F7';       // Violet
+            case 'legendary': return '#F59E0B';  // Or
+            case 'mythic': return '#EF4444';     // Rouge (Mythic)
+            default: return '#9CA3AF';
         }
+    },
+
+    getRarityName(rarity: Rarity): string {
+        switch (rarity) {
+            case 'common': return 'Commun';
+            case 'rare': return 'Rare';
+            case 'epic': return 'Épique';
+            case 'legendary': return 'Légendaire';
+            case 'mythic': return 'Mythique';
+            default: return 'Commun';
+        }
+    },
+
+    /**
+     * Retourne 3 items aléatoires basés sur la date du jour
+     * (Rotation quotidienne stable)
+     */
+    getDailyItems(): ShopItem[] {
+        const dateStr = new Date().toISOString().split('T')[0]; // "2023-10-27"
+        const seed = dateStr.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+
+        // Pseudo-random generator seeded by date
+        const prng = (offset: number) => {
+            const x = Math.sin(seed + offset) * 10000;
+            return x - Math.floor(x);
+        };
+
+        const dailyItems: ShopItem[] = [];
+        const pool = [...COSMETIC_ITEMS]; // Copy
+
+        // Pick 3 unique items
+        for (let i = 0; i < 3; i++) {
+            if (pool.length === 0) break;
+            const index = Math.floor(prng(i) * pool.length);
+            dailyItems.push(pool[index]);
+            pool.splice(index, 1); // Avoid duplicates
+        }
+
+        return dailyItems;
     }
 };
+
+export default LootBoxService;

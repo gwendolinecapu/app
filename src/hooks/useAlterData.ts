@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { doc, getDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, orderBy, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Alter, Post } from '../types';
 import { FriendService } from '../services/friends';
@@ -33,19 +33,21 @@ export const useAlterData = (alterId: string | undefined): AlterData => {
     const fetchAlter = useCallback(async () => {
         if (!alterId) return;
         try {
-            // Priority 1: Check if it's one of my own alters (active user)
+            // Priority 1: Check if it's one of my own alters (gets latest from AuthContext)
             const localAlter = alters.find(a => a.id === alterId);
             if (localAlter) {
+                // Use the latest alter data from context (updated by refreshAlters)
                 setAlter(localAlter);
+                return;
+            }
+
+            // Priority 2: Fetch from Firestore (other system's alter)
+            const docRef = doc(db, 'alters', alterId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                setAlter({ id: docSnap.id, ...docSnap.data() } as Alter);
             } else {
-                // Priority 2: Fetch from Firestore (other system's alter)
-                const docRef = doc(db, 'alters', alterId);
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) {
-                    setAlter({ id: docSnap.id, ...docSnap.data() } as Alter);
-                } else {
-                    setError('Alter non trouvé');
-                }
+                setError('Alter non trouvé');
             }
         } catch (err) {
             console.error('Error fetching alter:', err);
@@ -112,6 +114,16 @@ export const useAlterData = (alterId: string | undefined): AlterData => {
             mounted = false;
         };
     }, [alterId, fetchAlter, fetchStats, fetchPosts]);
+
+    // Sync alter from AuthContext.alters when it changes (e.g., after refreshAlters())
+    // This ensures UI updates immediately when theme/cosmetics are equipped
+    useEffect(() => {
+        if (!alterId) return;
+        const localAlter = alters.find(a => a.id === alterId);
+        if (localAlter) {
+            setAlter(localAlter);
+        }
+    }, [alterId, alters]);
 
     return {
         alter,

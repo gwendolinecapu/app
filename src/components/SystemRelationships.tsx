@@ -36,6 +36,7 @@ export const SystemRelationships = ({ alter, editable = false, themeColors }: Pr
     const { alters, refreshAlters } = useAuth();
     const [modalVisible, setModalVisible] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [expandedId, setExpandedId] = useState<string | null>(null);
 
     const relationships = alter.relationships || [];
 
@@ -101,13 +102,20 @@ export const SystemRelationships = ({ alter, editable = false, themeColors }: Pr
                         const target = getTargetAlter(rel.target_alter_id);
                         if (!target) return null;
 
+                        const isExpanded = expandedId === rel.target_alter_id;
+
                         return (
-                            <View
+                            <TouchableOpacity
                                 key={rel.target_alter_id}
+                                onPress={() => setExpandedId(isExpanded ? null : rel.target_alter_id)}
+                                activeOpacity={0.8}
                                 style={[
-                                    styles.item,
-                                    themeColors && {
+                                    isExpanded ? styles.item : styles.itemCompact,
+                                    themeColors && isExpanded && {
                                         backgroundColor: themeColors.backgroundCard,
+                                        borderColor: themeColors.border
+                                    },
+                                    themeColors && !isExpanded && {
                                         borderColor: themeColors.border
                                     }
                                 ]}
@@ -119,14 +127,18 @@ export const SystemRelationships = ({ alter, editable = false, themeColors }: Pr
                                         <Text style={styles.avatarText}>{target.name[0]}</Text>
                                     )}
                                 </View>
-                                <View style={styles.info}>
-                                    <Text style={[styles.name, themeColors && { color: themeColors.text }]}>{target.name}</Text>
-                                    <View style={styles.badge}>
-                                        <Ionicons name={RELATIONSHIP_ICONS[rel.type] as any} size={10} color={themeColors?.textSecondary || colors.textSecondary} />
-                                        <Text style={[styles.badgeText, themeColors && { color: themeColors.textSecondary }]}>{RELATIONSHIP_LABELS[rel.type]}</Text>
+
+                                {isExpanded && (
+                                    <View style={styles.info}>
+                                        <Text style={[styles.name, themeColors && { color: themeColors.text }]}>{target.name}</Text>
+                                        <View style={styles.badge}>
+                                            <Ionicons name={RELATIONSHIP_ICONS[rel.type] as any} size={10} color={themeColors?.textSecondary || colors.textSecondary} />
+                                            <Text style={[styles.badgeText, themeColors && { color: themeColors.textSecondary }]}>{RELATIONSHIP_LABELS[rel.type]}</Text>
+                                        </View>
                                     </View>
-                                </View>
-                                {editable && (
+                                )}
+
+                                {isExpanded && editable && (
                                     <TouchableOpacity
                                         style={styles.deleteBtn}
                                         onPress={() => {
@@ -139,7 +151,7 @@ export const SystemRelationships = ({ alter, editable = false, themeColors }: Pr
                                         <Ionicons name="close-circle" size={18} color={colors.error} />
                                     </TouchableOpacity>
                                 )}
-                            </View>
+                            </TouchableOpacity>
                         );
                     })}
                 </View>
@@ -233,6 +245,15 @@ const styles = StyleSheet.create({
         borderRadius: borderRadius.full,
         borderWidth: 1,
         borderColor: colors.border,
+    },
+    itemCompact: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 2,
+        borderRadius: borderRadius.full,
+        borderWidth: 1,
+        borderColor: 'transparent', // Or colors.border if preferred
+        marginRight: -8, // Overlap effect? Or just tight spacing
     },
     deleteBtn: {
         marginLeft: spacing.xs,

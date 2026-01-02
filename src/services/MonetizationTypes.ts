@@ -115,7 +115,8 @@ export type CreditTransactionType =
     | 'spend_premium'   // Achat premium temp
     | 'bug_report_reward' // Récompense pour rapport de bug
     | 'refund'          // Remboursement
-    | 'gift';           // Cadeau admin
+    | 'gift'            // Cadeau admin
+    | 'purchase_lootbox'; // Achat Loot Box
 
 /** Transaction de crédits */
 export interface CreditTransaction {

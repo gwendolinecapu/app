@@ -31,6 +31,7 @@ import { colors, typography, spacing } from '../../lib/theme';
 import { useMonetization } from '../../contexts/MonetizationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { LootBoxService, LOOT_BOX } from '../../services/LootBoxService';
+import CreditService from '../../services/CreditService';
 import { ShopItem, ShopItemType, COSMETIC_ITEMS, CREDIT_PACKS } from '../../services/MonetizationTypes';
 import { ShopItemCard } from './ShopItemCard';
 import { ShopItemModal } from './ShopItemModal';
@@ -433,6 +434,47 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                 onReward={async (item) => {
                     // Persist loot box reward to alter's inventory
                     await addToInventory(item.id);
+                }}
+                onPurchase={async () => {
+                    if (!currentAlter) return false;
+
+                    // 1. Check Balance locally first for speed
+                    if (credits < LOOT_BOX.price) {
+                        // TODO: trigger purchase modal?
+                        return false;
+                    }
+
+                    // 2. Process Transaction
+                    // We use CreditService instance
+                    try {
+                        const success = await CreditService.deductCredits(
+                            currentAlter.id,
+                            LOOT_BOX.price,
+                            'purchase_lootbox'
+                        );
+                        return success;
+                    } catch (err) {
+                        console.error('[ShopUI] LootBox Purchase Error:', err);
+                        return false;
+                    }
+                }}
+                onReplay={async () => {
+                    // Same logic as purchase
+                    if (!currentAlter) return false;
+                    if (credits < LOOT_BOX.price) {
+                        return false;
+                    }
+                    try {
+                        const success = await CreditService.deductCredits(
+                            currentAlter.id,
+                            LOOT_BOX.price,
+                            'purchase_lootbox'
+                        );
+                        return success;
+                    } catch (err) {
+                        console.error(err);
+                        return false;
+                    }
                 }}
             />
 

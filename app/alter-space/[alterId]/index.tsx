@@ -214,6 +214,7 @@ export default function AlterSpaceScreen() {
                                     onFollowersPress={() => setShowFollowersModal(true)}
                                     onFollowingPress={() => setShowFollowingModal(true)}
                                     themeColors={themeColors}
+                                    onAvatarPress={() => router.push({ pathname: '/story/view', params: { authorId: alter.id } })}
                                 />
                             }
                         />
@@ -240,6 +241,7 @@ export default function AlterSpaceScreen() {
                                             onFollowersPress={() => setShowFollowersModal(true)}
                                             onFollowingPress={() => setShowFollowingModal(true)}
                                             themeColors={themeColors}
+                                            onAvatarPress={() => router.push({ pathname: '/story/view', params: { authorId: alter.id } })}
                                         />
                                     </View>
                                     <StoriesBar

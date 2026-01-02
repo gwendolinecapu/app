@@ -326,9 +326,19 @@ export const LootBoxOpening = ({
 
                                 <TouchableOpacity
                                     style={[styles.collectBtn, { backgroundColor: rarityColor }]}
-                                    onPress={onClose}
+                                    onPress={() => {
+                                        onClose();
+                                        onReward(reward.item); // Trigger standard callback which might open detailed view or just equip
+                                    }}
                                 >
                                     <Text style={styles.collectText}>ÉQUIPER</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={[styles.collectBtn, { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#FFF', marginTop: 12 }]}
+                                    onPress={onClose}
+                                >
+                                    <Text style={styles.collectText}>STOCKER & FERMER</Text>
                                 </TouchableOpacity>
                             </>
                         ) : (

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-nativ
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../../lib/theme';
 import { AnimatedPressable } from './AnimatedPressable';
+import { ThemeColors } from '../../lib/cosmetics';
 
 interface EmptyStateProps {
     icon?: keyof typeof Ionicons.glyphMap;
@@ -10,8 +11,10 @@ interface EmptyStateProps {
     message?: string;
     actionLabel?: string;
     onAction?: () => void;
+
     style?: ViewStyle;
     image?: React.ReactNode; // Optional custom image/illustration
+    themeColors?: ThemeColors | null;
 }
 
 export const EmptyState = ({
@@ -21,21 +24,25 @@ export const EmptyState = ({
     actionLabel,
     onAction,
     style,
-    image
+    image,
+    themeColors
 }: EmptyStateProps) => {
     return (
         <View style={[styles.container, style]}>
-            <View style={styles.iconContainer}>
+            <View style={[styles.iconContainer, themeColors && { backgroundColor: themeColors.backgroundCard }]}>
                 {image ? image : (
-                    <Ionicons name={icon} size={64} color={colors.textMuted} />
+                    <Ionicons name={icon} size={64} color={themeColors?.textSecondary || colors.textMuted} />
                 )}
             </View>
-            <Text style={styles.title}>{title}</Text>
-            {message && <Text style={styles.message}>{message}</Text>}
+            <Text style={[styles.title, themeColors && { color: themeColors.text }]}>{title}</Text>
+            {message && <Text style={[styles.message, themeColors && { color: themeColors.textSecondary }]}>{message}</Text>}
 
             {actionLabel && onAction && (
-                <AnimatedPressable onPress={onAction} style={styles.button}>
-                    <Text style={styles.buttonText}>{actionLabel}</Text>
+                <AnimatedPressable
+                    onPress={onAction}
+                    style={[styles.button, themeColors && { backgroundColor: themeColors.primary, shadowColor: themeColors.primary }]}
+                >
+                    <Text style={[styles.buttonText, themeColors && { color: themeColors.background }]}>{actionLabel}</Text>
                 </AnimatedPressable>
             )}
         </View>

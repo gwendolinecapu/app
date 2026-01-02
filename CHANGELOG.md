@@ -1,5 +1,23 @@
 # Changelog
 
+## [2025-12-31] Correctifs Boutique & Cosmétiques 💄
+
+### Application Visuelle des Cosmétiques
+- **`src/lib/cosmetics.ts`** : Création d'une librairie centrale pour gérer l'application des styles (Thèmes, Cadres, Bulles).
+- **ProfileHeader** : Les **Cadres** (Frames) équipés s'affichent maintenant autour de l'avatar.
+- **MessageBubble** : Les **Bulles** de chat équipées modifient le style des messages (couleur, forme).
+- **AlterSpaceScreen** : Les **Thèmes** équipés changent dynamiquement le fond d'écran et la couleur du texte de l'espace alter.
+
+### Corrections Critiques Boutique
+- **Persistance** : Correction du bug où les objets achetés disparaissaient après la navigation (`loadOwnedItems` lit maintenant correctement `owned_items` depuis Firestore).
+- **Équipement** : L'équipement d'un objet est maintenant persistant et se reflète immédiatement dans l'UI.
+- **Achat** : Correction de la logique de débit de crédits (suppression du mode test 10000 crédits).
+- **Refactoring** : Nettoyage de `ShopUI` pour une meilleure gestion de l'état "Inventaire" vs "Boutique".
+
+### Technique
+- **Types** : Correction de nombreuses erreurs TypeScript dans `AlterSpaceScreen` (props `alter` vs `alterId`, typage `AlterGrid`).
+- **Composants** : Standardisation de l'usage des props dans `AlterJournal`, `AlterGallery`, `AlterEmotions`.
+
 ## [1.0.1+1] - 2026-01-01
 ### Fixed
 - **[iOS Widgets]** Implémentation complète des 3 widgets iOS (Fronter, Quick Switch, Daily Stats).

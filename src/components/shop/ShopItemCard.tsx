@@ -8,12 +8,74 @@
  * - Bubble: Bulle de chat stylisée
  */
 
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withRepeat,
+    withTiming,
+    withDelay,
+    Easing
+} from 'react-native-reanimated';
 import { ShopItem } from '../../services/MonetizationTypes';
 import { colors, spacing, borderRadius } from '../../lib/theme';
+import { getThemeColors } from '../../lib/cosmetics';
+import { SakuraFrameMini } from '../effects/SakuraPetals';
+
+// Mini flocons pour la preview animée du thème Winter
+const MiniSnowfall = React.memo(() => {
+    const flakes = useMemo(() =>
+        Array.from({ length: 8 }).map((_, i) => ({
+            key: i,
+            left: 5 + (i * 6), // Répartition horizontale
+            size: 2 + Math.random() * 2, // 2-4px
+            duration: 1500 + Math.random() * 1500,
+            delay: i * 200,
+        })), []
+    );
+
+    return (
+        <View style={miniSnowStyles.container}>
+            {flakes.map(({ key, left, size, duration, delay }) => (
+                <MiniFlake key={key} left={left} size={size} duration={duration} delay={delay} />
+            ))}
+        </View>
+    );
+});
+
+const MiniFlake = React.memo(({ left, size, duration, delay }: { left: number; size: number; duration: number; delay: number }) => {
+    const translateY = useSharedValue(-5);
+
+    useEffect(() => {
+        translateY.value = withDelay(delay, withRepeat(
+            withTiming(90, { duration, easing: Easing.linear }),
+            -1
+        ));
+    }, []);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: translateY.value }],
+    }));
+
+    return (
+        <Animated.View style={[miniSnowStyles.flake, animatedStyle, { left, width: size, height: size, borderRadius: size / 2 }]} />
+    );
+});
+
+const miniSnowStyles = StyleSheet.create({
+    container: {
+        ...StyleSheet.absoluteFillObject,
+        zIndex: 10,
+    },
+    flake: {
+        position: 'absolute',
+        backgroundColor: '#FFFFFF',
+        opacity: 0.7,
+    }
+});
 
 interface ShopItemCardProps {
     item: ShopItem;
@@ -21,9 +83,10 @@ interface ShopItemCardProps {
     isOwned?: boolean;
     isEquipped?: boolean;
     userCredits: number;
+    containerStyle?: import('react-native').ViewStyle;
 }
 
-export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits }: ShopItemCardProps) {
+export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits, containerStyle }: ShopItemCardProps) {
     const canAfford = (item.priceCredits || 0) <= userCredits;
     const isPremium = item.isPremium;
     const isFree = (item.priceCredits || 0) === 0;
@@ -32,26 +95,63 @@ export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits }
     // Render preview based on item type
     const renderPreview = () => {
         if (item.type === 'theme') {
-            // Theme preview: mini app mockup with the theme color
-            const themeColor = item.preview || '#1a1a2e';
+            // Theme preview: mini app mockup with ACTUAL theme colors
+            const themeColors = getThemeColors(item.id);
+            // Fallback to preview color if no theme defined (should not happen for listed themes)
+            const bgColor = themeColors?.background || item.preview || '#1a1a2e';
+            const cardColor = themeColors?.backgroundCard || 'rgba(255,255,255,0.15)';
+            const primaryColor = themeColors?.primary || colors.primary;
+            const textColor = themeColors?.text || 'rgba(255,255,255,0.5)';
+            const borderColor = themeColors?.border || 'rgba(255,255,255,0.2)';
+
+            // Check if this is the Winter theme for special animated preview
+            const isWinterTheme = item.id === 'theme_winter';
+
             return (
-                <View style={[styles.themePreview, { backgroundColor: themeColor }]}>
+                <View style={[styles.themePreview, { backgroundColor: bgColor, borderColor: borderColor }]}>
+                    {/* Mini Snowfall for Winter theme */}
+                    {isWinterTheme && <MiniSnowfall />}
+
                     {/* Mini app mockup */}
                     <View style={styles.mockHeader}>
                         <View style={styles.mockStatusBar}>
-                            <View style={styles.mockNotch} />
+                            <View style={[styles.mockNotch, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
                         </View>
-                        <View style={styles.mockTitleBar} />
+                        {/* Title Bar - simulating active tab or header */}
+                        <View style={[styles.mockTitleBar, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
                     </View>
                     <View style={styles.mockBody}>
-                        <View style={[styles.mockCard1, { backgroundColor: 'rgba(255,255,255,0.15)' }]} />
-                        <View style={[styles.mockCard2, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
-                        <View style={[styles.mockCard3, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
+                        {/* Card 1 - representing a post */}
+                        <View style={[styles.mockCard1, { backgroundColor: cardColor }]}>
+                            {/* Mini text lines */}
+                            <View style={{ height: 2, width: '40%', backgroundColor: textColor, opacity: 0.7, marginBottom: 2, borderRadius: 1 }} />
+                            <View style={{ height: 2, width: '80%', backgroundColor: textColor, opacity: 0.4, borderRadius: 1 }} />
+                        </View>
+                        {/* Card 2 */}
+                        <View style={[styles.mockCard2, { backgroundColor: cardColor }]} />
+                        {/* Card 3 */}
+                        <View style={[styles.mockCard3, { backgroundColor: cardColor }]} />
                     </View>
-                    <View style={styles.mockTabBar}>
-                        <View style={styles.mockTab} />
-                        <View style={[styles.mockTab, styles.mockTabActive]} />
-                        <View style={styles.mockTab} />
+
+                    {/* Floating Action Button simulation */}
+                    <View style={{
+                        position: 'absolute',
+                        bottom: 16,
+                        alignSelf: 'center',
+                        width: 14,
+                        height: 14,
+                        borderRadius: 7,
+                        backgroundColor: primaryColor,
+                        shadowColor: primaryColor,
+                        shadowOpacity: 0.5,
+                        shadowRadius: 2,
+                        elevation: 2
+                    }} />
+
+                    <View style={[styles.mockTabBar, { backgroundColor: themeColors?.backgroundCard || 'rgba(0,0,0,0.2)' }]}>
+                        <View style={[styles.mockTab, { backgroundColor: textColor, opacity: 0.3 }]} />
+                        <View style={[styles.mockTab, { backgroundColor: primaryColor }]} />
+                        <View style={[styles.mockTab, { backgroundColor: textColor, opacity: 0.3 }]} />
                     </View>
 
                     {/* Animated indicator */}
@@ -65,6 +165,15 @@ export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits }
         }
 
         if (item.type === 'frame') {
+            // Special Sakura frame preview
+            if (item.id === 'frame_anim_sakura') {
+                return (
+                    <View style={styles.framePreviewContainer}>
+                        <SakuraFrameMini />
+                    </View>
+                );
+            }
+
             // Frame preview: avatar with the frame style applied
             const getFrameStyle = () => {
                 if (item.id.includes('neon')) {
@@ -181,6 +290,7 @@ export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits }
                 styles.container,
                 isEquipped && styles.containerEquipped,
                 isOwned && !isEquipped && styles.containerOwned,
+                containerStyle
             ]}
             onPress={() => onPress(item)}
             activeOpacity={0.8}
@@ -209,6 +319,22 @@ export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits }
                 <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
 
                 <View style={styles.priceRow}>
+                    {/* Badges Container */}
+                    {/* Badges Container */}
+                    <View style={styles.badgesContainer}>
+                        {item.isAnimated && (
+                            <View style={[styles.badge, styles.luxeBadge]}>
+                                <Ionicons name="sparkles" size={10} color="#FFFFFF" />
+                                <Text style={styles.badgeText}>LUXE</Text>
+                            </View>
+                        )}
+                        {item.isPremium && !item.isAnimated && (
+                            <View style={[styles.badge, styles.badgePremium]}>
+                                <Ionicons name="diamond" size={10} color="#FFD700" />
+                                <Text style={[styles.badgeText, { color: '#FFD700' }]}>PREMIUM</Text>
+                            </View>
+                        )}
+                    </View>
                     {isOwned ? (
                         <View style={styles.ownedBadge}>
                             <Ionicons name="checkmark" size={12} color={colors.success} />
@@ -436,7 +562,35 @@ const styles = StyleSheet.create({
     },
     priceRow: {
         flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
+        marginTop: 4,
+    },
+    badgesContainer: {
+        flexDirection: 'row',
+        gap: 4,
+        marginBottom: 4,
+    },
+    badge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        gap: 2,
+    },
+    luxeBadge: {
+        backgroundColor: '#8B5CF6', // Purple for Animated/Luxe
+    },
+    badgePremium: {
+        backgroundColor: 'rgba(255, 215, 0, 0.1)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 215, 0, 0.3)',
+    },
+    badgeText: {
+        fontSize: 9,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
     },
     priceTag: {
         flexDirection: 'row',

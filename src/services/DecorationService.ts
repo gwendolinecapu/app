@@ -261,6 +261,14 @@ class DecorationService {
      * @param knownOwnedItems (Optional) Liste locale pour éviter un fetch
      */
     async ownsDecoration(alterId: string, decorationId: string, knownOwnedItems?: string[]): Promise<boolean> {
+        // Always return true for default/free items that might not be in the database
+        const DEFAULT_ITEMS = ['theme_default', 'frame_simple', 'bubble_classic', 'bubble_default', 'border_none'];
+        if (DEFAULT_ITEMS.includes(decorationId)) return true;
+
+        // Also check if it's a free item from the catalog (price === 0)
+        const item = this.getItem(decorationId);
+        if (item && (item.priceCredits || 0) === 0) return true;
+
         if (knownOwnedItems) {
             return knownOwnedItems.includes(decorationId);
         }
@@ -277,6 +285,24 @@ class DecorationService {
         } catch (e) {
             console.error('Error checking ownership:', e);
             return false;
+        }
+    }
+
+    /**
+     * Récupère la liste des IDs de décorations possédées par un alter
+     */
+    async getOwnedDecorationIds(alterId: string): Promise<string[]> {
+        try {
+            const docRef = doc(db, 'alters', alterId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                return data.owned_items || [];
+            }
+            return [];
+        } catch (e) {
+            console.error('[DecorationService] Error fetching owned items:', e);
+            return [];
         }
     }
 
@@ -302,8 +328,9 @@ class DecorationService {
 
         if (price > 0) {
             // Verify credits
-            if (!CreditService.hasEnoughCredits(price)) {
-                console.warn('[DecorationService] Not enough credits. Has:', CreditService.getBalance(), 'Needs:', price);
+            const hasCredits = await CreditService.hasEnoughCredits(alterId, price);
+            if (!hasCredits) {
+                console.warn('[DecorationService] Not enough credits.');
                 return false;
             }
 
@@ -319,7 +346,8 @@ class DecorationService {
             }
 
             // 2. Deduct Credits
-            await CreditService.purchaseItem({
+            // Note: purchaseItem expects valid item structure.
+            await CreditService.purchaseItem(alterId, {
                 id: decorationId,
                 type: item.type as any,
                 name: item.name,

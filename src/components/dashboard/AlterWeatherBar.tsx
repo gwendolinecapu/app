@@ -15,10 +15,31 @@ const EMOTION_CONFIG: { type: EmotionType; emoji: string; color: string; label: 
     { type: 'calm', emoji: '😌', color: '#6BCB77', label: 'Calme' },
     { type: 'confused', emoji: '😕', color: '#9B59B6', label: 'Confus(e)' },
     { type: 'excited', emoji: '🤩', color: '#FF6B6B', label: 'Excité(e)' },
+    { type: 'fear', emoji: '😨', color: '#5D4037', label: 'Peur' },
+    { type: 'shame', emoji: '😳', color: '#E91E63', label: 'Honte' },
+    { type: 'bored', emoji: '😐', color: '#7F8C8D', label: 'Ennuyé(e)' },
+    { type: 'proud', emoji: '🦁', color: '#F1C40F', label: 'Fier(e)' },
+    { type: 'love', emoji: '🥰', color: '#FF4081', label: 'Amoureux(se)' },
+    { type: 'sick', emoji: '🤢', color: '#8BC34A', label: 'Malade' },
+    { type: 'guilt', emoji: '😔', color: '#607D8B', label: 'Coupable' },
+    { type: 'hurt', emoji: '🤕', color: '#FF5722', label: 'Blessé(e)' },
 ];
 
-const formatTimeSince = (dateString: string): string => {
-    const date = new Date(dateString);
+const formatTimeSince = (dateInput: any): string => {
+    if (!dateInput) return '';
+
+    let date: Date;
+    // Handle Firestore Timestamp
+    if (dateInput?.toDate) {
+        date = dateInput.toDate();
+    } else if (dateInput?.seconds) {
+        date = new Date(dateInput.seconds * 1000);
+    } else {
+        date = new Date(dateInput);
+    }
+
+    if (isNaN(date.getTime())) return '';
+
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -50,12 +71,16 @@ export const AlterWeatherBar: React.FC = () => {
     };
 
     const handleEmotionPress = (alterName: string, emotion: Emotion) => {
-        const config = getEmotionConfig(emotion.emotion);
+        const emotionsList = emotion.emotions && emotion.emotions.length > 0 ? emotion.emotions : [emotion.emotion];
+
+        const emojiString = emotionsList.map(e => getEmotionConfig(e)?.emoji).filter(Boolean).join(' ');
+        const labelString = emotionsList.map(e => getEmotionConfig(e)?.label).filter(Boolean).join(', ');
+
         const timeSince = formatTimeSince(emotion.created_at);
 
         Alert.alert(
-            `${config?.emoji} ${alterName}`,
-            `${config?.label || emotion.emotion} depuis ${timeSince}${emotion.note ? `\n\n"${emotion.note}"` : ''}`,
+            `${emojiString} ${alterName}`,
+            `${labelString} depuis ${timeSince}${emotion.note ? `\n\n"${emotion.note}"` : ''}`,
             [{ text: 'OK' }]
         );
     };
@@ -79,15 +104,19 @@ export const AlterWeatherBar: React.FC = () => {
             >
                 {altersWithEmotions.map(alter => {
                     const emotion = alterEmotions[alter.id];
-                    const config = getEmotionConfig(emotion.emotion);
+                    const emotionsList = emotion.emotions && emotion.emotions.length > 0 ? emotion.emotions : [emotion.emotion];
+
+                    // Display up to 2 emojis to keep it compact, or all if short
+                    const displayEmojis = emotionsList.slice(0, 3).map(e => getEmotionConfig(e)?.emoji).filter(Boolean).join('');
+                    const mainConfig = getEmotionConfig(emotionsList[0]);
 
                     return (
                         <TouchableOpacity
                             key={alter.id}
-                            style={[styles.weatherItem, { borderColor: config?.color || colors.border }]}
+                            style={[styles.weatherItem, { borderColor: mainConfig?.color || colors.border }]}
                             onPress={() => handleEmotionPress(alter.name, emotion)}
                         >
-                            <Text style={styles.emoji}>{config?.emoji || '❔'}</Text>
+                            <Text style={styles.emoji}>{displayEmojis || '❔'}</Text>
                             <Text style={styles.alterName} numberOfLines={1}>{alter.name}</Text>
                         </TouchableOpacity>
                     );

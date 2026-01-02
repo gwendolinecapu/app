@@ -14,7 +14,8 @@ service cloud.firestore {
     function isOwner(resource) {
       return isAuthenticated() && (
         resource.data.system_id == request.auth.uid || 
-        resource.data.userId == request.auth.uid
+        resource.data.userId == request.auth.uid ||
+        resource.data.systemId == request.auth.uid
       );
     }
     
@@ -69,8 +70,13 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       // Création: propriétaire uniquement
       allow create: if isOwnerCreate();
-      // Modification/Suppression: propriétaire uniquement
-      allow update, delete: if isOwner(resource);
+      // Modification: propriétaire OU n'importe qui pour les likes
+      allow update: if isOwner(resource) || (
+        isAuthenticated() && 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+      );
+      // Suppression: propriétaire uniquement
+      allow delete: if isOwner(resource);
     }
     
     // ============================================

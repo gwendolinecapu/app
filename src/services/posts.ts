@@ -285,8 +285,6 @@ export const PostService = {
      * Like or unlike a post
      */
     toggleLike: async (postId: string, userId: string, alterId?: string) => {
-        // This is a simplified like toggle. 
-        // In a real app, you might want a separate subcollection for likes to scale.
         try {
             const postRef = doc(db, POSTS_COLLECTION, postId);
             const postSnap = await getDoc(postRef);
@@ -294,7 +292,7 @@ export const PostService = {
             if (postSnap.exists()) {
                 const post = postSnap.data() as Post;
                 const likes = post.likes || [];
-                const hasLiked = likes.includes(userId); // Simplified: check by userId for now, or composed ID
+                const hasLiked = likes.includes(userId);
 
                 if (hasLiked) {
                     await updateDoc(postRef, {
@@ -304,6 +302,27 @@ export const PostService = {
                     await updateDoc(postRef, {
                         likes: arrayUnion(userId)
                     });
+
+                    // Create notification for post owner if it's not their own post
+                    if (post.system_id !== userId) {
+                        try {
+                            const notificationRef = collection(db, 'notifications');
+                            await addDoc(notificationRef, {
+                                type: 'like',
+                                recipientId: post.system_id, // Notify the system owner
+                                senderId: userId,
+                                senderAlterId: alterId || null,
+                                postId: postId,
+                                read: false,
+                                created_at: serverTimestamp(),
+                                title: "Nouveau J'aime",
+                                body: "a aimé votre publication",
+                            });
+                        } catch (notifError) {
+                            console.error('Error creating notification:', notifError);
+                            // Don't fail the like action if notification fails
+                        }
+                    }
                 }
             }
         } catch (error) {

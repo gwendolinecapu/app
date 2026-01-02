@@ -17,6 +17,7 @@ import { FrontIndicator } from './ui/ActiveFrontBadge';
 import { ShareService } from '../services/share';
 import { AnimatedPressable } from './ui/AnimatedPressable';
 import { ReportModal } from './ReportModal';
+import { SharePostModal } from './SharePostModal';
 import { ReportingService, ReportReason } from '../services/reporting';
 import { Alert, ActionSheetIOS, Platform } from 'react-native';
 
@@ -41,6 +42,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
     const [lightboxVisible, setLightboxVisible] = useState(false);
     const [lightboxImageUrl, setLightboxImageUrl] = useState('');
     const [reportModalVisible, setReportModalVisible] = useState(false);
+    const [shareModalVisible, setShareModalVisible] = useState(false);
 
     const isLiked = currentUserId && post.likes?.includes(currentUserId);
     const hasMultipleImages = post.media_urls && post.media_urls.length > 1;
@@ -83,7 +85,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
     const handleShare = async () => {
         triggerHaptic.selection();
         if (onShare) onShare(post.id);
-        else await ShareService.sharePost(post.id, post.content, post.author_name || 'Utilisateur');
+        else setShareModalVisible(true);
     };
 
     const handleImagePress = (index: number, imageUrl: string) => {
@@ -216,6 +218,11 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
 
             <ImageLightbox visible={lightboxVisible} imageUrl={lightboxImageUrl || post.media_url || ''} onClose={() => setLightboxVisible(false)} />
             <ReportModal isVisible={reportModalVisible} onClose={() => setReportModalVisible(false)} onSubmit={handleReportSubmit} />
+            <SharePostModal
+                visible={shareModalVisible}
+                onClose={() => setShareModalVisible(false)}
+                post={post}
+            />
         </TouchableOpacity >
     );
 });

@@ -186,10 +186,18 @@ export default function AlterSpaceScreen() {
         switch (activeTab) {
             case 'profile':
                 // Grid View
+                // Filter posts based on privacy settings
+                const visiblePosts = posts.filter(post => {
+                    if (isOwner) return true; // Owner sees everything
+                    if (post.visibility === 'public') return true; // Everyone sees public
+                    if (post.visibility === 'friends' && friendStatus === 'friends') return true; // Friends see friends-only
+                    return false; // Hide private or friends-only if not friend
+                });
+
                 return (
                     <View style={[styles.tabContent, backgroundStyle]}>
                         <AlterGrid
-                            posts={posts}
+                            posts={visiblePosts}
                             loading={loading}
                             refreshing={refreshing}
                             onRefresh={refresh}
@@ -200,7 +208,7 @@ export default function AlterSpaceScreen() {
                                     alter={alter}
                                     loading={loading}
                                     isOwner={isOwner}
-                                    stats={{ posts: posts.length, followers: friendCount, following: followingCount }}
+                                    stats={{ posts: visiblePosts.length, followers: friendCount, following: followingCount }}
                                     friendStatus={friendStatus}
                                     onFriendAction={handleFriendAction}
                                     onFollowersPress={() => setShowFollowersModal(true)}

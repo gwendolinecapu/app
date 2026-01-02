@@ -5,6 +5,8 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { PurchasesOffering } from 'react-native-purchases';
+import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { useAuth } from './AuthContext';
 import AdMediationService from '../services/AdMediationService';
 import PremiumService from '../services/PremiumService';
@@ -85,6 +87,7 @@ interface MonetizationContextType {
     // Refresh
     refresh: () => Promise<void>;
     addCredits: (amount: number, reason: string) => Promise<boolean>;
+    addToInventory: (itemId: string) => Promise<boolean>; // Add item without spending credits (for loot box)
     offerings: PurchasesOffering | null;
 }
 
@@ -142,24 +145,18 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
     const refreshState = useCallback(() => {
         setTier(PremiumService.getCurrentTier());
-        setCredits(CreditService.getBalance());
+        // Note: Credits are now managed via subscription to currentAlter
+        // setCredits(CreditService.getBalance()); // REMOVED - this always returns 0 now
 
-        // Fetch owned items for ALL alters (System Inventory)
-        if (alters && alters.length > 0) {
-            Promise.all(alters.map(a => DecorationService.getOwnedDecorationIds(a.id)))
-                .then((results) => {
-                    const allOwned = new Set<string>();
-                    // Add default items
-                    ['theme_default', 'frame_simple', 'bubble_classic', 'bubble_default', 'border_none'].forEach(id => allOwned.add(id));
-
-                    results.forEach(ids => ids.forEach(id => allOwned.add(id)));
-                    setOwnedItems(Array.from(allOwned));
-                })
-                .catch(err => console.error("Error syncing owned items", err));
+        // Fetch owned items for CURRENT ALTER only (Alter-specific inventory)
+        if (currentAlter) {
+            const defaults = ['theme_default', 'frame_simple', 'bubble_classic', 'bubble_default', 'border_none'];
+            const alterOwned = currentAlter.owned_items || [];
+            setOwnedItems([...new Set([...defaults, ...alterOwned])]);
         }
 
         refreshAlters();
-    }, [refreshAlters, alters]);
+    }, [refreshAlters, currentAlter]);
 
     const refresh = useCallback(async () => {
         if (user?.uid) {
@@ -193,6 +190,34 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
             return false;
         }
     }, [currentAlter]);
+
+    /**
+     * Ajoute un item à l'inventaire de l'alter sans dépenser de crédits
+     * Utilisé pour les récompenses de loot box
+     */
+    const addToInventory = useCallback(async (itemId: string): Promise<boolean> => {
+        if (!currentAlter) {
+            console.error('[MonetizationContext] Cannot add to inventory: no current alter');
+            return false;
+        }
+
+        try {
+            const alterRef = doc(db, 'alters', currentAlter.id);
+            await updateDoc(alterRef, {
+                owned_items: arrayUnion(itemId)
+            });
+
+            // Update local state immediately
+            setOwnedItems(prev => [...new Set([...prev, itemId])]);
+
+            // Refresh alters to sync
+            refreshAlters();
+            return true;
+        } catch (error) {
+            console.error('[MonetizationContext] Failed to add item to inventory:', error);
+            return false;
+        }
+    }, [currentAlter, refreshAlters]);
 
     // ==================== PREMIUM ====================
 
@@ -443,6 +468,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         getNativeAd,
         refresh,
         addCredits,
+        addToInventory,
         offerings,
     };
 

@@ -55,7 +55,8 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
         ownedItems,
         equippedItems,
         canWatchRewardAd,
-        watchRewardAd
+        watchRewardAd,
+        addToInventory
     } = useMonetization();
 
     const router = useRouter();
@@ -422,8 +423,9 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                 onClose={() => setLootBoxVisible(false)}
                 ownedItemIds={ownedItems}
                 userCredits={credits}
-                onReward={(item) => {
-                    // Handled by context usually, but ensure re-render
+                onReward={async (item) => {
+                    // Persist loot box reward to alter's inventory
+                    await addToInventory(item.id);
                 }}
             />
 

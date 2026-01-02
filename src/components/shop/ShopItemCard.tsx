@@ -376,8 +376,7 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.05)',
-        width: '48%',
-        marginBottom: spacing.md,
+        // Width is now controlled by parent via containerStyle prop
     },
     containerEquipped: {
         borderColor: colors.success,

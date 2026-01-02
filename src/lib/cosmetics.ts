@@ -118,6 +118,15 @@ export const getThemeColors = (themeId?: string): ThemeColors | null => {
                 textSecondary: '#c4b5fd',
                 border: '#6d28d9'
             };
+        case 'theme_cafe_cosy':
+            return {
+                background: '#3E2723',     // Espresso Brown
+                backgroundCard: '#5D4037', // Coffee Brown
+                primary: '#8D6E63',        // Warm Amber
+                text: '#EFEBE9',           // Cream
+                textSecondary: '#D7CCC8',  // Beige
+                border: '#6D4C41'          // Dark Mocha
+            };
         default:
             // Fallback générique si on a juste la couleur preview
             return {

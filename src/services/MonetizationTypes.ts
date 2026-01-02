@@ -388,6 +388,15 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         featured: true,
         isAnimated: true,
     },
+    {
+        id: 'theme_cafe_cosy',
+        type: 'theme',
+        name: 'Café Cosy',
+        description: 'Tons bruns chaleureux, ambiance café réconfortante.',
+        priceCredits: 200,
+        preview: '#8D6E63',
+        isPremium: false,
+    },
 
     // ========== CADRES ==========
     {

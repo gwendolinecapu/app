@@ -8,13 +8,74 @@
  * - Bubble: Bulle de chat stylisée
  */
 
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withRepeat,
+    withTiming,
+    withDelay,
+    Easing
+} from 'react-native-reanimated';
 import { ShopItem } from '../../services/MonetizationTypes';
 import { colors, spacing, borderRadius } from '../../lib/theme';
 import { getThemeColors } from '../../lib/cosmetics';
+import { SakuraFrameMini } from '../effects/SakuraPetals';
+
+// Mini flocons pour la preview animée du thème Winter
+const MiniSnowfall = React.memo(() => {
+    const flakes = useMemo(() =>
+        Array.from({ length: 8 }).map((_, i) => ({
+            key: i,
+            left: 5 + (i * 6), // Répartition horizontale
+            size: 2 + Math.random() * 2, // 2-4px
+            duration: 1500 + Math.random() * 1500,
+            delay: i * 200,
+        })), []
+    );
+
+    return (
+        <View style={miniSnowStyles.container}>
+            {flakes.map(({ key, left, size, duration, delay }) => (
+                <MiniFlake key={key} left={left} size={size} duration={duration} delay={delay} />
+            ))}
+        </View>
+    );
+});
+
+const MiniFlake = React.memo(({ left, size, duration, delay }: { left: number; size: number; duration: number; delay: number }) => {
+    const translateY = useSharedValue(-5);
+
+    useEffect(() => {
+        translateY.value = withDelay(delay, withRepeat(
+            withTiming(90, { duration, easing: Easing.linear }),
+            -1
+        ));
+    }, []);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: translateY.value }],
+    }));
+
+    return (
+        <Animated.View style={[miniSnowStyles.flake, animatedStyle, { left, width: size, height: size, borderRadius: size / 2 }]} />
+    );
+});
+
+const miniSnowStyles = StyleSheet.create({
+    container: {
+        ...StyleSheet.absoluteFillObject,
+        zIndex: 10,
+    },
+    flake: {
+        position: 'absolute',
+        backgroundColor: '#FFFFFF',
+        opacity: 0.7,
+    }
+});
 
 interface ShopItemCardProps {
     item: ShopItem;
@@ -42,8 +103,14 @@ export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits }
             const textColor = themeColors?.text || 'rgba(255,255,255,0.5)';
             const borderColor = themeColors?.border || 'rgba(255,255,255,0.2)';
 
+            // Check if this is the Winter theme for special animated preview
+            const isWinterTheme = item.id === 'theme_winter';
+
             return (
                 <View style={[styles.themePreview, { backgroundColor: bgColor, borderColor: borderColor }]}>
+                    {/* Mini Snowfall for Winter theme */}
+                    {isWinterTheme && <MiniSnowfall />}
+
                     {/* Mini app mockup */}
                     <View style={styles.mockHeader}>
                         <View style={styles.mockStatusBar}>
@@ -97,6 +164,15 @@ export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits }
         }
 
         if (item.type === 'frame') {
+            // Special Sakura frame preview
+            if (item.id === 'frame_anim_sakura') {
+                return (
+                    <View style={styles.framePreviewContainer}>
+                        <SakuraFrameMini />
+                    </View>
+                );
+            }
+
             // Frame preview: avatar with the frame style applied
             const getFrameStyle = () => {
                 if (item.id.includes('neon')) {

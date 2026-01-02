@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { StyleSheet, View, Dimensions } from 'react-native';
 import Animated, {
     useSharedValue,
@@ -11,42 +11,35 @@ import Animated, {
 } from 'react-native-reanimated';
 
 const { width, height } = Dimensions.get('window');
-const NUM_FLAKES = 30;
+const NUM_FLAKES = 60; // Plus de flocons
 
-const Flake = ({ index }: { index: number }) => {
-    // Randomize initial position and duration
-    const startX = Math.random() * width;
-    const duration = 3000 + Math.random() * 5000; // 3-8 seconds
-    const delay = Math.random() * 3000;
-    const size = 10 + Math.random() * 20;
-
-    const translateY = useSharedValue(-50);
-    const translateX = useSharedValue(startX);
-    const opacity = useSharedValue(0);
+// Composant flocon optimisé - utilise des cercles simples au lieu d'emojis
+const Flake = React.memo(({ startX, size, duration, delay, sway }: {
+    startX: number;
+    size: number;
+    duration: number;
+    delay: number;
+    sway: number;
+}) => {
+    const translateY = useSharedValue(-20);
+    const translateX = useSharedValue(0);
 
     useEffect(() => {
-        // Fall animation
+        // Animation de chute
         translateY.value = withDelay(delay, withRepeat(
-            withTiming(height + 50, {
-                duration: duration,
+            withTiming(height + 20, {
+                duration,
                 easing: Easing.linear
             }),
-            -1 // Infinite
+            -1
         ));
 
-        // Lateral sway
+        // Légère oscillation latérale
         translateX.value = withDelay(delay, withRepeat(
-            withTiming(startX + (Math.random() * 50 - 25), {
-                duration: duration / 2,
-                easing: Easing.sin
+            withTiming(sway, {
+                duration: duration / 3,
+                easing: Easing.inOut(Easing.sin)
             }),
-            -1,
-            true // Reverse
-        ));
-
-        // Fade in/out
-        opacity.value = withDelay(delay, withRepeat(
-            withTiming(1, { duration: 1000 }),
             -1,
             true
         ));
@@ -54,32 +47,50 @@ const Flake = ({ index }: { index: number }) => {
         return () => {
             cancelAnimation(translateY);
             cancelAnimation(translateX);
-            cancelAnimation(opacity);
         };
     }, []);
 
-    const style = useAnimatedStyle(() => {
-        return {
-            transform: [
-                { translateY: translateY.value },
-                { translateX: translateX.value }
-            ],
-            opacity: 0.8,
-        };
-    });
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [
+            { translateY: translateY.value },
+            { translateX: translateX.value }
+        ],
+    }));
 
     return (
-        <Animated.Text style={[styles.flake, style, { fontSize: size }]}>
-            ❄️
-        </Animated.Text>
+        <Animated.View
+            style={[
+                styles.flake,
+                animatedStyle,
+                {
+                    left: startX,
+                    width: size,
+                    height: size,
+                    borderRadius: size / 2,
+                    opacity: 0.4 + (size / 20), // Plus gros = plus opaque
+                }
+            ]}
+        />
     );
-};
+});
 
 export const Snowfall = () => {
+    // Pré-calculer les propriétés des flocons pour éviter les re-renders
+    const flakes = useMemo(() => {
+        return Array.from({ length: NUM_FLAKES }).map((_, i) => ({
+            key: i,
+            startX: Math.random() * width,
+            size: 3 + Math.random() * 6, // 3-9px (beaucoup plus petit!)
+            duration: 4000 + Math.random() * 6000, // 4-10 secondes
+            delay: Math.random() * 4000,
+            sway: 15 + Math.random() * 20, // oscillation 15-35px
+        }));
+    }, []);
+
     return (
         <View style={styles.container} pointerEvents="none">
-            {Array.from({ length: NUM_FLAKES }).map((_, i) => (
-                <Flake key={i} index={i} />
+            {flakes.map((props) => (
+                <Flake {...props} />
             ))}
         </View>
     );
@@ -88,13 +99,15 @@ export const Snowfall = () => {
 const styles = StyleSheet.create({
     container: {
         ...StyleSheet.absoluteFillObject,
-        zIndex: 999, // On top but click-through
+        zIndex: 999,
     },
     flake: {
         position: 'absolute',
-        color: 'white',
-        textShadowColor: 'rgba(0, 100, 255, 0.5)',
-        textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: 5,
+        backgroundColor: '#FFFFFF',
+        // Effet de lueur subtil
+        shadowColor: '#87CEEB',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 3,
     }
 });

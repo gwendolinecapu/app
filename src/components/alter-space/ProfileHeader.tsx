@@ -11,6 +11,7 @@ import { AlterPrimers } from '../AlterPrimers';
 import { SystemRelationships } from '../SystemRelationships';
 import { Skeleton } from '../ui/Skeleton';
 import { getFrameStyle, ThemeColors } from '../../lib/cosmetics';
+import { SakuraFrame } from '../effects/SakuraPetals';
 
 const ROLE_DEFINITIONS: Record<string, string> = {
     'host': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
@@ -117,6 +118,26 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     }
 
     const frameStyle = getFrameStyle(alter.equipped_items?.frame);
+    const isSakuraFrame = alter.equipped_items?.frame === 'frame_anim_sakura';
+
+    // Composant Avatar interne (réutilisable avec ou sans Sakura)
+    const AvatarContent = () => (
+        <View style={[styles.avatar, { backgroundColor: alter.color || colors.primary }]}>
+            {alter.avatar_url ? (
+                <AnimatedImage
+                    source={{ uri: alter.avatar_url }}
+                    style={styles.avatarImage}
+                    contentFit="cover"
+                    transition={500}
+                    {...({ sharedTransitionTag: `avatar-${alter.id}` } as any)}
+                />
+            ) : (
+                <Text style={styles.avatarText}>
+                    {alter.name.charAt(0).toUpperCase()}
+                </Text>
+            )}
+        </View>
+    );
 
     return (
         <View style={styles.container}>
@@ -124,28 +145,21 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             <View style={styles.topSection}>
                 {/* Avatar Column */}
                 <View style={styles.avatarColumn}>
-                    <View style={[
-                        styles.avatarContainer,
-                        { borderColor: alter.color || colors.primary },
-                        frameStyle.containerStyle
-                    ]}>
-                        <View style={[styles.avatar, { backgroundColor: alter.color || colors.primary }]}>
-
-                            {alter.avatar_url ? (
-                                <AnimatedImage
-                                    source={{ uri: alter.avatar_url }}
-                                    style={styles.avatarImage}
-                                    contentFit="cover"
-                                    transition={500}
-                                    {...({ sharedTransitionTag: `avatar-${alter.id}` } as any)}
-                                />
-                            ) : (
-                                <Text style={styles.avatarText}>
-                                    {alter.name.charAt(0).toUpperCase()}
-                                </Text>
-                            )}
+                    {isSakuraFrame ? (
+                        // Cadre Sakura animé avec pétales
+                        <SakuraFrame size={88}>
+                            <AvatarContent />
+                        </SakuraFrame>
+                    ) : (
+                        // Cadre standard
+                        <View style={[
+                            styles.avatarContainer,
+                            { borderColor: alter.color || colors.primary },
+                            frameStyle.containerStyle
+                        ]}>
+                            <AvatarContent />
                         </View>
-                    </View>
+                    )}
                     <Text style={styles.name} numberOfLines={1}>{alter.name}</Text>
                 </View>
 

@@ -450,6 +450,18 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         icon: 'flame-outline',
         isPremium: true,
     },
+    {
+        id: 'frame_anim_sakura',
+        type: 'frame',
+        name: 'Pétales de Cerisier',
+        description: 'Un cadre élégant avec des pétales de sakura qui tombent gracieusement.',
+        priceCredits: 800,
+        preview: '#FFB7C5',
+        icon: 'flower-outline',
+        isPremium: true,
+        isAnimated: true,
+        featured: true,
+    },
 
     // ========== BULLES ==========
     {

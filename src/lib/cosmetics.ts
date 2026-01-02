@@ -136,6 +136,78 @@ export const getThemeColors = (themeId?: string): ThemeColors | null => {
                 textSecondary: '#A1887F',  // Light Brown
                 border: '#FFCDD2'          // Pink Border
             };
+        case 'theme_cute_mint':
+            return {
+                background: '#F0FFF4',     // Mint Cream
+                backgroundCard: '#FFFFFF',
+                primary: '#B4F8C8',        // Pastel Mint
+                text: '#1B5E20',           // Dark Green
+                textSecondary: '#4CAF50',
+                border: '#C8E6C9'
+            };
+        case 'theme_cute_sky':
+            return {
+                background: '#F0F8FF',     // Alice Blue
+                backgroundCard: '#FFFFFF',
+                primary: '#A0E7E5',        // Pastel Sky
+                text: '#0D47A1',           // Dark Blue
+                textSecondary: '#64B5F6',
+                border: '#BBDEFB'
+            };
+        case 'theme_cute_lavender':
+            return {
+                background: '#F3E5F5',     // Purple Mist
+                backgroundCard: '#FFFFFF',
+                primary: '#E6E6FA',        // Lavender
+                text: '#4A148C',           // Dark Purple
+                textSecondary: '#BA68C8',
+                border: '#E1BEE7'
+            };
+        case 'theme_cute_peach':
+            return {
+                background: '#FFF3E0',     // Orange Mist
+                backgroundCard: '#FFFFFF',
+                primary: '#FFDAB9',        // Peach Puff
+                text: '#E65100',           // Dark Orange
+                textSecondary: '#FFB74D',
+                border: '#FFE0B2'
+            };
+        case 'theme_cute_lemon':
+            return {
+                background: '#FFFDE7',     // Yellow Mist
+                backgroundCard: '#FFFFFF',
+                primary: '#FFFACD',        // Lemon Chiffon
+                text: '#F57F17',           // Dark Yellow/Orange
+                textSecondary: '#FBC02D',
+                border: '#FFF9C4'
+            };
+        case 'theme_cute_aqua':
+            return {
+                background: '#E0F7FA',     // Cyan Mist
+                backgroundCard: '#FFFFFF',
+                primary: '#E0FFFF',        // Light Cyan
+                text: '#006064',           // Dark Cyan
+                textSecondary: '#4DD0E1',
+                border: '#B2EBF2'
+            };
+        case 'theme_cute_cream':
+            return {
+                background: '#FDF5E6',     // Old Lace
+                backgroundCard: '#FFFFFF',
+                primary: '#FAEBD7',        // Antique White
+                text: '#5D4037',           // Brown
+                textSecondary: '#8D6E63',
+                border: '#D7CCC8'
+            };
+        case 'theme_cute_coral':
+            return {
+                background: '#FFEBEE',     // Red Mist
+                backgroundCard: '#FFFFFF',
+                primary: '#FFB7B2',        // Pastel Coral
+                text: '#B71C1C',           // Dark Red
+                textSecondary: '#EF5350',
+                border: '#FFCDD2'
+            };
         default:
             // Fallback générique si on a juste la couleur preview
             return {

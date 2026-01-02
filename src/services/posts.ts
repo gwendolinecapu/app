@@ -51,12 +51,15 @@ export const PostService = {
 
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                return {
+                const post = {
                     id: docSnap.id,
                     ...data,
                     created_at: data.created_at?.toDate().toISOString() || new Date().toISOString(),
                     updated_at: data.updated_at?.toDate().toISOString() || new Date().toISOString(),
                 } as Post;
+
+                const enrichedPosts = await PostService._enrichPostsWithAuthors([post]);
+                return enrichedPosts[0];
             }
             return null;
         } catch (error) {

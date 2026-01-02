@@ -287,7 +287,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                             <Text style={styles.actionButtonText}>Message</Text>
                         </AnimatedPressable>
 
-                        {alter.custom_fields?.find(f => f.label === 'Role')?.value?.toLowerCase() !== 'singlet' && (
+                        {alter.custom_fields?.find(f => f.label.toLowerCase() === 'role')?.value?.toLowerCase() !== 'singlet' && (
                             <AnimatedPressable
                                 containerStyle={{ flex: 1 }}
                                 style={styles.actionButton}

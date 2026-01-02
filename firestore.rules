@@ -77,6 +77,23 @@ service cloud.firestore {
       );
       // Suppression: propriétaire uniquement
       allow delete: if isOwner(resource);
+      
+      // ============================================
+      // Comments Sub-Collection
+      // ============================================
+      match /comments/{commentId} {
+        // Lecture: tout utilisateur authentifié
+        allow read: if isAuthenticated();
+        
+        // Création: tout utilisateur authentifié
+        allow create: if isAuthenticated();
+        
+        // Suppression: auteur du commentaire ou propriétaire du post
+        allow delete: if isAuthenticated() && (
+          request.auth.uid == resource.data.author_id || 
+          isOwner(get(/databases/$(database)/documents/posts/$(postId)))
+        );
+      }
     }
     
     // ============================================

@@ -171,7 +171,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                     <AnimatedPressable onPress={onAvatarPress} disabled={!onAvatarPress}>
                         {renderAvatar()}
                     </AnimatedPressable>
-                    <Text style={styles.name} numberOfLines={1}>{alter.name}</Text>
+                    <Text style={[styles.name, themeColors && { color: themeColors.text }]} numberOfLines={1}>{alter.name}</Text>
                 </View>
 
 
@@ -179,22 +179,22 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 {/* Stats Column */}
                 <View style={styles.statsContainer}>
                     <View style={styles.statBox}>
-                        <Text style={styles.statValue}>{stats.posts}</Text>
-                        <Text style={styles.statLabel}>Posts</Text>
+                        <Text style={[styles.statValue, themeColors && { color: themeColors.text }]}>{stats.posts}</Text>
+                        <Text style={[styles.statLabel, themeColors && { color: themeColors.textSecondary }]}>Posts</Text>
                     </View>
                     <AnimatedPressable
                         style={styles.statBox}
                         onPress={onFollowersPress}
                     >
-                        <Text style={styles.statValue}>{stats.followers}</Text>
-                        <Text style={styles.statLabel}>Abonnés</Text>
+                        <Text style={[styles.statValue, themeColors && { color: themeColors.text }]}>{stats.followers}</Text>
+                        <Text style={[styles.statLabel, themeColors && { color: themeColors.textSecondary }]}>Abonnés</Text>
                     </AnimatedPressable>
                     <AnimatedPressable
                         style={styles.statBox}
                         onPress={onFollowingPress}
                     >
-                        <Text style={styles.statValue}>{stats.following}</Text>
-                        <Text style={styles.statLabel}>Suivis</Text>
+                        <Text style={[styles.statValue, themeColors && { color: themeColors.text }]}>{stats.following}</Text>
+                        <Text style={[styles.statLabel, themeColors && { color: themeColors.textSecondary }]}>Suivis</Text>
                     </AnimatedPressable>
                 </View>
             </View>
@@ -202,7 +202,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             {/* Bio Section */}
             <View style={styles.bioContainer}>
                 {alter.pronouns ? (
-                    <Text style={styles.pronouns}>{alter.pronouns}</Text>
+                    <Text style={[styles.pronouns, themeColors && { color: themeColors.textSecondary }]}>{alter.pronouns}</Text>
                 ) : null}
 
                 {alter.custom_fields?.find(f => f.label === 'Role')?.value && (
@@ -214,12 +214,12 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                         }}
                     >
                         <Ionicons name="information-circle" size={14} color={themeColors?.primary || colors.primaryLight} style={{ marginRight: 4 }} />
-                        <Text style={styles.roleText}>{alter.custom_fields.find(f => f.label === 'Role')?.value}</Text>
+                        <Text style={[styles.roleText, themeColors && { color: themeColors.textSecondary }]}>{alter.custom_fields.find(f => f.label === 'Role')?.value}</Text>
                     </AnimatedPressable>
                 )}
 
                 {alter.bio ? (
-                    <Text style={styles.bioText}>{alter.bio || "Aucune biographie"}</Text>
+                    <Text style={[styles.bioText, themeColors && { color: themeColors.text }]}>{alter.bio || "Aucune biographie"}</Text>
                 ) : null}
 
                 {/* Dates Display */}
@@ -227,7 +227,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                     {formatDate(alter.birthDate) && (
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <Ionicons name="calendar-outline" size={14} color={themeColors?.textSecondary || colors.textSecondary} style={{ marginRight: 4 }} />
-                            <Text style={[styles.bioText, { marginTop: 0, fontSize: 12, color: colors.textSecondary }]}>
+                            <Text style={[styles.bioText, { marginTop: 0, fontSize: 12 }, themeColors ? { color: themeColors.textSecondary } : { color: colors.textSecondary }]}>
                                 Né(e) le {formatDate(alter.birthDate)}
                             </Text>
                         </View>
@@ -235,7 +235,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                     {formatDate(alter.arrivalDate) && (
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <Ionicons name="airplane-outline" size={14} color={themeColors?.textSecondary || colors.textSecondary} style={{ marginRight: 4 }} />
-                            <Text style={[styles.bioText, { marginTop: 0, fontSize: 12, color: colors.textSecondary }]}>
+                            <Text style={[styles.bioText, { marginTop: 0, fontSize: 12 }, themeColors ? { color: themeColors.textSecondary } : { color: colors.textSecondary }]}>
                                 Arrivé(e) le {formatDate(alter.arrivalDate)}
                             </Text>
                         </View>

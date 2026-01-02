@@ -129,83 +129,83 @@ export const getThemeColors = (themeId?: string): ThemeColors | null => {
             };
         case 'theme_pink_cute':
             return {
-                background: '#FFF0F5',     // Lavender Blush
-                backgroundCard: '#FFFFFF', // White
-                primary: '#FFA6C9',        // Carnation Pink
-                text: '#4E342E',           // Very Dark Brown (High Contrast)
-                textSecondary: '#795548',  // Medium Brown
-                border: '#FFCDD2'          // Pink Border
+                background: '#FFEBF0',     // Slightly deeper blush
+                backgroundCard: '#FFFFFF',
+                primary: '#FF99BB',        // Darker Pink
+                text: '#4E342E',
+                textSecondary: '#795548',
+                border: '#FFCDD2'
             };
         case 'theme_cute_mint':
             return {
-                background: '#F0FFF4',     // Mint Cream
+                background: '#E8F5E9',     // Deeper Mint Cream
                 backgroundCard: '#FFFFFF',
-                primary: '#B4F8C8',        // Pastel Mint
-                text: '#004D40',           // Deep Teal/Green
-                textSecondary: '#2E7D32',  // Forest Green
+                primary: '#98FB98',        // Pale Green (Darker than MintCream)
+                text: '#004D40',
+                textSecondary: '#2E7D32',
                 border: '#C8E6C9'
             };
         case 'theme_cute_sky':
             return {
-                background: '#F0F8FF',     // Alice Blue
+                background: '#E3F2FD',     // Deeper Alice Blue
                 backgroundCard: '#FFFFFF',
-                primary: '#A0E7E5',        // Pastel Sky
-                text: '#01579B',           // Deep Blue
-                textSecondary: '#0277BD',  // Dark Blue
+                primary: '#81D4FA',        // Light Blue (Darker than #A0E7E5)
+                text: '#01579B',
+                textSecondary: '#0277BD',
                 border: '#BBDEFB'
             };
         case 'theme_cute_lavender':
             return {
-                background: '#F3E5F5',     // Purple Mist
+                background: '#EDE7F6',     // Deeper Purple Mist
                 backgroundCard: '#FFFFFF',
-                primary: '#E6E6FA',        // Lavender
-                text: '#311B92',           // Deep Indigo
-                textSecondary: '#512DA8',  // Dark Purple
+                primary: '#D1C4E9',        // Deep Lavender
+                text: '#311B92',
+                textSecondary: '#512DA8',
                 border: '#E1BEE7'
             };
         case 'theme_cute_peach':
             return {
-                background: '#FFF3E0',     // Orange Mist
+                background: '#fff9e7ff',
                 backgroundCard: '#FFFFFF',
-                primary: '#FFDAB9',        // Peach Puff
-                text: '#BF360C',           // Deep Burnt Orange
-                textSecondary: '#E64A19',  // Dark Orange
+                primary: '#FFCCBC',        // Deep Peach
+                text: '#BF360C',
+                textSecondary: '#E64A19',
                 border: '#FFE0B2'
             };
         case 'theme_cute_lemon':
             return {
-                background: '#FFFDE7',     // Yellow Mist
+                background: '#fffddbff',
                 backgroundCard: '#FFFFFF',
-                primary: '#FFFACD',        // Lemon Chiffon
-                text: '#F57F17',           // Dark Gold/Orange
-                textSecondary: '#F9A825',  // Dark Yellow
+                primary: '#FFF59D',        // Deeper Lemon
+                text: '#F57F17',
+                textSecondary: '#F9A825',
                 border: '#FFF9C4'
             };
         case 'theme_cute_aqua':
             return {
-                background: '#E0F7FA',     // Cyan Mist
+                background: '#E0F7FA',
                 backgroundCard: '#FFFFFF',
-                primary: '#E0FFFF',        // Light Cyan
-                text: '#004D40',           // Deep Teal (Cyan dark)
-                textSecondary: '#00838F',  // Dark Cyan
+                primary: '#80DEEA',        // Deeper Cyan
+                text: '#004D40',
+                textSecondary: '#00838F',
                 border: '#B2EBF2'
             };
         case 'theme_cute_cream':
             return {
-                background: '#FDF5E6',     // Old Lace
+                background: '#FFF8E1',     // Amber-ish Cream
                 backgroundCard: '#FFFFFF',
-                primary: '#FAEBD7',        // Antique White
-                text: '#3E2723',           // Very Dark Espresso
-                textSecondary: '#5D4037',  // Dark Brown
+                primary: '#FFE0B2',        // Biscotti
+                text: '#3E2723',
+                textSecondary: '#5D4037',
                 border: '#D7CCC8'
             };
         case 'theme_cute_coral':
             return {
-                background: '#FFEBEE',     // Red Mist
+                background: '#FFEBEE',
                 backgroundCard: '#FFFFFF',
-                primary: '#FFB7B2',        // Pastel Coral
-                text: '#B71C1C',           // Deep Red
-                textSecondary: '#C62828',  // Dark Red
+                primary: '#FFAB91',        // Deep Coral
+                text: '#B71C1C',
+                textSecondary: '#C62828',
                 border: '#FFCDD2'
             };
         default:

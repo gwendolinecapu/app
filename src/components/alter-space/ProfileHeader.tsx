@@ -19,6 +19,7 @@ const ROLE_DEFINITIONS: Record<string, string> = {
     'hôte': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
     'protector': "Protège le système, le corps ou d'autres alters des menaces ou des traumas.",
     'protecteur': "Protège le système, le corps ou d'autres alters des menaces ou des traumas.",
+    'protectrice': "Protège le système, le corps ou d'autres alters des menaces ou des traumas.",
     'gatekeeper': "Contrôle les switchs (changements), l'accès aux souvenirs ou aux zones du monde intérieur.",
     'persecutor': "Peut agir de manière nuisible envers le système, souvent par mécanisme de défense déformé ou traumatisme.",
     'persecuteur': "Peut agir de manière nuisible envers le système, souvent par mécanisme de défense déformé ou traumatisme.",

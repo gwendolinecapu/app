@@ -117,7 +117,7 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
             onRequestClose={onClose}
         >
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 style={styles.container}
             >
                 {/* Backdrop */}
@@ -167,7 +167,7 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
                     )}
 
                     {/* Input */}
-                    <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 20) + spacing.md }]}>
+                    <View style={[styles.inputContainer, { paddingBottom: Platform.OS === 'android' ? 50 : Math.max(insets.bottom, 20) + spacing.md }]}>
                         {currentAlter?.avatar || currentAlter?.avatar_url ? (
                             <Image
                                 source={{ uri: currentAlter.avatar || currentAlter.avatar_url }}

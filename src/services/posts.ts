@@ -205,12 +205,12 @@ export const PostService = {
                 };
             }
 
-            // Limit to 10 for 'in' query constraint
-            const targetIds = friendIds.slice(0, 10);
+            // Limit to 30 for 'in' query constraint (Firestore update allows up to 30)
+            const targetIds = friendIds.slice(0, 30);
 
             let q = query(
                 collection(db, POSTS_COLLECTION),
-                where('system_id', 'in', targetIds),
+                where('alter_id', 'in', targetIds),
                 orderBy('created_at', 'desc'),
                 limit(pageSize)
             );

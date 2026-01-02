@@ -228,7 +228,7 @@ export const FriendService = {
             // Removed systemId check to allow reading any alter's friendships (assuming public/rules allow)
         );
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(d => d.data().friendId as string);
+        return snapshot.docs.map(d => d.data().friendId as string).filter(id => !!id);
     },
 
     /**
@@ -262,7 +262,7 @@ export const FriendService = {
             // Removed friendSystemId check to count ALL followers, not just those from my system
         );
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(d => d.data().alterId as string);
+        return snapshot.docs.map(d => d.data().alterId as string).filter(id => !!id);
     },
 
     /**

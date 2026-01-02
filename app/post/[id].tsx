@@ -52,9 +52,11 @@ export default function PostDetailScreen() {
                 Alert.alert('Erreur', 'Publication non trouvée');
                 router.back();
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error fetching post data:', error);
-            Alert.alert('Erreur', 'Impossible de charger la publication');
+            console.error('DEBUG: Error code:', error.code);
+            console.error('DEBUG: Error message:', error.message);
+            Alert.alert('Erreur', 'Impossible de charger la publication: ' + (error.message || 'Erreur inconnue'));
         } finally {
             setLoading(false);
         }

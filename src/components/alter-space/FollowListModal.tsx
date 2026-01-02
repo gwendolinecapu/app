@@ -27,9 +27,11 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({ visible, title
 
     const loadUsers = async () => {
         try {
+            console.log('[FollowListModal] Loading users for IDs:', userIds);
             setLoading(true);
             const { AlterService } = await import('../../services/alters');
             const users = await AlterService.getAlters(userIds);
+            console.log('[FollowListModal] Fetched users:', users);
             setData(users);
         } catch (e) {
             console.error(e);

@@ -20,6 +20,7 @@ export interface ThemeColors {
     text: string;
     textSecondary: string;
     border: string;
+    isAnimated?: boolean;
 }
 
 /**

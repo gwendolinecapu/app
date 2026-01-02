@@ -7,6 +7,24 @@
 
 // ==================== PUBLICITÉS ====================
 
+// ==================== LOOT BOXES ====================
+
+export type Rarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
+
+export interface DropRate {
+    rarity: Rarity;
+    chance: number;
+}
+
+export interface LootBoxType {
+    id: string;
+    name: string;
+    price: number;
+    description: string;
+    color: string;
+    dropRates: DropRate[];
+}
+
 /** Types de publicités disponibles */
 export type AdType = 'banner' | 'native' | 'interstitial' | 'rewarded';
 
@@ -150,6 +168,7 @@ export interface ShopItem {
     preview?: string;           // Hex color (pour thèmes)
     icon?: string;              // Nom de l'icône Ionicons
     isPremium?: boolean;        // Inclus dans le premium
+    isAnimated?: boolean;       // Contient une animation (Badge Luxe)
 }
 
 /** Packs de crédits IAP */
@@ -346,6 +365,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         preview: '#00ff9d',
         isPremium: true,
         featured: true,
+        isAnimated: true,
     },
     {
         id: 'theme_anim_cosmos',
@@ -355,6 +375,18 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         priceCredits: 350,
         preview: '#4b0082',
         isPremium: true,
+        isAnimated: true,
+    },
+    {
+        id: 'theme_winter',
+        type: 'theme',
+        name: 'Hiver Éternel',
+        description: 'Ambiance hivernale avec chutes de neige animées.',
+        priceCredits: 500,
+        preview: '#a5f3fc',
+        isPremium: true,
+        featured: true,
+        isAnimated: true,
     },
 
     // ========== CADRES ==========
@@ -435,6 +467,18 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         preview: '#ff4500',
         icon: 'flame-outline',
         isPremium: true,
+    },
+    {
+        id: 'frame_anim_sakura',
+        type: 'frame',
+        name: 'Pétales de Cerisier',
+        description: 'Un cadre élégant avec des pétales de sakura qui tombent gracieusement.',
+        priceCredits: 800,
+        preview: '#FFB7C5',
+        icon: 'flower-outline',
+        isPremium: true,
+        isAnimated: true,
+        featured: true,
     },
 
     // ========== BULLES ==========
@@ -524,7 +568,7 @@ export type DecorationType =
     | 'background';     // Fond de carte alter
 
 /** Rareté de décoration */
-export type DecorationRarity = 'common' | 'rare' | 'epic' | 'legendary';
+export type DecorationRarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
 
 /** Couleurs par rareté */
 export const RARITY_COLORS: Record<DecorationRarity, string> = {
@@ -532,6 +576,7 @@ export const RARITY_COLORS: Record<DecorationRarity, string> = {
     rare: '#3B82F6',       // Bleu
     epic: '#8B5CF6',       // Violet
     legendary: '#F59E0B',  // Or
+    mythic: '#FF0000',     // Rouge (si on ajoute des décos mythiques plus tard)
 };
 
 /** Décoration cosmétique */
@@ -553,6 +598,7 @@ export const DECORATION_PRICES: Record<DecorationRarity, number> = {
     rare: 250,
     epic: 500,
     legendary: 1000,
+    mythic: 2000,
 };
 
 // ==================== CONFIGURATION PUBS ====================

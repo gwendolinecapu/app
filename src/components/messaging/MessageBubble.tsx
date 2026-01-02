@@ -4,6 +4,7 @@ import { Message, Alter } from '../../types';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { GroupService } from '../../services/groups';
+import { getBubbleStyle } from '../../lib/cosmetics';
 
 interface MessageBubbleProps {
     message: Message;
@@ -21,6 +22,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     const senderName = senderAlter ? senderAlter.name : "Membre inconnu";
     const senderColor = senderAlter ? senderAlter.color : colors.textSecondary;
     const [showReactions, setShowReactions] = React.useState(false);
+
+    // Get bubble style from cosmetics
+    const bubbleId = senderAlter?.equipped_items?.bubble;
+    const bubbleStyle = getBubbleStyle(bubbleId, isMine);
 
     // Group callbacks for reactions
     const groupByEmoji = (reactions: { emoji: string; user_id: string }[]) => {
@@ -47,7 +52,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     // --- Renderers for types ---
 
     const renderText = () => (
-        <Text style={[styles.messageText, isMine && styles.messageTextMine]}>
+        <Text style={[
+            styles.messageText,
+            isMine && styles.messageTextMine,
+            bubbleStyle?.textStyle
+        ]}>
             {message.content}
         </Text>
     );
@@ -152,7 +161,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 style={[
                     styles.bubble,
                     isMine ? styles.bubbleMine : styles.bubbleOther,
-                    message.type !== 'text' && styles.bubbleRich
+                    message.type !== 'text' && styles.bubbleRich,
+                    bubbleStyle?.containerStyle
                 ]}
             >
                 {!isMine && <Text style={styles.senderName}>{senderName}</Text>}

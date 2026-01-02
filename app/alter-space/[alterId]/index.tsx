@@ -17,12 +17,14 @@ import { FriendService } from '../../../src/services/friends';
 import { Feed } from '../../../src/components/Feed';
 import { StoriesBar } from '../../../src/components/StoriesBar';
 import { colors, spacing, typography } from '../../../src/lib/theme';
+import { getThemeColors } from '../../../src/lib/cosmetics';
 import { triggerHaptic } from '../../../src/lib/haptics';
 import { Ionicons } from '@expo/vector-icons';
+import { Snowfall } from '../../../src/components/effects/Snowfall';
 
 // Components
 import { ProfileHeader } from '../../../src/components/alter-space/ProfileHeader';
-import { ShopUI } from '../../../src/components/shop/ShopUI';
+import ShopUI from '../../../src/components/shop/ShopUI';
 import { AlterGrid } from '../../../src/components/alter-space/AlterGrid';
 import { AlterJournal } from '../../../src/components/alter-space/AlterJournal';
 import { AlterGallery } from '../../../src/components/alter-space/AlterGallery';
@@ -173,38 +175,50 @@ export default function AlterSpaceScreen() {
         );
     }
 
+    // --- THEME & COSMETICS ---
+
+    const themeColors = getThemeColors(alter?.equipped_items?.theme);
+    const backgroundStyle = { backgroundColor: themeColors?.background || colors.background };
+    const activeColor = themeColors?.primary || colors.primary;
+    const inactiveColor = themeColors?.textSecondary || colors.textSecondary;
+
     const renderContent = () => {
         switch (activeTab) {
             case 'profile':
                 // Grid View
                 return (
-                    <AlterGrid
-                        posts={posts}
-                        loading={loading}
-                        refreshing={refreshing}
-                        onRefresh={refresh}
-                        alterName={alter.name}
-                        listHeaderComponent={
-                            <ProfileHeader
-                                alter={alter}
-                                loading={loading}
-                                isOwner={isOwner}
-                                stats={{ posts: posts.length, followers: friendCount, following: followingCount }}
-                                friendStatus={friendStatus}
-                                onFriendAction={handleFriendAction}
-                                onFollowersPress={() => setShowFollowersModal(true)}
-                                onFollowingPress={() => setShowFollowingModal(true)}
-                            />
-                        }
-                    />
+                    <View style={[styles.tabContent, backgroundStyle]}>
+                        <AlterGrid
+                            posts={posts}
+                            loading={loading}
+                            refreshing={refreshing}
+                            onRefresh={refresh}
+                            alterName={alter.name}
+                            themeColors={themeColors}
+                            listHeaderComponent={
+                                <ProfileHeader
+                                    alter={alter}
+                                    loading={loading}
+                                    isOwner={isOwner}
+                                    stats={{ posts: posts.length, followers: friendCount, following: followingCount }}
+                                    friendStatus={friendStatus}
+                                    onFriendAction={handleFriendAction}
+                                    onFollowersPress={() => setShowFollowersModal(true)}
+                                    onFollowingPress={() => setShowFollowingModal(true)}
+                                    themeColors={themeColors}
+                                />
+                            }
+                        />
+                    </View>
                 );
             case 'feed':
                 // Social Feed View
                 return (
-                    <View style={styles.tabContent}>
+                    <View style={[styles.tabContent, backgroundStyle]}>
                         <Feed
                             type="friends"
                             alterId={alterId}
+                            themeColors={themeColors}
                             ListHeaderComponent={
                                 <>
                                     <View style={styles.feedHeaderContainer}>
@@ -217,6 +231,7 @@ export default function AlterSpaceScreen() {
                                             onFriendAction={handleFriendAction}
                                             onFollowersPress={() => setShowFollowersModal(true)}
                                             onFollowingPress={() => setShowFollowingModal(true)}
+                                            themeColors={themeColors}
                                         />
                                     </View>
                                     <StoriesBar
@@ -234,58 +249,58 @@ export default function AlterSpaceScreen() {
 
             case 'menu':
                 return (
-                    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-                        <Text style={{ fontSize: 28, fontWeight: 'bold', marginBottom: 24, color: colors.text }}>Menu</Text>
+                    <ScrollView style={[{ flex: 1 }, backgroundStyle]} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+                        <Text style={{ fontSize: 28, fontWeight: 'bold', marginBottom: 24, color: themeColors?.text || colors.text }}>Menu</Text>
 
                         {isOwner ? (
                             <>
                                 {/* Section: Espace Personnel - Only for owner */}
-                                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Espace Personnel</Text>
+                                <Text style={{ fontSize: 13, fontWeight: '700', color: themeColors?.textSecondary || colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Espace Personnel</Text>
 
                                 <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('journal')}>
-                                    <Ionicons name="book-outline" size={24} color={colors.primary} style={{ marginRight: 15 }} />
-                                    <Text style={styles.menuItemText}>Journal</Text>
-                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                    <Ionicons name="book-outline" size={24} color={activeColor} style={{ marginRight: 15 }} />
+                                    <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>Journal</Text>
+                                    <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
                                 </TouchableOpacity>
 
                                 <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('gallery')}>
-                                    <Ionicons name="images-outline" size={24} color={colors.primary} style={{ marginRight: 15 }} />
-                                    <Text style={styles.menuItemText}>Galerie</Text>
-                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                    <Ionicons name="images-outline" size={24} color={activeColor} style={{ marginRight: 15 }} />
+                                    <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>Galerie</Text>
+                                    <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
                                 </TouchableOpacity>
 
                                 <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('emotions')}>
-                                    <Ionicons name="heart-outline" size={24} color={colors.primary} style={{ marginRight: 15 }} />
-                                    <Text style={styles.menuItemText}>Émotions</Text>
-                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                    <Ionicons name="heart-outline" size={24} color={activeColor} style={{ marginRight: 15 }} />
+                                    <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>Émotions</Text>
+                                    <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
                                 </TouchableOpacity>
 
                                 <View style={{ height: 30 }} />
-                                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Système</Text>
+                                <Text style={{ fontSize: 13, fontWeight: '700', color: themeColors?.textSecondary || colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Système</Text>
 
                                 <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('settings')}>
-                                    <Ionicons name="settings-outline" size={24} color={colors.text} style={{ marginRight: 15 }} />
-                                    <Text style={styles.menuItemText}>Paramètres</Text>
-                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                    <Ionicons name="settings-outline" size={24} color={themeColors?.text || colors.text} style={{ marginRight: 15 }} />
+                                    <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>Paramètres</Text>
+                                    <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
                                 </TouchableOpacity>
                             </>
                         ) : (
                             <>
                                 {/* For visitors - only show public actions */}
-                                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Actions</Text>
+                                <Text style={{ fontSize: 13, fontWeight: '700', color: themeColors?.textSecondary || colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Actions</Text>
 
                                 <TouchableOpacity style={styles.menuItem} onPress={handleFriendAction}>
-                                    <Ionicons name={friendStatus === 'friends' ? "checkmark-circle" : "person-add-outline"} size={24} color={colors.primary} style={{ marginRight: 15 }} />
-                                    <Text style={styles.menuItemText}>
+                                    <Ionicons name={friendStatus === 'friends' ? "checkmark-circle" : "person-add-outline"} size={24} color={activeColor} style={{ marginRight: 15 }} />
+                                    <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>
                                         {friendStatus === 'friends' ? 'Abonné' : friendStatus === 'pending' ? 'Demande envoyée' : "S'abonner"}
                                     </Text>
-                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                    <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
                                 </TouchableOpacity>
 
                                 <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname: '/(tabs)/messages', params: { senderId: alter.id } })}>
-                                    <Ionicons name="chatbubble-outline" size={24} color={colors.primary} style={{ marginRight: 15 }} />
-                                    <Text style={styles.menuItemText}>Messages</Text>
-                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                    <Ionicons name="chatbubble-outline" size={24} color={activeColor} style={{ marginRight: 15 }} />
+                                    <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>Messages</Text>
+                                    <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
                                 </TouchableOpacity>
                             </>
                         )}
@@ -296,7 +311,7 @@ export default function AlterSpaceScreen() {
             case 'gallery':
                 return <AlterGallery alter={alter} isCloudEnabled={false} />;
             case 'emotions':
-                return <AlterEmotions alterId={alter.id} alterName={alter.name} />;
+                return <AlterEmotions alterId={alter.id} alterName={alter.name} themeColors={themeColors} />;
             case 'settings':
                 return <AlterSettings alter={alter} />;
             default:
@@ -305,20 +320,20 @@ export default function AlterSpaceScreen() {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, backgroundStyle]}>
             {/* Main Header (Navigation) */}
-            <View style={styles.header}>
+            <View style={[styles.header, backgroundStyle, { borderBottomColor: themeColors?.border || colors.border }]}>
                 <TouchableOpacity onPress={() => router.push('/(tabs)/dashboard')} style={styles.backButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <Ionicons name="chevron-back" size={28} color={colors.text} />
+                    <Ionicons name="chevron-back" size={28} color={themeColors?.text || colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle} numberOfLines={1}>{alter.name}</Text>
+                <Text style={[styles.headerTitle, { color: themeColors?.text || colors.text }]} numberOfLines={1}>{alter.name}</Text>
                 <View style={styles.headerRight}>
                     <TouchableOpacity onPress={() => router.push('/search' as any)} style={{ marginRight: 12 }}>
-                        <Ionicons name="search-outline" size={24} color={colors.text} />
+                        <Ionicons name="search-outline" size={24} color={themeColors?.text || colors.text} />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => router.push('/(tabs)/notifications')} style={{ marginRight: 12 }}>
                         <View>
-                            <Ionicons name="notifications-outline" size={24} color={colors.text} />
+                            <Ionicons name="notifications-outline" size={24} color={themeColors?.text || colors.text} />
                             {unreadCount > 0 && (
                                 <View style={{
                                     position: 'absolute',
@@ -338,7 +353,7 @@ export default function AlterSpaceScreen() {
                         <Ionicons name="storefront-outline" size={24} color="#A855F7" />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => router.push({ pathname: '/(tabs)/messages', params: { senderId: alterId } })}>
-                        <Ionicons name="chatbubble-ellipses-outline" size={24} color={colors.text} />
+                        <Ionicons name="chatbubble-ellipses-outline" size={24} color={themeColors?.text || colors.text} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -350,33 +365,33 @@ export default function AlterSpaceScreen() {
 
             {/* Bottom Tab Bar (Custom for Alter Space navigation) - Only for Owner */}
             {isOwner && (
-                <View style={styles.bottomBar}>
+                <View style={[styles.bottomBar, { backgroundColor: themeColors?.backgroundCard || colors.surface, borderTopColor: themeColors?.border || colors.border }]}>
                     {/* 1. Accueil / Feed */}
                     <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('feed')}>
-                        <Ionicons name={activeTab === 'feed' ? "home" : "home-outline"} size={24} color={activeTab === 'feed' ? colors.primary : colors.textSecondary} />
-                        <Text style={{ fontSize: 10, color: activeTab === 'feed' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Accueil</Text>
+                        <Ionicons name={activeTab === 'feed' ? "home" : "home-outline"} size={24} color={activeTab === 'feed' ? activeColor : inactiveColor} />
+                        <Text style={{ fontSize: 10, color: activeTab === 'feed' ? activeColor : inactiveColor, marginTop: 4 }}>Accueil</Text>
                     </TouchableOpacity>
 
                     {/* 2. Emotions */}
                     <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('emotions')}>
-                        <Ionicons name={activeTab === 'emotions' ? "heart" : "heart-outline"} size={24} color={activeTab === 'emotions' ? colors.primary : colors.textSecondary} />
-                        <Text style={{ fontSize: 10, color: activeTab === 'emotions' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Émotions</Text>
+                        <Ionicons name={activeTab === 'emotions' ? "heart" : "heart-outline"} size={24} color={activeTab === 'emotions' ? activeColor : inactiveColor} />
+                        <Text style={{ fontSize: 10, color: activeTab === 'emotions' ? activeColor : inactiveColor, marginTop: 4 }}>Émotions</Text>
                     </TouchableOpacity>
 
                     {/* 3. Post (+) */}
                     <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => {
-                        // Navigate to create post, possibly passing alterId if supported or relying on global context
+                        // Navigate to create post
                         router.push('/post/create');
                     }}>
                         <View style={{
                             width: 48,
                             height: 48,
                             borderRadius: 24,
-                            backgroundColor: colors.primary,
+                            backgroundColor: activeColor,
                             justifyContent: 'center',
                             alignItems: 'center',
                             marginTop: -24,
-                            shadowColor: colors.primary,
+                            shadowColor: activeColor,
                             shadowOffset: { width: 0, height: 4 },
                             shadowOpacity: 0.3,
                             shadowRadius: 8,
@@ -388,14 +403,14 @@ export default function AlterSpaceScreen() {
 
                     {/* 4. Profil */}
                     <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('profile')}>
-                        <Ionicons name={activeTab === 'profile' ? "person" : "person-outline"} size={24} color={activeTab === 'profile' ? colors.primary : colors.textSecondary} />
-                        <Text style={{ fontSize: 10, color: activeTab === 'profile' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Profil</Text>
+                        <Ionicons name={activeTab === 'profile' ? "person" : "person-outline"} size={24} color={activeTab === 'profile' ? activeColor : inactiveColor} />
+                        <Text style={{ fontSize: 10, color: activeTab === 'profile' ? activeColor : inactiveColor, marginTop: 4 }}>Profil</Text>
                     </TouchableOpacity>
 
                     {/* 5. Menu */}
                     <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('menu')}>
-                        <Ionicons name={activeTab === 'menu' ? "menu" : "menu-outline"} size={24} color={activeTab === 'menu' ? colors.primary : colors.textSecondary} />
-                        <Text style={{ fontSize: 10, color: activeTab === 'menu' ? colors.primary : colors.textSecondary, marginTop: 4 }}>Menu</Text>
+                        <Ionicons name={activeTab === 'menu' ? "menu" : "menu-outline"} size={24} color={activeTab === 'menu' ? activeColor : inactiveColor} />
+                        <Text style={{ fontSize: 10, color: activeTab === 'menu' ? activeColor : inactiveColor, marginTop: 4 }}>Menu</Text>
                     </TouchableOpacity>
                 </View>
             )}
@@ -413,9 +428,14 @@ export default function AlterSpaceScreen() {
                 userIds={followingIds}
                 onClose={() => setShowFollowingModal(false)}
             />
+
+            {/* Effects */}
+            {alter?.equipped_items?.theme === 'theme_winter' && <Snowfall />}
         </View>
     );
 }
+
+
 
 const styles = StyleSheet.create({
     container: {

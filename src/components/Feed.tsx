@@ -23,6 +23,7 @@ import { EmptyState } from './ui/EmptyState';
 import { colors, spacing, typography, borderRadius } from '../lib/theme';
 import { useAuth } from '../contexts/AuthContext';
 import { triggerHaptic } from '../lib/haptics';
+import { ThemeColors } from '../lib/cosmetics';
 
 // Types de tri disponibles
 type SortOption = 'recent' | 'oldest' | 'popular';
@@ -32,12 +33,13 @@ interface FeedProps {
     systemId?: string;
     alterId?: string;
     ListHeaderComponent?: React.ReactElement;
+    themeColors?: ThemeColors | null;
 }
 
 // Constante pour l'intervalle d'injection des publicités
 const AD_INTERVAL = 5; // Une pub tous les 5 posts
 
-export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent }: FeedProps) => {
+export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, themeColors }: FeedProps) => {
     const { user } = useAuth();
     const [rawPosts, setRawPosts] = useState<Post[]>([]); // Posts bruts sans ads
     const [loading, setLoading] = useState(true);
@@ -215,44 +217,46 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent }
     };
 
     const renderHeader = () => (
-        <View style={styles.headerContainer}>
+        <View style={[styles.headerContainer, themeColors && { backgroundColor: themeColors.background, borderBottomColor: themeColors.border }]}>
             {/* Bouton de tri */}
             <TouchableOpacity
-                style={styles.sortButton}
+                style={[styles.sortButton, themeColors && { backgroundColor: themeColors.backgroundCard }]}
                 onPress={() => {
                     triggerHaptic.selection();
                     setShowSortMenu(!showSortMenu);
                 }}
             >
-                <Ionicons name="filter" size={18} color={colors.text} />
-                <Text style={styles.sortButtonText}>{getSortLabel(sortBy)}</Text>
+                <Ionicons name="filter" size={18} color={themeColors?.text || colors.text} />
+                <Text style={[styles.sortButtonText, themeColors && { color: themeColors.text }]}>{getSortLabel(sortBy)}</Text>
                 <Ionicons
                     name={showSortMenu ? "chevron-up" : "chevron-down"}
                     size={16}
-                    color={colors.textSecondary}
+                    color={themeColors?.textSecondary || colors.textSecondary}
                 />
             </TouchableOpacity>
 
             {/* Menu de tri */}
             {showSortMenu && (
-                <View style={styles.sortMenu}>
+                <View style={[styles.sortMenu, themeColors && { backgroundColor: themeColors.backgroundCard }]}>
                     {(['recent', 'oldest', 'popular'] as SortOption[]).map(option => (
                         <TouchableOpacity
                             key={option}
                             style={[
                                 styles.sortMenuItem,
+                                themeColors && { borderBottomColor: themeColors.border },
                                 sortBy === option && styles.sortMenuItemActive
                             ]}
                             onPress={() => handleSortChange(option)}
                         >
                             <Text style={[
                                 styles.sortMenuItemText,
+                                themeColors && { color: themeColors.text },
                                 sortBy === option && styles.sortMenuItemTextActive
                             ]}>
                                 {getSortLabel(option)}
                             </Text>
                             {sortBy === option && (
-                                <Ionicons name="checkmark" size={18} color={colors.primary} />
+                                <Ionicons name="checkmark" size={18} color={themeColors?.primary || colors.primary} />
                             )}
                         </TouchableOpacity>
                     ))}
@@ -315,6 +319,7 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent }
                                     ? "Ce système n'a pas encore posté."
                                     : "Aucun post public pour le moment."
                         }
+                        themeColors={themeColors}
                     />
                 }
                 contentContainerStyle={styles.listContent}

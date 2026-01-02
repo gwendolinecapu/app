@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image } from 'expo-image';
 import Animated from 'react-native-reanimated';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { AnimatedPressable } from '../ui/AnimatedPressable';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -9,9 +9,9 @@ import { Alter } from '../../types';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { AlterPrimers } from '../AlterPrimers';
 import { SystemRelationships } from '../SystemRelationships';
-
 import { Skeleton } from '../ui/Skeleton';
-import { Alert } from 'react-native';
+import { getFrameStyle, ThemeColors } from '../../lib/cosmetics';
+import { SakuraFrame } from '../effects/SakuraPetals';
 
 const ROLE_DEFINITIONS: Record<string, string> = {
     'host': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
@@ -69,6 +69,7 @@ interface ProfileHeaderProps {
     onFriendAction: () => void;
     onFollowersPress: () => void;
     onFollowingPress: () => void;
+    themeColors?: ThemeColors | null;
 }
 
 const AnimatedImage = Animated.createAnimatedComponent(Image);
@@ -81,7 +82,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     friendStatus,
     onFriendAction,
     onFollowersPress,
-    onFollowingPress
+    onFollowingPress,
+    themeColors
 }) => {
     if (loading) {
         return (
@@ -115,30 +117,49 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         );
     }
 
+    const frameStyle = getFrameStyle(alter.equipped_items?.frame);
+    const isSakuraFrame = alter.equipped_items?.frame === 'frame_anim_sakura';
+
+    // Composant Avatar interne (réutilisable avec ou sans Sakura)
+    const AvatarContent = () => (
+        <View style={[styles.avatar, { backgroundColor: alter.color || colors.primary }]}>
+            {alter.avatar_url ? (
+                <AnimatedImage
+                    source={{ uri: alter.avatar_url }}
+                    style={styles.avatarImage}
+                    contentFit="cover"
+                    transition={500}
+                    {...({ sharedTransitionTag: `avatar-${alter.id}` } as any)}
+                />
+            ) : (
+                <Text style={styles.avatarText}>
+                    {alter.name.charAt(0).toUpperCase()}
+                </Text>
+            )}
+        </View>
+    );
+
     return (
         <View style={styles.container}>
             {/* Top Section: Avatar + Stats */}
             <View style={styles.topSection}>
                 {/* Avatar Column */}
                 <View style={styles.avatarColumn}>
-                    <View style={[styles.avatarContainer, { borderColor: alter.color || colors.primary }]}>
-                        <View style={[styles.avatar, { backgroundColor: alter.color || colors.primary }]}>
-
-                            {alter.avatar_url ? (
-                                <AnimatedImage
-                                    source={{ uri: alter.avatar_url }}
-                                    style={styles.avatarImage}
-                                    contentFit="cover"
-                                    transition={500}
-                                    {...({ sharedTransitionTag: `avatar-${alter.id}` } as any)}
-                                />
-                            ) : (
-                                <Text style={styles.avatarText}>
-                                    {alter.name.charAt(0).toUpperCase()}
-                                </Text>
-                            )}
+                    {isSakuraFrame ? (
+                        // Cadre Sakura animé avec pétales
+                        <SakuraFrame size={88}>
+                            <AvatarContent />
+                        </SakuraFrame>
+                    ) : (
+                        // Cadre standard
+                        <View style={[
+                            styles.avatarContainer,
+                            { borderColor: alter.color || colors.primary },
+                            frameStyle.containerStyle
+                        ]}>
+                            <AvatarContent />
                         </View>
-                    </View>
+                    )}
                     <Text style={styles.name} numberOfLines={1}>{alter.name}</Text>
                 </View>
 
@@ -179,7 +200,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                             Alert.alert("Définition du rôle", getRoleDefinition(role));
                         }}
                     >
-                        <Ionicons name="information-circle" size={14} color={colors.primaryLight} style={{ marginRight: 4 }} />
+                        <Ionicons name="information-circle" size={14} color={themeColors?.primary || colors.primaryLight} style={{ marginRight: 4 }} />
                         <Text style={styles.roleText}>{alter.custom_fields.find(f => f.label === 'Role')?.value}</Text>
                     </AnimatedPressable>
                 )}
@@ -192,7 +213,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 <View style={{ flexDirection: 'row', gap: 16, marginTop: 8, flexWrap: 'wrap' }}>
                     {formatDate(alter.birthDate) && (
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} style={{ marginRight: 4 }} />
+                            <Ionicons name="calendar-outline" size={14} color={themeColors?.textSecondary || colors.textSecondary} style={{ marginRight: 4 }} />
                             <Text style={[styles.bioText, { marginTop: 0, fontSize: 12, color: colors.textSecondary }]}>
                                 Né(e) le {formatDate(alter.birthDate)}
                             </Text>
@@ -200,7 +221,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                     )}
                     {formatDate(alter.arrivalDate) && (
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Ionicons name="airplane-outline" size={14} color={colors.textSecondary} style={{ marginRight: 4 }} />
+                            <Ionicons name="airplane-outline" size={14} color={themeColors?.textSecondary || colors.textSecondary} style={{ marginRight: 4 }} />
                             <Text style={[styles.bioText, { marginTop: 0, fontSize: 12, color: colors.textSecondary }]}>
                                 Arrivé(e) le {formatDate(alter.arrivalDate)}
                             </Text>
@@ -210,8 +231,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
                 {/* Advanced Info */}
                 <View style={{ marginTop: spacing.md }}>
-                    <AlterPrimers alter={alter} editable={isOwner} />
-                    <SystemRelationships alter={alter} editable={isOwner} />
+                    <AlterPrimers alter={alter} editable={isOwner} themeColors={themeColors} />
+                    <SystemRelationships alter={alter} editable={isOwner} themeColors={themeColors} />
                 </View>
             </View>
 
@@ -221,24 +242,24 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                     <>
                         <AnimatedPressable
                             containerStyle={{ flex: 1 }}
-                            style={styles.actionButton}
+                            style={[styles.actionButton, themeColors && { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
                             onPress={() => router.push(`/alter-space/${alter.id}/edit`)}
                         >
-                            <Text style={styles.actionButtonText}>Modifier</Text>
+                            <Text style={[styles.actionButtonText, themeColors && { color: themeColors.text }]}>Modifier</Text>
                         </AnimatedPressable>
                         <AnimatedPressable
                             containerStyle={{ flex: 1 }}
-                            style={styles.actionButton}
+                            style={[styles.actionButton, themeColors && { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
                             onPress={() => router.push('/history')}
                         >
-                            <Text style={styles.actionButtonText}>Historique</Text>
+                            <Text style={[styles.actionButtonText, themeColors && { color: themeColors.text }]}>Historique</Text>
                         </AnimatedPressable>
                         <AnimatedPressable
                             containerStyle={{ flex: 1 }}
-                            style={styles.actionButton}
+                            style={[styles.actionButton, themeColors && { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
                             onPress={() => router.push('/settings')}
                         >
-                            <Ionicons name="settings-outline" size={16} color={colors.text} />
+                            <Ionicons name="settings-outline" size={16} color={themeColors?.text || colors.text} />
                         </AnimatedPressable>
                     </>
                 ) : (
@@ -277,7 +298,9 @@ const styles = StyleSheet.create({
         paddingBottom: spacing.lg,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
-        backgroundColor: colors.background,
+        // backgroundColor: colors.background, // Let container decide or transparent
+        // For consistent look with AlterSpaceScreen theme:
+        backgroundColor: 'transparent',
     },
     topSection: {
         flexDirection: 'row',

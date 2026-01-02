@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Post } from '../../types';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
+import { ThemeColors } from '../../lib/cosmetics';
 
 const { width } = Dimensions.get('window');
 const MAX_WIDTH = 430;
@@ -14,9 +15,11 @@ interface AlterGridProps {
     loading?: boolean;
     refreshing: boolean;
     onRefresh: () => void;
-    listHeaderComponent?: React.ReactElement;
+    listHeaderComponent?: React.ReactNode;
     alterName: string;
+    themeColors?: ThemeColors | null;
 }
+
 
 export const AlterGrid: React.FC<AlterGridProps> = ({
     posts,
@@ -24,7 +27,8 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
     refreshing,
     onRefresh,
     listHeaderComponent,
-    alterName
+    alterName,
+    themeColors
 }) => {
     if (loading && posts.length === 0) {
         return (
@@ -94,12 +98,12 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
                 <>
                     {listHeaderComponent}
                     {/* Visual Tabs Strip */}
-                    <View style={styles.tabsStrip}>
-                        <TouchableOpacity style={[styles.tabIcon, styles.tabIconActive]}>
-                            <Ionicons name="grid" size={24} color={colors.text} />
+                    <View style={[styles.tabsStrip, themeColors && { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+                        <TouchableOpacity style={[styles.tabIcon, styles.tabIconActive, themeColors && { borderBottomColor: themeColors.text }]}>
+                            <Ionicons name="grid" size={24} color={themeColors?.text || colors.text} />
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.tabIcon}>
-                            <Ionicons name="person-circle-outline" size={26} color={colors.textMuted} />
+                            <Ionicons name="person-circle-outline" size={26} color={themeColors?.textSecondary || colors.textMuted} />
                         </TouchableOpacity>
                     </View>
                 </>
@@ -124,8 +128,8 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
                             transition={200}
                         />
                     ) : (
-                        <View style={styles.gridTextContent}>
-                            <Text style={styles.gridText} numberOfLines={3}>
+                        <View style={[styles.gridTextContent, themeColors && { backgroundColor: themeColors.backgroundCard }]}>
+                            <Text style={[styles.gridText, themeColors && { color: themeColors.text }]} numberOfLines={3}>
                                 {item.content}
                             </Text>
                         </View>

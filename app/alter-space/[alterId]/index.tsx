@@ -315,7 +315,7 @@ export default function AlterSpaceScreen() {
                     </ScrollView>
                 );
             case 'journal':
-                return <AlterJournal alter={alter} />;
+                return <AlterJournal alter={alter} themeColors={themeColors} />;
             case 'gallery':
                 return <AlterGallery alter={alter} isCloudEnabled={false} />;
             case 'emotions':

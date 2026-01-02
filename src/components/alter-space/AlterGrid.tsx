@@ -30,6 +30,9 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
     alterName,
     themeColors
 }) => {
+    console.log('[AlterGrid] Rendering with theme:', themeColors ? 'Yes' : 'No');
+    if (themeColors) console.log('[AlterGrid] Theme Primary:', themeColors.primary);
+
     if (loading && posts.length === 0) {
         return (
             <FlatList
@@ -99,8 +102,12 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
                     {listHeaderComponent}
                     {/* Visual Tabs Strip */}
                     <View style={[styles.tabsStrip, themeColors && { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
-                        <TouchableOpacity style={[styles.tabIcon, styles.tabIconActive, themeColors && { borderBottomColor: themeColors.text }]}>
-                            <Ionicons name="grid" size={24} color={themeColors?.text || colors.text} />
+                        <TouchableOpacity style={[
+                            styles.tabIcon,
+                            styles.tabIconActive,
+                            themeColors && { borderBottomColor: themeColors.primary || themeColors.text }
+                        ]}>
+                            <Ionicons name="grid" size={24} color={themeColors?.primary || themeColors?.text || colors.text} />
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.tabIcon}>
                             <Ionicons name="person-circle-outline" size={26} color={themeColors?.textSecondary || colors.textMuted} />

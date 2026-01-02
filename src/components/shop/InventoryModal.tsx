@@ -16,7 +16,7 @@ import {
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
-import { ShopItem, ShopItemType } from '../../services/MonetizationTypes';
+import { ShopItem, ShopItemType, COSMETIC_ITEMS } from '../../services/MonetizationTypes';
 import { ShopItemCard } from './ShopItemCard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMonetization } from '../../contexts/MonetizationContext';
@@ -31,12 +31,13 @@ interface InventoryModalProps {
 
 export function InventoryModal({ visible, onClose, onEquip }: InventoryModalProps) {
     const insets = useSafeAreaInsets();
-    const { shopItems, ownedItems, equippedItems } = useMonetization();
+    const { ownedItems, equippedItems } = useMonetization();
 
-    // Filter items that are owned
+    // Filter COSMETIC_ITEMS that are owned
     const inventoryItems = useMemo(() => {
-        return shopItems.filter(item => ownedItems.includes(item.id));
-    }, [shopItems, ownedItems]);
+        // Use COSMETIC_ITEMS directly since shopItems in context may be empty
+        return COSMETIC_ITEMS.filter(item => ownedItems.includes(item.id));
+    }, [ownedItems]);
 
     const isEquipped = (id: string, type: ShopItemType) => equippedItems[type] === id;
 

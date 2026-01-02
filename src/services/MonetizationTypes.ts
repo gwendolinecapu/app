@@ -150,6 +150,7 @@ export interface ShopItem {
     preview?: string;           // Hex color (pour thèmes)
     icon?: string;              // Nom de l'icône Ionicons
     isPremium?: boolean;        // Inclus dans le premium
+    isAnimated?: boolean;       // Contient une animation (Badge Luxe)
 }
 
 /** Packs de crédits IAP */
@@ -346,6 +347,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         preview: '#00ff9d',
         isPremium: true,
         featured: true,
+        isAnimated: true,
     },
     {
         id: 'theme_anim_cosmos',
@@ -355,6 +357,18 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         priceCredits: 350,
         preview: '#4b0082',
         isPremium: true,
+        isAnimated: true,
+    },
+    {
+        id: 'theme_winter',
+        type: 'theme',
+        name: 'Hiver Éternel',
+        description: 'Ambiance hivernale avec chutes de neige animées.',
+        priceCredits: 500,
+        preview: '#a5f3fc',
+        isPremium: true,
+        featured: true,
+        isAnimated: true,
     },
 
     // ========== CADRES ==========

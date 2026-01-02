@@ -261,6 +261,14 @@ class DecorationService {
      * @param knownOwnedItems (Optional) Liste locale pour éviter un fetch
      */
     async ownsDecoration(alterId: string, decorationId: string, knownOwnedItems?: string[]): Promise<boolean> {
+        // Always return true for default/free items that might not be in the database
+        const DEFAULT_ITEMS = ['theme_default', 'frame_simple', 'bubble_classic', 'bubble_default', 'border_none'];
+        if (DEFAULT_ITEMS.includes(decorationId)) return true;
+
+        // Also check if it's a free item from the catalog (price === 0)
+        const item = this.getItem(decorationId);
+        if (item && (item.priceCredits || 0) === 0) return true;
+
         if (knownOwnedItems) {
             return knownOwnedItems.includes(decorationId);
         }

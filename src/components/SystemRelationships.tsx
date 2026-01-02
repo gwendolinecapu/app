@@ -6,10 +6,12 @@ import { colors, spacing, borderRadius, typography } from '../lib/theme';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { ThemeColors } from '../lib/cosmetics';
 
 interface Props {
     alter: Alter;
     editable?: boolean;
+    themeColors?: ThemeColors | null;
 }
 
 const RELATIONSHIP_LABELS: Record<RelationshipType, string> = {
@@ -30,7 +32,7 @@ const RELATIONSHIP_ICONS: Record<RelationshipType, string> = {
     other: 'people-outline'
 };
 
-export const SystemRelationships = ({ alter, editable = false }: Props) => {
+export const SystemRelationships = ({ alter, editable = false, themeColors }: Props) => {
     const { alters, refreshAlters } = useAuth();
     const [modalVisible, setModalVisible] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -78,10 +80,10 @@ export const SystemRelationships = ({ alter, editable = false }: Props) => {
             <View style={styles.header}>
                 <TouchableOpacity
                     onPress={() => editable && setModalVisible(true)}
-                    style={styles.relationIconButton}
+                    style={[styles.relationIconButton, themeColors && { backgroundColor: `${themeColors.primary}15` }]}
                     disabled={!editable}
                 >
-                    <Ionicons name="people" size={18} color={colors.secondary || '#E91E63'} />
+                    <Ionicons name="people" size={18} color={themeColors?.primary || colors.secondary || '#E91E63'} />
                     {relationships.length > 0 && (
                         <View style={styles.countBadge}>
                             <Text style={styles.countBadgeText}>{relationships.length}</Text>
@@ -89,7 +91,7 @@ export const SystemRelationships = ({ alter, editable = false }: Props) => {
                     )}
                 </TouchableOpacity>
                 {editable && relationships.length === 0 && (
-                    <Text style={styles.addHint}>Ajouter une relation</Text>
+                    <Text style={[styles.addHint, themeColors && { color: themeColors.textSecondary }]}>Ajouter une relation</Text>
                 )}
             </View>
 
@@ -102,7 +104,13 @@ export const SystemRelationships = ({ alter, editable = false }: Props) => {
                         return (
                             <View
                                 key={rel.target_alter_id}
-                                style={styles.item}
+                                style={[
+                                    styles.item,
+                                    themeColors && {
+                                        backgroundColor: themeColors.backgroundCard,
+                                        borderColor: themeColors.border
+                                    }
+                                ]}
                             >
                                 <View style={[styles.avatar, { backgroundColor: target.color }]}>
                                     {target.avatar_url ? (
@@ -112,10 +120,10 @@ export const SystemRelationships = ({ alter, editable = false }: Props) => {
                                     )}
                                 </View>
                                 <View style={styles.info}>
-                                    <Text style={styles.name}>{target.name}</Text>
+                                    <Text style={[styles.name, themeColors && { color: themeColors.text }]}>{target.name}</Text>
                                     <View style={styles.badge}>
-                                        <Ionicons name={RELATIONSHIP_ICONS[rel.type] as any} size={10} color={colors.textSecondary} />
-                                        <Text style={styles.badgeText}>{RELATIONSHIP_LABELS[rel.type]}</Text>
+                                        <Ionicons name={RELATIONSHIP_ICONS[rel.type] as any} size={10} color={themeColors?.textSecondary || colors.textSecondary} />
+                                        <Text style={[styles.badgeText, themeColors && { color: themeColors.textSecondary }]}>{RELATIONSHIP_LABELS[rel.type]}</Text>
                                     </View>
                                 </View>
                                 {editable && (
@@ -192,7 +200,7 @@ const styles = StyleSheet.create({
         borderRadius: borderRadius.full,
     },
     countBadge: {
-        backgroundColor: '#E91E63',
+        backgroundColor: colors.primary || '#E91E63',
         borderRadius: 10,
         minWidth: 18,
         height: 18,
@@ -244,7 +252,7 @@ const styles = StyleSheet.create({
         height: '100%'
     },
     avatarText: {
-        color: colors.text,
+        color: 'white',
         fontSize: 14,
         fontWeight: 'bold'
     },

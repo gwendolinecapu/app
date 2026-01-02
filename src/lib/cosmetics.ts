@@ -137,6 +137,8 @@ export interface FrameStyle {
     containerStyle: ViewStyle;
     imageStyle?: ViewStyle; // Pour des effets internes si besoin
     overlay?: React.ReactNode; // Pour des cadres complexes (images par dessus)
+    isAnimated?: boolean; // Indique si le cadre utilise un composant animé
+    animationComponent?: string; // Nom du composant d'animation à utiliser
 }
 
 /**
@@ -245,6 +247,24 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                     shadowOpacity: 0.6,
                     shadowRadius: 8,
                 }
+            };
+        case 'frame_anim_sakura':
+            // Cadre Sakura animé - utilise le composant SakuraFrame
+            return {
+                containerStyle: {
+                    borderWidth: 4,
+                    borderColor: '#FFB7C5',
+                    padding: 4,
+                    borderRadius: size / 2,
+                    backgroundColor: 'transparent',
+                    shadowColor: '#FF8FAB',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.7,
+                    shadowRadius: 12,
+                },
+                // Flag pour indiquer qu'il faut utiliser le composant animé
+                isAnimated: true,
+                animationComponent: 'SakuraFrame',
             };
         default:
             return defaultStyle;

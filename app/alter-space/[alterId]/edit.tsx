@@ -86,8 +86,8 @@ export default function EditAlterProfileScreen() {
                     setArrivalDate(new Date(data.arrivalDate));
                 }
 
-                // Try to find role in custom_fields
-                const roleField = data.custom_fields?.find(f => f.label === 'Role');
+                // Try to find role in custom_fields (case insensitive)
+                const roleField = data.custom_fields?.find(f => f.label.toLowerCase() === 'role');
                 if (roleField) {
                     setRole(roleField.value);
                 }
@@ -171,7 +171,11 @@ export default function EditAlterProfileScreen() {
             }
 
             // Prepare Custom Fields (Role)
-            const customFields = initialAlter?.custom_fields?.filter(f => f.label !== 'Role') || [];
+            // Filter out any existing Role entries (case insensitive) to avoid duplicates
+            const customFields = (initialAlter?.custom_fields || []).filter(
+                f => f.label.toLowerCase() !== 'role'
+            );
+
             if (role.trim()) {
                 customFields.push({ label: 'Role', value: role.trim() });
             }
@@ -183,9 +187,14 @@ export default function EditAlterProfileScreen() {
                 color,
                 avatar_url: finalAvatarUrl || '',
                 custom_fields: customFields,
-                birthDate: birthDate ? birthDate.toISOString().split('T')[0] : undefined,
-                arrivalDate: arrivalDate ? arrivalDate.toISOString().split('T')[0] : undefined,
             };
+
+            if (birthDate) {
+                updateData.birthDate = birthDate.toISOString().split('T')[0];
+            }
+            if (arrivalDate) {
+                updateData.arrivalDate = arrivalDate.toISOString().split('T')[0];
+            }
 
             const docRef = doc(db, 'alters', alterId!);
             await updateDoc(docRef, updateData);

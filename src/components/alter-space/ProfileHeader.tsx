@@ -163,6 +163,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                     <Text style={styles.name} numberOfLines={1}>{alter.name}</Text>
                 </View>
 
+
+
                 {/* Stats Column */}
                 <View style={styles.statsContainer}>
                     <View style={styles.statBox}>
@@ -284,10 +286,27 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                         >
                             <Text style={styles.actionButtonText}>Message</Text>
                         </AnimatedPressable>
+
+                        {alter.custom_fields?.find(f => f.label.toLowerCase() === 'role')?.value?.toLowerCase() !== 'singlet' && (
+                            <AnimatedPressable
+                                containerStyle={{ flex: 1 }}
+                                style={styles.actionButton}
+                                onPress={() => {
+                                    const systemId = alter.systemId || alter.system_id || alter.userId;
+                                    if (systemId) {
+                                        router.push(`/system-profile/${systemId}`);
+                                    } else {
+                                        Alert.alert("Erreur", "Système introuvable");
+                                    }
+                                }}
+                            >
+                                <Text style={styles.actionButtonText}>Voir système</Text>
+                            </AnimatedPressable>
+                        )}
                     </>
                 )}
             </View>
-        </View>
+        </View >
     );
 };
 

@@ -27,6 +27,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../src/lib/firebase';
 
 import { GifPicker } from '../../src/components/messaging/GifPicker';
+import { PostMessageBubble } from '../../src/components/messaging/PostMessageBubble';
 
 export default function ConversationScreen() {
     const { id, internal } = useLocalSearchParams<{ id: string; internal?: string }>();
@@ -332,6 +333,11 @@ export default function ConversationScreen() {
                             style={{ width: 200, height: 200, borderRadius: 8, marginBottom: 4 }}
                             resizeMode="cover"
                         />
+                    ) : item.type === 'post' && item.post_id ? (
+                        <View>
+                            <Text style={styles.messageText}>{item.content}</Text>
+                            <PostMessageBubble postId={item.post_id} />
+                        </View>
                     ) : (
                         <Text style={styles.messageText}>{item.content}</Text>
                     )}

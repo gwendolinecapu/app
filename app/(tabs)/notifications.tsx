@@ -17,8 +17,9 @@ import {
     RefreshControl,
     Image,
     SectionList,
+    Alert,
 } from 'react-native';
-import { collection, query, where, getDocs, orderBy, limit, writeBatch } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, limit, writeBatch, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../src/lib/firebase';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -86,7 +87,12 @@ export default function NotificationsScreen() {
             const loadedNotifications: Notification[] = [];
 
             snapshot.forEach((doc) => {
-                loadedNotifications.push({ id: doc.id, ...doc.data() } as Notification);
+                const data = doc.data();
+                loadedNotifications.push({
+                    id: doc.id,
+                    ...data,
+                    timestamp: data.created_at?.toDate() || new Date()
+                } as Notification);
             });
 
             // Ajouter les demandes d'amis comme notifications (si non dupliquées)
@@ -173,6 +179,49 @@ export default function NotificationsScreen() {
         }
     };
 
+    const handleDeleteNotification = async (notificationId: string) => {
+        try {
+            triggerHaptic.selection();
+            await deleteDoc(doc(db, 'notifications', notificationId));
+            setNotifications(prev => prev.filter(n => n.id !== notificationId));
+        } catch (error) {
+            console.error('Error deleting notification:', error);
+            Alert.alert('Erreur', "Impossible de supprimer la notification");
+        }
+    };
+
+    const handleClearAll = async () => {
+        Alert.alert(
+            "Tout effacer",
+            "Voulez-vous vraiment supprimer toutes les notifications ?",
+            [
+                { text: "Annuler", style: "cancel" },
+                {
+                    text: "Effacer",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            setLoading(true);
+                            const batch = writeBatch(db);
+                            notifications.forEach(n => {
+                                const ref = doc(db, 'notifications', n.id);
+                                batch.delete(ref);
+                            });
+                            await batch.commit();
+                            setNotifications([]);
+                            triggerHaptic.success();
+                        } catch (error) {
+                            console.error('Error clear all:', error);
+                            Alert.alert('Erreur', "Impossible de tout supprimer");
+                        } finally {
+                            setLoading(false);
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     // Trouver un alter par son ID (pour afficher le nom)
     const getAlterName = (alterId: string): string => {
         const alter = alters.find(a => a.id === alterId);
@@ -250,6 +299,8 @@ export default function NotificationsScreen() {
             }
         };
 
+        const formattedDate = item.timestamp.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ' ' + item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
         return (
             <AnimatedPressable
                 style={[
@@ -265,10 +316,18 @@ export default function NotificationsScreen() {
                     {item.subtitle && (
                         <Text style={styles.notificationSubtitle}>{item.subtitle}</Text>
                     )}
+                    <Text style={styles.notificationTime}>
+                        {formattedDate}
+                    </Text>
                 </View>
-                <Text style={styles.notificationTime}>
-                    {timeAgo(item.timestamp)}
-                </Text>
+
+                <TouchableOpacity
+                    onPress={() => handleDeleteNotification(item.id)}
+                    style={styles.deleteButton}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                    <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
+                </TouchableOpacity>
             </AnimatedPressable>
         );
     };
@@ -305,7 +364,7 @@ export default function NotificationsScreen() {
                 </TouchableOpacity>
                 <Text style={styles.title}>Notifications</Text>
                 {hasContent && (
-                    <TouchableOpacity onPress={() => triggerHaptic.selection()}>
+                    <TouchableOpacity onPress={handleClearAll}>
                         <Text style={styles.clearAllText}>Tout effacer</Text>
                     </TouchableOpacity>
                 )}
@@ -519,6 +578,10 @@ const styles = StyleSheet.create({
     notificationTime: {
         ...typography.caption,
         color: colors.textMuted,
+        marginTop: 2,
+    },
+    deleteButton: {
+        padding: spacing.sm,
     },
     // Empty State
     emptyState: {

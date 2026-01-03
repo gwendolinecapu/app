@@ -62,5 +62,38 @@ export const AlterService = {
             console.error('Error updating alter:', error);
             return false;
         }
+    },
+
+    /**
+     * Get an alter by name (approximate, usually intended for mention lookup)
+     * Note: Names are not unique, so this returns the first match or could return list.
+     * For mention navigation, we'll try to find a best match.
+     */
+    getAlterByName: async (name: string): Promise<Alter | null> => {
+        try {
+            // Remove @ if present
+            const cleanName = name.startsWith('@') ? name.substring(1) : name;
+            console.log(`[AlterService] Looking up alter for: '${cleanName}'`);
+
+            const q = query(
+                collection(db, 'alters'),
+                where('name', '==', cleanName),
+                // We might want to limit to public alters or friends depending on visibility rules
+                // For now, simple name match
+            );
+
+            const snapshot = await getDocs(q);
+            console.log(`[AlterService] Found ${snapshot.size} matches for '${cleanName}'`);
+            if (!snapshot.empty) {
+                // Determine the best match? (e.g. from same system > friends > public)
+                // For now, return the first one found.
+                const docSnap = snapshot.docs[0];
+                return { id: docSnap.id, ...docSnap.data() } as Alter;
+            }
+            return null;
+        } catch (error) {
+            console.error('Error fetching alter by name:', error);
+            return null;
+        }
     }
 };

@@ -64,6 +64,44 @@ export async function addComment(input: CreateCommentInput): Promise<Comment> {
         comments_count: increment(1)
     });
 
+    // 3. Create Notification for Post Owner (if not self)
+    try {
+        const postDoc = await getDoc(postRef);
+        if (postDoc.exists()) {
+            const postData = postDoc.data();
+            const postOwnerId = postData.system_id;
+
+            if (postOwnerId !== authorId) {
+                const notificationRef = collection(db, 'notifications');
+                await addDoc(notificationRef, {
+                    type: 'comment',
+                    recipientId: postOwnerId,
+                    senderId: authorId,
+                    senderAlterId: null, // Comment author ID is authorId (which could be alter or system)
+                    actorName: authorName,
+                    actorAvatar: authorAvatar || null,
+                    postId: postId,
+                    read: false,
+                    created_at: serverTimestamp(),
+                    title: "Nouveau commentaire",
+                    body: `${authorName} a commenté votre publication`,
+                });
+
+                // Send Push
+                const { default: PushService } = await import('./PushNotificationService');
+                await PushService.sendNewCommentNotification(
+                    postOwnerId,
+                    authorName,
+                    content,
+                    postId
+                );
+            }
+        }
+    } catch (error) {
+        console.error('Error sending comment notification:', error);
+        // Don't fail comment creation
+    }
+
     return {
         id: docRef.id,
         post_id: postId,

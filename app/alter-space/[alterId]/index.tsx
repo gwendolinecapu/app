@@ -217,6 +217,7 @@ export default function AlterSpaceScreen() {
                                     onAvatarPress={() => router.push({ pathname: '/story/view', params: { authorId: alter.id } })}
                                 />
                             }
+                            alterId={alter.id}
                         />
                     </View>
                 );

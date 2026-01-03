@@ -22,6 +22,9 @@ import { getThemeColors } from '../../src/lib/cosmetics';
 import { VoiceNoteRecorder } from '../../src/components/ui/VoiceNoteRecorder';
 import { VideoPlayer } from '../../src/components/ui/VideoPlayer';
 import { AudioPlayer } from '../../src/components/ui/AudioPlayer';
+import { MentionList, MentionSuggestion } from '../../src/components/ui/MentionList';
+import { FriendService } from '../../src/services/friends';
+import { AlterService } from '../../src/services/alters';
 
 import { useSuccessAnimation } from '../../src/contexts/SuccessAnimationContext';
 
@@ -32,14 +35,23 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const DRAFT_STORAGE_KEY = 'post_draft_v1';
 
 export default function CreatePostScreen() {
-    const { activeFront, system, currentAlter } = useAuth();
+    const { activeFront, system, currentAlter, alters } = useAuth();
     const { play: playSuccessAnimation } = useSuccessAnimation();
     const [postType, setPostType] = useState<PostType>('text');
     const [content, setContent] = useState('');
     const [mediaUri, setMediaUri] = useState<string | null>(null);
     const [audioUri, setAudioUri] = useState<string | null>(null);
+
     const [loading, setLoading] = useState(false);
     const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+
+    // --- MENTIONS ---
+    const [showMentions, setShowMentions] = useState(false);
+    const [mentionQuery, setMentionQuery] = useState('');
+    const [allSuggestions, setAllSuggestions] = useState<MentionSuggestion[]>([]);
+    const [filteredMentions, setFilteredMentions] = useState<MentionSuggestion[]>([]);
+    const [mentionedIds, setMentionedIds] = useState<Set<string>>(new Set());
+    const [cursorPosition, setCursorPosition] = useState(0);
 
     // --- COSMETICS ---
     const themeId = activeFront?.type === 'single' ? activeFront?.alters[0]?.equipped_items?.theme : undefined;
@@ -56,6 +68,109 @@ export default function CreatePostScreen() {
             saveDraft();
         }
     }, [content, mediaUri, audioUri, postType, isDraftLoaded]);
+
+    // Load suggestions on mount
+    useEffect(() => {
+        loadSuggestions();
+    }, [currentAlter]);
+
+    const loadSuggestions = async () => {
+        if (!currentAlter) return;
+
+        try {
+            // 1. Own Alters (Internal)
+            const internalOptions: MentionSuggestion[] = alters.map(a => ({
+                id: a.id,
+                name: a.name,
+                username: a.name.replace(/\s+/g, '').toLowerCase(), // rough handle
+                avatar: a.avatar || a.avatar_url,
+                type: 'alter'
+            }));
+
+            // 2. Friends (External Alters)
+            const friendIds = await FriendService.getFriends(currentAlter.id);
+            const friendsData = await AlterService.getAlters(friendIds);
+            const friendOptions: MentionSuggestion[] = friendsData.map(f => ({
+                id: f.id,
+                name: f.name,
+                username: f.name.replace(/\s+/g, '').toLowerCase(),
+                avatar: f.avatar || f.avatar_url,
+                type: 'alter'
+            }));
+
+            // Merge and dedup
+            const all = [...internalOptions, ...friendOptions];
+            // Simple dedup by ID
+            const seen = new Set();
+            const unique = all.filter(item => {
+                const duplicate = seen.has(item.id);
+                seen.add(item.id);
+                return !duplicate;
+            });
+
+            setAllSuggestions(unique);
+        } catch (e) {
+            console.error("Error loading mention suggestions:", e);
+        }
+    };
+
+    const handleTextChange = (text: string) => {
+        setContent(text);
+
+        // Detect if we are typing a mention
+        // Look for @ followed by characters at the end or before cursor
+        // For simplicity, check the word at cursor position (needs generic cursor tracking, but text change gives whole text)
+        // Let's use a simple regex on the whole text relative to the last @ if it looks active.
+
+        // Simplest: Check last word
+        const lastWord = text.split(/\s+/).pop();
+        if (lastWord && lastWord.startsWith('@')) {
+            const query = lastWord.substring(1).toLowerCase();
+            setMentionQuery(query);
+            setShowMentions(true);
+
+            // Filter
+            const matches = allSuggestions.filter(s =>
+                s.name.toLowerCase().includes(query) ||
+                (s.username && s.username.toLowerCase().includes(query))
+            );
+            setFilteredMentions(matches.slice(0, 5)); // Limit to 5
+        } else {
+            setShowMentions(false);
+        }
+    };
+
+    const handleMentionSelect = (item: MentionSuggestion) => {
+        // Replace the last @query with @Name
+        const lastIndex = content.lastIndexOf('@' + mentionQuery);
+        if (lastIndex !== -1) {
+            const prefix = content.substring(0, lastIndex);
+            // We use the item.name for the mention text. 
+            // In RichText we expect @Name. If name has spaces, RichText needs to handle it.
+            // Our RichText previously assumed simple alphanumeric.
+            // For robustness, let's use a "handle" style if possible, or just Name and ensure RichText is smart.
+            // User requested "Instagram style", so usually clickable handles.
+            // Let's use the Name, but replace spaces with underscores or just expect RichText to handle it later?
+            // "getAlterByName" searched for exact name match.
+            // If name is "John Doe", mention is "@JohnDoe"?
+            // Let's use the item.name directly effectively.
+
+            // To ensure it works with our existing "getMatchByName" (which strips @), 
+            // we should probably insert the exact name that can be found.
+
+            const mentionText = `@${item.name}`;
+            // Better: use the *exact* name so lookup works.
+
+            const newContent = prefix + mentionText + ' ';
+            setContent(newContent);
+            setShowMentions(false);
+
+            // Track mentioned ID
+            if (item.type === 'alter') {
+                setMentionedIds(prev => new Set(prev).add(item.id));
+            }
+        }
+    };
 
     const checkDraft = async () => {
         try {
@@ -219,6 +334,9 @@ export default function CreatePostScreen() {
                 // No specific alter_id
             }
 
+            // Add mentions
+            postData.mentioned_alter_ids = Array.from(mentionedIds);
+
             await PostService.createPost(postData);
 
             // Clear draft on success
@@ -373,7 +491,8 @@ export default function CreatePostScreen() {
                         placeholder={postType === 'audio' ? "Ajoutez une description..." : (postType === 'text' ? "Quoi de neuf ?" : "Ajoutez une légende...")}
                         placeholderTextColor={themeColors?.textSecondary || colors.textMuted}
                         value={content}
-                        onChangeText={setContent}
+                        onChangeText={handleTextChange}
+                        onSelectionChange={(event) => setCursorPosition(event.nativeEvent.selection.end)}
                         multiline
                         maxLength={500}
                     />
@@ -398,12 +517,38 @@ export default function CreatePostScreen() {
                         </View>
                     )}
                 </View>
+
+                {/* Mention List showing above keyboard if needed, or embedded logic */}
             </ScrollView>
+
+            {/* Mention Suggestions Layer */}
+            {showMentions && (
+                <View style={[styles.mentionContainer, { paddingBottom: 0 }]}>
+                    <MentionList
+                        data={filteredMentions}
+                        onSelect={handleMentionSelect}
+                    />
+                </View>
+            )}
         </KeyboardAvoidingView>
     );
 }
 
 const styles = StyleSheet.create({
+    // ... existing styles ...
+    mentionContainer: {
+        position: 'absolute',
+        bottom: Platform.OS === 'ios' ? 0 : 0, // KeyboardAvoidingView handles the lift?
+        // Actually KeyboardAvoidingView with behavior 'padding' pushes content up.
+        // We might need to place this absolute relative to the INPUT or adjust accordingly.
+        // For simplicity now, let's put it inside KeyboardAvoidingView but at the bottom.
+        left: 0,
+        right: 0,
+        maxHeight: 220,
+        backgroundColor: colors.backgroundCard,
+        zIndex: 9999,
+    },
+
     container: {
         flex: 1,
         backgroundColor: colors.background,

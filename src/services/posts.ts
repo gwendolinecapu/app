@@ -32,6 +32,8 @@ export const PostService = {
                 ...postData,
                 likes: [],
                 comments_count: 0,
+                mentioned_alter_ids: postData.mentioned_alter_ids || [],
+                mentioned_system_ids: postData.mentioned_system_ids || [],
                 created_at: serverTimestamp(),
                 updated_at: serverTimestamp(),
             });
@@ -274,6 +276,47 @@ export const PostService = {
     },
 
     /**
+     * Fetch posts where an alter is mentioned
+     */
+    fetchTaggedPosts: async (alterId: string, lastVisible: QueryDocumentSnapshot | null = null, pageSize: number = 20) => {
+        try {
+            let q = query(
+                collection(db, POSTS_COLLECTION),
+                where('mentioned_alter_ids', 'array-contains', alterId),
+                orderBy('created_at', 'desc'),
+                limit(pageSize)
+            );
+
+            if (lastVisible) {
+                q = query(q, startAfter(lastVisible));
+            }
+
+            const querySnapshot = await getDocs(q);
+            const posts: Post[] = [];
+
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                posts.push({
+                    id: doc.id,
+                    ...data,
+                    created_at: data.created_at?.toDate().toISOString() || new Date().toISOString(),
+                    updated_at: data.updated_at?.toDate().toISOString() || new Date().toISOString(),
+                } as Post);
+            });
+
+            const enrichedPosts = await PostService._enrichPostsWithAuthors(posts);
+
+            return {
+                posts: enrichedPosts,
+                lastVisible: querySnapshot.docs[querySnapshot.docs.length - 1]
+            };
+        } catch (error) {
+            console.error('Error fetching tagged posts:', error);
+            throw error;
+        }
+    },
+
+    /**
      * Upload an image for a post
      */
     uploadImage: async (uri: string, systemId: string): Promise<string> => {
@@ -365,12 +408,25 @@ export const PostService = {
                                 recipientId: post.system_id, // Notify the system owner
                                 senderId: userId,
                                 senderAlterId: alterId || null,
+                                actorName: senderName, // Added for UI
                                 postId: postId,
                                 read: false,
                                 created_at: serverTimestamp(),
                                 title: "Nouveau J'aime",
                                 body: `${senderName} a aimé votre publication`,
                             });
+
+                            // Send Push Notification
+                            // We need to import PushNotificationService at top of file, or use require/dynamic import to avoid circular dep if any
+                            // For now assuming we can import it or using a decoupled way. 
+                            // Ideally, move this logic to a Cloud Function.
+                            // But since we are doing it client side as requested:
+                            const { default: PushService } = await import('./PushNotificationService');
+                            await PushService.sendPostReactionNotification(
+                                post.system_id,
+                                senderName,
+                                '❤️'
+                            );
                         } catch (notifError) {
                             console.error('Error creating notification:', notifError);
                             // Don't fail the like action if notification fails

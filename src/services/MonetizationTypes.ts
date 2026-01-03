@@ -645,16 +645,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         icon: 'leaf-outline',
         isPremium: false,
     },
-    {
-        id: 'frame_desert_oasis',
-        type: 'frame',
-        name: 'Oasis Désert',
-        description: 'Fraîcheur au milieu des dunes.',
-        priceCredits: 350,
-        preview: '#eab308',
-        icon: 'sunny-outline',
-        isPremium: false,
-    },
+
     {
         id: 'frame_bamboo_sanctuary',
         type: 'frame',
@@ -675,16 +666,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         icon: 'rose-outline',
         isPremium: true,
     },
-    {
-        id: 'frame_steampunk_castaway',
-        type: 'frame',
-        name: 'Naufragé Steampunk',
-        description: 'Rouages et nature sauvage.',
-        priceCredits: 450,
-        preview: '#b45309',
-        icon: 'cog-outline',
-        isPremium: true,
-    },
+
     {
         id: 'frame_crystal_cavern',
         type: 'frame',

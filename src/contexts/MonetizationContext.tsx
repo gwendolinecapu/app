@@ -158,13 +158,24 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
             console.log('[MonetizationContext] refreshState - Credits:', currentAlter.credits);
             const merged = [...new Set([...defaults, ...alterOwned])];
             setOwnedItems(merged);
-        } else {
-            console.log('[MonetizationContext] refreshState - No CurrentAlter');
-            setCredits(0);
-        }
 
-        refreshAlters();
-    }, [refreshAlters, currentAlter]);
+            // Check equipped
+            if (currentAlter.equipped_items) {
+                setEquippedItems(currentAlter.equipped_items);
+            }
+        } else {
+            // Reset to defaults if no alter (shouldn't happen in app usage but safe)
+            setCredits(0);
+            setOwnedItems(['theme_default', 'frame_simple', 'bubble_default', 'border_none']);
+        }
+    }, [currentAlter]);
+
+    // Re-sync whenever currentAlter changes (e.g. switch alter, or data update)
+    useEffect(() => {
+        if (currentAlter) {
+            refreshState();
+        }
+    }, [currentAlter, refreshState]);
 
     const refresh = useCallback(async () => {
         if (user?.uid) {

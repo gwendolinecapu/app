@@ -1,5 +1,5 @@
 import { db } from '../lib/firebase';
-import { doc, getDoc, collection, query, where, documentId, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, documentId, getDocs, updateDoc } from 'firebase/firestore';
 import { Alter } from '../types';
 
 export const AlterService = {
@@ -47,6 +47,20 @@ export const AlterService = {
         } catch (error) {
             console.error('Error fetching alters batch:', error);
             return [];
+        }
+    },
+
+    /**
+     * Update an existing alter
+     */
+    updateAlter: async (alterId: string, updates: Partial<Alter>): Promise<boolean> => {
+        try {
+            const docRef = doc(db, 'alters', alterId);
+            await updateDoc(docRef, updates);
+            return true;
+        } catch (error) {
+            console.error('Error updating alter:', error);
+            return false;
         }
     }
 };

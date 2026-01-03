@@ -139,10 +139,16 @@ export async function unfollowUser(followerId: string, followingId: string): Pro
  * Vérifier si un système en suit un autre
  */
 export async function isFollowing(followerId: string, followingId: string): Promise<boolean> {
-    const followId = `${followerId}_${followingId}`;
-    const followRef = doc(db, 'follows', followId);
-    const followDoc = await getDoc(followRef);
-    return followDoc.exists();
+    // Use query instead of getDoc to avoid Permission Denied if doc doesn't exist 
+    // (Rules often check resource.data which fails on missing docs)
+    const q = query(
+        collection(db, 'follows'),
+        where('follower_id', '==', followerId),
+        where('following_id', '==', followingId),
+        limit(1)
+    );
+    const snapshot = await getDocs(q);
+    return !snapshot.empty;
 }
 
 /**

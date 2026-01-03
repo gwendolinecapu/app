@@ -44,7 +44,8 @@ service cloud.firestore {
     match /systems/{systemId} {
       // Users can read/write their own system document
       // Admins can read any system document
-      allow read: if isAuthenticated() && (request.auth.uid == systemId || isAdmin());
+      // FIX: Allow all auth users to read systems (for social feed author info)
+      allow read: if isAuthenticated();
       allow write: if isAuthenticated() && request.auth.uid == systemId;
     }
 

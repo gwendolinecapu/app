@@ -234,10 +234,96 @@ export default function AlterSocialView({ alter, platform, initialUrl }: Props) 
                         });
                         observer.observe(document.body, { childList: true, subtree: true });
 
-                        // --- DISABLE SCROLL PROPAGATION (Prevent Fullscreen) ---
-                         window.addEventListener('scroll', (e) => {
+                        // --- DISABLE SCROLL PROPAGATION ---
+                        window.addEventListener('scroll', (e) => {
                             e.stopImmediatePropagation();
                         }, true);
+
+                        // --- DOUBLE TAP TO LIKE ---
+                        let lastTap = 0;
+                        document.addEventListener('touchstart', function(e) {
+                            const currentTime = new Date().getTime();
+                            const tapLength = currentTime - lastTap;
+                            
+                            if (tapLength < 300 && tapLength > 0) {
+                                // Double Tap Detected
+                                // Prevent zoom if it's not handled by meta
+                                e.preventDefault(); 
+                                
+                                const touch = e.touches[0];
+                                showHeartAnimation(touch.clientX, touch.clientY);
+                                triggerLikeAction(touch.target);
+                            }
+                            lastTap = currentTime;
+                        });
+
+                        function triggerLikeAction(target) {
+                            // Try to find the like button. 
+                            // Strategy 1: Look for the specific data-e2e icon
+                            // Strategy 2: Look for button with 'Like' in aria-label or title
+                            let likeBtn = document.querySelector('[data-e2e="like-icon"]') || 
+                                          document.querySelector('[data-e2e="browse-like-icon"]') ||
+                                          document.querySelector('span[class*="Like"]');
+                            
+                            // If we have multiple videos (scrolling list), the simple querySelector might pick the first one, 
+                            // which might not be the visible one. 
+                            // Ideally we find the one closest to the view center.
+                            
+                            // Advanced Search: Find visible like button
+                            const allLikeBtns = document.querySelectorAll('[data-e2e="like-icon"], [data-e2e="browse-like-icon"]');
+                            if (allLikeBtns.length > 0) {
+                                // Simple heuristic: Pick the one closest to the middle of the screen
+                                let bestBtn = allLikeBtns[0];
+                                let minMsg = 99999;
+                                const centerY = window.innerHeight / 2;
+                                
+                                allLikeBtns.forEach(btn => {
+                                    const rect = btn.getBoundingClientRect();
+                                    const dist = Math.abs(rect.top - centerY);
+                                    if (dist < minMsg) {
+                                        minMsg = dist;
+                                        bestBtn = btn;
+                                    }
+                                });
+                                likeBtn = bestBtn;
+                            }
+
+                            if (likeBtn) {
+                                console.log('[DoubleTap] Clicking like button:', likeBtn);
+                                likeBtn.click();
+                            }
+                        }
+
+                        function showHeartAnimation(x, y) {
+                            const heart = document.createElement('div');
+                            heart.textContent = '❤️'; 
+                            heart.style.position = 'fixed';
+                            heart.style.left = (x - 50) + 'px'; // Center roughly
+                            heart.style.top = (y - 50) + 'px';
+                            heart.style.fontSize = '80px';
+                            heart.style.zIndex = '100000';
+                            heart.style.pointerEvents = 'none';
+                            heart.style.textShadow = '0 0 10px rgba(0,0,0,0.5)';
+                            heart.style.animation = 'pop-heart 0.8s ease-out forwards';
+                            
+                            // Inject generic animation style if missing
+                            if (!document.getElementById('heart-keyframe')) {
+                                const s = document.createElement('style');
+                                s.id = 'heart-keyframe';
+                                s.innerHTML = \`
+                                    @keyframes pop-heart {
+                                        0% { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+                                        20% { transform: scale(1.2) rotate(10deg); opacity: 1; }
+                                        40% { transform: scale(1.0) rotate(-5deg); opacity: 1; }
+                                        100% { transform: scale(1.5) translateY(-50px); opacity: 0; }
+                                    }
+                                \`;
+                                document.head.appendChild(s);
+                            }
+                            
+                            document.body.appendChild(heart);
+                            setTimeout(() => heart.remove(), 800);
+                        }
 
                     })();
                 `}

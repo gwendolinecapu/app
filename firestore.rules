@@ -5,8 +5,9 @@ service cloud.firestore {
     // Helper Functions
     // ============================================
     
+    // Check if user is authenticated
     function isAuthenticated() {
-      return true; // DEBUG: Force true to diagnose auth issue
+      return request.auth != null;
     }
     
     // Check if user owns the document via system_id or userId field
@@ -69,13 +70,10 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       // Création: propriétaire uniquement
       allow create: if isOwnerCreate();
-      // Modification: propriétaire OU n'importe qui pour les likes
+      // Modification: propriétaire OU n'importe qui pour les likes (champ 'likes' uniquement)
       allow update: if isOwner(resource) || (
         isAuthenticated() && 
-        (
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']) ||
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'updated_at'])
-        )
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
       );
       // Suppression: propriétaire uniquement
       allow delete: if isOwner(resource);
@@ -83,6 +81,7 @@ service cloud.firestore {
       // ============================================
       // Comments Sub-Collection
       // ============================================
+      match /comments/{commentId} {
         // Lecture: tout utilisateur authentifié (ou tout le monde pour debug)
         allow read: if true;
         

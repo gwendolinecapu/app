@@ -12,6 +12,7 @@ import {
     ActivityIndicator,
     Image,
 } from 'react-native';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius, typography } from '../lib/theme';
@@ -32,7 +33,7 @@ interface CommentsModalProps {
 }
 
 export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) => {
-    const { currentAlter, user } = useAuth();
+    const { currentAlter, user, system } = useAuth();
     const [comments, setComments] = useState<Comment[]>([]);
     const [loading, setLoading] = useState(false);
     const [sending, setSending] = useState(false);
@@ -64,17 +65,21 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
     };
 
     const handleSend = async () => {
-        if (!postId || !newComment.trim() || !currentAlter) return;
+        if (!postId || !newComment.trim() || !user) return;
 
         setSending(true);
         triggerHaptic.medium();
 
         try {
+            const authorName = currentAlter?.name || system?.username || 'Utilisateur';
+            const authorAvatar = currentAlter?.avatar || currentAlter?.avatar_url || system?.avatar_url || undefined;
+            const authorId = currentAlter?.id || user.uid;
+
             const comment = await CommentsService.addComment({
                 postId,
-                authorId: currentAlter.id,
-                authorName: currentAlter.name,
-                authorAvatar: currentAlter.avatar || currentAlter.avatar_url,
+                authorId: authorId,
+                authorName: authorName,
+                authorAvatar: authorAvatar,
                 content: newComment.trim(),
             });
 
@@ -90,20 +95,34 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
         }
     };
 
+    const handleAuthorPress = (item: Comment) => {
+        if (item.author_id.includes('-') || item.author_id.length > 20) {
+            // Likely an alter ID (UUID)
+            router.push(`/alter-space/${item.author_id}`);
+        } else {
+            // Likely a system ID (shorter or different format, but safer to check system_id if we added it)
+            const targetId = item.system_id || item.author_id;
+            router.push(`/system-profile/${targetId}`);
+        }
+        onClose();
+    };
+
     const renderComment = ({ item }: { item: Comment }) => (
         <View style={styles.commentItem}>
-            {item.author_avatar ? (
-                <Image source={{ uri: item.author_avatar }} style={styles.avatar} />
-            ) : (
-                <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
-                    <Text style={styles.avatarInitial}>{item.author_name?.charAt(0)}</Text>
-                </View>
-            )}
+            <TouchableOpacity onPress={() => handleAuthorPress(item)}>
+                {item.author_avatar ? (
+                    <Image source={{ uri: item.author_avatar }} style={styles.avatar} />
+                ) : (
+                    <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
+                        <Text style={styles.avatarInitial}>{item.author_name?.charAt(0)}</Text>
+                    </View>
+                )}
+            </TouchableOpacity>
             <View style={styles.commentContent}>
-                <View style={styles.commentHeader}>
+                <TouchableOpacity style={styles.commentHeader} onPress={() => handleAuthorPress(item)}>
                     <Text style={styles.authorName}>{item.author_name}</Text>
                     <Text style={styles.timestamp}>{timeAgo(item.created_at)}</Text>
-                </View>
+                </TouchableOpacity>
                 <Text style={styles.commentText}>{item.content}</Text>
             </View>
         </View>

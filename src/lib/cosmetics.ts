@@ -378,8 +378,8 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                     borderRadius: size / 2,
                     overflow: 'visible',
                 },
-                isAnimated: true,
-                animationComponent: 'NatureMysticFrame',
+                // isAnimated: true, // Désactivé pour l'instant car on a l'image statique
+                // animationComponent: 'NatureMysticFrame',
                 imageSource: require('../../assets/frames/frame_nature_mystic.png'),
             };
 
@@ -447,7 +447,7 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                     borderRadius: size / 2,
                     overflow: 'visible',
                 },
-                imageSource: require('../../assets/frames/frame_tropical.png'),
+                imageSource: require('../../assets/frames/frame_bamboo_sanctuary.png'),
             };
         case 'frame_enchanted_forest':
             return {
@@ -458,7 +458,7 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                     borderRadius: size / 2,
                     overflow: 'visible',
                 },
-                imageSource: require('../../assets/frames/frame_tropical.png'),
+                imageSource: require('../../assets/frames/frame_nature_mystic.png'), // Fallback ou double usage
             };
         case 'frame_steampunk_castaway':
             return {
@@ -480,7 +480,7 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                     borderRadius: size / 2,
                     overflow: 'visible',
                 },
-                imageSource: require('../../assets/frames/frame_tropical.png'),
+                imageSource: require('../../assets/frames/frame_crystal_cavern.png'),
             };
         case 'frame_arctic_winter':
             return {
@@ -491,7 +491,7 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                     borderRadius: size / 2,
                     overflow: 'visible',
                 },
-                imageSource: require('../../assets/frames/frame_tropical.png'),
+                imageSource: require('../../assets/frames/frame_arctic_winter.png'),
             };
 
         default:

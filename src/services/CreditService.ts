@@ -239,6 +239,17 @@ class CreditService {
     // ==================== DÉPENSES ====================
 
     /**
+     * Deducts credits if balance is sufficient.
+     */
+    public async deductCredits(alterId: string, amount: number, type: CreditTransactionType, description?: string): Promise<boolean> {
+        const currentBalance = await this.getAlterBalance(alterId);
+        if (currentBalance < amount) return false;
+
+        await this.spendCredits(alterId, amount, type, description);
+        return true;
+    }
+
+    /**
      * Achète un item de la boutique
      * @param applyEffect If true, triggers business logic (granting rights). If false, just deducts money.
      */

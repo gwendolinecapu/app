@@ -10,8 +10,11 @@ import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { AlterPrimers } from '../AlterPrimers';
 import { SystemRelationships } from '../SystemRelationships';
 import { Skeleton } from '../ui/Skeleton';
-import { getFrameStyle, ThemeColors } from '../../lib/cosmetics';
+import { getFrameStyle, ThemeColors, getCosmeticItem } from '../../lib/cosmetics';
 import { SakuraFrame } from '../effects/SakuraPetals';
+import { TropicalFrame } from '../effects/TropicalLeaves';
+import { FlameFrame } from '../effects/FlameFrame';
+import { NatureMysticFrame } from '../effects/NatureMysticFrame';
 
 const ROLE_DEFINITIONS: Record<string, string> = {
     'host': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
@@ -149,14 +152,52 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 <SakuraFrame size={88}>
                     <AvatarContent />
                 </SakuraFrame>
+            ) : alter.equipped_items?.frame === 'frame_tropical' ? (
+                // Cadre Tropical animé avec feuilles
+                <TropicalFrame size={88}>
+                    <AvatarContent />
+                </TropicalFrame>
+            ) : alter.equipped_items?.frame === 'frame_flames' ? (
+                // Cadre Flammes animé
+                <FlameFrame size={88}>
+                    <AvatarContent />
+                </FlameFrame>
+            ) : alter.equipped_items?.frame === 'frame_nature_mystic' ? (
+                // Cadre Nature Mystic animé
+                <NatureMysticFrame size={88}>
+                    <AvatarContent />
+                </NatureMysticFrame>
             ) : (
-                // Cadre standard
+                // Cadre standard ou Image Frame
                 <View style={[
                     styles.avatarContainer,
                     { borderColor: alter.color || colors.primary },
-                    frameStyle.containerStyle
+                    frameStyle.containerStyle,
+                    frameStyle.imageSource ? { borderWidth: 0, backgroundColor: 'transparent', overflow: 'visible' } : undefined
                 ]}>
                     <AvatarContent />
+                    {frameStyle.imageSource && (
+                        <Image
+                            source={frameStyle.imageSource}
+                            style={{
+                                position: 'absolute',
+                                width: '130%',
+                                height: '130%',
+                                top: '-15%',
+                                left: '-15%',
+                                zIndex: 10,
+                            }}
+                            contentFit="contain"
+                            pointerEvents="none"
+                        />
+                    )}
+                </View>
+            )}
+
+            {/* Ajout indicateur si animé non-sakura si besoin */}
+            {alter.equipped_items?.frame && getCosmeticItem(alter.equipped_items.frame)?.rarity === 'mythic' && (
+                <View style={{ position: 'absolute', bottom: -5, right: -5, zIndex: 20 }}>
+                    <Text style={{ fontSize: 16 }}>✨</Text>
                 </View>
             )}
         </>

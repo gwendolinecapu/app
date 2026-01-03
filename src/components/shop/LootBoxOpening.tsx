@@ -39,6 +39,8 @@ interface Props {
     ownedItemIds: string[];
     userCredits: number;
     onReward: (item: ShopItem) => void;
+    onPurchase?: () => Promise<boolean>;
+    onReplay?: () => Promise<boolean>;
 }
 
 type Phase = 'intro' | 'gameplay' | 'opening' | 'revealed';
@@ -49,12 +51,15 @@ export const LootBoxOpening = ({
     onClose,
     ownedItemIds,
     userCredits,
-    onReward
+    onReward,
+    onPurchase,
+    onReplay
 }: Props) => {
     const [phase, setPhase] = useState<Phase>('intro');
     const [currentRarity, setCurrentRarity] = useState<Rarity>('common');
     const [tapsRemaining, setTapsRemaining] = useState(MAX_TAPS);
     const [reward, setReward] = useState<{ item: ShopItem, isNew: boolean } | null>(null);
+    const [processing, setProcessing] = useState(false);
 
     // Anim Values
     const progress = useSharedValue(0); // 0..4
@@ -71,6 +76,7 @@ export const LootBoxOpening = ({
             setCurrentRarity('common');
             setTapsRemaining(MAX_TAPS);
             setReward(null);
+            setProcessing(false);
 
             progress.value = 0;
             scale.value = 1;
@@ -82,7 +88,20 @@ export const LootBoxOpening = ({
 
     // ========== GAMEPLAY ==========
     const handleAction = useCallback(async () => {
+        if (processing) return;
+
         if (phase === 'intro') {
+            if (onPurchase) {
+                setProcessing(true);
+                const success = await onPurchase();
+                setProcessing(false);
+                if (!success) {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                    alert("Pas assez de crédits !");
+                    return;
+                }
+            }
+
             setPhase('gameplay');
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             return;
@@ -119,7 +138,35 @@ export const LootBoxOpening = ({
                 setTimeout(() => openPack(nextRarity || currentRarity), 400);
             }
         }
-    }, [phase, tapsRemaining, currentRarity]);
+    }, [phase, tapsRemaining, currentRarity, processing]);
+
+    const handleReplay = async () => {
+        if (processing || !onReplay) return;
+
+        setProcessing(true);
+        const success = await onReplay();
+        setProcessing(false);
+
+        if (success) {
+            // Reset for new game
+            setPhase('gameplay'); // Skip intro for speed
+            setCurrentRarity('common');
+            setTapsRemaining(MAX_TAPS);
+            setReward(null);
+
+            // Reset anims
+            progress.value = 0;
+            scale.value = 1;
+            tearHeight.value = 0.1;
+            packOpen.value = 0;
+            contentOpacity.value = 1;
+
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        } else {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            alert("Pas assez de crédits !");
+        }
+    };
 
     // Open
     const openPack = async (finalRarity: Rarity) => {
@@ -306,6 +353,34 @@ export const LootBoxOpening = ({
                                         <Text style={styles.openText}>OUVRIR</Text>
                                     </View>
                                     <Text style={styles.priceText}>{LOOT_BOX.price} CR</Text>
+
+                                    <View style={styles.dropRatesContainer}>
+                                        <Text style={styles.dropRatesTitle}>PROBABILITÉS</Text>
+                                        <View style={styles.dropRatesRow}>
+                                            <View style={[styles.dropRateBadge, { backgroundColor: '#9CA3AF' }]}>
+                                                <Text style={styles.dropRateText}>70%</Text>
+                                            </View>
+                                            <View style={[styles.dropRateBadge, { backgroundColor: '#3B82F6' }]}>
+                                                <Text style={styles.dropRateText}>21%</Text>
+                                            </View>
+                                            <View style={[styles.dropRateBadge, { backgroundColor: '#8B5CF6' }]}>
+                                                <Text style={styles.dropRateText}>6.3%</Text>
+                                            </View>
+                                            <View style={[styles.dropRateBadge, { backgroundColor: '#F59E0B' }]}>
+                                                <Text style={styles.dropRateText}>1.9%</Text>
+                                            </View>
+                                            <View style={[styles.dropRateBadge, { backgroundColor: '#EF4444' }]}>
+                                                <Text style={styles.dropRateText}>0.8%</Text>
+                                            </View>
+                                        </View>
+                                        <View style={styles.dropRatesLabels}>
+                                            <Text style={styles.dropRateLabel}>COM</Text>
+                                            <Text style={styles.dropRateLabel}>RAR</Text>
+                                            <Text style={styles.dropRateLabel}>EPQ</Text>
+                                            <Text style={styles.dropRateLabel}>LEG</Text>
+                                            <Text style={styles.dropRateLabel}>MYT</Text>
+                                        </View>
+                                    </View>
                                 </View>
                             )}
                         </AnimatedView>
@@ -340,6 +415,16 @@ export const LootBoxOpening = ({
                                 >
                                     <Text style={styles.collectText}>STOCKER & FERMER</Text>
                                 </TouchableOpacity>
+
+                                {onReplay && (
+                                    <TouchableOpacity
+                                        style={[styles.collectBtn, { backgroundColor: '#3B82F6', marginTop: 12 }]}
+                                        onPress={handleReplay}
+                                        disabled={processing}
+                                    >
+                                        <Text style={styles.collectText}>RELANCER ({LOOT_BOX.price} CR)</Text>
+                                    </TouchableOpacity>
+                                )}
                             </>
                         ) : (
                             <>
@@ -361,6 +446,16 @@ export const LootBoxOpening = ({
                                 >
                                     <Text style={styles.collectText}>RÉCUPÉRER</Text>
                                 </TouchableOpacity>
+
+                                {onReplay && (
+                                    <TouchableOpacity
+                                        style={[styles.collectBtn, { backgroundColor: '#3B82F6', marginTop: 12 }]}
+                                        onPress={handleReplay}
+                                        disabled={processing}
+                                    >
+                                        <Text style={styles.collectText}>RELANCER ({LOOT_BOX.price} CR)</Text>
+                                    </TouchableOpacity>
+                                )}
                             </>
                         )}
                     </AnimatedView>
@@ -505,25 +600,33 @@ const styles = StyleSheet.create({
         zIndex: -1,
     },
 
-    introOverlay: { position: 'absolute', alignItems: 'center', zIndex: 20 },
-    introBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F59E0B',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
+    // Intro Overlay
+    introOverlay: { position: 'absolute', bottom: 40, alignItems: 'center', zIndex: 20, width: '100%' },
+    introBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F59E0B', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, gap: 8 },
+    openText: { color: '#000', fontWeight: 'bold', fontSize: 16 },
+    priceText: { color: '#FFF', marginTop: 8, fontWeight: 'bold', fontSize: 14 },
+
+    dropRatesContainer: { marginTop: 16, alignItems: 'center', width: '100%' },
+    dropRatesTitle: { color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: 'bold', letterSpacing: 1, marginBottom: 8 },
+    dropRatesRow: { flexDirection: 'row', gap: 6 },
+    dropRatesLabels: { flexDirection: 'row', gap: 6, marginTop: 4 },
+    dropRateBadge: {
+        width: 42,
+        height: 24,
         borderRadius: 4,
-        gap: 6,
-        shadowColor: '#F59E0B',
-        shadowOpacity: 0.5,
-        shadowRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOpacity: 0.3,
+        shadowRadius: 2,
+        shadowOffset: { width: 0, height: 1 }
     },
-    openText: { color: '#000', fontSize: 16, fontWeight: '900', letterSpacing: 1 },
-    priceText: { color: 'rgba(255,255,255,0.8)', fontWeight: '600', marginTop: 12, fontSize: 14 },
+    dropRateText: { color: '#FFF', fontSize: 10, fontWeight: 'bold' },
+    dropRateLabel: { width: 42, textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 8, fontWeight: 'bold' },
 
     // Reward
-    rewardContainer: { alignItems: 'center' },
-    rewardRarity: { fontSize: 14, fontWeight: '900', letterSpacing: 1, marginTop: 24 },
+    rewardContainer: { alignItems: 'center', width: '100%' },
+    rewardRarity: { fontSize: 18, fontWeight: '900', letterSpacing: 2, marginBottom: 8, textAlign: 'center' },
     rewardName: { color: '#FFF', fontSize: 28, fontWeight: 'bold', marginVertical: 8 },
     collectBtn: { paddingHorizontal: 40, paddingVertical: 14, borderRadius: 8, marginTop: 32 },
     collectText: { color: '#FFF', fontWeight: '900' },

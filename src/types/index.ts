@@ -118,6 +118,7 @@ export interface Comment {
     author_id: string;       // Alter ID or System ID
     author_name: string;     // Denormalized for fast display
     author_avatar?: string;
+    system_id?: string; // Opt-in for system profile navigation
     content: string;
     created_at: string;
     // Future: likes, replies

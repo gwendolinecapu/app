@@ -89,73 +89,153 @@ export default function AlterSocialView({ alter, platform, initialUrl }: Props) 
                 // Keep Desktop UA for bypass, but fix UI with CSS
                 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                 injectedJavaScriptBeforeContentLoaded={`
-                    window.open = function() { return null; };
+                    (function() {
+                        window.open = function() { return null; };
+
+                        // --- IMMEDIATE VIDEO PATCHING ---
+                        // 1. Monkey-patch document.createElement to catch videos at birth
+                        const originalCreateElement = document.createElement;
+                        document.createElement = function(tagName) {
+                            const element = originalCreateElement.apply(this, arguments);
+                            if (tagName && tagName.toLowerCase() === 'video') {
+                                element.setAttribute('playsinline', 'true');
+                                element.setAttribute('webkit-playsinline', 'true');
+                                element.setAttribute('x5-playsinline', 'true');
+                                element.webkitEnterFullscreen = function() {}; // Disable native fullscreen
+                            }
+                            return element;
+                        };
+
+                        // 2. Monkey-patch play to ensure attributes are there before playing
+                        const originalPlay = HTMLMediaElement.prototype.play;
+                        HTMLMediaElement.prototype.play = function() {
+                            this.setAttribute('playsinline', 'true');
+                            this.setAttribute('webkit-playsinline', 'true');
+                            this.setAttribute('x5-playsinline', 'true');
+                            this.webkitEnterFullscreen = function() {}; 
+                            return originalPlay.apply(this, arguments);
+                        };
+
+                        // 3. Disable native fullscreen method on prototype
+                        HTMLMediaElement.prototype.webkitEnterFullscreen = function() {};
+                    })();
                 `}
                 injectedJavaScript={`
                     (function() {
                         const style = document.createElement('style');
                         style.innerHTML = \`
-                            /* --- HIDE DESKTOP CLUTTER --- */
-                            /* Warning: Selectors are brittle. Target generic structural containers if possible. */
-                            
-                            /* Sidebar */
+                            /* --- GLOBAL RESET FOR MOBILE FEEL --- */
+                            * {
+                                -webkit-tap-highlight-color: transparent;
+                            }
+                            html, body, #app {
+                                width: 100vw !important;
+                                height: 100vh !important;
+                                overflow: hidden !important; /* Let the feed container handle scroll */
+                                margin: 0 !important;
+                                padding: 0 !important;
+                                background-color: #000 !important;
+                            }
+
+                            /* --- HIDE DESKTOP SIDEBAR & HEADER --- */
+                            nav, header, aside,
                             [data-e2e="sidebar-container-wrapper"], 
-                            [class*="SideNavContainer"], 
-                            nav {
-                                display: none !important; 
-                            }
-
-                            /* Top Header */
-                            #header-main, 
                             [data-e2e="top-header-container"],
-                            header {
-                                display: none !important;
-                            }
-
-                            /* Login / Open App Prompts */
+                            [class*="SideNavContainer"], 
+                            [class*="HeaderContainer"],
                             .e19f2d12, [data-e2e="open-app-modal"], #tiktok-verify-ele, 
                             [class*="OpenApp"], .index-open-app-btn, [id*="login-modal"], 
                             div[role="dialog"], #loginContainer, #header-login-button,
                             [data-e2e="top-login-button"], [class*="banner"]
-                            { display: none !important; }
-
-                            /* --- FORCE MOBILE LAYOUT --- */
-                            html, body {
-                                overflow-x: hidden !important;
-                                background: black !important;
-                                margin: 0 !important;
-                                padding: 0 !important;
+                            { 
+                                display: none !important; 
+                                width: 0 !important;
+                                height: 0 !important;
+                                opacity: 0 !important;
+                                pointer-events: none !important;
                             }
 
-                            /* Make the main feed container fill the screen */
-                            [data-e2e="main-content-response"], 
-                            [class*="MainContainer"], 
-                            [class*="DivBodyContainer"] {
-                                margin-left: 0 !important;
+                            /* --- FORCE MAIN CONTENT FULL WIDTH --- */
+                            [class*="DivBodyContainer"], [class*="MainContainer"], [data-e2e="main-content-response"] {
+                                display: flex !important;
                                 width: 100vw !important;
                                 max-width: 100vw !important;
+                                height: 100vh !important;
+                                margin: 0 !important;
                                 padding: 0 !important;
+                                justify-content: center !important;
+                                align-items: flex-start !important;
                             }
 
-                            /* Video Player - Force "Cover" fit to look like app */
-                            video {
-                                object-fit: cover !important;
+                            /* --- FEED CONTAINER & SCROLL --- */
+                            [data-e2e="feed-container"] {
                                 width: 100vw !important;
                                 height: 100vh !important;
-                                max-height: 100vh !important;
+                                overflow-y: scroll !important; /* Enable vertical scroll for feed */
+                                overflow-x: hidden !important;
+                                scroll-snap-type: y mandatory; /* Snap effect for app feel */
+                                padding-top: 0 !important;
                             }
 
-                            /* Center the feed */
-                            [data-e2e="feed-container"] {
-                                width: 100% !important;
+                            /* --- VIDEO CARD ITEMS --- */
+                            [data-e2e="recommend-list-item-container"] {
+                                width: 100vw !important;
+                                height: 100vh !important;
+                                scroll-snap-align: start;
+                                margin-bottom: 0 !important;
+                                padding: 0 !important;
+                                border: none !important;
                                 display: flex !important;
+                                align-items: center !important;
                                 justify-content: center !important;
+                                background: #000 !important;
                             }
+
+                            /* --- VIDEO PLAYER --- */
+                            video {
+                                width: 100vw !important;
+                                height: 100vh !important;
+                                object-fit: cover !important; /* Fills screen "Epose totalement l'ecran" */
+                                border-radius: 0 !important;
+                            }
+                            
+                            /* Adjust video wrapper if it exists */
+                            [data-e2e="video-container"] {
+                                width: 100% !important;
+                                height: 100% !important;
+                            }
+
+                            /* Hide text/UI overlays if user wants pure video (Optional, likely kept for context) */
+                            /* For now, we keep the captions overlay but ensure it doesn't break layout */
                         \`;
                         document.head.appendChild(style);
 
-                        // --- Aggressive Event Killer for "Full Screen" ---
-                        window.addEventListener('scroll', (e) => {
+                        // --- Fallback Observer for innerHTML injections ---
+                         const observer = new MutationObserver((mutations) => {
+                            mutations.forEach((mutation) => {
+                                mutation.addedNodes.forEach((node) => {
+                                    // Clean generic overlays
+                                    if (node.classList && (node.classList.contains('im-sheet-mask') || node.id === 'login-modal')) {
+                                       node.remove();
+                                    }
+
+                                    if (node.tagName === 'VIDEO') {
+                                        node.setAttribute('playsinline', 'true');
+                                        node.setAttribute('webkit-playsinline', 'true');
+                                    }
+                                    if (node.querySelectorAll) {
+                                        node.querySelectorAll('video').forEach(v => {
+                                            v.setAttribute('playsinline', 'true');
+                                            v.setAttribute('webkit-playsinline', 'true');
+                                        });
+                                    }
+                                });
+                            });
+                        });
+                        observer.observe(document.body, { childList: true, subtree: true });
+
+                        // --- DISABLE SCROLL PROPAGATION (Prevent Fullscreen) ---
+                         window.addEventListener('scroll', (e) => {
                             e.stopImmediatePropagation();
                         }, true);
 

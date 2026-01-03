@@ -84,11 +84,48 @@ export default function AlterSocialView({ alter, platform, initialUrl }: Props) 
                 domStorageEnabled={true}
                 javaScriptEnabled={true}
                 // Inject some JS to prevent "Open in App" prompts if possible
+                allowsInlineMediaPlayback={true} // Prevent videos from going full screen automatically
+                mediaPlaybackRequiresUserAction={false}
                 injectedJavaScript={`
-                    // Try to hide "Open in App" banners
-                    const styles = document.createElement('style');
-                    styles.innerHTML = '.index-open-app-btn, [class*="OpenApp"] { display: none !important; }';
-                    document.body.appendChild(styles);
+                    (function() {
+                        const style = document.createElement('style');
+                        style.innerHTML = \`
+                            .e19f2d12, 
+                            [data-e2e="open-app-modal"], 
+                            #tiktok-verify-ele, 
+                            [class*="OpenApp"], 
+                            .index-open-app-btn,
+                            [id*="login-modal"],
+                            div[role="dialog"]
+                            { display: none !important; }
+                            
+                            html, body { 
+                                overflow-y: auto !important; 
+                                -webkit-overflow-scrolling: touch !important;
+                                height: auto !important;
+                            }
+                        \`;
+                        document.head.appendChild(style);
+
+                        // Aggressive cleanup interval
+                        setInterval(() => {
+                            // Find and click "not now" buttons
+                            const variants = ['Pas maintenant', 'Not now', 'Later', 'Plus tard'];
+                            const buttons = Array.from(document.querySelectorAll('div, button, a, span'));
+                            const notNowBtn = buttons.find(el => variants.some(v => el.textContent && el.textContent.includes(v)));
+                            
+                            if (notNowBtn) {
+                                notNowBtn.click();
+                            }
+
+                            // Remove blocking overlays
+                            const masks = document.querySelectorAll('[class*="mask"], [class*="overlay"]');
+                            masks.forEach(mask => mask.remove());
+                            
+                            // Force overflow on body again just in case
+                             document.body.style.overflow = 'auto';
+                        }, 1000);
+                    })();
                 `}
                 onNavigationStateChange={(navState) => {
                     // Could track navigation here if needed

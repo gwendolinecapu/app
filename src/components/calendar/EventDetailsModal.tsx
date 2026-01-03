@@ -110,7 +110,7 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                     {/* Header with Type Color */}
                     <View style={[styles.headerStrip, { backgroundColor: TYPE_COLORS[event.type] || '#FFF' }]} />
 
-                    <View style={styles.contentPadding}>
+                    <ScrollView style={styles.modalScroll} contentContainerStyle={styles.contentPadding}>
                         <View style={styles.header}>
                             <View style={styles.typeBadge}>
                                 <Text style={[styles.typeText, { color: TYPE_COLORS[event.type] }]}>
@@ -182,7 +182,7 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                                 <Text style={styles.editText}>Modifier</Text>
                             </TouchableOpacity>
                         </View>
-                    </View>
+                    </ScrollView>
                 </View>
             </View>
         </Modal>
@@ -207,6 +207,11 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.5,
         shadowRadius: 20,
         elevation: 10,
+        maxHeight: '80%', // Avoid full screen
+        width: '100%',
+    },
+    modalScroll: {
+        maxHeight: '100%',
     },
     headerStrip: {
         height: 6,

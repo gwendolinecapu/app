@@ -383,6 +383,117 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                 imageSource: require('../../assets/frames/frame_nature_mystic.png'),
             };
 
+        case 'frame_biolum_lagoon':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_biolum_lagoon.png'),
+            };
+        case 'frame_pirate_wreck':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_pirate_wreck.png'),
+            };
+        case 'frame_coral_reef':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_coral_reef.png'),
+            };
+        case 'frame_jungle_ruins':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_jungle_ruins.png'),
+            };
+        case 'frame_desert_oasis':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_desert_oasis.png'),
+            };
+        case 'frame_bamboo_sanctuary':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_bamboo_sanctuary.png'),
+            };
+        case 'frame_enchanted_forest':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_enchanted_forest.png'),
+            };
+        case 'frame_steampunk_castaway':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_steampunk_castaway.png'),
+            };
+        case 'frame_crystal_cavern':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_crystal_cavern.png'),
+            };
+        case 'frame_arctic_winter':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_arctic_winter.png'),
+            };
+
         default:
             return defaultStyle;
     }

@@ -12,6 +12,8 @@
 - **Refactoring** : Réécriture de `ShopItemCard` pour utiliser le composant partagé `ItemPreview`. Cela garantit que tous les futurs cadres et animations (comme Tropical) fonctionneront automatiquement dans la boutique sans duplication de code.
 - **Correctif (Bug)** : Réparation du modal de détail d'événement (`EventDetailsModal`) qui était parfois impossible à scroller ou s'affichait mal en plein écran.
 - **Correctif (Social)** : Amélioration de `AlterSocialView` pour bloquer les popups intrusifs (TikTok) et empêcher les vidéos de forcer le plein écran.
+- **Nouveaux Cadres** : Ajout de 10 nouveaux cadres d'avatar premium avec thèmes variés (Lagon, Pirate, Steampunk, Cristal, etc.).
+- **Correctif (Rendu)** : Application systématique de `overflow: 'visible'` sur tous les cadres images pour garantir un affichage complet sans coupure.
 
 ## [2025-12-31] Correctifs Boutique & Cosmétiques 💄
 

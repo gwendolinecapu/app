@@ -86,100 +86,159 @@ export default function AlterSocialView({ alter, platform, initialUrl }: Props) 
                 // Inject some JS to prevent "Open in App" prompts if possible
                 allowsInlineMediaPlayback={true} // Prevent videos from going full screen automatically
                 mediaPlaybackRequiresUserAction={false}
-                // Use Desktop Chrome UA to bypass mobile-specific "force app" logic
+                // Keep Desktop UA for bypass, but fix UI with CSS
                 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                 injectedJavaScriptBeforeContentLoaded={`
-                    // Forcefully disable window.open
-                    window.open = function() { return null; };
+                    (function() {
+                        window.open = function() { return null; };
+
+                        // --- IMMEDIATE VIDEO PATCHING ---
+                        // 1. Monkey-patch document.createElement to catch videos at birth
+                        const originalCreateElement = document.createElement;
+                        document.createElement = function(tagName) {
+                            const element = originalCreateElement.apply(this, arguments);
+                            if (tagName && tagName.toLowerCase() === 'video') {
+                                element.setAttribute('playsinline', 'true');
+                                element.setAttribute('webkit-playsinline', 'true');
+                                element.setAttribute('x5-playsinline', 'true');
+                                element.webkitEnterFullscreen = function() {}; // Disable native fullscreen
+                            }
+                            return element;
+                        };
+
+                        // 2. Monkey-patch play to ensure attributes are there before playing
+                        const originalPlay = HTMLMediaElement.prototype.play;
+                        HTMLMediaElement.prototype.play = function() {
+                            this.setAttribute('playsinline', 'true');
+                            this.setAttribute('webkit-playsinline', 'true');
+                            this.setAttribute('x5-playsinline', 'true');
+                            this.webkitEnterFullscreen = function() {}; 
+                            return originalPlay.apply(this, arguments);
+                        };
+
+                        // 3. Disable native fullscreen method on prototype
+                        HTMLMediaElement.prototype.webkitEnterFullscreen = function() {};
+                    })();
                 `}
                 injectedJavaScript={`
                     (function() {
                         const style = document.createElement('style');
                         style.innerHTML = \`
-                            /* Hide specific app upsell elements */
-                            .e19f2d12, 
-                            [data-e2e="open-app-modal"], 
-                            #tiktok-verify-ele, 
-                            [class*="OpenApp"], 
-                            .index-open-app-btn,
-                            [id*="login-modal"],
-                            div[role="dialog"],
-                            a[href^="tiktok://"],
-                            a[href*="apps.apple.com"],
-                            [class*="banner"],
-                            [class*="modal"],
-                            #loginContainer,
-                            #header-login-button,
-                            [data-e2e="top-login-button"]
-                            { display: none !important; }
-
-                            /* Fix Desktop layout on Mobile Screen if needed */
-                            body {
-                                min-width: 100vw !important;
-                                overflow-x: hidden !important;
+                            /* --- GLOBAL RESET FOR MOBILE FEEL --- */
+                            * {
+                                -webkit-tap-highlight-color: transparent;
                             }
+                            html, body, #app {
+                                width: 100vw !important;
+                                height: 100vh !important;
+                                overflow: hidden !important; /* Let the feed container handle scroll */
+                                margin: 0 !important;
+                                padding: 0 !important;
+                                background-color: #000 !important;
+                            }
+
+                            /* --- HIDE DESKTOP SIDEBAR & HEADER --- */
+                            nav, header, aside,
+                            [data-e2e="sidebar-container-wrapper"], 
+                            [data-e2e="top-header-container"],
+                            [class*="SideNavContainer"], 
+                            [class*="HeaderContainer"],
+                            .e19f2d12, [data-e2e="open-app-modal"], #tiktok-verify-ele, 
+                            [class*="OpenApp"], .index-open-app-btn, [id*="login-modal"], 
+                            div[role="dialog"], #loginContainer, #header-login-button,
+                            [data-e2e="top-login-button"], [class*="banner"]
+                            { 
+                                display: none !important; 
+                                width: 0 !important;
+                                height: 0 !important;
+                                opacity: 0 !important;
+                                pointer-events: none !important;
+                            }
+
+                            /* --- FORCE MAIN CONTENT FULL WIDTH --- */
+                            [class*="DivBodyContainer"], [class*="MainContainer"], [data-e2e="main-content-response"] {
+                                display: flex !important;
+                                width: 100vw !important;
+                                max-width: 100vw !important;
+                                height: 100vh !important;
+                                margin: 0 !important;
+                                padding: 0 !important;
+                                justify-content: center !important;
+                                align-items: flex-start !important;
+                            }
+
+                            /* --- FEED CONTAINER & SCROLL --- */
+                            [data-e2e="feed-container"] {
+                                width: 100vw !important;
+                                height: 100vh !important;
+                                overflow-y: scroll !important; /* Enable vertical scroll for feed */
+                                overflow-x: hidden !important;
+                                scroll-snap-type: y mandatory; /* Snap effect for app feel */
+                                padding-top: 0 !important;
+                            }
+
+                            /* --- VIDEO CARD ITEMS --- */
+                            [data-e2e="recommend-list-item-container"] {
+                                width: 100vw !important;
+                                height: 100vh !important;
+                                scroll-snap-align: start;
+                                margin-bottom: 0 !important;
+                                padding: 0 !important;
+                                border: none !important;
+                                display: flex !important;
+                                align-items: center !important;
+                                justify-content: center !important;
+                                background: #000 !important;
+                            }
+
+                            /* --- VIDEO PLAYER --- */
+                            video {
+                                width: 100vw !important;
+                                height: 100vh !important;
+                                object-fit: cover !important; /* Fills screen "Epose totalement l'ecran" */
+                                border-radius: 0 !important;
+                            }
+                            
+                            /* Adjust video wrapper if it exists */
+                            [data-e2e="video-container"] {
+                                width: 100% !important;
+                                height: 100% !important;
+                            }
+
+                            /* Hide text/UI overlays if user wants pure video (Optional, likely kept for context) */
+                            /* For now, we keep the captions overlay but ensure it doesn't break layout */
                         \`;
                         document.head.appendChild(style);
 
-                        // Aggressive cleanup loop
-                        const clickVariants = ['pas maintenant', 'not now', 'later', 'plus tard', 'continuer sur le web', 'continue on web', 'cancel', 'annuler', 'fermer', 'close', 'guest', 'invité'];
-                        const hideVariants = ['ouvrir l\\'application', 'open app', 'get app', 'installer', 'install', 'connexion', 'login', 'se connecter'];
-
-                        setInterval(() => {
-                            // 1. Text-based filtering
-                            const allElements = document.querySelectorAll('div, button, a, span, p');
-                            for (let el of allElements) {
-                                const text = el.textContent ? el.textContent.trim().toLowerCase() : '';
-                                
-                                // Action 1: Click "Not Now" / "Guest" buttons
-                                if (clickVariants.some(v => text === v)) {
-                                    try { el.click(); } catch(e) {}
-                                    
-                                    // Also hide parent if it looks like a modal
-                                    let current = el;
-                                    let depth = 0;
-                                    while (current && current !== document.body && depth < 10) {
-                                        const style = window.getComputedStyle(current);
-                                        if ((style.position === 'fixed' || style.position === 'absolute') && style.zIndex > 50) {
-                                            current.style.display = 'none';
-                                            current.style.pointerEvents = 'none';
-                                            break;
-                                        }
-                                        current = current.parentElement;
-                                        depth++;
+                        // --- Fallback Observer for innerHTML injections ---
+                         const observer = new MutationObserver((mutations) => {
+                            mutations.forEach((mutation) => {
+                                mutation.addedNodes.forEach((node) => {
+                                    // Clean generic overlays
+                                    if (node.classList && (node.classList.contains('im-sheet-mask') || node.id === 'login-modal')) {
+                                       node.remove();
                                     }
-                                }
 
-                                // Action 2: Hide "Open App" banners & Login prompts
-                                if (hideVariants.some(v => text.includes(v))) {
-                                    // Be careful not to hide the whole page, check strictly for banners/buttons/links
-                                    if (el.tagName === 'BUTTON' || (el.tagName === 'DIV' && el.role === 'button') || el.tagName === 'A') {
-                                         el.style.display = 'none';
+                                    if (node.tagName === 'VIDEO') {
+                                        node.setAttribute('playsinline', 'true');
+                                        node.setAttribute('webkit-playsinline', 'true');
                                     }
-                                    
-                                    // Special case: The sticky bottom login banner
-                                    if (el.tagName === 'DIV' && (text.includes('connexion') || text.includes('log in')) && style.position === 'fixed' && style.bottom === '0px') {
-                                        el.style.display = 'none';
+                                    if (node.querySelectorAll) {
+                                        node.querySelectorAll('video').forEach(v => {
+                                            v.setAttribute('playsinline', 'true');
+                                            v.setAttribute('webkit-playsinline', 'true');
+                                        });
                                     }
-                                }
-                            }
-
-                            // 2. Remove generic overlay masks
-                            const masks = document.querySelectorAll('[class*="mask"], [class*="overlay"]');
-                            masks.forEach(mask => {
-                                mask.style.display = 'none';
-                                mask.style.pointerEvents = 'none';
+                                });
                             });
-                            
-                            // 3. Prevent deep links
-                            document.querySelectorAll('a').forEach(a => {
-                                if (a.href.includes('apps.apple.com') || a.href.includes('tiktok://')) {
-                                    a.href = 'javascript:void(0);';
-                                    a.onclick = function(e) { e.preventDefault(); };
-                                }
-                            });
+                        });
+                        observer.observe(document.body, { childList: true, subtree: true });
 
-                        }, 500);
+                        // --- DISABLE SCROLL PROPAGATION (Prevent Fullscreen) ---
+                         window.addEventListener('scroll', (e) => {
+                            e.stopImmediatePropagation();
+                        }, true);
+
                     })();
                 `}
                 onShouldStartLoadWithRequest={(request) => {

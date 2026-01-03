@@ -1,5 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { router } from 'expo-router';
+import { RichText } from './ui/RichText';
+import { AlterService } from '../services/alters';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -173,6 +175,24 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
         }
     };
 
+    const handleMentionPress = async (mention: string) => {
+        try {
+            const name = mention.replace('@', '').trim();
+            // Search for alter by name
+            const alter = await AlterService.getAlterByName(name);
+
+            if (alter) {
+                // Navigate to alter space
+                router.push(`/alter-space/${alter.id}` as any);
+            } else {
+                // Try searching for system/user maybe? Or just alert not found
+                Alert.alert('Introuvable', `Impossible de trouver le profil de ${name}`);
+            }
+        } catch (error) {
+            console.error('Error handling mention press:', error);
+        }
+    };
+
     const mediaType = getMediaType(post.media_url || '');
 
     return (
@@ -209,7 +229,15 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                 </View >
             )}
 
-            {post.content && <Text style={[styles.content, { color: themeColors?.text || colors.text }]}>{post.content}</Text>}
+            {post.content && (
+                <View style={{ paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
+                    <RichText
+                        content={post.content}
+                        style={[styles.content, { color: themeColors?.text || colors.text, paddingHorizontal: 0, paddingBottom: 0 }]}
+                        onMentionPress={handleMentionPress}
+                    />
+                </View>
+            )}
 
             {(post.media_url || hasMultipleImages) && (
                 <TapGestureHandler ref={doubleTapRef} numberOfTaps={2} onHandlerStateChange={onDoubleTap}>

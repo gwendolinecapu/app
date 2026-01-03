@@ -443,17 +443,20 @@ export default function AlterSpaceScreen() {
             )}
 
             {/* Modals */}
+            {/* Modals */}
             <FollowListModal
                 visible={showFollowersModal}
                 title="Abonnés"
                 userIds={friendIds}
                 onClose={() => setShowFollowersModal(false)}
+                themeColors={themeColors}
             />
             <FollowListModal
                 visible={showFollowingModal}
                 title="Suivis"
                 userIds={followingIds}
                 onClose={() => setShowFollowingModal(false)}
+                themeColors={themeColors}
             />
 
             {/* Effects */}

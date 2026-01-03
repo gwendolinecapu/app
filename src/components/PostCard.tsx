@@ -251,7 +251,13 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                                         <Image source={{ uri: post.media_url }} style={styles.media} resizeMode="cover" />
                                     </TouchableOpacity>
                                 )}
-                                {mediaType === 'video' && <VideoPlayer uri={post.media_url!} autoPlay={false} />}
+                                {mediaType === 'video' && (
+                                    <VideoPlayer
+                                        uri={post.media_url!}
+                                        autoPlay={true}
+                                        onPress={() => router.push(`/post/video/${post.id}` as any)}
+                                    />
+                                )}
                                 {mediaType === 'audio' && <View style={styles.audioWrapper}><AudioPlayer uri={post.media_url!} /></View>}
                             </>
                         )}

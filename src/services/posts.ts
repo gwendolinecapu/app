@@ -357,6 +357,26 @@ export const PostService = {
     },
 
     /**
+     * Upload a video for a post
+     */
+    uploadVideo: async (uri: string, systemId: string): Promise<string> => {
+        try {
+            const response = await fetch(uri);
+            const blob = await response.blob();
+            const filename = `posts/${systemId}/video/${Date.now()}.mp4`;
+            const storageRef = ref(storage, filename);
+
+            await uploadBytes(storageRef, blob, {
+                contentType: 'video/mp4',
+            });
+            return await getDownloadURL(storageRef);
+        } catch (error) {
+            console.error('Error uploading video:', error);
+            throw error;
+        }
+    },
+
+    /**
      * Like or unlike a post
      */
     toggleLike: async (postId: string, userId: string, alterId?: string) => {
@@ -414,6 +434,8 @@ export const PostService = {
                                 created_at: serverTimestamp(),
                                 title: "Nouveau J'aime",
                                 body: `${senderName} a aimé votre publication`,
+                                subtitle: post.content || (post.media_url ? "Photo" : "Publication"),
+                                mediaUrl: post.media_url || null, // Add media URL for thumbnail
                             });
 
                             // Send Push Notification

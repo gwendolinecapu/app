@@ -84,7 +84,9 @@ export async function addComment(input: CreateCommentInput): Promise<Comment> {
                     read: false,
                     created_at: serverTimestamp(),
                     title: "Nouveau commentaire",
-                    body: `${authorName} a commenté votre publication`,
+                    body: `${authorName} a commenté votre publication : "${content}"`,
+                    subtitle: content,
+                    mediaUrl: postData.media_url || null, // Add media URL from post data
                 });
 
                 // Send Push

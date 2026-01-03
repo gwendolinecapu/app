@@ -127,20 +127,35 @@ export const AlterPrimers = ({ alter, editable = false, themeColors }: Props) =>
 
             <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Nouvelle Note</Text>
+                    <View style={[styles.modalContent, themeColors && { backgroundColor: themeColors.backgroundCard }]}>
+                        <Text style={[styles.modalTitle, themeColors && { color: themeColors.text }]}>Nouvelle Note</Text>
 
                         <TextInput
-                            style={styles.input}
+                            style={[
+                                styles.input,
+                                themeColors && {
+                                    backgroundColor: themeColors.background,
+                                    color: themeColors.text,
+                                    borderColor: themeColors.border
+                                }
+                            ]}
                             placeholder="Titre (ex: Triggers, Comforts)"
-                            placeholderTextColor={colors.textMuted}
+                            placeholderTextColor={themeColors ? themeColors.textSecondary : colors.textMuted}
                             value={label}
                             onChangeText={setLabel}
                         />
                         <TextInput
-                            style={[styles.input, styles.textArea]}
+                            style={[
+                                styles.input,
+                                styles.textArea,
+                                themeColors && {
+                                    backgroundColor: themeColors.background,
+                                    color: themeColors.text,
+                                    borderColor: themeColors.border
+                                }
+                            ]}
                             placeholder="Contenu (optionnel)..."
-                            placeholderTextColor={colors.textMuted}
+                            placeholderTextColor={themeColors ? themeColors.textSecondary : colors.textMuted}
                             value={content}
                             onChangeText={setContent}
                             multiline
@@ -148,10 +163,14 @@ export const AlterPrimers = ({ alter, editable = false, themeColors }: Props) =>
 
                         <View style={styles.modalActions}>
                             <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.cancelBtn}>
-                                <Text style={styles.cancelText}>Annuler</Text>
+                                <Text style={[styles.cancelText, themeColors && { color: themeColors.textSecondary }]}>Annuler</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={handleAddPrimer} style={styles.saveBtn} disabled={loading}>
-                                <Text style={styles.saveText}>{loading ? '...' : 'Ajouter'}</Text>
+                            <TouchableOpacity
+                                onPress={handleAddPrimer}
+                                style={[styles.saveBtn, themeColors && { backgroundColor: themeColors.primary }]}
+                                disabled={loading}
+                            >
+                                <Text style={[styles.saveText, themeColors && { color: 'white' }]}>{loading ? '...' : 'Ajouter'}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

@@ -21,6 +21,7 @@ import { CommentsService, Comment } from '../services/comments';
 import { timeAgo } from '../lib/date';
 import { triggerHaptic } from '../lib/haptics';
 import { useAuth } from '../contexts/AuthContext';
+import { ThemeColors } from '../lib/cosmetics';
 
 // =====================================================
 // COMMENTS MODAL
@@ -31,6 +32,7 @@ interface CommentsModalProps {
     visible: boolean;
     postId: string | null;
     onClose: () => void;
+    themeColors?: ThemeColors | null;
 }
 
 interface CommentWithReplies extends Comment {
@@ -41,16 +43,21 @@ const CommentItem = ({
     item,
     onReply,
     onAuthorPress,
-    currentUserId
+    currentUserId,
+    themeColors
 }: {
     item: CommentWithReplies,
     onReply: (c: Comment) => void,
     onAuthorPress: (c: Comment) => void,
-    currentUserId?: string
+    currentUserId?: string,
+    themeColors?: ThemeColors | null
 }) => {
     const [showReplies, setShowReplies] = useState(false);
 
-    // Auto-expand if I just replied? (Skipped for simplicity, inconsistent with "Show replies")
+    // Dynamic colors
+    const textColor = themeColors?.text || colors.text;
+    const textSecondary = themeColors?.textSecondary || colors.textSecondary;
+    const primary = themeColors?.primary || colors.primary;
 
     const handleToggleReplies = () => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -65,7 +72,7 @@ const CommentItem = ({
                     {item.author_avatar ? (
                         <Image source={{ uri: item.author_avatar }} style={styles.avatar} />
                     ) : (
-                        <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
+                        <View style={[styles.avatarPlaceholder, { backgroundColor: primary }]}>
                             <Text style={styles.avatarInitial}>{item.author_name?.charAt(0)}</Text>
                         </View>
                     )}
@@ -73,16 +80,16 @@ const CommentItem = ({
                 <View style={styles.commentContent}>
                     <View style={styles.commentHeaderRow}>
                         <TouchableOpacity style={styles.commentHeader} onPress={() => onAuthorPress(item)}>
-                            <Text style={styles.authorName}>{item.author_name}</Text>
-                            <Text style={styles.timestamp}>{timeAgo(item.created_at)}</Text>
+                            <Text style={[styles.authorName, { color: textColor }]}>{item.author_name}</Text>
+                            <Text style={[styles.timestamp, { color: textSecondary }]}>{timeAgo(item.created_at)}</Text>
                         </TouchableOpacity>
                     </View>
 
-                    <Text style={styles.commentText}>{item.content}</Text>
+                    <Text style={[styles.commentText, { color: textColor }]}>{item.content}</Text>
 
                     <View style={styles.actionRow}>
                         <TouchableOpacity onPress={() => onReply(item)} style={styles.replyButton}>
-                            <Text style={styles.replyButtonText}>Répondre</Text>
+                            <Text style={[styles.replyButtonText, { color: textSecondary }]}>Répondre</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -93,8 +100,8 @@ const CommentItem = ({
                 <View style={styles.repliesContainer}>
                     {!showReplies && (
                         <TouchableOpacity onPress={handleToggleReplies} style={styles.viewRepliesButton}>
-                            <View style={styles.separator} />
-                            <Text style={styles.viewRepliesText}>
+                            <View style={[styles.separator, themeColors && { backgroundColor: themeColors.border }]} />
+                            <Text style={[styles.viewRepliesText, { color: textSecondary }]}>
                                 Voir les {item.replies.length} réponses
                             </Text>
                         </TouchableOpacity>
@@ -103,19 +110,13 @@ const CommentItem = ({
                     {/* Replies List */}
                     {showReplies && (
                         <View>
-                            {/* Hide Replies Button (Optional, usually we just toggle via the same line or just a textual "Hide") */}
-                            {/* <TouchableOpacity onPress={handleToggleReplies} style={styles.viewRepliesButton}>
-                                <View style={styles.separator} />
-                                <Text style={styles.viewRepliesText}>Masquer les réponses</Text>
-                            </TouchableOpacity> */}
-
                             {item.replies.map((reply) => (
                                 <View key={reply.id} style={[styles.commentItem, styles.replyItem]}>
                                     <TouchableOpacity onPress={() => onAuthorPress(reply)}>
                                         {reply.author_avatar ? (
                                             <Image source={{ uri: reply.author_avatar }} style={[styles.avatar, styles.replyAvatar]} />
                                         ) : (
-                                            <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }, styles.replyAvatar]}>
+                                            <View style={[styles.avatarPlaceholder, { backgroundColor: primary }, styles.replyAvatar]}>
                                                 <Text style={styles.avatarInitial}>{reply.author_name?.charAt(0)}</Text>
                                             </View>
                                         )}
@@ -123,28 +124,27 @@ const CommentItem = ({
                                     <View style={styles.commentContent}>
                                         <View style={styles.commentHeaderRow}>
                                             <TouchableOpacity style={styles.commentHeader} onPress={() => onAuthorPress(reply)}>
-                                                <Text style={styles.authorName}>{reply.author_name}</Text>
-                                                <Text style={styles.timestamp}>{timeAgo(reply.created_at)}</Text>
+                                                <Text style={[styles.authorName, { color: textColor }]}>{reply.author_name}</Text>
+                                                <Text style={[styles.timestamp, { color: textSecondary }]}>{timeAgo(reply.created_at)}</Text>
                                             </TouchableOpacity>
                                         </View>
 
-                                        {/* If it was a reply to another sub-reply, maybe show who (User requested "Insta style", context is often inferred or tagged) */}
                                         {reply.reply_to_author_name && reply.reply_to_author_name !== item.author_name && (
-                                            <Text style={styles.replyContext}>@{reply.reply_to_author_name}</Text>
+                                            <Text style={[styles.replyContext, { color: primary }]}>@{reply.reply_to_author_name}</Text>
                                         )}
 
-                                        <Text style={styles.commentText}>{reply.content}</Text>
+                                        <Text style={[styles.commentText, { color: textColor }]}>{reply.content}</Text>
 
                                         <View style={styles.actionRow}>
                                             <TouchableOpacity onPress={() => onReply(reply)} style={styles.replyButton}>
-                                                <Text style={styles.replyButtonText}>Répondre</Text>
+                                                <Text style={[styles.replyButtonText, { color: textSecondary }]}>Répondre</Text>
                                             </TouchableOpacity>
                                         </View>
                                     </View>
                                 </View>
                             ))}
                             <TouchableOpacity onPress={handleToggleReplies} style={styles.hideRepliesButton}>
-                                <Text style={styles.hideRepliesText}>Masquer les réponses</Text>
+                                <Text style={[styles.hideRepliesText, { color: themeColors?.textMuted || colors.textMuted }]}>Masquer les réponses</Text>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -154,7 +154,7 @@ const CommentItem = ({
     );
 };
 
-export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) => {
+export const CommentsModal = ({ visible, postId, onClose, themeColors }: CommentsModalProps) => {
     const { currentAlter, user, system } = useAuth();
     const [comments, setComments] = useState<CommentWithReplies[]>([]);
     const [loading, setLoading] = useState(false);
@@ -164,6 +164,15 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
     const insets = useSafeAreaInsets();
 
     const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
+
+    // Dynamic colors
+    const backgroundColor = themeColors?.backgroundCard || colors.backgroundCard;
+    const textColor = themeColors?.text || colors.text;
+    const textSecondary = themeColors?.textSecondary || colors.textSecondary;
+    const primary = themeColors?.primary || colors.primary;
+    const borderColor = themeColors?.border || colors.border;
+    const placeholderColor = themeColors?.textSecondary ? themeColors.textSecondary + '80' : colors.textMuted;
+
 
     // Charger les commentaires quand le modal s'ouvre
     useEffect(() => {
@@ -214,12 +223,8 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
         // 2. Handle orphans - treat as top level if we can't find parent
         allComments.forEach(c => {
             if (c.parent_id && !commentsMap.has(c.parent_id)) {
-                // Try to see if its parent is actually in the replies map (nested case?), 
-                // but for now treat as top level to show it.
-                // Ideally we'd recursively find root, but with flat fetch limit, just show as is.
                 const p: CommentWithReplies = { ...c, replies: [] };
                 parentComments.push(p);
-                // Also check if this orphan has replies itself
                 const existingReplies = repliesMap.get(c.id);
                 if (existingReplies) {
                     p.replies = existingReplies.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
@@ -268,11 +273,6 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
                 replyToAuthorId: replyingTo?.author_id,
             });
 
-            // Re-fetch or manually insert
-            // Manually inserting into nested structure is complex because we need to find the parent.
-            // Easiest is to just re-organize the whole list with the new item.
-            // But we only have `comments` (structured). We need raw comments state or reconstruct it.
-
             // Reconstruct flat list to add new comment and re-organize
             const currentFlat = comments.flatMap(p => [p, ...p.replies]);
             const updatedFlat = [comment, ...currentFlat];
@@ -315,7 +315,7 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
             onRequestClose={onClose}
         >
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.container}
             >
                 {/* Backdrop */}
@@ -328,31 +328,31 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
                 />
 
                 {/* Content */}
-                <View style={styles.content}>
+                <View style={[styles.content, { backgroundColor }]}>
                     {/* Header */}
-                    <View style={styles.header}>
-                        <View style={styles.handle} />
-                        <Text style={styles.title} accessibilityRole="header">Commentaires</Text>
+                    <View style={[styles.header, { borderBottomColor: borderColor }]}>
+                        <View style={[styles.handle, { backgroundColor: borderColor }]} />
+                        <Text style={[styles.title, { color: textColor }]} accessibilityRole="header">Commentaires</Text>
                         <TouchableOpacity
                             onPress={onClose}
                             style={styles.closeButton}
                             accessibilityLabel="Fermer"
                             accessibilityRole="button"
                         >
-                            <Ionicons name="close" size={24} color={colors.textSecondary} />
+                            <Ionicons name="close" size={24} color={textSecondary} />
                         </TouchableOpacity>
                     </View>
 
                     {/* Comments List */}
                     {loading ? (
                         <View style={styles.loadingContainer}>
-                            <ActivityIndicator color={colors.primary} />
+                            <ActivityIndicator color={primary} />
                         </View>
                     ) : comments.length === 0 ? (
                         <View style={styles.emptyContainer}>
-                            <Ionicons name="chatbubble-outline" size={48} color={colors.textMuted} />
-                            <Text style={styles.emptyText}>Aucun commentaire pour le moment</Text>
-                            <Text style={styles.emptySubtext}>Sois le premier à commenter !</Text>
+                            <Ionicons name="chatbubble-outline" size={48} color={themeColors?.textMuted || colors.textMuted} />
+                            <Text style={[styles.emptyText, { color: textSecondary }]}>Aucun commentaire pour le moment</Text>
+                            <Text style={[styles.emptySubtext, { color: themeColors?.textMuted || colors.textMuted }]}>Sois le premier à commenter !</Text>
                         </View>
                     ) : (
                         <FlatList
@@ -363,6 +363,7 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
                                     onReply={handleReply}
                                     onAuthorPress={handleAuthorPress}
                                     currentUserId={user?.uid}
+                                    themeColors={themeColors}
                                 />
                             )}
                             keyExtractor={item => item.id}
@@ -373,40 +374,52 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
 
                     {/* Replying Banner */}
                     {replyingTo && (
-                        <View style={styles.replyBanner}>
-                            <Text style={styles.replyBannerText}>
+                        <View style={[styles.replyBanner, { backgroundColor: themeColors?.background || colors.backgroundLight, borderTopColor: borderColor }]}>
+                            <Text style={[styles.replyBannerText, { color: textColor }]}>
                                 Répondre à <Text style={{ fontWeight: 'bold' }}>{replyingTo.author_name}</Text>
                             </Text>
                             <TouchableOpacity onPress={() => setReplyingTo(null)}>
-                                <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+                                <Ionicons name="close-circle" size={20} color={textSecondary} />
                             </TouchableOpacity>
                         </View>
                     )}
 
                     {/* Input */}
-                    <View style={[styles.inputContainer, { paddingBottom: Platform.OS === 'android' ? 50 : Math.max(insets.bottom, 20) + spacing.md }]}>
+                    <View style={[
+                        styles.inputContainer,
+                        {
+                            borderTopColor: borderColor,
+                            paddingBottom: Platform.OS === 'android' ? 20 : Math.max(insets.bottom, 20) + spacing.md
+                        }
+                    ]}>
                         {currentAlter?.avatar || currentAlter?.avatar_url ? (
                             <Image
                                 source={{ uri: currentAlter.avatar || currentAlter.avatar_url }}
                                 style={styles.inputAvatar}
                             />
                         ) : (
-                            <View style={[styles.inputAvatarPlaceholder, { backgroundColor: colors.primary }]}>
+                            <View style={[styles.inputAvatarPlaceholder, { backgroundColor: primary }]}>
                                 <Text style={styles.inputAvatarInitial}>{currentAlter?.name?.charAt(0) || '?'}</Text>
                             </View>
                         )}
                         <TextInput
                             ref={inputRef}
-                            style={styles.input}
+                            style={[
+                                styles.input,
+                                {
+                                    backgroundColor: themeColors?.background || colors.backgroundLight,
+                                    color: textColor
+                                }
+                            ]}
                             placeholder={replyingTo ? "Écrivez une réponse..." : "Ajouter un commentaire..."}
-                            placeholderTextColor={colors.textMuted}
+                            placeholderTextColor={placeholderColor}
                             value={newComment}
                             onChangeText={setNewComment}
                             multiline
                             maxLength={500}
                         />
                         <TouchableOpacity
-                            style={[styles.sendButton, (!newComment.trim() || sending) && styles.sendButtonDisabled]}
+                            style={[styles.sendButton, { backgroundColor: primary }, (!newComment.trim() || sending) && styles.sendButtonDisabled]}
                             onPress={handleSend}
                             disabled={!newComment.trim() || sending}
                             accessibilityLabel="Envoyer le commentaire"
@@ -590,7 +603,6 @@ const styles = StyleSheet.create({
     },
     replyItem: {
         marginTop: spacing.xs,
-        // Removed extra padding to align with "View replies" line which is now aligned with parent content
     },
     replyAvatar: {
         width: 24,
@@ -603,7 +615,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     replyButton: {
-        // marginTop: 4, // Moved to actionRow
     },
     replyButtonText: {
         ...typography.caption,

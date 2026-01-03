@@ -16,9 +16,10 @@ interface VideoPlayerProps {
     uri: string;
     autoPlay?: boolean;
     style?: any;
+    onPress?: () => void;
 }
 
-export const VideoPlayer = ({ uri, autoPlay = true, style }: VideoPlayerProps) => {
+export const VideoPlayer = ({ uri, autoPlay = true, style, onPress }: VideoPlayerProps) => {
     const videoRef = useRef<Video>(null);
     const [status, setStatus] = useState<AVPlaybackStatus | null>(null);
     const [showControls, setShowControls] = useState(false);
@@ -44,6 +45,10 @@ export const VideoPlayer = ({ uri, autoPlay = true, style }: VideoPlayerProps) =
     }, [isMuted, status]);
 
     const handlePress = () => {
+        if (onPress) {
+            onPress();
+            return;
+        }
         setShowControls(prev => !prev);
         // Auto-hide after 3s
         setTimeout(() => setShowControls(false), 3000);

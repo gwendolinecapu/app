@@ -1,9 +1,15 @@
 # Changelog
 
+## [2026-01-04] Correctifs & Améliorations 🔧
+- **Cosmétiques**: Augmentation de l'échelle du cadre **Flammes** (`frame_flames_v2`) de 5% (1.0 -> 1.05) pour un rendu plus imposant.
+- **Shop**: Correctif critique pour l'achat de crédits en mode DEV. La vérification manquait le champ `priceIAP`, empêchant la détection des packs.
+
 ## [2026-01-03] Ajout Cadres Animés (Tropical & Flammes) 🌴🔥
 ### Boutique (Shop)
 - **Nouveau Cosmétique** : Ajout du cadre **Tropical** (`frame_tropical`) avec ambiance vacances et cocotiers (Animé).
 - **Mise à jour Cosmétique** : V5 "Realistic Fire" pour le cadre **Flammes** (`frame_flames`) : Anneau de feu rotatif avec pulsation "Respiration" et particules de flammes dynamiques.
+- **Shop**: Implemented Dev Mode bypass for credit purchases. In development, clicking a credit pack now grants credits directly without triggering RevenueCat, allowing for easier testing.
+- **Shop**: Added new frames: `frame_nature_mystic`, `frame_crystal_cavern`, `frame_jungle_ruins`, `frame_arctic_winter`, `frame_coral_reef`, `frame_pirate_wreck`.
 - **Nouveau Cosmétique** : Ajout du cadre **Mystic Mushroom** (`frame_nature_mystic`) avec ambiance forêt enchantée, spores lumineux flottants et effet de lueur magique (Animé).
 - **Nouveau Cosmétique** : Ajout du cadre **Bamboo Sanctuary** (`frame_bamboo_sanctuary`) - Zen et apaisant.
 - **Nouveau Cosmétique** : Ajout du cadre **Jungle Ruins** (`frame_jungle_ruins`) - Lianes et pierres anciennes.

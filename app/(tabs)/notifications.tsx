@@ -58,6 +58,12 @@ interface NotificationSection {
 
 export default function NotificationsScreen() {
     const { currentAlter, alters, user } = useAuth();
+    const themeColor = currentAlter?.color || colors.primary;
+    console.log('Notification Theme Debug:', {
+        alterName: currentAlter?.name,
+        alterColor: currentAlter?.color,
+        resolvedThemeColor: themeColor
+    });
     const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [refreshing, setRefreshing] = useState(true);
@@ -136,6 +142,40 @@ export default function NotificationsScreen() {
                     timestamp: data.created_at?.toDate() || new Date()
                 } as Notification);
             });
+
+            // Enrich Notifications that are missing actor info OR have generic placeholder
+            const notificationsToEnrich = loadedNotifications.filter(n => (!n.actorName || n.actorName.includes('tilisateur') || n.actorName === '?') && n.senderId);
+            if (notificationsToEnrich.length > 0) {
+                console.log('Enriching', notificationsToEnrich.length, 'notifications');
+                await Promise.all(notificationsToEnrich.map(async (n) => {
+                    if (n.senderId) {
+                        const name = await getSenderName(n.senderId);
+                        if (name && !name.includes('Utilisateur')) {
+                            n.actorName = name;
+                        }
+
+                        // Try to get avatar too if missing
+                        if (!n.actorAvatar) {
+                            try {
+                                const { doc, getDoc } = await import('firebase/firestore');
+                                const { db } = await import('../../src/lib/firebase');
+                                const alterSnap = await getDoc(doc(db, 'alters', n.senderId!));
+                                if (alterSnap.exists()) {
+                                    n.actorAvatar = alterSnap.data().avatar || alterSnap.data().avatar_url;
+                                } else {
+                                    // Try system
+                                    const sysSnap = await getDoc(doc(db, 'systems', n.senderId!));
+                                    if (sysSnap.exists()) n.actorAvatar = sysSnap.data().avatar_url || sysSnap.data().avatar;
+                                }
+                            } catch (e) {
+                                console.log('Error fetching avatar for', n.senderId, e);
+                            }
+                        }
+                    } else {
+                        console.log('Notification missing senderId:', n.id, n);
+                    }
+                }));
+            }
 
             // Ajouter les demandes d'amis comme notifications (si non dupliquées)
             enrichedRequests.forEach(req => {
@@ -276,7 +316,7 @@ export default function NotificationsScreen() {
 
         return (
             <View style={[styles.requestCard, isAccepted && { opacity: 0.6, backgroundColor: colors.backgroundLight + '40' }]}>
-                <View style={[styles.requestAvatar, isAccepted && { backgroundColor: colors.textMuted }]}>
+                <View style={[styles.requestAvatar, isAccepted && { backgroundColor: colors.textMuted }, !isAccepted && { backgroundColor: themeColor }]}>
                     <Text style={styles.requestAvatarText}>
                         {senderName.charAt(0).toUpperCase()}
                     </Text>
@@ -294,7 +334,7 @@ export default function NotificationsScreen() {
                         </View>
                     ) : (
                         <>
-                            <AnimatedPressable style={styles.acceptButton} onPress={() => handleAcceptRequest(item.id)}>
+                            <AnimatedPressable style={[styles.acceptButton, { backgroundColor: themeColor }]} onPress={() => handleAcceptRequest(item.id)}>
                                 <Text style={styles.acceptButtonText}>Accepter</Text>
                             </AnimatedPressable>
                             <AnimatedPressable style={styles.rejectButton} onPress={() => handleRejectRequest(item.id)}>
@@ -340,7 +380,11 @@ export default function NotificationsScreen() {
             <AnimatedPressable
                 style={[
                     styles.notificationItem,
-                    !item.isRead && { backgroundColor: colors.primary + '05' }
+                    !item.isRead && {
+                        backgroundColor: themeColor + '20',
+                        borderLeftWidth: 4,
+                        borderLeftColor: themeColor
+                    }
                 ]}
                 onPress={handlePress}
             >
@@ -353,7 +397,7 @@ export default function NotificationsScreen() {
                                 style={styles.notificationAvatar}
                             />
                         ) : (
-                            <View style={[styles.notificationAvatar, { backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' }]}>
+                            <View style={[styles.notificationAvatar, { backgroundColor: themeColor, justifyContent: 'center', alignItems: 'center' }]}>
                                 <Text style={{ color: 'white', fontWeight: 'bold' }}>{item.actorName?.[0] || '?'}</Text>
                             </View>
                         )}
@@ -372,10 +416,11 @@ export default function NotificationsScreen() {
                         <Text style={styles.username}>{item.actorName || "Un utilisateur"}</Text>
                         <Text style={styles.actionText}>
                             {item.type === 'like' && " a aimé votre publication."}
-                            {item.type === 'comment' && (item.subtitle ? ` a commenté : "${item.subtitle}"` : " a commenté votre publication.")}
+                            {item.type === 'comment' && ` a commenté : "${item.subtitle || ''}"`}
                             {item.type === 'follow' && " a commencé à vous suivre."}
                             {item.type === 'mention' && " vous a mentionné."}
                             {item.type === 'friend_request' && " vous a envoyé une demande d'ami."}
+                            {!['like', 'comment', 'follow', 'mention', 'friend_request'].includes(item.type) && " : Nouvelle notification"}
                         </Text>
                         <Text style={styles.timeText}> {time_ago}</Text>
                     </Text>
@@ -390,7 +435,7 @@ export default function NotificationsScreen() {
                         />
                     </TouchableOpacity>
                 ) : item.type === 'follow' || item.type === 'friend_request' ? (
-                    <TouchableOpacity style={styles.followButtonSmall}>
+                    <TouchableOpacity style={[styles.followButtonSmall, { backgroundColor: themeColor }]}>
                         <Text style={styles.followButtonText}>Suivre</Text>
                     </TouchableOpacity>
                 ) : null}
@@ -420,21 +465,23 @@ export default function NotificationsScreen() {
                 <TouchableOpacity
                     onPress={() => {
                         if (currentAlter) {
-                            router.push({ pathname: '/alter-space/[alterId]', params: { alterId: currentAlter.id } });
-                        } else {
-                            router.back();
-                        }
-                    }}
-                    style={styles.backButton}
-                >
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Notifications</Text>
-                {hasContent && (
-                    <TouchableOpacity onPress={handleClearAll}>
-                        <Text style={styles.clearAllText}>Tout effacer</Text>
-                    </TouchableOpacity>
-                )}
+                <View>
+                    <Text style={styles.title}>Notifications</Text>
+                     {/* DEBUG: Temporary visualization */}
+                    <Text style={{ fontSize: 10, color: themeColor }}>
+                        Thème: {currentAlter?.name || 'Système'} ({themeColor})
+                    </Text>
+                </View>
+                            {
+                                hasContent && (
+                                    <TouchableOpacity onPress={handleClearAll}>
+                                        <Text style={[styles.clearAllText, { color: themeColor }]}>Tout effacer</Text>
+                                    </TouchableOpacity>
+                                )
+                            }
             </View>
 
             <FlatList
@@ -446,7 +493,7 @@ export default function NotificationsScreen() {
                         {friendRequests.length > 0 && (
                             <View style={styles.section}>
                                 <View style={styles.sectionHeader}>
-                                    <Ionicons name="person-add" size={20} color={colors.primary} />
+                                    <Ionicons name="person-add" size={20} color={themeColor} />
                                     <Text style={styles.sectionTitle}>
                                         Demandes d'amis ({friendRequests.length})
                                     </Text>
@@ -463,7 +510,7 @@ export default function NotificationsScreen() {
                         {notifications.filter(n => n.type !== 'friend_request').length > 0 && (
                             <View style={styles.section}>
                                 <View style={styles.sectionHeader}>
-                                    <Ionicons name="pulse" size={20} color={colors.secondary || '#6366F1'} />
+                                    <Ionicons name="pulse" size={20} color={themeColor} />
                                     <Text style={styles.sectionTitle}>Activité récente</Text>
                                 </View>
                                 {notifications
@@ -483,7 +530,7 @@ export default function NotificationsScreen() {
                     <RefreshControl
                         refreshing={refreshing}
                         onRefresh={onRefresh}
-                        tintColor={colors.primary}
+                        tintColor={themeColor}
                     />
                 }
                 contentContainerStyle={styles.listContent}

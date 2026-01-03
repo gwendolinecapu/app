@@ -184,6 +184,18 @@
 - **Navigation**: Search results now link directly to the correct profile or alter-space.
 - **Data Model**: Added `email` to `PublicProfile` for improved discoverability.
 
+## [2026-01-03] Theme System & UI Audit 🎨
+### Global Theme Integration
+- **Refactoring**:
+    - Updated `AlterSocialView` to utilize dynamic `themeColors` for header and loading states, ensuring a consistent look with the equipped theme.
+    - Updated `AlterBubble` to use theme colors for selection borders and add buttons, replacing hardcoded primary colors.
+    - Updated `PostCard` to fully respect `themeColors` prop for avatar placeholders, text, and media containers.
+    - Updated `MessageBubble` to dynamically style "Mine" bubbles with the theme's primary color and respect sender's theme for text colors.
+- **UI Improvements**:
+    - Implemented a "Double Tap to Like" feature in `AlterSocialView` (TikTok-like webview) with heart animation.
+    - Improved `AlterSocialView` CSS injection to hide desktop-specific elements and force full-screen video layout.
+    - Added comprehensive clean-up logic to remove "Open App" banners and login modals in the WebView.
+
 - **Profile 2.0 Enhancements & Fixes**:
     - Fixed crash in Post Detail view (service naming and parameter alignment).
     - Removed redundant Expo Router header in Post Detail view.

@@ -188,32 +188,32 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                             {post.author_avatar ? (
                                 <Image source={{ uri: post.author_avatar }} style={styles.avatar} />
                             ) : (
-                                <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
+                                <View style={[styles.avatarPlaceholder, { backgroundColor: themeColors?.primary || colors.primary }]}>
                                     <Text style={styles.avatarInitial}>{post.author_name?.charAt(0)}</Text>
                                 </View>
                             )}
                         </FrontIndicator>
                         <View>
                             <View style={styles.authorNameRow}>
-                                <Text style={[styles.authorName, themeColors && { color: themeColors.text }]}>{post.author_name || 'Utilisateur'}</Text>
+                                <Text style={[styles.authorName, { color: themeColors?.text || colors.text }]}>{post.author_name || 'Utilisateur'}</Text>
                                 {post.is_author_fronting && (
                                     <View style={styles.frontBadge}><Text style={styles.frontBadgeText}>En front</Text></View>
                                 )}
                             </View>
-                            <Text style={styles.timestamp}>{timeAgo(post.created_at)}</Text>
+                            <Text style={[styles.timestamp, { color: themeColors?.textSecondary || colors.textSecondary }]}>{timeAgo(post.created_at)}</Text>
                         </View>
                     </AnimatedPressable >
                     <TouchableOpacity onPress={handleOptions} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <Ionicons name="ellipsis-horizontal" size={20} color={colors.textSecondary} />
+                        <Ionicons name="ellipsis-horizontal" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
                     </TouchableOpacity>
                 </View >
             )}
 
-            {post.content && <Text style={[styles.content, themeColors && { color: themeColors.text }]}>{post.content}</Text>}
+            {post.content && <Text style={[styles.content, { color: themeColors?.text || colors.text }]}>{post.content}</Text>}
 
             {(post.media_url || hasMultipleImages) && (
                 <TapGestureHandler ref={doubleTapRef} numberOfTaps={2} onHandlerStateChange={onDoubleTap}>
-                    <View style={styles.mediaContainer}>
+                    <View style={[styles.mediaContainer, { backgroundColor: themeColors?.background || colors.backgroundLight }]}>
                         {hasMultipleImages ? (
                             <ImageCarousel images={post.media_urls!} onImagePress={handleImagePress} />
                         ) : (

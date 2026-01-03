@@ -3,6 +3,7 @@ import {
     collection,
     addDoc,
     getDocs,
+    getDoc,
     deleteDoc,
     doc,
     query,
@@ -76,7 +77,7 @@ export async function fetchComments(postId: string, limitCount: number = 20): Pr
 
     const snapshot = await getDocs(q);
 
-    return snapshot.docs.map(doc => {
+    const comments = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
             id: doc.id,
@@ -89,6 +90,49 @@ export async function fetchComments(postId: string, limitCount: number = 20): Pr
                 ? data.created_at.toDate().toISOString()
                 : data.created_at,
         };
+    });
+
+    return await _enrichCommentsWithAuthors(comments);
+}
+
+/**
+ * Enrichit les commentaires avec les données d'auteur les plus récentes
+ */
+async function _enrichCommentsWithAuthors(comments: Comment[]): Promise<Comment[]> {
+    if (comments.length === 0) return comments;
+
+    const authorIds = new Set(comments.map(c => c.author_id));
+    const authorsMap = new Map<string, any>();
+
+    await Promise.all(Array.from(authorIds).map(async (id) => {
+        try {
+            // Check if it's an alter
+            const alterDoc = await getDoc(doc(db, 'alters', id));
+            if (alterDoc.exists()) {
+                authorsMap.set(id, { ...alterDoc.data(), type: 'alter' });
+                return;
+            }
+            // Check if it's a system
+            const systemDoc = await getDoc(doc(db, 'systems', id));
+            if (systemDoc.exists()) {
+                authorsMap.set(id, { ...systemDoc.data(), type: 'system' });
+            }
+        } catch (e) {
+            console.warn(`Failed to fetch author ${id}`, e);
+        }
+    }));
+
+    return comments.map(comment => {
+        const author = authorsMap.get(comment.author_id);
+        if (author) {
+            return {
+                ...comment,
+                author_name: (author.type === 'alter' ? author.name : author.username) || comment.author_name,
+                author_avatar: (author.type === 'alter' ? (author.avatar || author.avatar_url) : author.avatar_url) || comment.author_avatar,
+                system_id: author.type === 'system' ? author.id : (author.system_id || author.userId || author.systemId),
+            };
+        }
+        return comment;
     });
 }
 

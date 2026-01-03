@@ -27,6 +27,7 @@ interface PostCardProps {
     onShare?: (postId: string) => void;
     onAuthorPress?: (authorId: string, systemId?: string) => void;
     currentUserId?: string;
+    onDelete?: (postId: string) => void;
     showAuthor?: boolean;
     themeColors?: any; // ThemeColors
 }
@@ -34,7 +35,7 @@ interface PostCardProps {
 const { width } = Dimensions.get('window');
 const AnimatedIcon = Animated.createAnimatedComponent(Ionicons);
 
-export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthorPress, currentUserId, showAuthor = true, themeColors }: PostCardProps) => {
+export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthorPress, currentUserId, onDelete, showAuthor = true, themeColors }: PostCardProps) => {
     const doubleTapRef = useRef(null);
     const likeScale = useRef(new Animated.Value(0)).current;
     const heartScale = useRef(new Animated.Value(1)).current;
@@ -44,6 +45,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
     const [reportModalVisible, setReportModalVisible] = useState(false);
 
     const isLiked = currentUserId && post.likes?.includes(currentUserId);
+    const isOwner = currentUserId && post.system_id === currentUserId;
     const hasMultipleImages = post.media_urls && post.media_urls.length > 1;
     const allImages = hasMultipleImages ? post.media_urls : post.media_url ? [post.media_url] : [];
 
@@ -101,16 +103,59 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
     };
 
     const handleOptions = () => {
-        const options = ['Signaler', 'Annuler'];
-        if (Platform.OS === 'ios') {
-            ActionSheetIOS.showActionSheetWithOptions({ options, cancelButtonIndex: 1, destructiveButtonIndex: 0 },
-                (buttonIndex) => { if (buttonIndex === 0) setReportModalVisible(true); }
-            );
+        if (isOwner) {
+            const options = ['Supprimer', 'Annuler'];
+            if (Platform.OS === 'ios') {
+                ActionSheetIOS.showActionSheetWithOptions(
+                    { options, cancelButtonIndex: 1, destructiveButtonIndex: 0 },
+                    (buttonIndex) => {
+                        if (buttonIndex === 0 && onDelete) {
+                            Alert.alert(
+                                'Supprimer la publication',
+                                'Êtes-vous sûr de vouloir supprimer cette publication ?',
+                                [
+                                    { text: 'Annuler', style: 'cancel' },
+                                    {
+                                        text: 'Supprimer',
+                                        style: 'destructive',
+                                        onPress: () => onDelete(post.id)
+                                    }
+                                ]
+                            );
+                        }
+                    }
+                );
+            } else {
+                Alert.alert('Options', '', [
+                    { text: 'Annuler', style: 'cancel' },
+                    {
+                        text: 'Supprimer',
+                        style: 'destructive',
+                        onPress: () => {
+                            Alert.alert(
+                                'Supprimer la publication',
+                                'Êtes-vous sûr de vouloir supprimer cette publication ?',
+                                [
+                                    { text: 'Annuler', style: 'cancel' },
+                                    { text: 'Supprimer', style: 'destructive', onPress: () => onDelete && onDelete(post.id) }
+                                ]
+                            );
+                        }
+                    },
+                ]);
+            }
         } else {
-            Alert.alert('Options', '', [
-                { text: 'Annuler', style: 'cancel' },
-                { text: 'Signaler', style: 'destructive', onPress: () => setReportModalVisible(true) },
-            ]);
+            const options = ['Signaler', 'Annuler'];
+            if (Platform.OS === 'ios') {
+                ActionSheetIOS.showActionSheetWithOptions({ options, cancelButtonIndex: 1, destructiveButtonIndex: 0 },
+                    (buttonIndex) => { if (buttonIndex === 0) setReportModalVisible(true); }
+                );
+            } else {
+                Alert.alert('Options', '', [
+                    { text: 'Annuler', style: 'cancel' },
+                    { text: 'Signaler', style: 'destructive', onPress: () => setReportModalVisible(true) },
+                ]);
+            }
         }
     };
 
@@ -150,7 +195,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                         </FrontIndicator>
                         <View>
                             <View style={styles.authorNameRow}>
-                                <Text style={[styles.authorName, themeColors && { color: themeColors.text }]}>{post.author_name || 'Système'}</Text>
+                                <Text style={[styles.authorName, themeColors && { color: themeColors.text }]}>{post.author_name || 'Utilisateur'}</Text>
                                 {post.is_author_fronting && (
                                     <View style={styles.frontBadge}><Text style={styles.frontBadgeText}>En front</Text></View>
                                 )}

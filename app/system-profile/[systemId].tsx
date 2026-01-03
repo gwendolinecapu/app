@@ -92,7 +92,7 @@ export default function SystemProfileScreen() {
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>
-                    {system?.username || system?.name || "Système"}
+                    {system?.username || "Profil Système"}
                 </Text>
                 <View style={{ width: 40 }} />
             </View>
@@ -108,6 +108,7 @@ export default function SystemProfileScreen() {
                                 onPress={() => handleAlterPress(alter)}
                                 size={80}
                                 showName={true}
+                                isActive={alter.is_active || false}
                             />
                         </View>
                     ))}

@@ -41,7 +41,7 @@ interface FeedProps {
 const AD_INTERVAL = 5; // Une pub tous les 5 posts
 
 export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, themeColors }: FeedProps): React.JSX.Element => {
-    const { user } = useAuth();
+    const { user, currentAlter } = useAuth();
     const [rawPosts, setRawPosts] = useState<Post[]>([]); // Posts bruts sans ads
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -172,7 +172,7 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
                 return post;
             }));
 
-            await PostService.toggleLike(postId, user.uid);
+            await PostService.toggleLike(postId, user.uid, currentAlter?.id);
         } catch (error) {
             console.error('Like failed', error);
         }

@@ -12,6 +12,7 @@ interface Props {
     initialUrl?: string;
 }
 
+import { getThemeColors } from '../../lib/cosmetics';
 const PLATFORM_URLS: Record<SupportedPlatform, string> = {
     tiktok: 'https://www.tiktok.com',
     instagram: 'https://www.instagram.com',
@@ -58,27 +59,35 @@ export default function AlterSocialView({ alter, platform, initialUrl }: Props) 
         router.back();
     };
 
+    // --- THEME COLORS ---
+    const themeColors = getThemeColors(alter.equipped_items?.theme);
+    // Default to black/dark for social view if no theme, but allow theme override
+    const backgroundColor = themeColors?.background || '#000';
+    const headerColor = themeColors?.backgroundCard || '#000';
+    const textColor = themeColors?.text || '#fff';
+    const borderColor = themeColors?.border || '#333';
+
     if (!isReady) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#FF0050" />
-                <Text style={styles.loadingText}>Connexion au compte de {alter.name}...</Text>
+            <View style={[styles.loadingContainer, { backgroundColor }]}>
+                <ActivityIndicator size="large" color={themeColors?.primary || "#FF0050"} />
+                <Text style={[styles.loadingText, { color: textColor }]}>Connexion au compte de {alter.name}...</Text>
             </View>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
+        <SafeAreaView style={[styles.container, { backgroundColor }]}>
+            <View style={[styles.header, { backgroundColor: headerColor, borderBottomColor: borderColor }]}>
                 <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-                    <Ionicons name="close" size={24} color="#fff" />
+                    <Ionicons name="close" size={24} color={textColor} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{platform.charAt(0).toUpperCase() + platform.slice(1)} ({alter.name})</Text>
+                <Text style={[styles.headerTitle, { color: textColor }]}>{platform.charAt(0).toUpperCase() + platform.slice(1)} ({alter.name})</Text>
             </View>
             <WebView
                 ref={webViewRef}
                 source={{ uri: url }}
-                style={styles.webview}
+                style={[styles.webview, { backgroundColor }]}
                 sharedCookiesEnabled={true} // Important for Android
                 thirdPartyCookiesEnabled={true} // Important for Android
                 domStorageEnabled={true}
@@ -377,7 +386,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#333',
-        backgroundColor: '#000',
+        // backgroundColor set dynamically via style prop
     },
     closeButton: {
         padding: 5,

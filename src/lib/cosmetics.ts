@@ -340,6 +340,17 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                     shadowRadius: 8,
                 }
             };
+        case 'frame_tropical':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible', // Important pour que l'image dépasse
+                },
+                imageSource: require('../../assets/frames/frame_tropical.png'),
+            };
         case 'frame_anim_sakura':
             // Cadre Sakura animé - utilise le composant SakuraFrame
             return {
@@ -357,6 +368,19 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                 // Flag pour indiquer qu'il faut utiliser le composant animé
                 isAnimated: true,
                 animationComponent: 'SakuraFrame',
+            };
+        case 'frame_nature_mystic':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                isAnimated: true,
+                animationComponent: 'NatureMysticFrame',
+                imageSource: require('../../assets/frames/frame_nature_mystic.png'),
             };
 
         default:

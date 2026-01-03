@@ -12,6 +12,9 @@ import { SystemRelationships } from '../SystemRelationships';
 import { Skeleton } from '../ui/Skeleton';
 import { getFrameStyle, ThemeColors, getCosmeticItem } from '../../lib/cosmetics';
 import { SakuraFrame } from '../effects/SakuraPetals';
+import { TropicalFrame } from '../effects/TropicalLeaves';
+import { FlameFrame } from '../effects/FlameFrame';
+import { NatureMysticFrame } from '../effects/NatureMysticFrame';
 
 const ROLE_DEFINITIONS: Record<string, string> = {
     'host': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
@@ -149,6 +152,21 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 <SakuraFrame size={88}>
                     <AvatarContent />
                 </SakuraFrame>
+            ) : alter.equipped_items?.frame === 'frame_tropical' ? (
+                // Cadre Tropical animé avec feuilles
+                <TropicalFrame size={88}>
+                    <AvatarContent />
+                </TropicalFrame>
+            ) : alter.equipped_items?.frame === 'frame_flames' ? (
+                // Cadre Flammes animé
+                <FlameFrame size={88}>
+                    <AvatarContent />
+                </FlameFrame>
+            ) : alter.equipped_items?.frame === 'frame_nature_mystic' ? (
+                // Cadre Nature Mystic animé
+                <NatureMysticFrame size={88}>
+                    <AvatarContent />
+                </NatureMysticFrame>
             ) : (
                 // Cadre standard ou Image Frame
                 <View style={[

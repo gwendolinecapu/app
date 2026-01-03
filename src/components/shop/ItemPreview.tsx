@@ -21,12 +21,16 @@ import Animated, {
     withRepeat,
     withTiming,
     withDelay,
+    withSequence,
     Easing
 } from 'react-native-reanimated';
 import { ShopItem } from '../../services/MonetizationTypes';
 import { colors } from '../../lib/theme';
 import { getThemeColors, getFrameStyle } from '../../lib/cosmetics';
 import { SakuraFrameMini } from '../effects/SakuraPetals';
+import { TropicalFrameMini } from '../effects/TropicalLeaves';
+import { FlameFrameMini } from '../effects/FlameFrame';
+import { NatureMysticFrameMini } from '../effects/NatureMysticFrame';
 
 // ==================== MINI SNOWFALL (for Winter theme) ====================
 
@@ -82,7 +86,7 @@ interface ItemPreviewProps {
 }
 
 export const ItemPreview = React.memo(({ item, size = 'small' }: ItemPreviewProps) => {
-    const isAnimated = item.id.includes('anim_');
+    const isAnimated = item.isAnimated || item.id.includes('anim_') || item.id === 'frame_tropical' || item.id === 'frame_flames' || item.id === 'frame_nature_mystic';
 
     // Scale factor based on size
     const scale = size === 'large' ? 1.8 : size === 'medium' ? 1.3 : 1;
@@ -171,12 +175,41 @@ const ThemePreview = React.memo(({ item, scale, isAnimated }: { item: ShopItem; 
 
 // ==================== FRAME PREVIEW ====================
 
+// ==================== FRAME PREVIEW ====================
+
 const FramePreview = React.memo(({ item, scale, isAnimated }: { item: ShopItem; scale: number; isAnimated: boolean }) => {
     // Special Sakura frame
     if (item.id === 'frame_anim_sakura') {
         return (
             <View style={[styles.framePreviewContainer, { transform: [{ scale }] }]}>
                 <SakuraFrameMini />
+            </View>
+        );
+    }
+
+    // Special Tropical frame
+    if (item.id === 'frame_tropical' && isAnimated) {
+        return (
+            <View style={[styles.framePreviewContainer, { transform: [{ scale }] }]}>
+                <TropicalFrameMini />
+            </View>
+        );
+    }
+
+    // Special Flame frame
+    if (item.id === 'frame_flames') {
+        return (
+            <View style={[styles.framePreviewContainer, { transform: [{ scale }] }]}>
+                <FlameFrameMini />
+            </View>
+        );
+    }
+
+    // Special Nature Mystic frame
+    if (item.id === 'frame_nature_mystic') {
+        return (
+            <View style={[styles.framePreviewContainer, { transform: [{ scale }] }]}>
+                <NatureMysticFrameMini />
             </View>
         );
     }
@@ -218,7 +251,7 @@ const FramePreview = React.memo(({ item, scale, isAnimated }: { item: ShopItem; 
                 )}
             </View>
 
-            {isAnimated && (
+            {isAnimated && !['frame_tropical', 'frame_anim_sakura', 'frame_flames'].includes(item.id) && (
                 <View style={styles.animatedBadgeSmall}>
                     <Text style={styles.animatedTextSmall}>✨</Text>
                 </View>

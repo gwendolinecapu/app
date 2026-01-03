@@ -124,9 +124,12 @@ export const PostService = {
             }
 
             // Fallback to system info
+            const resolvedName = system?.username || system?.email?.split('@')[0] || 'Utilisateur';
+            const finalName = resolvedName === 'Système' && system?.username ? system.username : resolvedName;
+
             return {
                 ...post,
-                author_name: system?.username || post.author_name || 'Utilisateur',
+                author_name: finalName || post.author_name || 'Utilisateur',
                 author_avatar: system?.avatar_url || post.author_avatar,
             };
         });

@@ -125,11 +125,19 @@ async function _enrichCommentsWithAuthors(comments: Comment[]): Promise<Comment[
     return comments.map(comment => {
         const author = authorsMap.get(comment.author_id);
         if (author) {
+            const resolvedName = author.type === 'alter'
+                ? author.name
+                : (author.username || author.name || 'Utilisateur');
+
+            // Even if resolvedName is "Système" (user set it?), it is better than the fallback.
+            // But if the user explicitly wants to avoid "Système" from the fallback:
+            const finalName = resolvedName || comment.author_name;
+
             return {
                 ...comment,
-                author_name: (author.type === 'alter' ? author.name : author.username) || comment.author_name,
+                author_name: finalName === 'Système' && author.username ? author.username : finalName,
                 author_avatar: (author.type === 'alter' ? (author.avatar || author.avatar_url) : author.avatar_url) || comment.author_avatar,
-                system_id: author.type === 'system' ? author.id : (author.system_id || author.userId || author.systemId),
+                system_id: author.type === 'system' ? author.id : (author.system_id || author.userId || (author as any).systemId),
             };
         }
         return comment;

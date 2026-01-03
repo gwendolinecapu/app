@@ -3,7 +3,7 @@
 ## [2026-01-03] Ajout Cadres Animés (Tropical & Flammes) 🌴🔥
 ### Boutique (Shop)
 - **Nouveau Cosmétique** : Ajout du cadre **Tropical** (`frame_tropical`) avec ambiance vacances et cocotiers (Animé).
-- **Mise à jour Cosmétique** : V5 "Realistic Fire" pour le cadre **Flammes** (`frame_flames`) : Système de particules SVG procédurales (langues de feu), dégradés thermiques et animation de combustion chaotique.
+- **Mise à jour Cosmétique** : V5 "Realistic Fire" pour le cadre **Flammes** (`frame_flames`) : Anneau de feu rotatif avec pulsation "Respiration" et particules de flammes dynamiques.
 - **Nouveau Cosmétique** : Ajout du cadre **Mystic Mushroom** (`frame_nature_mystic`) avec ambiance forêt enchantée, spores lumineux flottants et effet de lueur magique (Animé).
 - **Nouveau Cosmétique** : Ajout du cadre **Bamboo Sanctuary** (`frame_bamboo_sanctuary`) - Zen et apaisant.
 - **Nouveau Cosmétique** : Ajout du cadre **Jungle Ruins** (`frame_jungle_ruins`) - Lianes et pierres anciennes.

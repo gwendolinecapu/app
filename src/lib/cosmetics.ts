@@ -331,14 +331,14 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
         case 'frame_flames':
             return {
                 containerStyle: {
-                    borderWidth: 3,
-                    borderColor: '#ff4500',
-                    padding: 2,
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
                     borderRadius: size / 2,
-                    shadowColor: '#ff4500',
-                    shadowOpacity: 0.6,
-                    shadowRadius: 8,
-                }
+                    overflow: 'visible',
+                },
+                isAnimated: true,
+                animationComponent: 'FlameFrame',
             };
         case 'frame_tropical':
             return {

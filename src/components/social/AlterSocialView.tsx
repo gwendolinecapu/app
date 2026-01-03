@@ -82,7 +82,7 @@ export default function AlterSocialView({ alter, platform, initialUrl }: Props) 
                 sharedCookiesEnabled={true} // Important for Android
                 thirdPartyCookiesEnabled={true} // Important for Android
                 domStorageEnabled={true}
-                javascriptEnabled={true}
+                javaScriptEnabled={true}
                 // Inject some JS to prevent "Open in App" prompts if possible
                 injectedJavaScript={`
                     // Try to hide "Open in App" banners
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     },
     loadingContainer: {
         flex: 1,
-        justifyComponent: 'center',
+        justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#000',
     },

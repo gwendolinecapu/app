@@ -1,4 +1,4 @@
-import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { StyleSheet, ViewStyle, TextStyle, ImageSourcePropType } from 'react-native';
 import { COSMETIC_ITEMS, ShopItem } from '../services/MonetizationTypes';
 import { colors, borderRadius } from './theme';
 
@@ -230,6 +230,7 @@ export interface FrameStyle {
     overlay?: React.ReactNode; // Pour des cadres complexes (images par dessus)
     isAnimated?: boolean; // Indique si le cadre utilise un composant animé
     animationComponent?: string; // Nom du composant d'animation à utiliser
+    imageSource?: ImageSourcePropType; // Pour les cadres basés sur une image statique
 }
 
 /**
@@ -356,6 +357,27 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                 // Flag pour indiquer qu'il faut utiliser le composant animé
                 isAnimated: true,
                 animationComponent: 'SakuraFrame',
+            };
+        case 'frame_mystic_forest':
+            return {
+                containerStyle: {
+                    // Transparent ou ajusté pour laisser place à l'image
+                    borderWidth: 0,
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible', // Important pour que l'image dépasse si besoin
+                },
+                imageSource: require('../../assets/frames/frame_mystic_forest.png'),
+            };
+        case 'frame_mystic_beach':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_mystic_beach.png'),
             };
         default:
             return defaultStyle;

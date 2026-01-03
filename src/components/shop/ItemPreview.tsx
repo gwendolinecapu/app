@@ -12,6 +12,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -24,7 +25,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { ShopItem } from '../../services/MonetizationTypes';
 import { colors } from '../../lib/theme';
-import { getThemeColors } from '../../lib/cosmetics';
+import { getThemeColors, getFrameStyle } from '../../lib/cosmetics';
 import { SakuraFrameMini } from '../effects/SakuraPetals';
 
 // ==================== MINI SNOWFALL (for Winter theme) ====================
@@ -180,34 +181,45 @@ const FramePreview = React.memo(({ item, scale, isAnimated }: { item: ShopItem; 
         );
     }
 
-    const getFrameStyle = () => {
-        if (item.id.includes('neon')) {
-            return { borderColor: '#00ff00', shadowColor: '#00ff00', shadowOpacity: 0.8, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } };
-        }
-        if (item.id.includes('rainbow')) return { borderColor: '#ff6b6b', borderWidth: 4 };
-        if (item.id.includes('double')) return { borderWidth: 4, borderColor: colors.primary };
-        if (item.id.includes('flames')) return { borderColor: '#ff4500' };
-        if (item.id.includes('leaves') || item.id.includes('floral')) return { borderColor: '#22c55e' };
-        if (item.id.includes('gold')) return { borderColor: '#ffd700' };
-        if (item.id.includes('glitch')) return { borderColor: '#00ffff' };
-        if (item.id.includes('galaxy')) return { borderColor: '#8b5cf6' };
-        if (item.id.includes('futuristic')) return { borderColor: '#06b6d4' };
-        if (item.id.includes('nature')) return { borderColor: '#22c55e' };
-        return { borderColor: colors.border };
-    };
-
-    const frameStyle = getFrameStyle();
+    // Use global getFrameStyle helper
+    const frameStyle = getFrameStyle(item.id, 56);
     const isSquare = item.id.includes('square');
+
+    // Debug log for Mythic frames
+    if (item.rarity === 'mythic') {
+        console.log(`[FramePreview] ${item.id}: imageSource present?`, !!frameStyle.imageSource);
+    }
 
     return (
         <View style={[styles.framePreviewContainer, { transform: [{ scale }] }]}>
-            <View style={[styles.frameCircle, frameStyle, isSquare && { borderRadius: 12 }]}>
+            <View style={[
+                styles.frameCircle,
+                frameStyle.containerStyle,
+                isSquare && { borderRadius: 12 },
+                frameStyle.imageSource ? { backgroundColor: 'transparent', borderWidth: 0 } : undefined
+            ]}>
                 <LinearGradient
                     colors={['#3b82f6', '#8b5cf6']}
                     style={[styles.avatarGradient, isSquare && { borderRadius: 8 }]}
                 >
                     <Text style={styles.avatarInitial}>A</Text>
                 </LinearGradient>
+
+                {/* Image Overlay for Image-based Frames */}
+                {frameStyle.imageSource && (
+                    <Image
+                        source={frameStyle.imageSource}
+                        style={{
+                            position: 'absolute',
+                            width: '135%',
+                            height: '135%',
+                            top: '-17.5%', // Centering calculation: (135 - 100) / 2 = 17.5
+                            left: '-17.5%',
+                            zIndex: 10,
+                        }}
+                        contentFit="contain"
+                    />
+                )}
             </View>
 
             {isAnimated && (

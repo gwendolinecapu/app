@@ -1,5 +1,15 @@
 # Changelog
 
+## [2026-01-03] Ajout Cadres Animés (Tropical & Flammes) 🌴🔥
+### Boutique (Shop)
+- **Nouveau Cosmétique** : Ajout du cadre **Tropical** (`frame_tropical`) avec ambiance vacances et cocotiers (Animé).
+- **Mise à jour Cosmétique** : V5 "Realistic Fire" pour le cadre **Flammes** (`frame_flames`) : Système de particules SVG procédurales (langues de feu), dégradés thermiques et animation de combustion chaotique.
+- **Nouveau Cosmétique** : Ajout du cadre **Mystic Mushroom** (`frame_nature_mystic`) avec ambiance forêt enchantée, spores lumineux flottants et effet de lueur magique (Animé).
+- **Assets** : Intégration de l'asset `frame_tropical.png` dans le dossier assets.
+- **Code** : Mise à jour de `MonetizationTypes.ts` et `cosmetics.ts` pour supporter le nouveau cadre.
+- **Amélioration** : Mise à niveau du cadre Tropical avec un système de particules (feuilles tombantes) similaire au cadre Sakura, via `TropicalLeaves.tsx`.
+- **Refactoring** : Réécriture de `ShopItemCard` pour utiliser le composant partagé `ItemPreview`. Cela garantit que tous les futurs cadres et animations (comme Tropical) fonctionneront automatiquement dans la boutique sans duplication de code.
+
 ## [2025-12-31] Correctifs Boutique & Cosmétiques 💄
 
 ### Application Visuelle des Cosmétiques

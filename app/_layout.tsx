@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, AppState } from 'react-native';
+import { View, StyleSheet, Text, AppState, LogBox } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+
+// Ignore specific warnings
+LogBox.ignoreLogs([
+    'CookieManager',
+    'Selector unknown',
+    'Non-serializable values were found in the navigation state',
+]);
 
 import { AuthProvider } from '../src/contexts/AuthContext';
 import { ThemeProvider } from '../src/contexts/ThemeContext';

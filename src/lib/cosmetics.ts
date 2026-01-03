@@ -1,4 +1,4 @@
-import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { StyleSheet, ViewStyle, TextStyle, ImageSourcePropType } from 'react-native';
 import { COSMETIC_ITEMS, ShopItem } from '../services/MonetizationTypes';
 import { colors, borderRadius } from './theme';
 
@@ -20,6 +20,7 @@ export interface ThemeColors {
     text: string;
     textSecondary: string;
     border: string;
+    isAnimated?: boolean;
 }
 
 /**
@@ -229,6 +230,7 @@ export interface FrameStyle {
     overlay?: React.ReactNode; // Pour des cadres complexes (images par dessus)
     isAnimated?: boolean; // Indique si le cadre utilise un composant animé
     animationComponent?: string; // Nom du composant d'animation à utiliser
+    imageSource?: ImageSourcePropType; // Pour les cadres basés sur une image statique
 }
 
 /**
@@ -338,6 +340,17 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                     shadowRadius: 8,
                 }
             };
+        case 'frame_tropical':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible', // Important pour que l'image dépasse
+                },
+                imageSource: require('../../assets/frames/frame_tropical.png'),
+            };
         case 'frame_anim_sakura':
             // Cadre Sakura animé - utilise le composant SakuraFrame
             return {
@@ -356,6 +369,20 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                 isAnimated: true,
                 animationComponent: 'SakuraFrame',
             };
+        case 'frame_nature_mystic':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                isAnimated: true,
+                animationComponent: 'NatureMysticFrame',
+                imageSource: require('../../assets/frames/frame_nature_mystic.png'),
+            };
+
         default:
             return defaultStyle;
     }

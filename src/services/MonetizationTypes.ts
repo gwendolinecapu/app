@@ -115,7 +115,8 @@ export type CreditTransactionType =
     | 'spend_premium'   // Achat premium temp
     | 'bug_report_reward' // Récompense pour rapport de bug
     | 'refund'          // Remboursement
-    | 'gift';           // Cadeau admin
+    | 'gift'            // Cadeau admin
+    | 'purchase_lootbox'; // Achat Loot Box
 
 /** Transaction de crédits */
 export interface CreditTransaction {
@@ -490,6 +491,17 @@ export const COSMETIC_ITEMS: ShopItem[] = [
 
     // ========== CADRES ==========
     {
+        id: 'frame_tropical',
+        type: 'frame',
+        name: 'Tropical',
+        description: 'Ambiance vacances et cocotiers (Animé).',
+        priceCredits: 300,
+        preview: '#4ade80',
+        icon: 'leaf-outline',
+        isPremium: false,
+        isAnimated: true,
+    },
+    {
         id: 'frame_default',
         type: 'frame',
         name: 'Simple',
@@ -561,11 +573,12 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         id: 'frame_flames',
         type: 'frame',
         name: 'Flammes',
-        description: 'Bordure enflammée.',
+        description: 'Bordure enflammée (Animé).',
         priceCredits: 250,
         preview: '#ff4500',
         icon: 'flame-outline',
         isPremium: true,
+        isAnimated: true,
     },
     {
         id: 'frame_anim_sakura',
@@ -579,6 +592,19 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         isAnimated: true,
         featured: true,
     },
+    {
+        id: 'frame_nature_mystic',
+        type: 'frame',
+        name: 'Forêt Mystique',
+        description: 'Cadre enchanté avec spores lumineuses (Animé).',
+        priceCredits: 350,
+        preview: '#2d6a4f',
+        icon: 'leaf-outline',
+        isPremium: false,
+        isAnimated: true,
+        featured: true,
+    },
+
 
     // ========== BULLES ==========
     {

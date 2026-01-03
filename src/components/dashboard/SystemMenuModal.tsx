@@ -13,6 +13,7 @@ interface SystemMenuModalProps {
 }
 
 const MENU_ITEMS = [
+    { id: 'calendar', label: 'Calendrier', description: 'RDV & Agenda', icon: 'calendar', color: '#6a11cb', route: '/calendar' },
     { id: 'team', label: 'Team', description: 'Chat & Discussions', icon: 'people', color: colors.secondary, route: '/messages' },
     { id: 'tasks', label: 'Tâches', description: 'Liste partagée', icon: 'list', color: colors.success, route: '/tasks' },
     { id: 'history', label: 'Historique', description: 'Stats & Fronts', icon: 'stats-chart', color: colors.warning, route: '/history' },

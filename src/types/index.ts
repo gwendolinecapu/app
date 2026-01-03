@@ -53,6 +53,7 @@ export interface Alter {
 
     // Monetization & Inventory (Alter-specific)
     owned_items?: string[]; // IDs of items owned by this alter
+    credits?: number; // Current credit balance
     last_daily_reward?: string; // Date (YYYY-MM-DD) of last claim
     last_reward_ad?: number; // Timestamp of last ad watch
 
@@ -68,8 +69,14 @@ export interface Alter {
     };
 
     // Advanced Tools (Phase 11)
-    primers?: Primer[];
     relationships?: Relationship[];
+
+    // Social Integration (Phase 12)
+    social_sessions?: {
+        platform: 'tiktok' | 'instagram' | 'twitter' | 'youtube';
+        cookies: Record<string, any>;
+        last_active: string;
+    }[];
 }
 
 export interface Primer {
@@ -288,6 +295,7 @@ export interface JournalEntry {
     updated_at: string;
     // Relations
     alter?: Alter;
+    credits?: number;
 }
 
 // ============================================

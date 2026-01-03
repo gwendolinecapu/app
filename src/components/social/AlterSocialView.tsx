@@ -86,100 +86,79 @@ export default function AlterSocialView({ alter, platform, initialUrl }: Props) 
                 // Inject some JS to prevent "Open in App" prompts if possible
                 allowsInlineMediaPlayback={true} // Prevent videos from going full screen automatically
                 mediaPlaybackRequiresUserAction={false}
-                // Use Desktop Chrome UA to bypass mobile-specific "force app" logic
+                // Keep Desktop UA for bypass, but fix UI with CSS
                 userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                 injectedJavaScriptBeforeContentLoaded={`
-                    // Forcefully disable window.open
                     window.open = function() { return null; };
                 `}
                 injectedJavaScript={`
                     (function() {
                         const style = document.createElement('style');
                         style.innerHTML = \`
-                            /* Hide specific app upsell elements */
-                            .e19f2d12, 
-                            [data-e2e="open-app-modal"], 
-                            #tiktok-verify-ele, 
-                            [class*="OpenApp"], 
-                            .index-open-app-btn,
-                            [id*="login-modal"],
-                            div[role="dialog"],
-                            a[href^="tiktok://"],
-                            a[href*="apps.apple.com"],
-                            [class*="banner"],
-                            [class*="modal"],
-                            #loginContainer,
-                            #header-login-button,
-                            [data-e2e="top-login-button"]
+                            /* --- HIDE DESKTOP CLUTTER --- */
+                            /* Warning: Selectors are brittle. Target generic structural containers if possible. */
+                            
+                            /* Sidebar */
+                            [data-e2e="sidebar-container-wrapper"], 
+                            [class*="SideNavContainer"], 
+                            nav {
+                                display: none !important; 
+                            }
+
+                            /* Top Header */
+                            #header-main, 
+                            [data-e2e="top-header-container"],
+                            header {
+                                display: none !important;
+                            }
+
+                            /* Login / Open App Prompts */
+                            .e19f2d12, [data-e2e="open-app-modal"], #tiktok-verify-ele, 
+                            [class*="OpenApp"], .index-open-app-btn, [id*="login-modal"], 
+                            div[role="dialog"], #loginContainer, #header-login-button,
+                            [data-e2e="top-login-button"], [class*="banner"]
                             { display: none !important; }
 
-                            /* Fix Desktop layout on Mobile Screen if needed */
-                            body {
-                                min-width: 100vw !important;
+                            /* --- FORCE MOBILE LAYOUT --- */
+                            html, body {
                                 overflow-x: hidden !important;
+                                background: black !important;
+                                margin: 0 !important;
+                                padding: 0 !important;
+                            }
+
+                            /* Make the main feed container fill the screen */
+                            [data-e2e="main-content-response"], 
+                            [class*="MainContainer"], 
+                            [class*="DivBodyContainer"] {
+                                margin-left: 0 !important;
+                                width: 100vw !important;
+                                max-width: 100vw !important;
+                                padding: 0 !important;
+                            }
+
+                            /* Video Player - Force "Cover" fit to look like app */
+                            video {
+                                object-fit: cover !important;
+                                width: 100vw !important;
+                                height: 100vh !important;
+                                max-height: 100vh !important;
+                            }
+
+                            /* Center the feed */
+                            [data-e2e="feed-container"] {
+                                width: 100% !important;
+                                display: flex !important;
+                                justify-content: center !important;
                             }
                         \`;
                         document.head.appendChild(style);
 
-                        // Aggressive cleanup loop
-                        const clickVariants = ['pas maintenant', 'not now', 'later', 'plus tard', 'continuer sur le web', 'continue on web', 'cancel', 'annuler', 'fermer', 'close', 'guest', 'invité'];
-                        const hideVariants = ['ouvrir l\\'application', 'open app', 'get app', 'installer', 'install', 'connexion', 'login', 'se connecter'];
+                        // --- Aggressive Event Killer for "Full Screen" ---
+                        window.addEventListener('scroll', (e) => {
+                            e.stopImmediatePropagation();
+                        }, true);
 
-                        setInterval(() => {
-                            // 1. Text-based filtering
-                            const allElements = document.querySelectorAll('div, button, a, span, p');
-                            for (let el of allElements) {
-                                const text = el.textContent ? el.textContent.trim().toLowerCase() : '';
-                                
-                                // Action 1: Click "Not Now" / "Guest" buttons
-                                if (clickVariants.some(v => text === v)) {
-                                    try { el.click(); } catch(e) {}
-                                    
-                                    // Also hide parent if it looks like a modal
-                                    let current = el;
-                                    let depth = 0;
-                                    while (current && current !== document.body && depth < 10) {
-                                        const style = window.getComputedStyle(current);
-                                        if ((style.position === 'fixed' || style.position === 'absolute') && style.zIndex > 50) {
-                                            current.style.display = 'none';
-                                            current.style.pointerEvents = 'none';
-                                            break;
-                                        }
-                                        current = current.parentElement;
-                                        depth++;
-                                    }
-                                }
-
-                                // Action 2: Hide "Open App" banners & Login prompts
-                                if (hideVariants.some(v => text.includes(v))) {
-                                    // Be careful not to hide the whole page, check strictly for banners/buttons/links
-                                    if (el.tagName === 'BUTTON' || (el.tagName === 'DIV' && el.role === 'button') || el.tagName === 'A') {
-                                         el.style.display = 'none';
-                                    }
-                                    
-                                    // Special case: The sticky bottom login banner
-                                    if (el.tagName === 'DIV' && (text.includes('connexion') || text.includes('log in')) && style.position === 'fixed' && style.bottom === '0px') {
-                                        el.style.display = 'none';
-                                    }
-                                }
-                            }
-
-                            // 2. Remove generic overlay masks
-                            const masks = document.querySelectorAll('[class*="mask"], [class*="overlay"]');
-                            masks.forEach(mask => {
-                                mask.style.display = 'none';
-                                mask.style.pointerEvents = 'none';
-                            });
-                            
-                            // 3. Prevent deep links
-                            document.querySelectorAll('a').forEach(a => {
-                                if (a.href.includes('apps.apple.com') || a.href.includes('tiktok://')) {
-                                    a.href = 'javascript:void(0);';
-                                    a.onclick = function(e) { e.preventDefault(); };
-                                }
-                            });
-
-                        }, 500);
                     })();
                 `}
                 onShouldStartLoadWithRequest={(request) => {

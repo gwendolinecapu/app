@@ -74,7 +74,7 @@ service cloud.firestore {
       // Modification: propriétaire OU n'importe qui pour les likes (champ 'likes' uniquement)
       allow update: if isOwner(resource) || (
         isAuthenticated() && 
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'comments_count'])
       );
       // Suppression: propriétaire uniquement
       allow delete: if isOwner(resource);

@@ -28,6 +28,9 @@ export interface CreateCommentInput {
     authorName: string;
     authorAvatar?: string;
     content: string;
+    parentId?: string;
+    replyToAuthorName?: string;
+    replyToAuthorId?: string;
 }
 
 /**
@@ -35,17 +38,25 @@ export interface CreateCommentInput {
  * Met à jour le compteur comments_count du post parent
  */
 export async function addComment(input: CreateCommentInput): Promise<Comment> {
-    const { postId, authorId, authorName, authorAvatar, content } = input;
+    const { postId, authorId, authorName, authorAvatar, content, parentId, replyToAuthorName, replyToAuthorId } = input;
 
     // 1. Ajouter le commentaire dans la sous-collection
     const commentsRef = collection(db, 'posts', postId, 'comments');
-    const docRef = await addDoc(commentsRef, {
+    const commentData: any = {
         author_id: authorId,
         author_name: authorName,
         author_avatar: authorAvatar || null,
         content: content.trim(),
         created_at: serverTimestamp(),
-    });
+    };
+
+    if (parentId) {
+        commentData.parent_id = parentId;
+        commentData.reply_to_author_name = replyToAuthorName || null;
+        commentData.reply_to_author_id = replyToAuthorId || null;
+    }
+
+    const docRef = await addDoc(commentsRef, commentData);
 
     // 2. Incrémenter le compteur sur le post parent
     const postRef = doc(db, 'posts', postId);
@@ -61,6 +72,9 @@ export async function addComment(input: CreateCommentInput): Promise<Comment> {
         author_avatar: authorAvatar,
         content: content.trim(),
         created_at: new Date().toISOString(),
+        parent_id: parentId,
+        reply_to_author_name: replyToAuthorName,
+        reply_to_author_id: replyToAuthorId,
     };
 }
 
@@ -89,6 +103,9 @@ export async function fetchComments(postId: string, limitCount: number = 20): Pr
             created_at: data.created_at instanceof Timestamp
                 ? data.created_at.toDate().toISOString()
                 : data.created_at,
+            parent_id: data.parent_id,
+            reply_to_author_name: data.reply_to_author_name,
+            reply_to_author_id: data.reply_to_author_id,
         };
     });
 

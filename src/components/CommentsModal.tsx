@@ -11,6 +11,7 @@ import {
     Platform,
     ActivityIndicator,
     Image,
+    LayoutAnimation
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,14 +33,137 @@ interface CommentsModalProps {
     onClose: () => void;
 }
 
+interface CommentWithReplies extends Comment {
+    replies: Comment[];
+}
+
+const CommentItem = ({
+    item,
+    onReply,
+    onAuthorPress,
+    currentUserId
+}: {
+    item: CommentWithReplies,
+    onReply: (c: Comment) => void,
+    onAuthorPress: (c: Comment) => void,
+    currentUserId?: string
+}) => {
+    const [showReplies, setShowReplies] = useState(false);
+
+    // Auto-expand if I just replied? (Skipped for simplicity, inconsistent with "Show replies")
+
+    const handleToggleReplies = () => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setShowReplies(!showReplies);
+    };
+
+    return (
+        <View style={styles.commentContainer}>
+            {/* Main Parent Comment */}
+            <View style={styles.commentItem}>
+                <TouchableOpacity onPress={() => onAuthorPress(item)}>
+                    {item.author_avatar ? (
+                        <Image source={{ uri: item.author_avatar }} style={styles.avatar} />
+                    ) : (
+                        <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
+                            <Text style={styles.avatarInitial}>{item.author_name?.charAt(0)}</Text>
+                        </View>
+                    )}
+                </TouchableOpacity>
+                <View style={styles.commentContent}>
+                    <View style={styles.commentHeaderRow}>
+                        <TouchableOpacity style={styles.commentHeader} onPress={() => onAuthorPress(item)}>
+                            <Text style={styles.authorName}>{item.author_name}</Text>
+                            <Text style={styles.timestamp}>{timeAgo(item.created_at)}</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <Text style={styles.commentText}>{item.content}</Text>
+
+                    <View style={styles.actionRow}>
+                        <TouchableOpacity onPress={() => onReply(item)} style={styles.replyButton}>
+                            <Text style={styles.replyButtonText}>Répondre</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </View>
+
+            {/* View Replies Button */}
+            {item.replies.length > 0 && (
+                <View style={styles.repliesContainer}>
+                    {!showReplies && (
+                        <TouchableOpacity onPress={handleToggleReplies} style={styles.viewRepliesButton}>
+                            <View style={styles.separator} />
+                            <Text style={styles.viewRepliesText}>
+                                Voir les {item.replies.length} réponses
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+
+                    {/* Replies List */}
+                    {showReplies && (
+                        <View>
+                            {/* Hide Replies Button (Optional, usually we just toggle via the same line or just a textual "Hide") */}
+                            {/* <TouchableOpacity onPress={handleToggleReplies} style={styles.viewRepliesButton}>
+                                <View style={styles.separator} />
+                                <Text style={styles.viewRepliesText}>Masquer les réponses</Text>
+                            </TouchableOpacity> */}
+
+                            {item.replies.map((reply) => (
+                                <View key={reply.id} style={[styles.commentItem, styles.replyItem]}>
+                                    <TouchableOpacity onPress={() => onAuthorPress(reply)}>
+                                        {reply.author_avatar ? (
+                                            <Image source={{ uri: reply.author_avatar }} style={[styles.avatar, styles.replyAvatar]} />
+                                        ) : (
+                                            <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }, styles.replyAvatar]}>
+                                                <Text style={styles.avatarInitial}>{reply.author_name?.charAt(0)}</Text>
+                                            </View>
+                                        )}
+                                    </TouchableOpacity>
+                                    <View style={styles.commentContent}>
+                                        <View style={styles.commentHeaderRow}>
+                                            <TouchableOpacity style={styles.commentHeader} onPress={() => onAuthorPress(reply)}>
+                                                <Text style={styles.authorName}>{reply.author_name}</Text>
+                                                <Text style={styles.timestamp}>{timeAgo(reply.created_at)}</Text>
+                                            </TouchableOpacity>
+                                        </View>
+
+                                        {/* If it was a reply to another sub-reply, maybe show who (User requested "Insta style", context is often inferred or tagged) */}
+                                        {reply.reply_to_author_name && reply.reply_to_author_name !== item.author_name && (
+                                            <Text style={styles.replyContext}>@{reply.reply_to_author_name}</Text>
+                                        )}
+
+                                        <Text style={styles.commentText}>{reply.content}</Text>
+
+                                        <View style={styles.actionRow}>
+                                            <TouchableOpacity onPress={() => onReply(reply)} style={styles.replyButton}>
+                                                <Text style={styles.replyButtonText}>Répondre</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </View>
+                            ))}
+                            <TouchableOpacity onPress={handleToggleReplies} style={styles.hideRepliesButton}>
+                                <Text style={styles.hideRepliesText}>Masquer les réponses</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </View>
+            )}
+        </View>
+    );
+};
+
 export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) => {
     const { currentAlter, user, system } = useAuth();
-    const [comments, setComments] = useState<Comment[]>([]);
+    const [comments, setComments] = useState<CommentWithReplies[]>([]);
     const [loading, setLoading] = useState(false);
     const [sending, setSending] = useState(false);
     const [newComment, setNewComment] = useState('');
     const inputRef = useRef<TextInput>(null);
     const insets = useSafeAreaInsets();
+
+    const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
 
     // Charger les commentaires quand le modal s'ouvre
     useEffect(() => {
@@ -48,6 +172,7 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
         } else {
             setComments([]);
             setNewComment('');
+            setReplyingTo(null);
         }
     }, [visible, postId]);
 
@@ -56,12 +181,66 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
         setLoading(true);
         try {
             const result = await CommentsService.fetchComments(postId, 50);
-            setComments(result);
+            const structured = organizeComments(result);
+            setComments(structured);
         } catch (error) {
             console.error('Failed to load comments:', error);
         } finally {
             setLoading(false);
         }
+    };
+
+    // Helper to group replies under parents
+    const organizeComments = (allComments: Comment[]): CommentWithReplies[] => {
+        const commentsMap = new Map<string, CommentWithReplies>();
+        const parentComments: CommentWithReplies[] = [];
+        const repliesMap = new Map<string, Comment[]>();
+
+        // 1. Identify parents vs replies
+        allComments.forEach(c => {
+            // Assume we can check if it's a parent or reply based on parent_id
+            if (c.parent_id) {
+                const existing = repliesMap.get(c.parent_id) || [];
+                existing.push(c);
+                repliesMap.set(c.parent_id, existing);
+            } else {
+                // Initialize with empty replies
+                const p: CommentWithReplies = { ...c, replies: [] };
+                commentsMap.set(c.id, p);
+                parentComments.push(p);
+            }
+        });
+
+        // 2. Handle orphans - treat as top level if we can't find parent
+        allComments.forEach(c => {
+            if (c.parent_id && !commentsMap.has(c.parent_id)) {
+                // Try to see if its parent is actually in the replies map (nested case?), 
+                // but for now treat as top level to show it.
+                // Ideally we'd recursively find root, but with flat fetch limit, just show as is.
+                const p: CommentWithReplies = { ...c, replies: [] };
+                parentComments.push(p);
+                // Also check if this orphan has replies itself
+                const existingReplies = repliesMap.get(c.id);
+                if (existingReplies) {
+                    p.replies = existingReplies.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+                }
+            }
+        });
+
+        // 3. Attach replies to parents
+        parentComments.forEach(p => {
+            const replies = repliesMap.get(p.id);
+            if (replies) {
+                // Sort replies Oldest -> Newest
+                replies.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+                p.replies = replies;
+            }
+        });
+
+        // 4. Sort parents Newest -> Oldest
+        parentComments.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+        return parentComments;
     };
 
     const handleSend = async () => {
@@ -75,17 +254,32 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
             const authorAvatar = currentAlter?.avatar || currentAlter?.avatar_url || system?.avatar_url || undefined;
             const authorId = currentAlter?.id || user.uid;
 
+            // Determine correct parent ID (ensure 1-level nesting)
+            const targetParentId = replyingTo?.parent_id ? replyingTo.parent_id : replyingTo?.id;
+
             const comment = await CommentsService.addComment({
                 postId,
                 authorId: authorId,
                 authorName: authorName,
                 authorAvatar: authorAvatar,
                 content: newComment.trim(),
+                parentId: targetParentId,
+                replyToAuthorName: replyingTo?.author_name,
+                replyToAuthorId: replyingTo?.author_id,
             });
 
-            // Ajouter en haut de la liste (optimistic update)
-            setComments(prev => [comment, ...prev]);
+            // Re-fetch or manually insert
+            // Manually inserting into nested structure is complex because we need to find the parent.
+            // Easiest is to just re-organize the whole list with the new item.
+            // But we only have `comments` (structured). We need raw comments state or reconstruct it.
+
+            // Reconstruct flat list to add new comment and re-organize
+            const currentFlat = comments.flatMap(p => [p, ...p.replies]);
+            const updatedFlat = [comment, ...currentFlat];
+            setComments(organizeComments(updatedFlat));
+
             setNewComment('');
+            setReplyingTo(null);
             triggerHaptic.success();
         } catch (error) {
             console.error('Failed to send comment:', error);
@@ -93,6 +287,12 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
         } finally {
             setSending(false);
         }
+    };
+
+    const handleReply = (item: Comment) => {
+        setReplyingTo(item);
+        inputRef.current?.focus();
+        triggerHaptic.selection();
     };
 
     const handleAuthorPress = (item: Comment) => {
@@ -106,27 +306,6 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
         }
         onClose();
     };
-
-    const renderComment = ({ item }: { item: Comment }) => (
-        <View style={styles.commentItem}>
-            <TouchableOpacity onPress={() => handleAuthorPress(item)}>
-                {item.author_avatar ? (
-                    <Image source={{ uri: item.author_avatar }} style={styles.avatar} />
-                ) : (
-                    <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
-                        <Text style={styles.avatarInitial}>{item.author_name?.charAt(0)}</Text>
-                    </View>
-                )}
-            </TouchableOpacity>
-            <View style={styles.commentContent}>
-                <TouchableOpacity style={styles.commentHeader} onPress={() => handleAuthorPress(item)}>
-                    <Text style={styles.authorName}>{item.author_name}</Text>
-                    <Text style={styles.timestamp}>{timeAgo(item.created_at)}</Text>
-                </TouchableOpacity>
-                <Text style={styles.commentText}>{item.content}</Text>
-            </View>
-        </View>
-    );
 
     return (
         <Modal
@@ -178,11 +357,30 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
                     ) : (
                         <FlatList
                             data={comments}
-                            renderItem={renderComment}
+                            renderItem={({ item }) => (
+                                <CommentItem
+                                    item={item}
+                                    onReply={handleReply}
+                                    onAuthorPress={handleAuthorPress}
+                                    currentUserId={user?.uid}
+                                />
+                            )}
                             keyExtractor={item => item.id}
                             contentContainerStyle={styles.listContent}
                             showsVerticalScrollIndicator={false}
                         />
+                    )}
+
+                    {/* Replying Banner */}
+                    {replyingTo && (
+                        <View style={styles.replyBanner}>
+                            <Text style={styles.replyBannerText}>
+                                Répondre à <Text style={{ fontWeight: 'bold' }}>{replyingTo.author_name}</Text>
+                            </Text>
+                            <TouchableOpacity onPress={() => setReplyingTo(null)}>
+                                <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
                     )}
 
                     {/* Input */}
@@ -200,7 +398,7 @@ export const CommentsModal = ({ visible, postId, onClose }: CommentsModalProps) 
                         <TextInput
                             ref={inputRef}
                             style={styles.input}
-                            placeholder="Ajouter un commentaire..."
+                            placeholder={replyingTo ? "Écrivez une réponse..." : "Ajouter un commentaire..."}
                             placeholderTextColor={colors.textMuted}
                             value={newComment}
                             onChangeText={setNewComment}
@@ -291,9 +489,13 @@ const styles = StyleSheet.create({
     },
     listContent: {
         padding: spacing.md,
+        paddingBottom: 100,
     },
     commentItem: {
         flexDirection: 'row',
+        marginBottom: spacing.md,
+    },
+    commentContainer: {
         marginBottom: spacing.md,
     },
     avatar: {
@@ -334,6 +536,11 @@ const styles = StyleSheet.create({
         ...typography.body,
         marginTop: 2,
         lineHeight: 20,
+    },
+    actionRow: {
+        flexDirection: 'row',
+        marginTop: 4,
+        gap: spacing.md,
     },
     inputContainer: {
         flexDirection: 'row',
@@ -380,5 +587,77 @@ const styles = StyleSheet.create({
     },
     sendButtonDisabled: {
         opacity: 0.5,
+    },
+    replyItem: {
+        marginTop: spacing.xs,
+        // Removed extra padding to align with "View replies" line which is now aligned with parent content
+    },
+    replyAvatar: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+    },
+    commentHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    replyButton: {
+        // marginTop: 4, // Moved to actionRow
+    },
+    replyButtonText: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        fontWeight: '600',
+        fontSize: 12,
+    },
+    replyContext: {
+        ...typography.caption,
+        color: colors.primary,
+        marginBottom: 2,
+        fontSize: 12,
+    },
+    replyBanner: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        backgroundColor: colors.backgroundLight,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+    },
+    replyBannerText: {
+        ...typography.bodySmall,
+        color: colors.text,
+    },
+    repliesContainer: {
+        marginLeft: 44, // Align with parent content (Avatar 36 + spacing.sm 8)
+        marginTop: -spacing.sm,
+    },
+    viewRepliesButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: spacing.xs,
+        marginBottom: spacing.xs,
+    },
+    separator: {
+        width: 30,
+        height: 1,
+        backgroundColor: colors.border,
+        marginRight: spacing.sm,
+    },
+    viewRepliesText: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        fontWeight: '600',
+    },
+    hideRepliesButton: {
+        marginTop: spacing.xs,
+        marginBottom: spacing.md,
+    },
+    hideRepliesText: {
+        ...typography.caption,
+        color: colors.textMuted,
     },
 });

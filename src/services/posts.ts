@@ -13,7 +13,8 @@ import {
     updateDoc,
     arrayUnion,
     arrayRemove,
-    QueryDocumentSnapshot
+    QueryDocumentSnapshot,
+    deleteDoc
 } from 'firebase/firestore';
 import { db, storage } from '../lib/firebase';
 import { Post } from '../types';
@@ -77,32 +78,57 @@ export const PostService = {
      */
     _enrichPostsWithAuthors: async (posts: Post[]): Promise<Post[]> => {
         const alterIds = new Set(posts.map(p => p.alter_id).filter(id => id));
-        if (alterIds.size === 0) return posts;
+        const systemIds = new Set(posts.map(p => p.system_id).filter(id => id));
 
         const altersMap = new Map<string, any>();
-        await Promise.all(Array.from(alterIds).map(async (id) => {
-            try {
-                if (!id) return;
-                const alterDoc = await getDoc(doc(db, 'alters', id));
-                if (alterDoc.exists()) {
-                    altersMap.set(id, alterDoc.data());
+        const systemsMap = new Map<string, any>();
+
+        await Promise.all([
+            // Fetch Alters
+            ...Array.from(alterIds).map(async (id) => {
+                try {
+                    if (!id) return;
+                    const alterDoc = await getDoc(doc(db, 'alters', id));
+                    if (alterDoc.exists()) {
+                        altersMap.set(id, alterDoc.data());
+                    }
+                } catch (e) {
+                    console.warn(`Failed to fetch author alter ${id}`, e);
                 }
-            } catch (e) {
-                console.warn(`Failed to fetch author alter ${id}`, e);
-            }
-        }));
+            }),
+            // Fetch Systems
+            ...Array.from(systemIds).map(async (id) => {
+                try {
+                    if (!id) return;
+                    const systemDoc = await getDoc(doc(db, 'systems', id));
+                    if (systemDoc.exists()) {
+                        systemsMap.set(id, systemDoc.data());
+                    }
+                } catch (e) {
+                    console.warn(`Failed to fetch author system ${id}`, e);
+                }
+            })
+        ]);
 
         return posts.map(post => {
+            const system = systemsMap.get(post.system_id);
+
             if (post.alter_id && altersMap.has(post.alter_id)) {
                 const alter = altersMap.get(post.alter_id);
                 return {
                     ...post,
                     author_name: alter.name,
                     author_avatar: alter.avatar_url || alter.avatar,
-                    alter: { id: post.alter_id, ...alter } // Attach full alter object if needed
+                    alter: { id: post.alter_id, ...alter } as any
                 };
             }
-            return post;
+
+            // Fallback to system info
+            return {
+                ...post,
+                author_name: system?.username || post.author_name || 'Utilisateur',
+                author_avatar: system?.avatar_url || post.author_avatar,
+            };
         });
     },
 
@@ -309,6 +335,27 @@ export const PostService = {
                     // Create notification for post owner if it's not their own post
                     if (post.system_id !== userId) {
                         try {
+                            // Fetch sender details to detail the notification
+                            let senderName = 'Quelqu\'un';
+                            try {
+                                const systemDoc = await getDoc(doc(db, 'systems', userId));
+                                if (systemDoc.exists()) {
+                                    const systemData = systemDoc.data();
+                                    senderName = systemData.username || 'Utilisateur'; // Fallback
+                                }
+
+                                if (alterId) {
+                                    const alterDoc = await getDoc(doc(db, 'alters', alterId));
+                                    if (alterDoc.exists()) {
+                                        const alterData = alterDoc.data();
+                                        // Format: "AlterName"
+                                        senderName = alterData.name;
+                                    }
+                                }
+                            } catch (fetchError) {
+                                console.warn('Error fetching sender details for notification:', fetchError);
+                            }
+
                             const notificationRef = collection(db, 'notifications');
                             await addDoc(notificationRef, {
                                 type: 'like',
@@ -319,7 +366,7 @@ export const PostService = {
                                 read: false,
                                 created_at: serverTimestamp(),
                                 title: "Nouveau J'aime",
-                                body: "a aimé votre publication",
+                                body: `${senderName} a aimé votre publication`,
                             });
                         } catch (notifError) {
                             console.error('Error creating notification:', notifError);
@@ -330,6 +377,21 @@ export const PostService = {
             }
         } catch (error) {
             console.error('Error toggling like:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Delete a post
+     */
+    deletePost: async (postId: string) => {
+        try {
+            await deleteDoc(doc(db, POSTS_COLLECTION, postId));
+            // Note: Cloud functions or triggers should handle deleting subcollections (comments) and storage files (images)
+            // Ideally we should delete them here too if no cloud functions are set up.
+            // For now, we assume simple deletion.
+        } catch (error) {
+            console.error('Error deleting post:', error);
             throw error;
         }
     }

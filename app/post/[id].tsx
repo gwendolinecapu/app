@@ -18,7 +18,7 @@ import { getThemeColors } from '../../src/lib/cosmetics';
 
 export default function PostDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
-    const { user, loading: authLoading } = useAuth();
+    const { user, system, loading: authLoading, currentAlter } = useAuth();
     const insets = useSafeAreaInsets();
     const [post, setPost] = useState<Post | null>(null);
     const [comments, setComments] = useState<Comment[]>([]);
@@ -65,7 +65,7 @@ export default function PostDetailScreen() {
     const handleLike = async () => {
         if (!post || !user) return;
         try {
-            await PostService.toggleLike(post.id, user.uid);
+            await PostService.toggleLike(post.id, user.uid, currentAlter?.id);
             // Local update for immediate feedback
             const isLiked = post.likes?.includes(user.uid);
             const newLikes = isLiked
@@ -83,11 +83,15 @@ export default function PostDetailScreen() {
 
         try {
             setSubmittingComment(true);
+            const authorName = currentAlter?.name || system?.username || 'Utilisateur';
+            const authorAvatar = currentAlter?.avatar || currentAlter?.avatar_url || system?.avatar_url || undefined;
+            const authorId = currentAlter?.id || user.uid;
+
             await CommentService.addComment({
                 postId: post.id,
-                authorId: user.uid,
-                authorName: user.displayName || 'Système',
-                authorAvatar: user.photoURL || undefined,
+                authorId: authorId,
+                authorName: authorName,
+                authorAvatar: authorAvatar,
                 content: commentText.trim()
             });
             setCommentText('');
@@ -101,6 +105,21 @@ export default function PostDetailScreen() {
             Alert.alert('Erreur', 'Impossible d\'ajouter le commentaire');
         } finally {
             setSubmittingComment(false);
+        }
+    };
+
+    const handleDelete = async (postId: string) => {
+        try {
+            if (!post) return;
+            // Optimistic update prevention or loading state?
+            // Deletion is critical, so we wait.
+            await PostService.deletePost(postId);
+            triggerHaptic.success();
+            router.back();
+            Alert.alert('Succès', 'Publication supprimée');
+        } catch (error) {
+            console.error('Error deleting post:', error);
+            Alert.alert('Erreur', 'Impossible de supprimer la publication');
         }
     };
 
@@ -142,6 +161,15 @@ export default function PostDetailScreen() {
             }
             : null;
 
+    const handleAuthorPress = (item: any) => {
+        if (item.author_id.includes('-') || item.author_id.length > 20) {
+            router.push(`/alter-space/${item.author_id}`);
+        } else {
+            const targetId = item.system_id || item.author_id;
+            router.push(`/system-profile/${targetId}`);
+        }
+    };
+
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -170,6 +198,7 @@ export default function PostDetailScreen() {
                 <PostCard
                     post={post}
                     onLike={handleLike}
+                    onDelete={handleDelete}
                     currentUserId={user?.uid}
                     showAuthor={true}
                     themeColors={themeColors}
@@ -184,7 +213,9 @@ export default function PostDetailScreen() {
                         comments.map((comment) => (
                             <View key={comment.id} style={styles.commentItem}>
                                 <View style={styles.commentHeader}>
-                                    <Text style={styles.commentAuthor}>{comment.author_name || 'Anonyme'}</Text>
+                                    <TouchableOpacity onPress={() => handleAuthorPress(comment)}>
+                                        <Text style={styles.commentAuthor}>{comment.author_name || 'Anonyme'}</Text>
+                                    </TouchableOpacity>
                                     <Text style={styles.commentDate}>
                                         {timeAgo(comment.created_at)}
                                     </Text>

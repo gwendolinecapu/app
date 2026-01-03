@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Image } from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -14,6 +14,7 @@ import Animated, {
 import Svg, { Circle, Defs, LinearGradient, Stop, Path } from 'react-native-svg';
 
 const AnimatedView = Animated.createAnimatedComponent(View);
+const AnimatedImage = Animated.createAnimatedComponent(Image);
 
 // ==================== CONFIGURATION ====================
 // More particles for a denser fire
@@ -133,25 +134,43 @@ const SingleFlame = React.memo(({ index, size }: { index: number; size: number }
 });
 
 
-// ==================== BASE FRAME (Magma Texture) ====================
+// ==================== BASE FRAME (Image + Pulse) ====================
 const MagmaBase = React.memo(({ size }: { size: number }) => {
+    // Rotation animation
+    const rotation = useSharedValue(0);
+    const scale = useSharedValue(1);
+
+    useEffect(() => {
+        // Slow rotation 
+        rotation.value = withRepeat(
+            withTiming(360, { duration: 20000, easing: Easing.linear }),
+            -1
+        );
+        // Breathing scale
+        scale.value = withRepeat(
+            withSequence(
+                withTiming(1.05, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+                withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) })
+            ),
+            -1,
+            true
+        );
+    }, []);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [
+            { rotate: `${rotation.value}deg` },
+            { scale: scale.value }
+        ]
+    }));
+
     return (
         <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-            <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-                <Defs>
-                    <LinearGradient id="frameGrad" x1="0" y1="0" x2="1" y2="1">
-                        <Stop offset="0" stopColor="#8B0000" />
-                        <Stop offset="0.5" stopColor="#FF4500" />
-                        <Stop offset="1" stopColor="#FFD700" />
-                    </LinearGradient>
-                </Defs>
-                <Circle
-                    cx={size / 2} cy={size / 2} r={(size / 2) - 3}
-                    stroke="url(#frameGrad)"
-                    strokeWidth={4}
-                    fill="none"
-                />
-            </Svg>
+            <AnimatedImage
+                source={require('../../../assets/frames/frame_flames_v2.png')}
+                style={[{ width: size, height: size }, animatedStyle]}
+                resizeMode="contain"
+            />
         </View>
     );
 });
@@ -159,7 +178,7 @@ const MagmaBase = React.memo(({ size }: { size: number }) => {
 // ==================== MAIN COMPONENT ====================
 
 export const FlameFrame = ({ size = 88, children }: { size?: number, children: React.ReactNode }) => {
-    const frameSize = size + 20;
+    const frameSize = size + 30; // Slightly larger for the fire ring
 
     return (
         <View style={{ width: frameSize, height: frameSize, justifyContent: 'center', alignItems: 'center' }}>
@@ -167,7 +186,7 @@ export const FlameFrame = ({ size = 88, children }: { size?: number, children: R
             {/* 1. LAYER: GLOW (Background) */}
             <View style={[styles.glow, { width: size, height: size, borderRadius: size / 2 }]} />
 
-            {/* 2. LAYER: MAGMA RING (Background) */}
+            {/* 2. LAYER: MAGMA RING (Background Image) */}
             <AnimatedView style={{ position: 'absolute' }}>
                 <MagmaBase size={frameSize} />
             </AnimatedView>
@@ -185,9 +204,8 @@ export const FlameFrame = ({ size = 88, children }: { size?: number, children: R
                 {children}
             </View>
 
-            {/* 5. AVATAR BORDER (Foreground) */}
-            {/* Clean edge for the avatar */}
-            <View style={{ position: 'absolute', width: size, height: size, borderRadius: size / 2, borderWidth: 2, borderColor: 'rgba(255, 69, 0, 0.5)', zIndex: 11 }} pointerEvents="none" />
+            {/* 5. AVATAR BORDER (Foreground) - Removed static border to let the ring shine */}
+            {/* <View style={{ position: 'absolute', width: size, height: size, borderRadius: size / 2, borderWidth: 2, borderColor: 'rgba(255, 69, 0, 0.5)', zIndex: 11 }} pointerEvents="none" /> */}
 
             {/* 6. LAYER: FLAMES (Foreground) */}
             {/* Flames in front but sparser/smaller to not block view */}
@@ -212,7 +230,7 @@ export const FlameFrameMini = React.memo(() => {
             <View style={[styles.glow, { width: 30, height: 30, borderRadius: 15 }]} />
             <MagmaBase size={frameSize} />
             <View style={[StyleSheet.absoluteFill, { zIndex: 20 }]} pointerEvents="none">
-                {Array.from({ length: 12 }).map((_, i) => (
+                {Array.from({ length: 8 }).map((_, i) => (
                     <SingleFlame key={i} index={i} size={frameSize} />
                 ))}
             </View>

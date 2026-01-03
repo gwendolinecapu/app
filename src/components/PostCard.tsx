@@ -98,7 +98,10 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
 
     const getMediaType = (url: string) => {
         if (!url) return 'none';
-        const ext = url.split('.').pop()?.toLowerCase();
+        // Remove query parameters for extension check (Firebase URLs have tokens)
+        const cleanUrl = url.split('?')[0].toLowerCase();
+        const ext = cleanUrl.split('.').pop();
+
         if (['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(ext || '')) return 'video';
         if (['mp3', 'wav', 'm4a', 'aac', 'ogg'].includes(ext || '')) return 'audio';
         return 'image';
@@ -241,7 +244,11 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
 
             {(post.media_url || hasMultipleImages) && (
                 <TapGestureHandler ref={doubleTapRef} numberOfTaps={2} onHandlerStateChange={onDoubleTap}>
-                    <View style={[styles.mediaContainer, { backgroundColor: themeColors?.background || colors.backgroundLight }]}>
+                    <View style={[
+                        styles.mediaContainer,
+                        { backgroundColor: themeColors?.background || colors.backgroundLight },
+                        mediaType === 'video' && { aspectRatio: 4 / 5 }
+                    ]}>
                         {hasMultipleImages ? (
                             <ImageCarousel images={post.media_urls!} onImagePress={handleImagePress} />
                         ) : (
@@ -255,6 +262,7 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                                     <VideoPlayer
                                         uri={post.media_url!}
                                         autoPlay={true}
+                                        style={{ aspectRatio: 4 / 5 }}
                                         onPress={() => router.push(`/post/video/${post.id}` as any)}
                                     />
                                 )}

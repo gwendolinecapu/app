@@ -403,7 +403,7 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                     borderRadius: size / 2,
                     overflow: 'visible',
                 },
-                imageSource: require('../../assets/frames/frame_pirate_wreck.png'),
+                imageSource: require('../../assets/frames/frame_tropical.png'),
             };
         case 'frame_coral_reef':
             return {
@@ -414,7 +414,7 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                     borderRadius: size / 2,
                     overflow: 'visible',
                 },
-                imageSource: require('../../assets/frames/frame_coral_reef.png'),
+                imageSource: require('../../assets/frames/frame_tropical.png'),
             };
         case 'frame_jungle_ruins':
             return {
@@ -425,7 +425,7 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                     borderRadius: size / 2,
                     overflow: 'visible',
                 },
-                imageSource: require('../../assets/frames/frame_jungle_ruins.png'),
+                imageSource: require('../../assets/frames/frame_tropical.png'),
             };
         case 'frame_desert_oasis':
             return {
@@ -436,7 +436,7 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                     borderRadius: size / 2,
                     overflow: 'visible',
                 },
-                imageSource: require('../../assets/frames/frame_desert_oasis.png'),
+                imageSource: require('../../assets/frames/frame_tropical.png'),
             };
         case 'frame_bamboo_sanctuary':
             return {
@@ -447,7 +447,7 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                     borderRadius: size / 2,
                     overflow: 'visible',
                 },
-                imageSource: require('../../assets/frames/frame_bamboo_sanctuary.png'),
+                imageSource: require('../../assets/frames/frame_tropical.png'),
             };
         case 'frame_enchanted_forest':
             return {
@@ -458,7 +458,7 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                     borderRadius: size / 2,
                     overflow: 'visible',
                 },
-                imageSource: require('../../assets/frames/frame_enchanted_forest.png'),
+                imageSource: require('../../assets/frames/frame_tropical.png'),
             };
         case 'frame_steampunk_castaway':
             return {
@@ -469,7 +469,7 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                     borderRadius: size / 2,
                     overflow: 'visible',
                 },
-                imageSource: require('../../assets/frames/frame_steampunk_castaway.png'),
+                imageSource: require('../../assets/frames/frame_tropical.png'),
             };
         case 'frame_crystal_cavern':
             return {
@@ -480,7 +480,7 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                     borderRadius: size / 2,
                     overflow: 'visible',
                 },
-                imageSource: require('../../assets/frames/frame_crystal_cavern.png'),
+                imageSource: require('../../assets/frames/frame_tropical.png'),
             };
         case 'frame_arctic_winter':
             return {
@@ -491,7 +491,7 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                     borderRadius: size / 2,
                     overflow: 'visible',
                 },
-                imageSource: require('../../assets/frames/frame_arctic_winter.png'),
+                imageSource: require('../../assets/frames/frame_tropical.png'),
             };
 
         default:

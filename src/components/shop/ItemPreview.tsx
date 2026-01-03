@@ -11,7 +11,7 @@
  */
 
 import React, { useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Image as RNImage } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -181,14 +181,9 @@ const FramePreview = React.memo(({ item, scale, isAnimated }: { item: ShopItem; 
         );
     }
 
-    // Use global getFrameStyle helper
+    // Use global getFrameStyle helper (Standard path for ALL static frames, including Mythic)
     const frameStyle = getFrameStyle(item.id, 56);
     const isSquare = item.id.includes('square');
-
-    // Debug log for Mythic frames
-    if (item.rarity === 'mythic') {
-        console.log(`[FramePreview] ${item.id}: imageSource present?`, !!frameStyle.imageSource);
-    }
 
     return (
         <View style={[styles.framePreviewContainer, { transform: [{ scale }] }]}>
@@ -196,7 +191,8 @@ const FramePreview = React.memo(({ item, scale, isAnimated }: { item: ShopItem; 
                 styles.frameCircle,
                 frameStyle.containerStyle,
                 isSquare && { borderRadius: 12 },
-                frameStyle.imageSource ? { backgroundColor: 'transparent', borderWidth: 0 } : undefined
+                // If it has an image source, we often want transparent backgrounds so the image is the frame
+                frameStyle.imageSource ? { backgroundColor: 'transparent', borderWidth: 0, overflow: 'visible' } : undefined
             ]}>
                 <LinearGradient
                     colors={['#3b82f6', '#8b5cf6']}
@@ -205,19 +201,19 @@ const FramePreview = React.memo(({ item, scale, isAnimated }: { item: ShopItem; 
                     <Text style={styles.avatarInitial}>A</Text>
                 </LinearGradient>
 
-                {/* Image Overlay for Image-based Frames */}
+                {/* Image Overlay using Standard React Native Image (More reliable for local assets) */}
                 {frameStyle.imageSource && (
-                    <Image
+                    <RNImage
                         source={frameStyle.imageSource}
                         style={{
                             position: 'absolute',
-                            width: '135%',
-                            height: '135%',
-                            top: '-17.5%', // Centering calculation: (135 - 100) / 2 = 17.5
-                            left: '-17.5%',
+                            width: 76,
+                            height: 76,
+                            top: -10,
+                            left: -10,
                             zIndex: 10,
                         }}
-                        contentFit="contain"
+                        resizeMode="contain"
                     />
                 )}
             </View>

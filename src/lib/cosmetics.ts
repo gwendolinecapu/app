@@ -358,27 +358,7 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                 isAnimated: true,
                 animationComponent: 'SakuraFrame',
             };
-        case 'frame_mystic_forest':
-            return {
-                containerStyle: {
-                    // Transparent ou ajusté pour laisser place à l'image
-                    borderWidth: 0,
-                    padding: 0,
-                    borderRadius: size / 2,
-                    overflow: 'visible', // Important pour que l'image dépasse si besoin
-                },
-                imageSource: require('../../assets/frames/frame_mystic_forest.png'),
-            };
-        case 'frame_mystic_beach':
-            return {
-                containerStyle: {
-                    borderWidth: 0,
-                    padding: 0,
-                    borderRadius: size / 2,
-                    overflow: 'visible',
-                },
-                imageSource: require('../../assets/frames/frame_mystic_beach.png'),
-            };
+
         default:
             return defaultStyle;
     }

@@ -580,26 +580,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         isAnimated: true,
         featured: true,
     },
-    {
-        id: 'frame_mystic_forest',
-        type: 'frame',
-        name: 'Forêt Enchantée',
-        description: 'Un cadre mystique aux champignons lumineux.',
-        priceCredits: 5000,
-        preview: '#2d6a4f',
-        icon: 'leaf-outline',
-        rarity: 'mythic',
-    },
-    {
-        id: 'frame_mystic_beach',
-        type: 'frame',
-        name: 'Lagon Tropical',
-        description: 'Un cadre paradisiaque aux palmiers et coquillages.',
-        priceCredits: 5000,
-        preview: '#00b4d8',
-        icon: 'water-outline',
-        rarity: 'mythic',
-    },
+
 
     // ========== BULLES ==========
     {

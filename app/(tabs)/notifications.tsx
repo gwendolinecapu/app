@@ -86,14 +86,37 @@ export default function NotificationsScreen() {
             const allRequests = [...alterRequests, ...systemRequests];
             const uniqueRequests = Array.from(new Map(allRequests.map(item => [item.id, item])).values());
 
+            // Helper to fetch keys
+            const getSenderName = async (senderId: string) => {
+                try {
+                    // Try Alter
+                    const { doc, getDoc } = await import('firebase/firestore');
+                    const { db } = await import('../../src/lib/firebase');
+                    const alterSnap = await getDoc(doc(db, 'alters', senderId));
+                    if (alterSnap.exists()) return alterSnap.data().name;
+
+                    // Try System
+                    const systemSnap = await getDoc(doc(db, 'systems', senderId));
+                    if (systemSnap.exists()) return systemSnap.data().username || 'Système';
+                } catch (e) { return 'Utilisateur inconnu'; }
+                return 'Utilisateur';
+            };
+
+            // Use Promise.all to enrich requests parallel
+            const enrichedRequests = await Promise.all(uniqueRequests.map(async (req) => {
+                const name = await getSenderName(req.senderId);
+                // Also get avatar if possible? For now just name.
+                return { ...req, senderName: name };
+            }));
+
             // Sort by date descending
-            uniqueRequests.sort((a, b) => {
+            enrichedRequests.sort((a, b) => {
                 const dateA = a.createdAt?.seconds ? new Date(a.createdAt.seconds * 1000) : new Date();
                 const dateB = b.createdAt?.seconds ? new Date(b.createdAt.seconds * 1000) : new Date();
                 return dateB.getTime() - dateA.getTime();
             });
 
-            setFriendRequests(uniqueRequests);
+            setFriendRequests(enrichedRequests as FriendRequest[]); // We augmented it but it's compatible enough or we cast
 
             // Charger les notifications
             const q = query(
@@ -115,15 +138,17 @@ export default function NotificationsScreen() {
             });
 
             // Ajouter les demandes d'amis comme notifications (si non dupliquées)
-            requests.forEach(req => {
+            enrichedRequests.forEach(req => {
                 loadedNotifications.push({
                     id: `friend_${req.id}`,
                     type: 'friend_request',
                     title: 'Nouvelle demande d\'ami',
-                    subtitle: `De: ${req.senderId}`,
+                    subtitle: `De: ${req.senderName}`,
+                    actorName: req.senderName, // Set actorName!
                     timestamp: req.createdAt?.seconds ? new Date(req.createdAt.seconds * 1000) : new Date(),
                     isRead: false,
                     actionData: req,
+                    senderId: req.senderId
                 });
             });
 
@@ -137,10 +162,13 @@ export default function NotificationsScreen() {
             setNotifications(loadedNotifications);
 
             // Marquer comme lu
-            markAllAsRead(snapshot.docs);
+            if (snapshot.docs.length > 0) {
+                markAllAsRead(snapshot.docs);
+            }
 
         } catch (error) {
             console.error('[Notifications] Error loading data:', error);
+            // Alert.alert('Error', String(error)); // For debugging if needed
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -344,7 +372,7 @@ export default function NotificationsScreen() {
                         <Text style={styles.username}>{item.actorName || "Un utilisateur"}</Text>
                         <Text style={styles.actionText}>
                             {item.type === 'like' && " a aimé votre publication."}
-                            {item.type === 'comment' && ` a commenté : "${item.subtitle || ''}"`}
+                            {item.type === 'comment' && (item.subtitle ? ` a commenté : "${item.subtitle}"` : " a commenté votre publication.")}
                             {item.type === 'follow' && " a commencé à vous suivre."}
                             {item.type === 'mention' && " vous a mentionné."}
                             {item.type === 'friend_request' && " vous a envoyé une demande d'ami."}

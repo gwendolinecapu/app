@@ -403,7 +403,7 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                     borderRadius: size / 2,
                     overflow: 'visible',
                 },
-                imageSource: require('../../assets/frames/frame_tropical.png'),
+                imageSource: require('../../assets/frames/frame_pirate_wreck.png'),
             };
         case 'frame_coral_reef':
             return {
@@ -414,7 +414,7 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                     borderRadius: size / 2,
                     overflow: 'visible',
                 },
-                imageSource: require('../../assets/frames/frame_tropical.png'),
+                imageSource: require('../../assets/frames/frame_coral_reef.png'),
             };
         case 'frame_jungle_ruins':
             return {

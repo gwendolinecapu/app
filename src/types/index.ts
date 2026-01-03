@@ -106,6 +106,8 @@ export interface Post {
     visibility: 'private' | 'system' | 'friends' | 'public';
     created_at: string;
     updated_at: string;
+    mentioned_alter_ids?: string[];
+    mentioned_system_ids?: string[];
     // Denormalized author info for feed display (populated on fetch)
     author_id?: string;      // = alter_id or system_id as fallback
     author_name?: string;    // Alter name or System username

@@ -19,6 +19,7 @@ import {
     updateDoc,
     serverTimestamp,
     writeBatch,
+    addDoc,
 } from 'firebase/firestore';
 import { Follow, PublicProfile, System } from '../types';
 
@@ -63,6 +64,45 @@ export async function followUser(followerId: string, followingId: string): Promi
     });
 
     await batch.commit();
+
+    // Create Notification and Send Push (outside batch since it's a different concern/collection logic potentially)
+    try {
+        // Need to fetch follower name to enrich notification
+        let followerName = 'Un utilisateur';
+
+        const followerProfile = await getPublicProfile(followerId);
+        if (followerProfile) {
+            followerName = followerProfile.display_name;
+        } else {
+            // Fallback fetch if public profile not ready/found
+            const systemDoc = await getDoc(doc(db, 'systems', followerId));
+            if (systemDoc.exists()) {
+                followerName = systemDoc.data().username || followerName;
+            }
+        }
+
+        const notificationRef = collection(db, 'notifications');
+        await addDoc(notificationRef, {
+            type: 'follow',
+            recipientId: followingId,
+            senderId: followerId,
+            actorName: followerName,
+            actorAvatar: followerProfile?.avatar_url || null,
+            read: false,
+            created_at: new Date(), // Using client date or serverTimestamp() is fine
+            title: "Nouvel abonné",
+            body: `${followerName} a commencé à vous suivre`,
+        });
+
+        const { default: PushService } = await import('./PushNotificationService');
+        await PushService.sendNewFollowerNotification(
+            followingId,
+            followerName
+        );
+
+    } catch (error) {
+        console.error('Error sending follow notification:', error);
+    }
 }
 
 /**

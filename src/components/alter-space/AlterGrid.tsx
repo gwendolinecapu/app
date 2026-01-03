@@ -18,6 +18,7 @@ interface AlterGridProps {
     listHeaderComponent?: React.ReactNode;
     alterName: string;
     themeColors?: ThemeColors | null;
+    alterId?: string; // Needed for fetching tagged posts
 }
 
 
@@ -28,27 +29,63 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
     onRefresh,
     listHeaderComponent,
     alterName,
-    themeColors
+    themeColors,
+    alterId
 }) => {
-    console.log('[AlterGrid] Rendering with theme:', themeColors ? 'Yes' : 'No');
-    if (themeColors) console.log('[AlterGrid] Theme Primary:', themeColors.primary);
+    const [activeTab, setActiveTab] = React.useState<'grid' | 'tagged'>('grid');
+    const [taggedPosts, setTaggedPosts] = React.useState<Post[]>([]);
+    const [loadingTagged, setLoadingTagged] = React.useState(false);
+    const [taggedLoaded, setTaggedLoaded] = React.useState(false);
 
-    if (loading && posts.length === 0) {
+    // Load tagged posts when tab changes
+    React.useEffect(() => {
+        if (activeTab === 'tagged' && !taggedLoaded && alterId) {
+            loadTaggedPosts();
+        }
+    }, [activeTab, alterId]);
+
+    const loadTaggedPosts = async () => {
+        if (!alterId) return;
+        setLoadingTagged(true);
+        try {
+            // Import dynamically or pass service? Better to import here since it's UI logic
+            const { PostService } = require('../../services/posts');
+            const result = await PostService.fetchTaggedPosts(alterId);
+            setTaggedPosts(result.posts);
+            setTaggedLoaded(true);
+        } catch (error) {
+            console.error("Failed to load tagged posts", error);
+        } finally {
+            setLoadingTagged(false);
+        }
+    };
+
+    const displayPosts = activeTab === 'grid' ? posts : taggedPosts;
+    const isListLoading = activeTab === 'grid' ? loading : loadingTagged;
+
+    if (isListLoading && displayPosts.length === 0) {
         return (
             <FlatList
+                key="skeleton-list"
                 data={[1, 2, 3, 4, 5, 6, 7, 8, 9]}
                 numColumns={3}
                 keyExtractor={(item) => `skeleton-${item}`}
                 ListHeaderComponent={() => (
                     <>
                         {listHeaderComponent}
-                        <View style={styles.tabsStrip}>
-                            <View style={styles.tabIcon}>
-                                <View style={{ width: 24, height: 24, backgroundColor: colors.border, borderRadius: 12, opacity: 0.3 }} />
-                            </View>
-                            <View style={styles.tabIcon}>
-                                <View style={{ width: 24, height: 24, backgroundColor: colors.border, borderRadius: 12, opacity: 0.3 }} />
-                            </View>
+                        <View style={[styles.tabsStrip, themeColors && { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+                            <TouchableOpacity
+                                style={[styles.tabIcon, activeTab === 'grid' && styles.tabIconActive, activeTab === 'grid' && themeColors && { borderBottomColor: themeColors.primary || themeColors.text }]}
+                                onPress={() => setActiveTab('grid')}
+                            >
+                                <Ionicons name={activeTab === 'grid' ? "grid" : "grid-outline"} size={24} color={activeTab === 'grid' ? (themeColors?.primary || themeColors?.text || colors.text) : (themeColors?.textSecondary || colors.textMuted)} />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.tabIcon, activeTab === 'tagged' && styles.tabIconActive, activeTab === 'tagged' && themeColors && { borderBottomColor: themeColors.primary || themeColors.text }]}
+                                onPress={() => setActiveTab('tagged')}
+                            >
+                                <Ionicons name={activeTab === 'tagged' ? "person-circle" : "person-circle-outline"} size={26} color={activeTab === 'tagged' ? (themeColors?.primary || themeColors?.text || colors.text) : (themeColors?.textSecondary || colors.textMuted)} />
+                            </TouchableOpacity>
                         </View>
                     </>
                 )}
@@ -62,21 +99,43 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
             />
         );
     }
-    if (posts.length === 0) {
+
+    if (displayPosts.length === 0) {
         return (
             <FlatList
+                key="empty-list"
                 data={[]}
                 renderItem={() => null}
                 ListHeaderComponent={() => (
                     <>
                         {listHeaderComponent}
+                        {/* Visual Tabs Strip */}
+                        <View style={[styles.tabsStrip, themeColors && { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
+                            <TouchableOpacity
+                                style={[styles.tabIcon, activeTab === 'grid' && styles.tabIconActive, activeTab === 'grid' && themeColors && { borderBottomColor: themeColors.primary || themeColors.text }]}
+                                onPress={() => setActiveTab('grid')}
+                            >
+                                <Ionicons name={activeTab === 'grid' ? "grid" : "grid-outline"} size={24} color={activeTab === 'grid' ? (themeColors?.primary || themeColors?.text || colors.text) : (themeColors?.textSecondary || colors.textMuted)} />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.tabIcon, activeTab === 'tagged' && styles.tabIconActive, activeTab === 'tagged' && themeColors && { borderBottomColor: themeColors.primary || themeColors.text }]}
+                                onPress={() => setActiveTab('tagged')}
+                            >
+                                <Ionicons name={activeTab === 'tagged' ? "person-circle" : "person-circle-outline"} size={26} color={activeTab === 'tagged' ? (themeColors?.primary || themeColors?.text || colors.text) : (themeColors?.textSecondary || colors.textMuted)} />
+                            </TouchableOpacity>
+                        </View>
                         <View style={styles.emptyState}>
                             <View style={styles.emptyIcon}>
-                                <Ionicons name="camera-outline" size={32} color={colors.textMuted} />
+                                <Ionicons name={activeTab === 'grid' ? "camera-outline" : "pricetags-outline"} size={32} color={colors.textMuted} />
                             </View>
-                            <Text style={styles.emptyTitle}>Aucune publication</Text>
+                            <Text style={styles.emptyTitle}>
+                                {activeTab === 'grid' ? "Aucune publication" : "Aucun post identifié"}
+                            </Text>
                             <Text style={styles.emptySubtitle}>
-                                Les photos et posts de {alterName} apparaîtront ici.
+                                {activeTab === 'grid'
+                                    ? `Les photos et posts de ${alterName} apparaîtront ici.`
+                                    : `Les photos où ${alterName} est identifié apparaîtront ici.`
+                                }
                             </Text>
                         </View>
                     </>
@@ -94,7 +153,8 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
 
     return (
         <FlatList
-            data={posts}
+            key={activeTab}
+            data={displayPosts}
             numColumns={3}
             keyExtractor={(item) => item.id}
             ListHeaderComponent={() => (
@@ -104,13 +164,21 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
                     <View style={[styles.tabsStrip, themeColors && { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}>
                         <TouchableOpacity style={[
                             styles.tabIcon,
-                            styles.tabIconActive,
-                            themeColors && { borderBottomColor: themeColors.primary || themeColors.text }
-                        ]}>
-                            <Ionicons name="grid" size={24} color={themeColors?.primary || themeColors?.text || colors.text} />
+                            activeTab === 'grid' && styles.tabIconActive,
+                            activeTab === 'grid' && themeColors && { borderBottomColor: themeColors.primary || themeColors.text }
+                        ]}
+                            onPress={() => setActiveTab('grid')}
+                        >
+                            <Ionicons name={activeTab === 'grid' ? "grid" : "grid-outline"} size={24} color={activeTab === 'grid' ? (themeColors?.primary || themeColors?.text || colors.text) : (themeColors?.textSecondary || colors.textMuted)} />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.tabIcon}>
-                            <Ionicons name="person-circle-outline" size={26} color={themeColors?.textSecondary || colors.textMuted} />
+                        <TouchableOpacity style={[
+                            styles.tabIcon,
+                            activeTab === 'tagged' && styles.tabIconActive,
+                            activeTab === 'tagged' && themeColors && { borderBottomColor: themeColors.primary || themeColors.text }
+                        ]}
+                            onPress={() => setActiveTab('tagged')}
+                        >
+                            <Ionicons name={activeTab === 'tagged' ? "person-circle" : "person-circle-outline"} size={26} color={activeTab === 'tagged' ? (themeColors?.primary || themeColors?.text || colors.text) : (themeColors?.textSecondary || colors.textMuted)} />
                         </TouchableOpacity>
                     </View>
                 </>

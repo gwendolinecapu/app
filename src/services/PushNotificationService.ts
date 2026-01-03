@@ -269,6 +269,27 @@ class PushNotificationService {
         );
     }
 
+    /**
+     * Envoie une notification de nouveau commentaire
+     */
+    async sendNewCommentNotification(
+        targetUserId: string,
+        commenterName: string,
+        commentPreview: string,
+        postId: string
+    ): Promise<void> {
+        await this.sendPushToUser(
+            targetUserId,
+            'Nouveau commentaire',
+            `${commenterName} a commenté : ${commentPreview.slice(0, 50)}${commentPreview.length > 50 ? '...' : ''}`,
+            {
+                type: 'new_comment',
+                commenterName,
+                postId,
+            }
+        );
+    }
+
     // ==================== GETTERS ====================
 
     getExpoPushToken(): string | null {

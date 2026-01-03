@@ -1,5 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { router } from 'expo-router';
+import { RichText } from './ui/RichText';
+import { AlterService } from '../services/alters';
+import { SystemService } from '../services/systems';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -175,6 +178,35 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
 
     const mediaType = getMediaType(post.media_url || '');
 
+    const handleMentionPress = async (mention: string) => {
+        // Optimistic UI/UX: Try to navigate to alter first, then system
+        const name = mention.substring(1); // remove @
+
+        try {
+            // 1. Try Alter
+            const alter = await AlterService.getAlterByName(name);
+            if (alter) {
+                // If fetching by name, we get an Alter object.
+                // We assume it's valid to navigate to its space.
+                router.push(`/alter-space/${alter.id}`);
+                return;
+            }
+
+            // 2. Try System (as username)
+            const system = await SystemService.getSystemByUsername(name);
+            if (system) {
+                router.push(`/system-profile/${system.id}`);
+                return;
+            }
+
+            // 3. Fallback / Not found
+            Alert.alert("Introuvable", `Aucun profil trouvé pour ${mention}`);
+
+        } catch (error) {
+            console.error("Error navigating to mention:", error);
+        }
+    };
+
     return (
         <TouchableOpacity
             style={[styles.card, themeColors && { backgroundColor: themeColors.backgroundCard, borderBottomColor: themeColors.border }]}
@@ -209,7 +241,15 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
                 </View >
             )}
 
-            {post.content && <Text style={[styles.content, themeColors && { color: themeColors.text }]}>{post.content}</Text>}
+            {post.content && (
+                <View style={{ paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
+                    <RichText
+                        content={post.content}
+                        style={[styles.content, themeColors && { color: themeColors.text }, { paddingHorizontal: 0, paddingBottom: 0 }]} // reset padding as View handles it
+                        onMentionPress={handleMentionPress}
+                    />
+                </View>
+            )}
 
             {(post.media_url || hasMultipleImages) && (
                 <TapGestureHandler ref={doubleTapRef} numberOfTaps={2} onHandlerStateChange={onDoubleTap}>

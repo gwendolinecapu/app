@@ -41,6 +41,8 @@ interface Notification {
     subtitle?: string;
     avatar?: string;
     avatarColor?: string;
+    actorName?: string; // Enriched
+    actorAvatar?: string; // Enriched
     timestamp: Date;
     isRead: boolean;
     actionData?: any; // Données pour l'action (requestId, postId, etc.)
@@ -76,7 +78,6 @@ export default function NotificationsScreen() {
             setFriendRequests(requests);
 
             // Charger les notifications
-            // FIX: Removed orderBy temporarily to avoid "index required" error while deploying
             const q = query(
                 collection(db, 'notifications'),
                 where('recipientId', '==', user.uid),
@@ -97,7 +98,6 @@ export default function NotificationsScreen() {
 
             // Ajouter les demandes d'amis comme notifications (si non dupliquées)
             requests.forEach(req => {
-                // Check duplication logic if needed, or just push
                 loadedNotifications.push({
                     id: `friend_${req.id}`,
                     type: 'friend_request',
@@ -109,7 +109,7 @@ export default function NotificationsScreen() {
                 });
             });
 
-            // Trier par date (with null check for timestamp)
+            // Trier par date
             loadedNotifications.sort((a, b) => {
                 const timeA = a.timestamp?.getTime?.() || 0;
                 const timeB = b.timestamp?.getTime?.() || 0;
@@ -131,14 +131,12 @@ export default function NotificationsScreen() {
     const markAllAsRead = async (docs: any[]) => {
         const batch = writeBatch(db);
         let hasUpdates = false;
-
         docs.forEach(doc => {
             if (!doc.data().read) {
                 batch.update(doc.ref, { read: true });
                 hasUpdates = true;
             }
         });
-
         if (hasUpdates) {
             await batch.commit();
         }
@@ -159,7 +157,6 @@ export default function NotificationsScreen() {
         try {
             triggerHaptic.success();
             await FriendService.acceptRequest(requestId);
-            // Recharger les données
             loadData();
         } catch (error) {
             console.error('[Notifications] Error accepting request:', error);
@@ -171,7 +168,6 @@ export default function NotificationsScreen() {
         try {
             triggerHaptic.selection();
             await FriendService.rejectRequest(requestId);
-            // Recharger les données
             loadData();
         } catch (error) {
             console.error('[Notifications] Error rejecting request:', error);
@@ -222,13 +218,11 @@ export default function NotificationsScreen() {
         );
     };
 
-    // Trouver un alter par son ID (pour afficher le nom)
     const getAlterName = (alterId: string): string => {
         const alter = alters.find(a => a.id === alterId);
         return alter?.name || alterId;
     };
 
-    // Rendu d'une demande d'ami
     const renderFriendRequest = ({ item }: { item: FriendRequest }) => {
         const senderName = getAlterName(item.senderId);
         const isAccepted = item.status === 'accepted';
@@ -243,10 +237,7 @@ export default function NotificationsScreen() {
                 <View style={styles.requestContent}>
                     <Text style={styles.requestTitle}>{senderName}</Text>
                     <Text style={styles.requestSubtitle}>
-                        {isAccepted
-                            ? "Demande acceptée"
-                            : "Veut être ton ami"
-                        }
+                        {isAccepted ? "Demande acceptée" : "Veut être ton ami"}
                     </Text>
                 </View>
                 <View style={styles.requestActions}>
@@ -256,16 +247,10 @@ export default function NotificationsScreen() {
                         </View>
                     ) : (
                         <>
-                            <AnimatedPressable
-                                style={styles.acceptButton}
-                                onPress={() => handleAcceptRequest(item.id)}
-                            >
+                            <AnimatedPressable style={styles.acceptButton} onPress={() => handleAcceptRequest(item.id)}>
                                 <Text style={styles.acceptButtonText}>Accepter</Text>
                             </AnimatedPressable>
-                            <AnimatedPressable
-                                style={styles.rejectButton}
-                                onPress={() => handleRejectRequest(item.id)}
-                            >
+                            <AnimatedPressable style={styles.rejectButton} onPress={() => handleRejectRequest(item.id)}>
                                 <Text style={styles.rejectButtonText}>Refuser</Text>
                             </AnimatedPressable>
                         </>
@@ -308,14 +293,44 @@ export default function NotificationsScreen() {
                     !item.isRead && styles.notificationUnread
                 ]}
             >
-                <View style={[styles.notificationIcon, { backgroundColor: getIconColor() + '20' }]}>
-                    <Ionicons name={getIcon()} size={20} color={getIconColor()} />
-                </View>
+                {/* Use Actor Avatar if available, otherwise Icon */}
+                {item.actorAvatar ? (
+                    <View style={[styles.notificationIcon, { backgroundColor: 'transparent', overflow: 'hidden' }]}>
+                        <Image
+                            source={{ uri: item.actorAvatar }}
+                            style={{ width: '100%', height: '100%' }}
+                        />
+                        {/* Tiny badge for type */}
+                        <View style={{
+                            position: 'absolute',
+                            bottom: -2,
+                            right: -2,
+                            backgroundColor: colors.background,
+                            borderRadius: 10,
+                            padding: 2
+                        }}>
+                            <Ionicons name={getIcon()} size={12} color={getIconColor()} />
+                        </View>
+                    </View>
+                ) : (
+                    <View style={[styles.notificationIcon, { backgroundColor: getIconColor() + '20' }]}>
+                        <Ionicons name={getIcon()} size={20} color={getIconColor()} />
+                    </View>
+                )}
+
                 <View style={styles.notificationContent}>
-                    <Text style={styles.notificationTitle}>{item.title}</Text>
-                    {item.subtitle && (
-                        <Text style={styles.notificationSubtitle}>{item.subtitle}</Text>
-                    )}
+                    {/* Richer Title: Actor Name + Action */}
+                    <Text style={styles.notificationTitle}>
+                        {item.actorName ? (
+                            <Text style={{ fontWeight: 'bold' }}>{item.actorName} </Text>
+                        ) : null}
+                        <Text>{item.title.replace("Nouveau J'aime", "a aimé votre publication").replace("Nouveau commentaire", "a commenté").replace("Nouvel abonné", "vous suit")}</Text>
+                    </Text>
+                    {item.subtitle ? (
+                        <Text style={styles.notificationSubtitle} numberOfLines={2}>
+                            {item.subtitle}
+                        </Text>
+                    ) : null}
                     <Text style={styles.notificationTime}>
                         {formattedDate}
                     </Text>

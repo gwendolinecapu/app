@@ -33,14 +33,66 @@ const RELATIONSHIP_ICONS: Record<RelationshipType, string> = {
 };
 
 export const SystemRelationships = ({ alter, editable = false, themeColors }: Props) => {
-    const { alters, refreshAlters } = useAuth();
+    const { alters, refreshAlters, user } = useAuth();
     const [modalVisible, setModalVisible] = useState(false);
     const [loading, setLoading] = useState(false);
     const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [externalProfiles, setExternalProfiles] = useState<any[]>([]); // Store external profiles
 
     const relationships = alter.relationships || [];
 
-    const getTargetAlter = (id: string) => alters.find(a => a.id === id);
+    // Load following list to populate choices and resolve names
+    React.useEffect(() => {
+        if (!user) return;
+        const loadExternal = async () => {
+            // We can fetch following + followers to have a wider range of "friends"
+            try {
+                // Dynamic import to avoid circular dep issues if any, though likely fine here
+                const { FollowService } = await import('../services/follows');
+                const following = await FollowService.getFollowing(user.uid);
+                // Also fetch followers? Maybe just following for now as "Relations" usually implies you know them
+                // const followers = await FollowService.getFollowers(user.uid);
+
+                // Map to a common shape
+                const mapped = following.map(p => ({
+                    id: p.system_id,
+                    name: p.display_name,
+                    avatar_url: p.avatar_url,
+                    color: colors.primary, // Default color for external
+                    isExternal: true
+                }));
+                setExternalProfiles(mapped);
+            } catch (e) {
+                console.error("Failed to load external relations candidates", e);
+            }
+        };
+        loadExternal();
+    }, [user]);
+
+    const getTargetData = (id: string) => {
+        // 1. Try internal alters
+        const internal = alters.find(a => a.id === id);
+        if (internal) return {
+            id: internal.id,
+            name: internal.name,
+            avatar_url: internal.avatar_url,
+            color: internal.color || colors.primary,
+            isExternal: false
+        };
+
+        // 2. Try external loaded profiles
+        const external = externalProfiles.find(p => p.id === id);
+        if (external) return external;
+
+        // 3. Fallback (maybe data not loaded yet or unfollowed)
+        return {
+            id,
+            name: 'Utilisateur inconnu',
+            avatar_url: null,
+            color: colors.textMuted,
+            isExternal: true
+        };
+    };
 
     const handleAddRelationship = async (targetId: string, type: RelationshipType) => {
         setLoading(true);
@@ -75,6 +127,26 @@ export const SystemRelationships = ({ alter, editable = false, themeColors }: Pr
         }
     }
 
+    // Merge candidates: Internal Alters (except self) + External Profiles
+    const candidates = [
+        ...alters.filter(a => a.id !== alter.id).map(a => ({
+            id: a.id,
+            name: a.name,
+            avatar_url: a.avatar_url,
+            color: a.color || colors.primary,
+            type: 'alter'
+        })),
+        ...externalProfiles.map(p => ({
+            ...p,
+            type: 'external'
+        }))
+    ];
+
+    // Filter out already added relationships
+    // const availableCandidates = candidates.filter(c => !relationships.some(r => r.target_alter_id === c.id));
+    // Actually, user might want to CHANGE the type, so we keep them but maybe indicate current status?
+    // For simplicity, let's just list everyone.
+
     return (
         <View style={styles.container}>
             {/* Compact header with just icon */}
@@ -99,8 +171,8 @@ export const SystemRelationships = ({ alter, editable = false, themeColors }: Pr
             {relationships.length > 0 && (
                 <View style={styles.list}>
                     {relationships.map(rel => {
-                        const target = getTargetAlter(rel.target_alter_id);
-                        if (!target) return null;
+                        const target = getTargetData(rel.target_alter_id);
+                        if (!target) return null; // Should assume getTargetData always returns something useful now
 
                         const isExpanded = expandedId === rel.target_alter_id;
 
@@ -163,11 +235,28 @@ export const SystemRelationships = ({ alter, editable = false, themeColors }: Pr
                     <View style={styles.modalContent}>
                         <Text style={styles.modalTitle}>Ajouter une relation</Text>
                         <FlatList
-                            data={alters.filter(a => a.id !== alter.id)}
+                            data={candidates}
                             keyExtractor={item => item.id}
                             renderItem={({ item }) => (
                                 <View style={styles.selectItem}>
-                                    <Text style={styles.selectName}>{item.name}</Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                        {/* Avatar in List */}
+                                        <View style={{
+                                            width: 30, height: 30, borderRadius: 15,
+                                            backgroundColor: item.color, justifyContent: 'center', alignItems: 'center', overflow: 'hidden'
+                                        }}>
+                                            {item.avatar_url ? (
+                                                <Image source={{ uri: item.avatar_url }} style={{ width: 30, height: 30 }} />
+                                            ) : (
+                                                <Text style={{ color: 'white', fontWeight: 'bold' }}>{item.name[0]}</Text>
+                                            )}
+                                        </View>
+                                        <View>
+                                            <Text style={styles.selectName}>{item.name}</Text>
+                                            {item.type === 'external' && <Text style={{ fontSize: 10, color: colors.textSecondary }}>Ami(e) / Externe</Text>}
+                                        </View>
+                                    </View>
+
                                     <View style={styles.typesRow}>
                                         {(['friend', 'partner', 'family', 'work'] as RelationshipType[]).map(type => (
                                             <TouchableOpacity

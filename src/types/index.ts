@@ -128,7 +128,11 @@ export interface Comment {
     system_id?: string; // Opt-in for system profile navigation
     content: string;
     created_at: string;
-    // Future: likes, replies
+    // Replies
+    parent_id?: string; // ID of the parent comment
+    reply_to_author_name?: string; // Name of the author being replied to (snapshot)
+    reply_to_author_id?: string; // ID of the author being replied to
+    // Future: likes
 }
 
 export interface Message {

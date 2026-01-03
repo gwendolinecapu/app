@@ -46,6 +46,9 @@ interface Notification {
     timestamp: Date;
     isRead: boolean;
     actionData?: any; // Données pour l'action (requestId, postId, etc.)
+    mediaUrl?: string | null;  // Added
+    postId?: string;
+    senderId?: string;
 }
 
 interface NotificationSection {
@@ -57,7 +60,7 @@ export default function NotificationsScreen() {
     const { currentAlter, alters, user } = useAuth();
     const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
     const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [refreshing, setRefreshing] = useState(false);
+    const [refreshing, setRefreshing] = useState(true);
     const [loading, setLoading] = useState(true);
 
     // Charger les données
@@ -66,16 +69,31 @@ export default function NotificationsScreen() {
 
         try {
             // 2. Charger les demandes d'amis (pending et accepted)
-            const requests = await FriendService.getRequests(currentAlter.id, ['pending', 'accepted']);
+            // Fetch for current Alter AND System (in case request was sent to system)
+            const alterRequests = await FriendService.getRequests(currentAlter.id, ['pending', 'accepted']);
+            let systemRequests: FriendRequest[] = [];
+
+            // Avoid duplicate check if currentAlter.id IS the system id (unlikely but possible in some archs)
+            if (user.uid && user.uid !== currentAlter.id) {
+                try {
+                    systemRequests = await FriendService.getRequests(user.uid, ['pending', 'accepted']);
+                } catch (e) {
+                    console.log('Error fetching system requests', e);
+                }
+            }
+
+            // Merge and dedup by ID
+            const allRequests = [...alterRequests, ...systemRequests];
+            const uniqueRequests = Array.from(new Map(allRequests.map(item => [item.id, item])).values());
 
             // Sort by date descending
-            requests.sort((a, b) => {
+            uniqueRequests.sort((a, b) => {
                 const dateA = a.createdAt?.seconds ? new Date(a.createdAt.seconds * 1000) : new Date();
                 const dateB = b.createdAt?.seconds ? new Date(b.createdAt.seconds * 1000) : new Date();
                 return dateB.getTime() - dateA.getTime();
             });
 
-            setFriendRequests(requests);
+            setFriendRequests(uniqueRequests);
 
             // Charger les notifications
             const q = query(
@@ -125,6 +143,7 @@ export default function NotificationsScreen() {
             console.error('[Notifications] Error loading data:', error);
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     }, [currentAlter, user]);
 
@@ -260,89 +279,94 @@ export default function NotificationsScreen() {
         );
     };
 
-    // Rendu d'une notification générique
+    // Rendu d'une notification style Instagram
     const renderNotification = ({ item }: { item: Notification }) => {
-        const getIcon = () => {
-            switch (item.type) {
-                case 'follow': return 'person-add';
-                case 'like': return 'heart';
-                case 'comment': return 'chatbubble';
-                case 'mention': return 'at';
-                case 'system': return 'notifications';
-                default: return 'ellipse';
+        const time_ago = timeAgo(item.timestamp);
+        const hasMedia = !!item.mediaUrl;
+
+        // Handle press: navigate to post or profile
+        const handlePress = () => {
+            if (item.postId) {
+                // Navigate to post detail (we can use the modal profile trick or a dedidcated route)
+                // For now, assuming modal logic or feed logic. 
+                // If we have a route for single post, use it.
+                // We have /post/[id] but usually it's better to show in context.
+                // Ideally we'd open the post in a way that allows scrolling.
+                // Let's just create a generic route or assume standard navigation.
+                // Since we don't have a direct "view post" handy globally without context, 
+                // we might check if there is a generic post view.
+                // There is app/post/[id].tsx (implied from earlier context).
+                // Try:
+                // router.push(`/post/${item.postId}`);
+                // Actually previous snippets showed we used a Modal in Profile.
+                // Let's try to navigate to the user profile and open the post? No, too complex.
+                // app/post/[id] seems safe if exists.
+                // Wait, context said "Post Not Found" error debugging used app/post/[id].tsx. So it exists.
+                router.push(`/post/${item.postId}` as any);
+            } else if (item.senderId) {
+                router.push(`/profile/${item.senderId}` as any);
             }
         };
-
-        const getIconColor = () => {
-            switch (item.type) {
-                case 'follow': return colors.primary;
-                case 'like': return '#FF3B5C';
-                case 'comment': return colors.secondary || '#6366F1';
-                case 'mention': return colors.primary;
-                case 'system': return colors.warning || '#F59E0B';
-                default: return colors.textMuted;
-            }
-        };
-
-        const formattedDate = item.timestamp.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ' ' + item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
         return (
             <AnimatedPressable
                 style={[
                     styles.notificationItem,
-                    !item.isRead && styles.notificationUnread
+                    !item.isRead && { backgroundColor: colors.primary + '05' }
                 ]}
+                onPress={handlePress}
             >
-                {/* Use Actor Avatar if available, otherwise Icon */}
-                {item.actorAvatar ? (
-                    <View style={[styles.notificationIcon, { backgroundColor: 'transparent', overflow: 'hidden' }]}>
-                        <Image
-                            source={{ uri: item.actorAvatar }}
-                            style={{ width: '100%', height: '100%' }}
-                        />
-                        {/* Tiny badge for type */}
-                        <View style={{
-                            position: 'absolute',
-                            bottom: -2,
-                            right: -2,
-                            backgroundColor: colors.background,
-                            borderRadius: 10,
-                            padding: 2
-                        }}>
-                            <Ionicons name={getIcon()} size={12} color={getIconColor()} />
+                {/* Avatar Left */}
+                <TouchableOpacity onPress={() => item.senderId && router.push(`/profile/${item.senderId}` as any)}>
+                    <View style={styles.notificationAvatarContainer}>
+                        {item.actorAvatar ? (
+                            <Image
+                                source={{ uri: item.actorAvatar }}
+                                style={styles.notificationAvatar}
+                            />
+                        ) : (
+                            <View style={[styles.notificationAvatar, { backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' }]}>
+                                <Text style={{ color: 'white', fontWeight: 'bold' }}>{item.actorName?.[0] || '?'}</Text>
+                            </View>
+                        )}
+                        {/* Type Icon Badge (optional, Insta usually doesn't show it on avatar except stories) */}
+                        {/* 
+                        <View style={styles.typeBadge}>
+                             <Ionicons name={getIcon(item.type)} size={10} color="white" />
                         </View>
+                        */}
                     </View>
-                ) : (
-                    <View style={[styles.notificationIcon, { backgroundColor: getIconColor() + '20' }]}>
-                        <Ionicons name={getIcon()} size={20} color={getIconColor()} />
-                    </View>
-                )}
+                </TouchableOpacity>
 
+                {/* Center Text */}
                 <View style={styles.notificationContent}>
-                    {/* Richer Title: Actor Name + Action */}
-                    <Text style={styles.notificationTitle}>
-                        {item.actorName ? (
-                            <Text style={{ fontWeight: 'bold' }}>{item.actorName} </Text>
-                        ) : null}
-                        <Text>{item.title.replace("Nouveau J'aime", "a aimé votre publication").replace("Nouveau commentaire", "a commenté").replace("Nouvel abonné", "vous suit")}</Text>
-                    </Text>
-                    {item.subtitle ? (
-                        <Text style={styles.notificationSubtitle} numberOfLines={2}>
-                            {item.subtitle}
+                    <Text style={styles.notificationText} numberOfLines={3}>
+                        <Text style={styles.username}>{item.actorName || "Un utilisateur"}</Text>
+                        <Text style={styles.actionText}>
+                            {item.type === 'like' && " a aimé votre publication."}
+                            {item.type === 'comment' && ` a commenté : "${item.subtitle || ''}"`}
+                            {item.type === 'follow' && " a commencé à vous suivre."}
+                            {item.type === 'mention' && " vous a mentionné."}
+                            {item.type === 'friend_request' && " vous a envoyé une demande d'ami."}
                         </Text>
-                    ) : null}
-                    <Text style={styles.notificationTime}>
-                        {formattedDate}
+                        <Text style={styles.timeText}> {time_ago}</Text>
                     </Text>
                 </View>
 
-                <TouchableOpacity
-                    onPress={() => handleDeleteNotification(item.id)}
-                    style={styles.deleteButton}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                    <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
-                </TouchableOpacity>
+                {/* Right Side: Media or Follow Button */}
+                {hasMedia && item.mediaUrl ? (
+                    <TouchableOpacity onPress={handlePress}>
+                        <Image
+                            source={{ uri: item.mediaUrl }}
+                            style={styles.notificationMedia}
+                        />
+                    </TouchableOpacity>
+                ) : item.type === 'follow' || item.type === 'friend_request' ? (
+                    <TouchableOpacity style={styles.followButtonSmall}>
+                        <Text style={styles.followButtonText}>Suivre</Text>
+                    </TouchableOpacity>
+                ) : null}
+
             </AnimatedPressable>
         );
     };
@@ -426,7 +450,7 @@ export default function NotificationsScreen() {
                         )}
                     </>
                 }
-                ListEmptyComponent={!hasContent ? renderEmpty : null}
+                ListEmptyComponent={!hasContent && !loading ? renderEmpty : null}
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
@@ -474,10 +498,11 @@ const styles = StyleSheet.create({
     },
     section: {
         marginTop: spacing.md,
-        backgroundColor: colors.backgroundCard,
-        marginHorizontal: spacing.md,
-        borderRadius: borderRadius.lg,
-        overflow: 'hidden',
+        // Removed card background, keeping sections simpler or transparent could be better for Insta style
+        // but keeping it for now to group
+        // backgroundColor: colors.backgroundCard, 
+        // INSTA STYLE: Transparent background, just list
+        marginHorizontal: 0, // Full width
     },
     sectionHeader: {
         flexDirection: 'row',
@@ -485,24 +510,26 @@ const styles = StyleSheet.create({
         gap: spacing.sm,
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.sm,
-        backgroundColor: colors.backgroundLight,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
+        // backgroundColor: colors.backgroundLight,
+        // borderBottomWidth: 1,
+        // borderBottomColor: colors.border,
+        marginTop: spacing.sm
     },
     sectionTitle: {
         ...typography.bodySmall,
         fontWeight: '700',
         color: colors.text,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
+        fontSize: 15,
+        // textTransform: 'uppercase', // Insta doesn't uppercase
+        // letterSpacing: 0.5,
     },
     // Friend Request Card
     requestCard: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: spacing.md,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
+        // borderBottomWidth: 1,
+        // borderBottomColor: colors.border,
     },
     requestAvatar: {
         width: 50,
@@ -559,45 +586,76 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         fontSize: 13,
     },
-    // Generic Notification
+
+    // INSTA NOTIFICATION STYLES
     notificationItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: spacing.md,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
+        paddingVertical: 12, // Increased spacing
+        paddingHorizontal: spacing.md,
+        justifyContent: 'space-between',
+        // borderBottomWidth: 0, // Insta doesn't show dividers usually or very subtle
     },
-    notificationUnread: {
-        backgroundColor: colors.primary + '10',
+    notificationAvatarContainer: {
+        marginRight: 12,
     },
-    notificationIcon: {
+    notificationAvatar: {
         width: 44,
         height: 44,
         borderRadius: 22,
+        borderWidth: 1,
+        borderColor: colors.border, // Subtle border
+    },
+    typeBadge: {
+        position: 'absolute',
+        bottom: -2,
+        right: -2,
+        backgroundColor: colors.primary,
+        borderRadius: 10,
+        width: 18,
+        height: 18,
         justifyContent: 'center',
         alignItems: 'center',
+        borderWidth: 2,
+        borderColor: colors.background,
     },
     notificationContent: {
         flex: 1,
-        marginLeft: spacing.md,
+        marginRight: 12,
     },
-    notificationTitle: {
-        ...typography.body,
+    notificationText: {
+        fontSize: 14,
+        color: colors.text,
+        lineHeight: 18,
+    },
+    username: {
+        fontWeight: 'bold',
         color: colors.text,
     },
-    notificationSubtitle: {
-        ...typography.caption,
-        color: colors.textSecondary,
-        marginTop: 2,
+    actionText: {
+        color: colors.text,
     },
-    notificationTime: {
-        ...typography.caption,
+    timeText: {
         color: colors.textMuted,
-        marginTop: 2,
+        fontSize: 12,
     },
-    deleteButton: {
-        padding: spacing.sm,
+    notificationMedia: {
+        width: 44,
+        height: 44,
+        borderRadius: 4, // Square with slight radius
     },
+    followButtonSmall: {
+        backgroundColor: colors.primary,
+        paddingHorizontal: 16,
+        paddingVertical: 6,
+        borderRadius: 8,
+    },
+    followButtonText: {
+        color: 'white',
+        fontWeight: '600',
+        fontSize: 13,
+    },
+
     // Empty State
     emptyState: {
         flex: 1,

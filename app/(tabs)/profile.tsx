@@ -29,6 +29,7 @@ import { SkeletonProfile } from '../../src/components/ui/Skeleton';
 import { EmptyState } from '../../src/components/ui/EmptyState';
 import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
 import { Alert } from 'react-native';
+import { getThemeColors } from '../../src/lib/cosmetics';
 
 const ROLE_DEFINITIONS: Record<string, string> = {
     'host': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
@@ -76,6 +77,8 @@ export default function ProfileScreen() {
     const [commentsModalVisible, setCommentsModalVisible] = useState(false);
     const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
     const flatListRef = React.useRef<FlatList>(null);
+
+    const themeColors = currentAlter?.equipped_items?.theme ? getThemeColors(currentAlter.equipped_items.theme) : null;
 
     useEffect(() => {
         if (currentAlter && user) {
@@ -378,25 +381,38 @@ export default function ProfileScreen() {
                 </View>
 
                 {/* Tabs: Grid / List */}
-                <View style={styles.tabsRow}>
+                <View style={[
+                    styles.tabsRow,
+                    {
+                        marginTop: 40, // Increased spacing as requested
+                        borderTopColor: themeColors?.primary || colors.border,
+                        borderTopWidth: 2
+                    }
+                ]}>
                     <TouchableOpacity
-                        style={[styles.tabButton, activeTab === 'grid' && styles.tabButtonActive]}
+                        style={[
+                            styles.tabButton,
+                            activeTab === 'grid' && { borderBottomColor: themeColors?.primary || colors.text }
+                        ]}
                         onPress={() => setActiveTab('grid')}
                     >
                         <Ionicons
                             name="grid-outline"
                             size={22}
-                            color={activeTab === 'grid' ? colors.text : colors.textMuted}
+                            color={activeTab === 'grid' ? (themeColors?.primary || colors.text) : (themeColors?.textSecondary || colors.textMuted)}
                         />
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[styles.tabButton, activeTab === 'list' && styles.tabButtonActive]}
+                        style={[
+                            styles.tabButton,
+                            activeTab === 'list' && { borderBottomColor: themeColors?.primary || colors.text }
+                        ]}
                         onPress={() => setActiveTab('list')}
                     >
                         <Ionicons
                             name="list-outline"
                             size={22}
-                            color={activeTab === 'list' ? colors.text : colors.textMuted}
+                            color={activeTab === 'list' ? (themeColors?.primary || colors.text) : (themeColors?.textSecondary || colors.textMuted)}
                         />
                     </TouchableOpacity>
                 </View>
@@ -491,6 +507,7 @@ export default function ProfileScreen() {
                     setCommentsModalVisible(false);
                     setSelectedPostId(null);
                 }}
+                themeColors={themeColors}
             />
         </SafeAreaView>
     );

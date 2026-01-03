@@ -49,11 +49,13 @@ export default function PostDetailScreen() {
                 const commentsData = await CommentService.fetchComments(id!);
                 setComments(commentsData);
             } else {
+                console.error(`Post with ID ${id} not found.`);
                 Alert.alert('Erreur', 'Publication non trouvée');
                 router.back();
             }
         } catch (error: any) {
             console.error('Error fetching post data:', error);
+            console.error('DEBUG: Post ID:', id);
             console.error('DEBUG: Error code:', error.code);
             console.error('DEBUG: Error message:', error.message);
             Alert.alert('Erreur', 'Impossible de charger la publication: ' + (error.message || 'Erreur inconnue'));
@@ -188,7 +190,7 @@ export default function PostDetailScreen() {
                 ]}
             >
                 <AnimatedPressable onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={28} color={themeColors?.text || colors.text} />
+                    <Ionicons name="arrow-back" size={28} color={themeColors?.text || colors.text} />
                 </AnimatedPressable>
                 <Text style={[styles.headerTitle, themeColors && { color: themeColors.text }]}>Publications</Text>
                 <View style={{ width: 40 }} />
@@ -228,11 +230,18 @@ export default function PostDetailScreen() {
             </ScrollView>
 
             {/* Post a Comment Bar */}
-            <View style={styles.inputContainer}>
+            <View style={[
+                styles.inputContainer,
+                { paddingBottom: Math.max(insets.bottom, 12) },
+                themeColors && { backgroundColor: themeColors.backgroundCard, borderTopColor: themeColors.border }
+            ]}>
                 <TextInput
-                    style={styles.input}
+                    style={[
+                        styles.input,
+                        themeColors && { backgroundColor: themeColors.background, color: themeColors.text }
+                    ]}
                     placeholder="Ajouter un commentaire..."
-                    placeholderTextColor={colors.textMuted}
+                    placeholderTextColor={themeColors ? themeColors.textSecondary : colors.textMuted}
                     value={commentText}
                     onChangeText={setCommentText}
                     multiline
@@ -243,11 +252,13 @@ export default function PostDetailScreen() {
                     style={styles.sendButton}
                 >
                     {submittingComment ? (
-                        <ActivityIndicator size="small" color={colors.primary} />
+                        <ActivityIndicator size="small" color={themeColors?.primary || colors.primary} />
                     ) : (
                         <Text style={[
                             styles.sendText,
-                            (!commentText.trim() || submittingComment) && { color: colors.textMuted }
+                            (!commentText.trim() || submittingComment) ?
+                                { color: themeColors ? themeColors.textSecondary : colors.textMuted } :
+                                { color: themeColors ? themeColors.primary : colors.primary }
                         ]}>
                             Publier
                         </Text>
@@ -301,7 +312,7 @@ const styles = StyleSheet.create({
         color: colors.text,
     },
     content: {
-        paddingBottom: 100,
+        paddingBottom: 150,
     },
     commentsContainer: {
         padding: 16,

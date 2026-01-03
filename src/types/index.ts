@@ -77,6 +77,9 @@ export interface Alter {
         cookies: Record<string, any>;
         last_active: string;
     }[];
+
+    // Primers / Notes
+    primers?: Primer[];
 }
 
 export interface Primer {

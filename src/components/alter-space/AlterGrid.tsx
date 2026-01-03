@@ -193,7 +193,20 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
             renderItem={({ item }) => (
                 <TouchableOpacity
                     style={styles.gridItem}
-                    onPress={() => router.push(`/post/${item.id}`)}
+                    onPress={() => {
+                        const isVideo = item.media_url && (
+                            item.media_url.endsWith('.mp4') ||
+                            item.media_url.endsWith('.mov') ||
+                            item.media_url.endsWith('.avi') ||
+                            item.media_url.endsWith('.webm')
+                        );
+
+                        if (isVideo) {
+                            router.push(`/post/video/${item.id}` as any);
+                        } else {
+                            router.push(`/post/${item.id}`);
+                        }
+                    }}
                 >
                     {item.media_url ? (
                         <Image

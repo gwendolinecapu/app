@@ -307,7 +307,11 @@ export default function CreatePostScreen() {
             let mediaUrl = undefined;
 
             if (mediaUri) {
-                mediaUrl = await PostService.uploadImage(mediaUri, system.id);
+                if (postType === 'video') {
+                    mediaUrl = await PostService.uploadVideo(mediaUri, system.id);
+                } else {
+                    mediaUrl = await PostService.uploadImage(mediaUri, system.id);
+                }
             } else if (audioUri) {
                 mediaUrl = await PostService.uploadAudio(audioUri, system.id);
             }

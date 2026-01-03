@@ -352,6 +352,7 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
                     setCommentsModalVisible(false);
                     setSelectedPostId(null);
                 }}
+                themeColors={themeColors}
             />
             {/* System Friend Selector Logic Modal */}
             <SystemFriendSelector

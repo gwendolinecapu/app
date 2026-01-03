@@ -5,6 +5,7 @@
 - **Nouveau Cosmétique** : Ajout du cadre **Tropical** (`frame_tropical`) avec ambiance vacances et cocotiers (Animé).
 - **Mise à jour Cosmétique** : V5 "Realistic Fire" pour le cadre **Flammes** (`frame_flames`) : Système de particules SVG procédurales (langues de feu), dégradés thermiques et animation de combustion chaotique.
 - **Nouveau Cosmétique** : Ajout du cadre **Mystic Mushroom** (`frame_nature_mystic`) avec ambiance forêt enchantée, spores lumineux flottants et effet de lueur magique (Animé).
+- **Nouvelle Fonctionnalité** : **Calendrier Système Partagé** (`/calendar`) pour gérer les rendez-vous, le fronting et les événements communs. Accessible depuis le Menu Système. Inclus création, visualisation et suppression d'événements.
 - **Assets** : Intégration de l'asset `frame_tropical.png` dans le dossier assets.
 - **Code** : Mise à jour de `MonetizationTypes.ts` et `cosmetics.ts` pour supporter le nouveau cadre.
 - **Amélioration** : Mise à niveau du cadre Tropical avec un système de particules (feuilles tombantes) similaire au cadre Sakura, via `TropicalLeaves.tsx`.

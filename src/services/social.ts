@@ -1,4 +1,16 @@
-import CookieManager from '@react-native-cookies/cookies';
+// Safely import CookieManager to avoid crashes in Expo Go or if native module is missing
+let CookieManager: any;
+try {
+    CookieManager = require('@react-native-cookies/cookies').default;
+} catch (error) {
+    console.warn('[SocialSessionService] CookieManager native module not found. Session management will be disabled.');
+    // Mock implementation to prevent crashes
+    CookieManager = {
+        clearAll: async () => { console.log('[MockCookieManager] clearAll'); },
+        get: async () => ({}),
+        set: async () => { console.log('[MockCookieManager] set'); },
+    };
+}
 import { Alter } from '../types';
 import { AlterService } from './alters';
 

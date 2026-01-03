@@ -465,23 +465,27 @@ export default function NotificationsScreen() {
                 <TouchableOpacity
                     onPress={() => {
                         if (currentAlter) {
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                            router.push({ pathname: '/alter-space/[alterId]', params: { alterId: currentAlter.id } });
+                        } else {
+                            router.back();
+                        }
+                    }}
+                    style={styles.backButton}
+                >
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <View>
+                <View style={{ alignItems: 'center' }}>
                     <Text style={styles.title}>Notifications</Text>
-                     {/* DEBUG: Temporary visualization */}
+                    {/* DEBUG: Temporary visualization */}
                     <Text style={{ fontSize: 10, color: themeColor }}>
-                        Thème: {currentAlter?.name || 'Système'} ({themeColor})
+                        {currentAlter?.name || 'Système'}
                     </Text>
                 </View>
-                            {
-                                hasContent && (
-                                    <TouchableOpacity onPress={handleClearAll}>
-                                        <Text style={[styles.clearAllText, { color: themeColor }]}>Tout effacer</Text>
-                                    </TouchableOpacity>
-                                )
-                            }
+                {hasContent ? (
+                    <TouchableOpacity onPress={handleClearAll}>
+                        <Text style={[styles.clearAllText, { color: themeColor }]}>Tout effacer</Text>
+                    </TouchableOpacity>
+                ) : <View style={{ width: 60 }} />}
             </View>
 
             <FlatList

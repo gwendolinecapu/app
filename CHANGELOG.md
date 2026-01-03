@@ -10,6 +10,8 @@
 - **Code** : Mise à jour de `MonetizationTypes.ts` et `cosmetics.ts` pour supporter le nouveau cadre.
 - **Amélioration** : Mise à niveau du cadre Tropical avec un système de particules (feuilles tombantes) similaire au cadre Sakura, via `TropicalLeaves.tsx`.
 - **Refactoring** : Réécriture de `ShopItemCard` pour utiliser le composant partagé `ItemPreview`. Cela garantit que tous les futurs cadres et animations (comme Tropical) fonctionneront automatiquement dans la boutique sans duplication de code.
+- **Correctif (Bug)** : Réparation du modal de détail d'événement (`EventDetailsModal`) qui était parfois impossible à scroller ou s'affichait mal en plein écran.
+- **Correctif (Social)** : Amélioration de `AlterSocialView` pour bloquer les popups intrusifs (TikTok) et empêcher les vidéos de forcer le plein écran.
 
 ## [2025-12-31] Correctifs Boutique & Cosmétiques 💄
 

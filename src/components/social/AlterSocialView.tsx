@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, ActivityIndicator, TouchableOpacity, Text, SafeAreaView } from 'react-native';
+import { StyleSheet, View, ActivityIndicator, TouchableOpacity, Text, SafeAreaView, Linking } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Alter } from '../../types';
 import { SocialSessionService, SupportedPlatform } from '../../services/social';
@@ -127,8 +127,21 @@ export default function AlterSocialView({ alter, platform, initialUrl }: Props) 
                         }, 1000);
                     })();
                 `}
-                onNavigationStateChange={(navState) => {
-                    // Could track navigation here if needed
+                onShouldStartLoadWithRequest={(request) => {
+                    const { url } = request;
+
+                    // 1. Block App Store redirects
+                    if (url.includes('apps.apple.com') || url.includes('itunes.apple.com')) {
+                        return false;
+                    }
+
+                    // 2. Block custom schemes (tiktok://, mailto:, etc.) to prevents opening external apps
+                    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                        return false;
+                    }
+
+                    // 3. Allow normal navigation
+                    return true;
                 }}
             />
         </SafeAreaView>

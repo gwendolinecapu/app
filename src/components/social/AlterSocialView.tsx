@@ -12,6 +12,7 @@ interface Props {
     initialUrl?: string;
 }
 
+import { getThemeColors } from '../../lib/cosmetics';
 const PLATFORM_URLS: Record<SupportedPlatform, string> = {
     tiktok: 'https://www.tiktok.com',
     instagram: 'https://www.instagram.com',
@@ -58,27 +59,35 @@ export default function AlterSocialView({ alter, platform, initialUrl }: Props) 
         router.back();
     };
 
+    // --- THEME COLORS ---
+    const themeColors = getThemeColors(alter.equipped_items?.theme);
+    // Default to black/dark for social view if no theme, but allow theme override
+    const backgroundColor = themeColors?.background || '#000';
+    const headerColor = themeColors?.backgroundCard || '#000';
+    const textColor = themeColors?.text || '#fff';
+    const borderColor = themeColors?.border || '#333';
+
     if (!isReady) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#FF0050" />
-                <Text style={styles.loadingText}>Connexion au compte de {alter.name}...</Text>
+            <View style={[styles.loadingContainer, { backgroundColor }]}>
+                <ActivityIndicator size="large" color={themeColors?.primary || "#FF0050"} />
+                <Text style={[styles.loadingText, { color: textColor }]}>Connexion au compte de {alter.name}...</Text>
             </View>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
+        <SafeAreaView style={[styles.container, { backgroundColor }]}>
+            <View style={[styles.header, { backgroundColor: headerColor, borderBottomColor: borderColor }]}>
                 <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-                    <Ionicons name="close" size={24} color="#fff" />
+                    <Ionicons name="close" size={24} color={textColor} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{platform.charAt(0).toUpperCase() + platform.slice(1)} ({alter.name})</Text>
+                <Text style={[styles.headerTitle, { color: textColor }]}>{platform.charAt(0).toUpperCase() + platform.slice(1)} ({alter.name})</Text>
             </View>
             <WebView
                 ref={webViewRef}
                 source={{ uri: url }}
-                style={styles.webview}
+                style={[styles.webview, { backgroundColor }]}
                 sharedCookiesEnabled={true} // Important for Android
                 thirdPartyCookiesEnabled={true} // Important for Android
                 domStorageEnabled={true}
@@ -234,10 +243,96 @@ export default function AlterSocialView({ alter, platform, initialUrl }: Props) 
                         });
                         observer.observe(document.body, { childList: true, subtree: true });
 
-                        // --- DISABLE SCROLL PROPAGATION (Prevent Fullscreen) ---
-                         window.addEventListener('scroll', (e) => {
+                        // --- DISABLE SCROLL PROPAGATION ---
+                        window.addEventListener('scroll', (e) => {
                             e.stopImmediatePropagation();
                         }, true);
+
+                        // --- DOUBLE TAP TO LIKE ---
+                        let lastTap = 0;
+                        document.addEventListener('touchstart', function(e) {
+                            const currentTime = new Date().getTime();
+                            const tapLength = currentTime - lastTap;
+                            
+                            if (tapLength < 300 && tapLength > 0) {
+                                // Double Tap Detected
+                                // Prevent zoom if it's not handled by meta
+                                e.preventDefault(); 
+                                
+                                const touch = e.touches[0];
+                                showHeartAnimation(touch.clientX, touch.clientY);
+                                triggerLikeAction(touch.target);
+                            }
+                            lastTap = currentTime;
+                        });
+
+                        function triggerLikeAction(target) {
+                            // Try to find the like button. 
+                            // Strategy 1: Look for the specific data-e2e icon
+                            // Strategy 2: Look for button with 'Like' in aria-label or title
+                            let likeBtn = document.querySelector('[data-e2e="like-icon"]') || 
+                                          document.querySelector('[data-e2e="browse-like-icon"]') ||
+                                          document.querySelector('span[class*="Like"]');
+                            
+                            // If we have multiple videos (scrolling list), the simple querySelector might pick the first one, 
+                            // which might not be the visible one. 
+                            // Ideally we find the one closest to the view center.
+                            
+                            // Advanced Search: Find visible like button
+                            const allLikeBtns = document.querySelectorAll('[data-e2e="like-icon"], [data-e2e="browse-like-icon"]');
+                            if (allLikeBtns.length > 0) {
+                                // Simple heuristic: Pick the one closest to the middle of the screen
+                                let bestBtn = allLikeBtns[0];
+                                let minMsg = 99999;
+                                const centerY = window.innerHeight / 2;
+                                
+                                allLikeBtns.forEach(btn => {
+                                    const rect = btn.getBoundingClientRect();
+                                    const dist = Math.abs(rect.top - centerY);
+                                    if (dist < minMsg) {
+                                        minMsg = dist;
+                                        bestBtn = btn;
+                                    }
+                                });
+                                likeBtn = bestBtn;
+                            }
+
+                            if (likeBtn) {
+                                console.log('[DoubleTap] Clicking like button:', likeBtn);
+                                likeBtn.click();
+                            }
+                        }
+
+                        function showHeartAnimation(x, y) {
+                            const heart = document.createElement('div');
+                            heart.textContent = '❤️'; 
+                            heart.style.position = 'fixed';
+                            heart.style.left = (x - 50) + 'px'; // Center roughly
+                            heart.style.top = (y - 50) + 'px';
+                            heart.style.fontSize = '80px';
+                            heart.style.zIndex = '100000';
+                            heart.style.pointerEvents = 'none';
+                            heart.style.textShadow = '0 0 10px rgba(0,0,0,0.5)';
+                            heart.style.animation = 'pop-heart 0.8s ease-out forwards';
+                            
+                            // Inject generic animation style if missing
+                            if (!document.getElementById('heart-keyframe')) {
+                                const s = document.createElement('style');
+                                s.id = 'heart-keyframe';
+                                s.innerHTML = \`
+                                    @keyframes pop-heart {
+                                        0% { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+                                        20% { transform: scale(1.2) rotate(10deg); opacity: 1; }
+                                        40% { transform: scale(1.0) rotate(-5deg); opacity: 1; }
+                                        100% { transform: scale(1.5) translateY(-50px); opacity: 0; }
+                                    }
+                                \`;
+                                document.head.appendChild(s);
+                            }
+                            
+                            document.body.appendChild(heart);
+                            setTimeout(() => heart.remove(), 800);
+                        }
 
                     })();
                 `}
@@ -291,7 +386,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#333',
-        backgroundColor: '#000',
+        // backgroundColor set dynamically via style prop
     },
     closeButton: {
         padding: 5,

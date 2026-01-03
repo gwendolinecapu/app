@@ -8,6 +8,7 @@ import { router } from 'expo-router';
 import { colors, typography } from '../../lib/theme';
 import { Alter } from '../../types';
 import { triggerHaptic } from '../../lib/haptics';
+import { getThemeColors } from '../../lib/cosmetics';
 
 interface AlterBubbleProps {
     alter?: Alter;
@@ -32,6 +33,14 @@ const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
     onLongPress,
     dimmed,
 }) => {
+    // --- THEME ---
+    const themeColors = alter ? getThemeColors(alter.equipped_items?.theme) : null;
+    const primaryColor = themeColors?.primary || colors.primary;
+    const borderColor = themeColors?.border || colors.border;
+
+    // Fallback for non-alter bubbles (e.g. system theme or default)
+    // Could pass a context theme here if "System" theming is desired for Add/Blurry buttons
+
     const dynamicStyles = {
         bubble: {
             width: size,
@@ -76,13 +85,17 @@ const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
     }
 
 
-
-
-
     // Alter bubble
     if (!alter) return null;
 
     const showCheck = selectionMode === 'multi' && isSelected;
+
+    // Compute selected style manually since we need dynamic color
+    const selectedStyle = isSelected ? {
+        borderColor: primaryColor,
+        borderWidth: 3,
+        transform: [{ scale: 1.05 }]
+    } : {};
 
     return (
         <AnimatedPressable
@@ -95,7 +108,7 @@ const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
                 styles.bubble,
                 dynamicStyles.bubble,
                 { backgroundColor: alter.color },
-                isSelected && styles.bubbleSelected
+                selectedStyle
             ]}>
                 {alter.avatar_url ? (
                     <AnimatedImage
@@ -112,13 +125,17 @@ const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
                     </Text>
                 )}
                 {showCheck && (
-                    <View style={styles.checkBadge}>
+                    <View style={[styles.checkBadge, { backgroundColor: primaryColor }]}>
                         <Ionicons name="checkmark" size={12} color="white" />
                     </View>
                 )}
             </View>
             <Text
-                style={[styles.bubbleName, dynamicStyles.bubbleName, isSelected && styles.bubbleNameSelected]}
+                style={[
+                    styles.bubbleName,
+                    dynamicStyles.bubbleName,
+                    isSelected && { color: primaryColor, fontWeight: '600' }
+                ]}
                 numberOfLines={1}
             >
                 {alter.name}

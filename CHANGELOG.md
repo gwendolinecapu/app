@@ -12,6 +12,8 @@
 - **Refactoring** : Réécriture de `ShopItemCard` pour utiliser le composant partagé `ItemPreview`. Cela garantit que tous les futurs cadres et animations (comme Tropical) fonctionneront automatiquement dans la boutique sans duplication de code.
 - **Correctif (Bug)** : Réparation du modal de détail d'événement (`EventDetailsModal`) qui était parfois impossible à scroller ou s'affichait mal en plein écran.
 - **Correctif (Social)** : Amélioration de `AlterSocialView` pour bloquer les popups intrusifs (TikTok) et empêcher les vidéos de forcer le plein écran.
+- **Nouveaux Cadres** : Ajout de 10 nouveaux cadres d'avatar premium avec thèmes variés (Lagon, Pirate, Steampunk, Cristal, etc.).
+- **Correctif (Rendu)** : Application systématique de `overflow: 'visible'` sur tous les cadres images pour garantir un affichage complet sans coupure.
 
 ## [2025-12-31] Correctifs Boutique & Cosmétiques 💄
 
@@ -183,6 +185,18 @@
 - **Visual Feedback**: Added clear indicators in search results (type of entity, "Your system" tag).
 - **Navigation**: Search results now link directly to the correct profile or alter-space.
 - **Data Model**: Added `email` to `PublicProfile` for improved discoverability.
+
+## [2026-01-03] Theme System & UI Audit 🎨
+### Global Theme Integration
+- **Refactoring**:
+    - Updated `AlterSocialView` to utilize dynamic `themeColors` for header and loading states, ensuring a consistent look with the equipped theme.
+    - Updated `AlterBubble` to use theme colors for selection borders and add buttons, replacing hardcoded primary colors.
+    - Updated `PostCard` to fully respect `themeColors` prop for avatar placeholders, text, and media containers.
+    - Updated `MessageBubble` to dynamically style "Mine" bubbles with the theme's primary color and respect sender's theme for text colors.
+- **UI Improvements**:
+    - Implemented a "Double Tap to Like" feature in `AlterSocialView` (TikTok-like webview) with heart animation.
+    - Improved `AlterSocialView` CSS injection to hide desktop-specific elements and force full-screen video layout.
+    - Added comprehensive clean-up logic to remove "Open App" banners and login modals in the WebView.
 
 - **Profile 2.0 Enhancements & Fixes**:
     - Fixed crash in Post Detail view (service naming and parameter alignment).

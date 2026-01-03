@@ -4,7 +4,7 @@ import { Message, Alter } from '../../types';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { GroupService } from '../../services/groups';
-import { getBubbleStyle } from '../../lib/cosmetics';
+import { getBubbleStyle, getThemeColors } from '../../lib/cosmetics';
 
 interface MessageBubbleProps {
     message: Message;
@@ -25,7 +25,26 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
     // Get bubble style from cosmetics
     const bubbleId = senderAlter?.equipped_items?.bubble;
+    const themeId = senderAlter?.equipped_items?.theme;
     const bubbleStyle = getBubbleStyle(bubbleId, isMine);
+    const themeColors = getThemeColors(themeId);
+
+    // Dynamic Colors
+    const myBubbleColor = themeColors?.primary || colors.primary;
+    const myTextColor = themeColors?.text || colors.text; // Actually usually white on primary, checking usage below
+    // The original code used 'white' text on primary bubbles implicitly or explicit color style?
+    // Original: messageTextMine: { color: colors.text } but overridden?
+    // Actually original `messageTextMine` has `color: colors.text`. Wait.
+    // Line 258: `color: colors.text, //OnPrimary if primary is dark` -> this looks like a comment or mistake in my reading?
+    // Let's look at line 258 in the file content I read:
+    // 257:     messageTextMine: {
+    // 258:         color: colors.text,//OnPrimary if primary is dark
+    // 259:     },
+    // So it was using `colors.text`. If `colors.primary` is dark (e.g. blue), then `colors.text` (white/black) might be wrong depending on theme.
+    // Usually "Mine" bubbles have white text if the background is dark primary.
+    // Let's assume specific "onPrimary" text color if possible, or default to white for strong primary colors.
+    // For now, I will use `#fff` for mine bubbles to match typical primary button styles, or `themeColors.background` if inverted?
+    // Most themes have a dark/vibrant primary, so white text is safe.
 
     // Group callbacks for reactions
     const groupByEmoji = (reactions: { emoji: string; user_id: string }[]) => {
@@ -54,7 +73,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     const renderText = () => (
         <Text style={[
             styles.messageText,
-            isMine && styles.messageTextMine,
+            isMine ? { color: '#fff' } : { color: themeColors?.text || colors.text },
             bubbleStyle?.textStyle
         ]}>
             {message.content}
@@ -104,13 +123,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                             key={opt.id}
                             style={[
                                 styles.pollOption,
-                                isSelected && styles.pollOptionSelected
+                                isSelected && { borderColor: myBubbleColor }
                             ]}
                             onPress={() => handleVote(opt.id)}
                         >
-                            <View style={[styles.pollProgress, { width: `${percent}%` }]} />
+                            <View style={[styles.pollProgress, { width: `${percent}%`, backgroundColor: myBubbleColor, opacity: 0.1 }]} />
                             <View style={styles.pollContent}>
-                                <Text style={[styles.pollLabel, isSelected && styles.pollLabelSelected]}>
+                                <Text style={[styles.pollLabel, isSelected && { color: myBubbleColor, fontWeight: 'bold' }]}>
                                     {opt.label}
                                 </Text>
                                 <Text style={styles.pollCount}>{optVotes}</Text>
@@ -134,7 +153,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                         style={{ width: 200, height: 200, borderRadius: 8, resizeMode: 'cover' }}
                     />
                     {(message.media_url || message.imageUrl) && message.content && message.content !== message.media_url ? (
-                        <Text style={{ marginTop: 4, color: isMine ? '#fff' : '#000' }}>{message.content}</Text>
+                        <Text style={{ marginTop: 4, color: isMine ? '#fff' : (themeColors?.text || '#000') }}>{message.content}</Text>
                     ) : null}
                 </View>
             );
@@ -160,12 +179,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 onLongPress={handleLongPress}
                 style={[
                     styles.bubble,
-                    isMine ? styles.bubbleMine : styles.bubbleOther,
+                    isMine ? { backgroundColor: myBubbleColor, borderBottomRightRadius: 4 } : styles.bubbleOther,
                     message.type !== 'text' && styles.bubbleRich,
                     bubbleStyle?.containerStyle
                 ]}
             >
-                {!isMine && <Text style={styles.senderName}>{senderName}</Text>}
+                {!isMine && <Text style={[styles.senderName, { color: themeColors?.textSecondary || colors.textSecondary }]}>{senderName}</Text>}
 
                 {renderContent()}
 

@@ -86,57 +86,119 @@ export default function AlterSocialView({ alter, platform, initialUrl }: Props) 
                 // Inject some JS to prevent "Open in App" prompts if possible
                 allowsInlineMediaPlayback={true} // Prevent videos from going full screen automatically
                 mediaPlaybackRequiresUserAction={false}
+                // Use Desktop Chrome UA to bypass mobile-specific "force app" logic
+                userAgent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                injectedJavaScriptBeforeContentLoaded={`
+                    // Forcefully disable window.open
+                    window.open = function() { return null; };
+                `}
                 injectedJavaScript={`
                     (function() {
                         const style = document.createElement('style');
                         style.innerHTML = \`
+                            /* Hide specific app upsell elements */
                             .e19f2d12, 
                             [data-e2e="open-app-modal"], 
                             #tiktok-verify-ele, 
                             [class*="OpenApp"], 
                             .index-open-app-btn,
                             [id*="login-modal"],
-                            div[role="dialog"]
+                            div[role="dialog"],
+                            a[href^="tiktok://"],
+                            a[href*="apps.apple.com"],
+                            [class*="banner"],
+                            [class*="modal"],
+                            #loginContainer,
+                            #header-login-button,
+                            [data-e2e="top-login-button"]
                             { display: none !important; }
-                            
-                            html, body { 
-                                overflow-y: auto !important; 
-                                -webkit-overflow-scrolling: touch !important;
-                                height: auto !important;
+
+                            /* Fix Desktop layout on Mobile Screen if needed */
+                            body {
+                                min-width: 100vw !important;
+                                overflow-x: hidden !important;
                             }
                         \`;
                         document.head.appendChild(style);
 
-                        // Aggressive cleanup interval
+                        // Aggressive cleanup loop
+                        const clickVariants = ['pas maintenant', 'not now', 'later', 'plus tard', 'continuer sur le web', 'continue on web', 'cancel', 'annuler', 'fermer', 'close', 'guest', 'invité'];
+                        const hideVariants = ['ouvrir l\\'application', 'open app', 'get app', 'installer', 'install', 'connexion', 'login', 'se connecter'];
+
                         setInterval(() => {
-                            // Find and click "not now" buttons
-                            const variants = ['Pas maintenant', 'Not now', 'Later', 'Plus tard'];
-                            const buttons = Array.from(document.querySelectorAll('div, button, a, span'));
-                            const notNowBtn = buttons.find(el => variants.some(v => el.textContent && el.textContent.includes(v)));
-                            
-                            if (notNowBtn) {
-                                notNowBtn.click();
+                            // 1. Text-based filtering
+                            const allElements = document.querySelectorAll('div, button, a, span, p');
+                            for (let el of allElements) {
+                                const text = el.textContent ? el.textContent.trim().toLowerCase() : '';
+                                
+                                // Action 1: Click "Not Now" / "Guest" buttons
+                                if (clickVariants.some(v => text === v)) {
+                                    try { el.click(); } catch(e) {}
+                                    
+                                    // Also hide parent if it looks like a modal
+                                    let current = el;
+                                    let depth = 0;
+                                    while (current && current !== document.body && depth < 10) {
+                                        const style = window.getComputedStyle(current);
+                                        if ((style.position === 'fixed' || style.position === 'absolute') && style.zIndex > 50) {
+                                            current.style.display = 'none';
+                                            current.style.pointerEvents = 'none';
+                                            break;
+                                        }
+                                        current = current.parentElement;
+                                        depth++;
+                                    }
+                                }
+
+                                // Action 2: Hide "Open App" banners & Login prompts
+                                if (hideVariants.some(v => text.includes(v))) {
+                                    // Be careful not to hide the whole page, check strictly for banners/buttons/links
+                                    if (el.tagName === 'BUTTON' || (el.tagName === 'DIV' && el.role === 'button') || el.tagName === 'A') {
+                                         el.style.display = 'none';
+                                    }
+                                    
+                                    // Special case: The sticky bottom login banner
+                                    if (el.tagName === 'DIV' && (text.includes('connexion') || text.includes('log in')) && style.position === 'fixed' && style.bottom === '0px') {
+                                        el.style.display = 'none';
+                                    }
+                                }
                             }
 
-                            // Remove blocking overlays
+                            // 2. Remove generic overlay masks
                             const masks = document.querySelectorAll('[class*="mask"], [class*="overlay"]');
-                            masks.forEach(mask => mask.remove());
+                            masks.forEach(mask => {
+                                mask.style.display = 'none';
+                                mask.style.pointerEvents = 'none';
+                            });
                             
-                            // Force overflow on body again just in case
-                             document.body.style.overflow = 'auto';
-                        }, 1000);
+                            // 3. Prevent deep links
+                            document.querySelectorAll('a').forEach(a => {
+                                if (a.href.includes('apps.apple.com') || a.href.includes('tiktok://')) {
+                                    a.href = 'javascript:void(0);';
+                                    a.onclick = function(e) { e.preventDefault(); };
+                                }
+                            });
+
+                        }, 500);
                     })();
                 `}
                 onShouldStartLoadWithRequest={(request) => {
                     const { url } = request;
 
-                    // 1. Block App Store redirects
-                    if (url.includes('apps.apple.com') || url.includes('itunes.apple.com')) {
+                    // 1. Strict Block List
+                    const blockedDomains = [
+                        'apps.apple.com',
+                        'itunes.apple.com',
+                        'snssdk1233', // TikTok scheme
+                        'tiktok://'
+                    ];
+
+                    if (blockedDomains.some(domain => url.includes(domain))) {
                         return false;
                     }
 
-                    // 2. Block custom schemes (tiktok://, mailto:, etc.) to prevents opening external apps
-                    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                    // 2. Block custom schemes (tiktok://, mailto:, etc.)
+                    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('about:blank')) {
                         return false;
                     }
 

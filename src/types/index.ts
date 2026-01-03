@@ -69,8 +69,14 @@ export interface Alter {
     };
 
     // Advanced Tools (Phase 11)
-    primers?: Primer[];
     relationships?: Relationship[];
+
+    // Social Integration (Phase 12)
+    social_sessions?: {
+        platform: 'tiktok' | 'instagram' | 'twitter' | 'youtube';
+        cookies: Record<string, any>;
+        last_active: string;
+    }[];
 }
 
 export interface Primer {

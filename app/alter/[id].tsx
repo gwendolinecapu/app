@@ -632,6 +632,28 @@ export default function AlterProfileScreen() {
                             </View>
                         ) : null}
 
+                        {/* Réseaux Sociaux */}
+                        <View style={styles.customSection}>
+                            <Text style={styles.sectionHeader}>🌐 Réseaux Sociaux (Session Isolée)</Text>
+                            <View style={styles.socialButtonsContainer}>
+                                <TouchableOpacity
+                                    style={[styles.socialButton, { backgroundColor: '#000' }]}
+                                    onPress={() => router.push({ pathname: '/social_web', params: { alterId: alter.id, platform: 'tiktok' } })}
+                                >
+                                    <Ionicons name="logo-tiktok" size={24} color="#FFF" />
+                                    <Text style={styles.socialButtonText}>TikTok</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={[styles.socialButton, { backgroundColor: '#C13584' }]}
+                                    onPress={() => router.push({ pathname: '/social_web', params: { alterId: alter.id, platform: 'instagram' } })}
+                                >
+                                    <Ionicons name="logo-instagram" size={24} color="#FFF" />
+                                    <Text style={styles.socialButtonText}>Instagram</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
                         <TouchableOpacity
                             style={styles.editButton}
                             onPress={() => setEditing(true)}
@@ -1002,9 +1024,29 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     customFieldsList: {
-        backgroundColor: colors.backgroundCard,
-        borderRadius: borderRadius.lg,
-        padding: spacing.md,
+        gap: spacing.xs,
+        marginBottom: spacing.md,
+    },
+    socialButtonsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.md,
+        justifyContent: 'center',
+        marginTop: spacing.sm,
+    },
+    socialButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
+        borderRadius: borderRadius.md,
+        gap: spacing.xs,
+        minWidth: 120,
+        justifyContent: 'center',
+    },
+    socialButtonText: {
+        color: '#FFF',
+        fontWeight: '600',
     },
     displayFieldRow: {
         flexDirection: 'row',

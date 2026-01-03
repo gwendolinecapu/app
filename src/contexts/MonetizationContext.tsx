@@ -330,6 +330,32 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     const purchaseIAP = useCallback(async (packageId: string): Promise<boolean> => {
         try {
             setLoading(true);
+
+            // ==================== DEV MODE BYPASS ====================
+            if (__DEV__) {
+                console.log('[MonetizationContext] DEV MODE: Bypassing IAP for', packageId);
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                if (packageId.includes('credits')) {
+                    const pack = CREDIT_PACKS.find(p => p.revenueCatPackageId === packageId || p.priceIAP === packageId || p.id === packageId);
+                    if (pack && pack.id.includes('credits_')) {
+                        const amount = parseInt(pack.id.replace('credits_', ''), 10);
+                        if (!isNaN(amount) && currentAlter) {
+                            console.log('[MonetizationContext] DEV MODE: Granting', amount, 'credits');
+                            await CreditService.addCredits(currentAlter.id, amount, 'purchase_iap', 'Achat IAP (DEV)');
+                        }
+                    } else {
+                        console.warn('[MonetizationContext] DEV MODE: Could not find credit pack for', packageId);
+                    }
+                }
+
+                // Refresh to show new balance
+                await refresh();
+                return true;
+            }
+            // =========================================================
+
             const offerings = await RevenueCatService.getOfferings();
 
             if (!offerings || !offerings.availablePackages) {

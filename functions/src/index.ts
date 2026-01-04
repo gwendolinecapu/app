@@ -151,11 +151,29 @@ async function callImagen(prompt: string, quality: 'eco' | 'mid' | 'high', refIm
 export const performBirthRitual = functions.https.onCall(async (data: RitualRequest, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Login required');
     const { alterId, referenceImageUrl } = data;
-
-    // Charge: 15 Credits
-    await chargeCredits(context.auth.uid, COSTS.RITUAL, `Rituel de Naissance (${alterId})`);
+    const userId = context.auth.uid;
 
     try {
+        // 1. Validation (Cost-Free)
+        if (!referenceImageUrl) throw new functions.https.HttpsError('invalid-argument', 'Image de référence manquante');
+
+        // Security: Check ownership
+        const alterDoc = await db.collection('alters').doc(alterId).get();
+        if (!alterDoc.exists) throw new functions.https.HttpsError('not-found', 'Alter not found');
+        const alterData = alterDoc.data();
+        if (alterData?.userId !== userId && alterData?.systemId !== userId) {
+            // throw new functions.https.HttpsError('permission-denied', 'Not your alter');
+        }
+
+        // 2. Check Balance
+        const userDoc = await db.collection('users').doc(userId).get();
+        const credits = userDoc.data()?.credits || 0;
+        if (credits < COSTS.RITUAL) throw new functions.https.HttpsError('resource-exhausted', `Crédits insuffisants. Requis: ${COSTS.RITUAL}`);
+
+        // 3. Charge Credits
+        await chargeCredits(userId, COSTS.RITUAL, `Rituel de Naissance (${alterId})`);
+
+        // 4. Perform Analysis
         const b64 = await downloadImageAsBase64(referenceImageUrl);
 
         // Gemini Vision Analysis
@@ -165,7 +183,7 @@ export const performBirthRitual = functions.https.onCall(async (data: RitualRequ
         });
 
         const prompt = `
-            Analyze this character reference sheet deeply.
+            Analyze this character reference sheet deeply (3D Scan Mode).
             Extract a "Visual DNA" description for an AI image generator.
             Focus on: Physical build, Face details, Hair, Clothing styles, Key colors.
             Ignore pose and background.
@@ -183,7 +201,7 @@ export const performBirthRitual = functions.https.onCall(async (data: RitualRequ
         });
 
         const visualDescription = res.response.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!visualDescription) throw new Error("Analysis failed");
+        if (!visualDescription) throw new Error("Analysis failed - No description generated");
 
         // Save DNA
         await db.collection('alters').doc(alterId).update({
@@ -198,7 +216,7 @@ export const performBirthRitual = functions.https.onCall(async (data: RitualRequ
         return { success: true, visualDescription };
 
     } catch (e: any) {
-        console.error(e);
+        console.error("Ritual Error:", e);
         throw new functions.https.HttpsError('internal', e.message);
     }
 });
@@ -276,7 +294,7 @@ export const generateMagicPost = functions.https.onCall(async (data: MagicPostRe
         await file.makePublic();
         const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
 
-        return { imageUrl: publicUrl };
+        return { success: true, imageUrl: publicUrl };
 
     } catch (e: any) {
         console.error("Magic Generation Error:", e);

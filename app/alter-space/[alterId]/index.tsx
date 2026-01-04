@@ -282,6 +282,20 @@ export default function AlterSpaceScreen() {
 
                                 <View style={{ height: 30 }} />
 
+                                {/* Section: Magie & Origines */}
+                                <Text style={{ fontSize: 13, fontWeight: '700', color: themeColors?.textSecondary || colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Magie & Origines</Text>
+
+                                <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname: '/alter-space/[alterId]/ritual', params: { alterId: alter.id } })}>
+                                    <Ionicons name="sparkles" size={24} color={activeColor} style={{ marginRight: 15 }} />
+                                    <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>Rituel de Naissance</Text>
+                                    <View style={{ backgroundColor: activeColor, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2, marginRight: 8 }}>
+                                        <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>IA</Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
+                                </TouchableOpacity>
+
+                                <View style={{ height: 30 }} />
+
                                 <Text style={{ fontSize: 13, fontWeight: '700', color: themeColors?.textSecondary || colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Espace Personnel</Text>
 
                                 <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('journal')}>

@@ -18,7 +18,7 @@ const SEEDREAM_MODEL = "seedream-4-5-251128";
 
 // Style prompts mapping
 const STYLES: { [key: string]: string } = {
-    "Cinematic": "cinematic film still, 8k, photorealistic, highly detailed, dramatic lighting, depth of field, color graded, movie scene",
+    "photorealist": "8k, photorealistic, highly detailed, dramatic lighting, depth of field, color graded, movie scene",
     "Anime": "anime style, studio ghibli inspired, vibrant colors, cel shaded, highly detailed, 2d animation style",
     "Painting": "digital oil painting, textured brushstrokes, artistic, detailed, masterpiece, conceptual art",
     "Cyberpunk": "cyberpunk style, neon lights, futuristic city, chromatic aberration, high tech, night time",
@@ -39,9 +39,9 @@ if (GOOGLE_AI_API_KEY) {
 // Costs
 const COSTS = {
     RITUAL: 50,
-    POST_ECO: 60,
-    POST_STD: 120, // Seedream Standard
-    POST_PRO: 180
+    POST_ECO: 5,
+    POST_STD: 10, // Seedream Standard
+    POST_PRO: 20
 };
 
 // --- Interfaces ---
@@ -54,6 +54,7 @@ interface MagicPostRequest {
     alterId: string;
     prompt: string;
     quality: 'eco' | 'mid' | 'high';
+    imageCount?: number; // New: Batch generation (1 or 3)
     sceneImageUrl?: string;
     style?: string; // New: Vibe selector
     poseImageUrl?: string; // New: Scribble/Pose control
@@ -154,18 +155,6 @@ async function callBytePlusArk(prompt: string, imagesBase64: string[] = [], size
     return Buffer.from(b64Data, 'base64');
 }
 
-// REMOVE old callGeminiGeneration (or keep for Vision, but Vision uses genAI directly)
-// We keep callGeminiGeneration logic ONLY if we need it for something else, 
-// but actually the Vision part uses `genAI.getGenerativeModel` directly in performBirthRitual.
-// `callGeminiGeneration` was used for Image Gen. We can likely replace it or rename it.
-
-/**
- * Call Gemini 3 Pro (Google AI Studio SDK) - Vision Analysis
- * Actually we use direct SDK calls in ritual for vision.
- * We can remove the old image-gen `callGeminiGeneration` wrapper or leave it unused.
- */
-
-
 // --- Cloud Functions ---
 
 export const performBirthRitual = functions.runWith({
@@ -226,17 +215,14 @@ export const performBirthRitual = functions.runWith({
             Generate a SINGLE “character turnaround sheet” image from the provided reference photos.
             
             Goal:
-            One composite sheet with 4 full-body views of the SAME subject: FRONT / 3-4 FRONT / SIDE / BACK.
+            One composite sheet with 4 full-body views of the SAME subject: FRONT / 3-4 FRONT / juste face / BACK.
             
             Layout:
-            2x2 grid, full body, neutral standing pose, arms relaxed.
+            photorealist, full body, neutral standing pose, arms relaxed.
             Same scale and alignment across all views (feet on the same baseline).
             Plain neutral background, consistent studio lighting.
             
-            Consistency rules:
-            Same outfit in every view (no changes).
-            Same hair shape/color (style-consistent).
-            No dramatic poses, no scene background.
+            Consistency rules
             Identity match, exact likeness.
             
             Visual DNA Context:
@@ -287,8 +273,8 @@ export const generateMagicPost = functions.runWith({
     memory: "1GB"
 }).https.onCall(async (data: MagicPostRequest, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Login required');
-    const { alterId, prompt, quality, sceneImageUrl } = data;
-    console.log("Quality requested:", quality);
+    const { alterId, prompt, quality, sceneImageUrl, imageCount = 1 } = data;
+    console.log(`Generating Magic Post. Quality: ${quality}, Count: ${imageCount}`);
 
     try {
         const alterDoc = await db.collection('alters').doc(alterId).get();
@@ -296,13 +282,23 @@ export const generateMagicPost = functions.runWith({
 
         const alterData = alterDoc.data();
         const credits = alterData?.credits || 0;
-        const cost = COSTS.POST_STD; // Use standard cost for Seedream now
+
+        // Cost Calculation
+        // Standard: 10 credits per image. 
+        // Batch (3 images): 25 credits (Discounted from 30).
+        let cost = COSTS.POST_STD;
+        if (imageCount === 3) {
+            cost = 25; // Discounted batch price
+        } else {
+            cost = COSTS.POST_STD * imageCount;
+        }
+
         if (credits < cost) throw new functions.https.HttpsError('resource-exhausted', 'Insufficient credits');
-        await chargeCredits(alterId, cost, `Magic Post`);
+        await chargeCredits(alterId, cost, `Magic Post (${imageCount} image${imageCount > 1 ? 's' : ''})`);
 
         const visualDNA = alterData?.visual_dna;
         const charDescription = visualDNA?.description || alterData?.name;
-        const refSheetUrl = visualDNA?.reference_sheet_url;
+        // const refSheetUrl = visualDNA?.reference_sheet_url;
 
         // 1. Magic Prompt Expansion (Gemini)
         let magicPrompt = prompt;
@@ -311,7 +307,7 @@ export const generateMagicPost = functions.runWith({
 
         if (genAI) {
             try {
-                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Fast model for text
+                const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); // Fast model for text
                 const enhancementPrompt = `
                     Act as an expert Art Director. Rewrite the following user prompt into a detailed image generation prompt.
                     
@@ -344,9 +340,6 @@ export const generateMagicPost = functions.runWith({
         let referenceImages: string[] = [];
 
         // A. Character Consistency (Priority #1)
-        // A. Character Consistency (Priority #1)
-        // NOTE: We do NOT pass the Ref Sheet as an image payload because Seedream treats it as Img2Img (Structure),
-        // which forces the output to look like a grid. We rely on the Text Prompt (Visual DNA) for identity.
         /*
         if (refSheetUrl) {
             try {
@@ -380,17 +373,31 @@ export const generateMagicPost = functions.runWith({
             }
         }
 
-        // 3. Generate Image (Seedream)
-        let imageBuffer: Buffer;
-        imageBuffer = await callBytePlusArk(magicPrompt, referenceImages, "2048x2048");
+        // 3. Generate Image(s) (Seedream)
+        // Parallel execution for batch generation
+        const generatePromises = Array.from({ length: imageCount }).map(() =>
+            callBytePlusArk(magicPrompt, referenceImages, "2048x2048")
+        );
 
-        const filename = `posts/ai/${alterId}_${Date.now()}.png`;
-        const bucket = admin.storage().bucket();
-        const file = bucket.file(filename);
-        await file.save(imageBuffer, { metadata: { contentType: 'image/png' } });
-        await file.makePublic();
+        const imageBuffers = await Promise.all(generatePromises);
 
-        return { success: true, imageUrl: file.publicUrl() };
+        // 4. Upload All Images
+        const uploadPromises = imageBuffers.map(async (buffer: Buffer, index: number) => {
+            const filename = `posts/ai/${alterId}_${Date.now()}_${index}.png`;
+            const bucket = admin.storage().bucket();
+            const file = bucket.file(filename);
+            await file.save(buffer, { metadata: { contentType: 'image/png' } });
+            await file.makePublic();
+            return file.publicUrl();
+        });
+
+        const imageUrls = await Promise.all(uploadPromises);
+
+        return {
+            success: true,
+            images: imageUrls, // Return array
+            imageUrl: imageUrls[0] // Backward compatibility for single image
+        };
 
     } catch (e: any) {
         console.error("Magic Post Error:", e);

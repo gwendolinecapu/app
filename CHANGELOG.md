@@ -1,12 +1,24 @@
 # Changelog
 
 ## [2026-01-04] Correctifs & Améliorations 🔧
+- **Refonte Économie (Shop 2.0)**: Rééquilibrage complet des prix selon les paliers de rareté :
+  - **Commun**: 1 Crédit (au lieu de 50).
+  - **Rare**: 10 Crédits (au lieu de 150).
+  - **Épique**: 50 Crédits (au lieu de 300).
+  - **Légendaire**: 250 Crédits (au lieu de 800).
+  - **Mythique**: 1500 Crédits.
+- **Loot Box**: Prix fixé à **30 Crédits** (au lieu de 150).
+- **Récompenses Pub**: Augmentation à **+10 Crédits** par pub.
+- **UI Shop**: Nouvelle identité visuelle avec **Badges de Rareté** et **Bordures Colorées** autour des aperçus. Suppression des anciens badges "Luxe".
+- **Backend (LootBox)**: Mise à jour du service pour utiliser les nouvelles constantes de prix et couleurs partagées.
 - **Cosmétiques**: Augmentation de l'échelle du cadre **Flammes** (`frame_flames_v2`) de 15% au total (1.0 -> 1.15) pour un rendu maximal.
 - **Shop**: Suppression des cadres "Oasis Désert" et "Naufragé Steampunk" suite aux retours utilisateurs.
 - **Shop**: Correctif critique pour l'achat de crédits en mode DEV. La vérification manquait le champ `priceIAP`, empêchant la détection des packs.
 - **Backend**: Correction critique de la gestion des crédits ("Crédits Insuffisants"). Les fonctions Cloud `performBirthRitual` et `generateMagicPost` débitent désormais correctement le portefeuille de l'Alter (et non celui de l'utilisateur principal), alignant la logique sur le modèle de données.
 - **Infrastructure**: Mise à niveau du runtime Cloud Functions vers Node.js 22.
-
+- **Magie IA (Batch)**: Implémentation complète de la génération par lot (x3 images) avec réduction de coût (25 crédits au lieu de 30).
+- **Magie IA (UI)**: Nouvelle interface de sélection (1 ou 3 images), affichage du solde de crédits et bouton "Watch Ad" intégré.
+- **Backend (Pricing)**: Réajustement des coûts IA pour un modèle plus généreux (Standard: 10, Batch: 25).
 ### ✨ Intelligence Artificielle (Features) 🧠
 - **Rituel de Naissance** : Importez une planche de référence pour que l'IA mémorise l'apparence de votre alter (15 Crédits).
 - **Magie IA** : Générateur d'images pour mettre en scène vos alters dans n'importe quel contexte via un prompt texte.

@@ -344,6 +344,10 @@ export const generateMagicPost = functions.runWith({
         let referenceImages: string[] = [];
 
         // A. Character Consistency (Priority #1)
+        // A. Character Consistency (Priority #1)
+        // NOTE: We do NOT pass the Ref Sheet as an image payload because Seedream treats it as Img2Img (Structure),
+        // which forces the output to look like a grid. We rely on the Text Prompt (Visual DNA) for identity.
+        /*
         if (refSheetUrl) {
             try {
                 const refSheetB64 = await downloadImageAsBase64(refSheetUrl);
@@ -353,6 +357,7 @@ export const generateMagicPost = functions.runWith({
                 console.warn("Failed to download Ref Sheet:", e);
             }
         }
+        */
 
         // B. Scene Guidance (I2I)
         if (sceneImageUrl) {

@@ -40,10 +40,10 @@ export default function FullPageVideoScreen() {
     const handleLike = async () => {
         if (!post || !user) return;
         // Optimistic update
-        const isLiked = post.likes?.includes(user.id);
+        const isLiked = post.likes?.includes(user.uid);
         const newLikes = isLiked
-            ? post.likes?.filter(uid => uid !== user.id)
-            : [...(post.likes || []), user.id];
+            ? post.likes?.filter(uid => uid !== user.uid)
+            : [...(post.likes || []), user.uid];
 
         setPost({ ...post, likes: newLikes });
 
@@ -74,7 +74,7 @@ export default function FullPageVideoScreen() {
         );
     }
 
-    const isLiked = user && post.likes?.includes(user.id);
+    const isLiked = user && post.likes?.includes(user.uid);
 
     return (
         <View style={styles.container}>

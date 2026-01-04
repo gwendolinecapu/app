@@ -21,6 +21,7 @@ import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { Alter } from '../../types';
+import { SketchCanvas } from '../shared/SketchCanvas';
 
 interface MagicPostGeneratorProps {
     visible: boolean;
@@ -58,6 +59,7 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
     const [style, setStyle] = useState('Cinematic'); // New: Style state
     const [sceneImageUri, setSceneImageUri] = useState<string | null>(null);
     const [poseImageUri, setPoseImageUri] = useState<string | null>(null); // New: Pose state
+    const [isDrawing, setIsDrawing] = useState(false); // New: Drawing mode state
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<string | null>(null);
 
@@ -295,26 +297,29 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
                                 )}
                             </TouchableOpacity>
 
-                            {/* Pose / Scribble */}
                             <Text style={[styles.helperText, { marginTop: spacing.sm }]}>Pose ou Gribouillage (Structure)</Text>
-                            <TouchableOpacity style={styles.imagePicker} onPress={pickPoseImage}>
-                                {poseImageUri ? (
-                                    <>
-                                        <Image source={{ uri: poseImageUri }} style={styles.previewScene} />
-                                        <TouchableOpacity
-                                            style={styles.removeImagesButton}
-                                            onPress={() => setPoseImageUri(null)}
-                                        >
-                                            <Ionicons name="close-circle" size={24} color="white" />
-                                        </TouchableOpacity>
-                                    </>
-                                ) : (
-                                    <View style={styles.uploadPlaceholder}>
-                                        <Ionicons name="body-outline" size={24} color={colors.textSecondary} />
-                                        <Text style={styles.uploadText}>Pose / Croquis</Text>
-                                    </View>
-                                )}
-                            </TouchableOpacity>
+                            {poseImageUri ? (
+                                <View style={[styles.imagePicker, { borderColor: colors.primary, height: 180 }]}>
+                                    <Image source={{ uri: poseImageUri }} style={styles.previewScene} />
+                                    <TouchableOpacity
+                                        style={styles.removeImagesButton}
+                                        onPress={() => setPoseImageUri(null)}
+                                    >
+                                        <Ionicons name="close-circle" size={24} color="white" />
+                                    </TouchableOpacity>
+                                </View>
+                            ) : (
+                                <View style={{ flexDirection: 'row', gap: 10 }}>
+                                    <TouchableOpacity style={[styles.imagePicker, { flex: 1, height: 100 }]} onPress={pickPoseImage}>
+                                        <Ionicons name="images-outline" size={24} color={colors.textSecondary} />
+                                        <Text style={styles.uploadText}>Galerie</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={[styles.imagePicker, { flex: 1, height: 100 }]} onPress={() => setIsDrawing(true)}>
+                                        <Ionicons name="pencil" size={24} color={colors.textSecondary} />
+                                        <Text style={styles.uploadText}>Dessiner</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
 
                             {/* 4. PROMPT */}
                             <Text style={styles.label}>Description de la Scène</Text>
@@ -353,6 +358,21 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
                     )}
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            {/* Drawing Modal */}
+            <Modal
+                visible={isDrawing}
+                animationType="slide"
+                onRequestClose={() => setIsDrawing(false)}
+            >
+                <SketchCanvas
+                    onClose={() => setIsDrawing(false)}
+                    onSave={(uri) => {
+                        setPoseImageUri(uri);
+                        setIsDrawing(false);
+                    }}
+                />
+            </Modal>
         </Modal>
     );
 };

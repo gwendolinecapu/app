@@ -170,7 +170,7 @@ export default function RitualScreen() {
                 <View style={{ width: 28 }} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.content}>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content}>
 
                 <View style={[styles.card, { borderColor: primaryColor }]}>
                     <LinearGradient

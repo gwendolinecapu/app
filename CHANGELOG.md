@@ -5,6 +5,12 @@
 - **Shop**: Suppression des cadres "Oasis Désert" et "Naufragé Steampunk" suite aux retours utilisateurs.
 - **Shop**: Correctif critique pour l'achat de crédits en mode DEV. La vérification manquait le champ `priceIAP`, empêchant la détection des packs.
 
+### ✨ Intelligence Artificielle (Features) 🧠
+- **Rituel de Naissance** : Importez une planche de référence pour que l'IA mémorise l'apparence de votre alter (15 Crédits).
+- **Magie IA** : Générateur d'images pour mettre en scène vos alters dans n'importe quel contexte via un prompt texte.
+- **Modes** : Supporte "Incrustation/Body Swap" (via photo chargée) et Génération Pure.
+- **Qualité** : Choix entre Eco (1C), Standard (4C), Pro (12C).
+
 ## [2026-01-03] Ajout Cadres Animés (Tropical & Flammes) 🌴🔥
 ### Boutique (Shop)
 - **Nouveau Cosmétique** : Ajout du cadre **Tropical** (`frame_tropical`) avec ambiance vacances et cocotiers (Animé).

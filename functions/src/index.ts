@@ -1,5 +1,5 @@
 
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
 import { VertexAI, HarmCategory, HarmBlockThreshold } from "@google-cloud/vertexai";
 import { GoogleAuth } from "google-auth-library";
@@ -9,18 +9,22 @@ const db = admin.firestore();
 
 // --- Configuration ---
 const PROJECT_ID = process.env.GCLOUD_PROJECT || "plural-connect-default"; // Fallback or env
-const LOCATION = "us-central1";
 
 // AI Models
-const GEMINI_MODEL = "gemini-2.5-flash-image";
-const IMAGEN_MODEL_STD = "imagegeneration@006"; // Fallback to Imagen 2 for stability/availability
-const IMAGEN_MODEL_PRO = "imagen-3.0-generate-001"; // Target Imagen 3
+const GEMINI_MODEL = "gemini-3-pro-image-preview";
+const IMAGEN_MODEL_ECO = "imagen-4.0-fast-generate-001";
+const IMAGEN_MODEL_STD = "imagen-4.0-generate-001";
+const IMAGEN_MODEL_PRO = "imagen-4.0-ultra-generate-001";
+
+const LOCATION_IMAGEN = "us-central1"; // Imagen 4 is regional (us-central1)
 
 // Vertex AI Client (for Gemini)
+// Using 'global' location as required for Gemini 3 Preview/Experimental models
 const vertexAI = new VertexAI({
     project: PROJECT_ID,
-    location: LOCATION
+    location: 'global'
 });
+
 
 // Auth Client (for REST calls to Imagen)
 const auth = new GoogleAuth({
@@ -97,33 +101,32 @@ async function downloadImageAsBase64(url: string): Promise<string> {
     return file.toString('base64');
 }
 
-async function callImagen(prompt: string, quality: 'eco' | 'mid' | 'high', refImageBase64?: string): Promise<Buffer> {
+/**
+ * Call Imagen 4 (REST API)
+ * Used purely for Text-to-Image when no scene image is provided.
+ */
+async function callImagen(prompt: string, quality: 'eco' | 'mid' | 'high'): Promise<Buffer> {
     const client = await auth.getClient();
     const token = await client.getAccessToken();
 
     // Select Model
     let modelId = IMAGEN_MODEL_STD;
+    if (quality === 'eco') modelId = IMAGEN_MODEL_ECO;
     if (quality === 'high') modelId = IMAGEN_MODEL_PRO;
 
-    const endpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${modelId}:predict`;
+    const endpoint = `https://${LOCATION_IMAGEN}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION_IMAGEN}/publishers/google/models/${modelId}:predict`;
 
     // Construct Request
     const instances = [
         {
             prompt: prompt,
-            // Add image guidance if refImageBase64 is present (Structure depends on model version)
-            ...(refImageBase64 ? {
-                image: {
-                    bytesBase64Encoded: refImageBase64
-                }
-            } : {})
         }
     ];
 
     const parameters = {
         sampleCount: 1,
-        // Aspect ratio, seed, etc.
-        aspectRatio: "1:1"
+        aspectRatio: "1:1",
+        // Format: 'image/png' // Default is usually png or jpeg base64
     };
 
     const response = await fetch(endpoint, {
@@ -149,11 +152,41 @@ async function callImagen(prompt: string, quality: 'eco' | 'mid' | 'high', refIm
     return Buffer.from(b64, 'base64');
 }
 
+/**
+ * Call Gemini 3 Pro (Vertex AI SDK)
+ * Used for Ritual (Vision) and Magic Post with Image Input (Edition/Context).
+ */
+async function callGeminiGeneration(prompt: string, imageBase64?: string): Promise<Buffer> {
+    const model = vertexAI.getGenerativeModel({
+        model: GEMINI_MODEL,
+        safetySettings: [{ category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE }]
+    });
+
+    const parts: any[] = [{ text: prompt }];
+
+    if (imageBase64) {
+        parts.push({ inlineData: { mimeType: 'image/jpeg', data: imageBase64 } });
+    }
+
+    const result = await model.generateContent({
+        contents: [{ role: 'user', parts }]
+    });
+
+    const generatedPart = result.response.candidates?.[0]?.content?.parts?.[0];
+
+    // Check for inline image data (Vertex AI Gemini 3 behavior)
+    if (generatedPart?.inlineData?.data) {
+        return Buffer.from(generatedPart.inlineData.data, 'base64');
+    }
+
+    throw new Error("Gemini generation failed - No image returned (Try Imagen if Text-to-Image only). Output: " + generatedPart?.text?.substring(0, 100));
+}
+
 // --- Cloud Functions ---
 
 /**
  * RITUEL DE NAISSANCE
- * One-shot analysis of an Alter's reference sheet.
+ * One-shot analysis of an Alter's reference sheet using Gemini 3 Pro.
  */
 export const performBirthRitual = functions.https.onCall(async (data: RitualRequest, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Login required');
@@ -174,7 +207,7 @@ export const performBirthRitual = functions.https.onCall(async (data: RitualRequ
             // throw new functions.https.HttpsError('permission-denied', 'Not your alter');
         }
 
-        // 2. Check Balance (Wallet Alter)
+        // 2. Check Balance
         const credits = alterData?.credits || 0;
         if (credits < COSTS.RITUAL) throw new functions.https.HttpsError('resource-exhausted', `Crédits insuffisants. Requis: ${COSTS.RITUAL}`);
 
@@ -182,16 +215,14 @@ export const performBirthRitual = functions.https.onCall(async (data: RitualRequ
         await chargeCredits(alterId, COSTS.RITUAL, `Rituel de Naissance`);
 
         // 4. Perform Analysis
-        // Download all images in parallel
         const imagesBase64 = await Promise.all(referenceImageUrls.map(url => downloadImageAsBase64(url)));
 
-        // Gemini Vision Analysis
         const model = vertexAI.getGenerativeModel({
             model: GEMINI_MODEL,
             safetySettings: [{ category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE }]
         });
 
-        const prompt = `
+        const analysisPrompt = `
             Analyze these character reference images deeply (3D Scan Mode).
             Extract a "Visual DNA" description for an AI image generator.
             Focus on: Physical build, Face details, Hair, Clothing styles, Key colors.
@@ -200,22 +231,18 @@ export const performBirthRitual = functions.https.onCall(async (data: RitualRequ
         `;
 
         const parts = [
-            { text: prompt },
+            { text: analysisPrompt },
             ...imagesBase64.map(base64 => ({ inlineData: { mimeType: 'image/jpeg', data: base64 } }))
         ];
 
         const res = await model.generateContent({
-            contents: [{
-                role: 'user',
-                parts: parts as any
-            }]
+            contents: [{ role: 'user', parts: parts as any }]
         });
 
         const visualDescription = res.response.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!visualDescription) throw new Error("Analysis failed - No description generated");
 
-        // 5. Generate Reference Sheet (using Gemini 2.5 Flash Image)
-        // User requested ONLY gemini-2.5-flash-image for the ritual
+        // 5. Generate Reference Sheet (Gemini 3 Pro)
         const refSheetPrompt = `
             Generate an image of a Character Reference Sheet (Turn-around view: Front, Side, Back).
             Based on this description: ${visualDescription}
@@ -224,57 +251,17 @@ export const performBirthRitual = functions.https.onCall(async (data: RitualRequ
         `;
 
         // Request Image Generation from Gemini
-        // Note: Providing 'image/png' mimeType in generation config if supported, 
-        // or relying on model native capabilities for multimodal output.
-        // For Vertex AI Gemini 2.5, we might need to check if it supports direct image output.
-        // Assuming user confidence, we try standard generation flow or specific formatting.
-
-        // Since Vertex AI Gemini usually returns text, we might have to use the specific Imagen model IF Gemini delegates?
-        // BUT USER SAID "gemini-2.5-flash-image UNIQUEMENT". 
-        // We will try running generateContent. If it fails to return an image, we handle it.
-
-        // REVISION: 'gemini-2.5-flash-image' is likely a Vision model (Input). 
-        // Generating images typically requires an image model.
-        // However, to strictly follow "Use ONLY this model", we will try.
-        // If this model is text-only output, this will fail/return text describing the image.
-
-        // Let's TRY to use the same model instance.
-        const refGenRes = await model.generateContent(refSheetPrompt);
-
-        // Check for image data in response
-        // Usually: candidates[0].content.parts[0].inlineData (if image)
-        // or .executableCode?
-
-        // IF we get text instead of image, we might need to fallback or error.
-        // But for now, let's implement the extraction logic assuming it CAN behave like Imagen.
-
-        // NOTE: Vertex AI currently uses Imagen for images. 
-        // If the user insists on Gemini, maybe they mean the 'Imagen 3' model DRIVEN by Gemini prompt?
-        // But they said "uniquement gemini-2.5-flash-image". 
-        // I will implement a safer check: 
-        // Check if we got an image. If not, maybe use the description as the 'result' 
-        // and acknowledge we couldn't generate the *image* file with strictly this model?
-
-        // Actually, let's assume the user implies using 'gemini-2.5-flash-image' for the ANALYSIS
-        // and implies that *I should have known* getting an image out of it might be via a specific way?
-
-        // To avoid "Stupid", I will attempt to render.
-
         let refSheetUrl = "";
-
-        const generatedPart = refGenRes.response.candidates?.[0]?.content?.parts?.[0];
-
-        if (generatedPart?.inlineData?.data) {
-            const refSheetBuffer = Buffer.from(generatedPart.inlineData.data, 'base64');
+        try {
+            const refImageBuffer = await callGeminiGeneration(refSheetPrompt);
             const refSheetFilename = `alters/${alterId}/visual_dna/ref_sheet_${Date.now()}.png`;
             const itemBucket = admin.storage().bucket();
             const file = itemBucket.file(refSheetFilename);
-            await file.save(refSheetBuffer, { metadata: { contentType: 'image/png' } });
+            await file.save(refImageBuffer, { metadata: { contentType: 'image/png' } });
             [refSheetUrl] = await file.getSignedUrl({ action: 'read', expires: '03-01-2500' });
-        } else {
-            // Fallback: If model returned text, maybe it refused or just described it.
-            // We won't error out, just skip saving the image URL.
-            console.log("Gemini did not return an image. Output:", generatedPart?.text);
+        } catch (genErr) {
+            console.warn("Reference Sheet generation failed (Validation Only):", genErr);
+            // Non-blocking failure for ref sheet, main value is DNA
         }
 
         // 6. Save DNA
@@ -298,7 +285,8 @@ export const performBirthRitual = functions.https.onCall(async (data: RitualRequ
 
 /**
  * MAGIC POST
- * Generates an image of the alter in context.
+ * Generates an image of the alter.
+ * Uses Imagen 4 for T2I, Gemini 3 Pro for I2I/Context.
  */
 export const generateMagicPost = functions.https.onCall(async (data: MagicPostRequest, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Login required');
@@ -306,57 +294,67 @@ export const generateMagicPost = functions.https.onCall(async (data: MagicPostRe
     const userId = context.auth.uid;
 
     try {
-        // 1. Validation Checks (Cost-Free)
+        // 1. Validation Checks
         const alterDoc = await db.collection('alters').doc(alterId).get();
         if (!alterDoc.exists) throw new functions.https.HttpsError('not-found', 'Alter not found');
 
-        // Security: Verify ownership
         const alterData = alterDoc.data();
-        if (alterData?.userId !== userId && alterData?.systemId !== userId) { // Check both potential owner fields
-            // Note: verification logic depends on your data model (systemId vs userId). Assuming restrictive for safety.
-            // If sharing allowed, remove this. For now, strict.
+        if (alterData?.userId !== userId && alterData?.systemId !== userId) {
+            // Security check if strictly private
         }
 
-        const dna = alterData?.visual_dna?.description;
-        if (!dna) throw new functions.https.HttpsError('failed-precondition', 'Rituel de Naissance requis pour cet alter.');
+        // FLEXIBILITY: Use Manual Profile if DNA is missing
+        let charDescription = alterData?.visual_dna?.description;
+        if (!charDescription) {
+            // Fallback construction
+            const name = alterData?.name || "The character";
+            const appearance = alterData?.appearance || ""; // Assuming 'appearance' field exists or similar
+
+
+            // If we really have nothing, we should warn or just try.
+            charDescription = `Character Name: ${name}. Appearance details: ${appearance}.`;
+
+            // Note: If avatarUrl exists, we *could* utilize it for I2I, strictly requested I2I uses Gemini.
+            // But for now, text fallback.
+        }
 
         // 2. Calculate Cost
         let cost = COSTS.POST_STD;
         if (quality === 'eco') cost = COSTS.POST_ECO;
         if (quality === 'high') cost = COSTS.POST_PRO;
 
-        // 3. Check Balance (Read-only)
-        // Note: We check against the Alter's credits now
+        // 3. Check Balance
         const credits = alterData?.credits || 0;
         if (credits < cost) throw new functions.https.HttpsError('resource-exhausted', `Crédits insuffisants. Requis: ${cost}, Dispo: ${credits}`);
 
-        // 4. Charge Credits (Transaction)
-        // We charge BEFORE the AI call to prevent exploit (calling AI then canceling).
-        // If AI fails, we could refund, but complex. Standard practice: Charge for the *attempt* if valid, or refund on specific error types.
-        // For simplicity/safety: Charge now.
+        // 4. Charge Credits
         await chargeCredits(alterId, cost, `Magic Post (${quality})`);
 
         // 5. AI Operations
         let fullPrompt = `
-            Character Description: ${dna}
+            Character Description to integrity: ${charDescription}
             
-            Scene/Action: ${prompt}
+            Action/Scene to generate: ${prompt}
             
-            Style: ${quality === 'high' ? 'High definition, photorealistic, cinematic (Nano Banana 3 Pro)' : quality === 'mid' ? 'Balanced, detailed (Nano Banana 2.5 Flash)' : 'Efficent, standard quality (Gemini 2.5 Flash + Imagen 3)'}.
-            Make sure the character matches the description perfectly.
+            Style: ${quality === 'high' ? 'High definition, photorealistic, cinematic' : quality === 'mid' ? 'Balanced, detailed' : 'Efficient, standard quality'}.
+            Make sure the character matches the description details perfectly.
         `;
 
-        if (isBodySwap) {
-            fullPrompt += " IMPORTANT: Perform a Body Swap. Replace the main subject's body in the provided image with the Character described above. Maintain the original background and lighting exactly.";
-        }
+        let imageBuffer: Buffer;
 
-        let sceneB64;
         if (sceneImageUrl) {
-            // Security: Validate URL domain if possible, or trust client upload to own bucket
-            sceneB64 = await downloadImageAsBase64(sceneImageUrl);
-        }
+            // IMAGE INPUT -> Use GEMINI 3 PRO (as requested for 'edition')
+            const sceneB64 = await downloadImageAsBase64(sceneImageUrl);
+            if (isBodySwap) {
+                fullPrompt += " IMPORTANT: Perform a Body Swap. Replace the main subject's body in the provided image with the Character described above. Maintain the background seamlessly.";
+            }
+            // Use Gemini for image-guided generation
+            imageBuffer = await callGeminiGeneration(fullPrompt, sceneB64);
 
-        const imageBuffer = await callImagen(fullPrompt, quality, sceneB64);
+        } else {
+            // TEXT ONLY -> Use IMAGEN 4 (as requested)
+            imageBuffer = await callImagen(fullPrompt, quality);
+        }
 
         // 6. Save Result
         const filename = `posts/ai/${alterId}_${Date.now()}.png`;
@@ -373,7 +371,6 @@ export const generateMagicPost = functions.https.onCall(async (data: MagicPostRe
 
     } catch (e: any) {
         console.error("Magic Generation Error:", e);
-        // Optional: Refund logic if e.message includes 'Imagen API Error' could be added here.
         throw new functions.https.HttpsError('internal', e.message);
     }
 });

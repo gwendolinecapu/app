@@ -138,7 +138,7 @@ const SingleFlame = React.memo(({ index, size }: { index: number; size: number }
 const MagmaBase = React.memo(({ size }: { size: number }) => {
     // Rotation animation
     const rotation = useSharedValue(0);
-    const scale = useSharedValue(1.10);
+    const scale = useSharedValue(1.15);
 
     useEffect(() => {
         // Slow rotation 
@@ -149,8 +149,8 @@ const MagmaBase = React.memo(({ size }: { size: number }) => {
         // Breathing scale
         scale.value = withRepeat(
             withSequence(
-                withTiming(1.15, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
-                withTiming(1.10, { duration: 2000, easing: Easing.inOut(Easing.ease) })
+                withTiming(1.20, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+                withTiming(1.15, { duration: 2000, easing: Easing.inOut(Easing.ease) })
             ),
             -1,
             true

@@ -80,6 +80,17 @@ export interface Alter {
 
     // Primers / Notes
     primers?: Primer[];
+
+    // AI Features
+    visual_dna?: VisualDNA;
+}
+
+export interface VisualDNA {
+    description: string;
+    reference_sheet_url?: string; // New: Turn-around view
+    reference_sheet: string;
+    generated_at: any; // Firestore Timestamp
+    is_ready: boolean;
 }
 
 export interface Primer {

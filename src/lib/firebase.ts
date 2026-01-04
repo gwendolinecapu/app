@@ -14,6 +14,7 @@ import 'firebase/compat/storage';
 import { getAuth, initializeAuth } from 'firebase/auth';
 import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { getFunctions } from 'firebase/functions';
 
 // Configuration Firebase
 const firebaseConfig = {
@@ -61,6 +62,7 @@ if (Platform.OS === 'web') {
 // Compat app instance IS a modular app instance (mostly).
 const db = getFirestore(app);
 const storage = getStorage(app);
+const functions = getFunctions(app, 'us-central1');
 
 // Enable Persistence (Firestore)
 enableIndexedDbPersistence(db).catch((err) => {
@@ -71,4 +73,4 @@ enableIndexedDbPersistence(db).catch((err) => {
     }
 });
 
-export { auth, db, storage };
+export { auth, db, storage, functions };

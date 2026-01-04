@@ -47,7 +47,9 @@ export default function EditAlterProfileScreen() {
     const [birthDate, setBirthDate] = useState<Date | null>(null);
     const [arrivalDate, setArrivalDate] = useState<Date | null>(null);
     const [showBirthPicker, setShowBirthPicker] = useState(false);
+
     const [showArrivalPicker, setShowArrivalPicker] = useState(false);
+
 
     const [initialAlter, setInitialAlter] = useState<Alter | null>(null);
 
@@ -133,6 +135,8 @@ export default function EditAlterProfileScreen() {
         });
     };
 
+
+
     const handleSave = async () => {
         if (!name.trim()) {
             Alert.alert('Erreur', 'Le nom est requis');
@@ -164,7 +168,7 @@ export default function EditAlterProfileScreen() {
                     }
                 } catch (uploadError) {
                     console.error('Upload failed:', uploadError);
-                    Alert.alert('Erreur Upload', 'Impossible de télécharger l\'image. Veuillez réessayer.');
+                    Alert.alert('Erreur Upload', 'Impossible de télécharger l&apos;image. Veuillez réessayer.');
                     setSaving(false);
                     return;
                 }
@@ -315,7 +319,7 @@ export default function EditAlterProfileScreen() {
                         </View>
 
                         <View style={[styles.formGroup, { flex: 1, marginLeft: spacing.sm }]}>
-                            <Text style={styles.label}>Date d'arrivée</Text>
+                            <Text style={styles.label}>Date d&apos;arrivée</Text>
                             <TouchableOpacity
                                 style={styles.dateInput}
                                 onPress={() => setShowArrivalPicker(true)}
@@ -341,6 +345,9 @@ export default function EditAlterProfileScreen() {
                         />
                     </View>
                 </View>
+
+
+                <View style={{ height: 40 }} />
 
                 {/* ==================== APPEARANCE SECTION ==================== */}
                 <View style={[styles.sectionHeader, { marginTop: spacing.xl }]}>
@@ -519,7 +526,7 @@ export default function EditAlterProfileScreen() {
                     />
                 )}
             </ScrollView>
-        </KeyboardAvoidingView>
+        </KeyboardAvoidingView >
     );
 }
 
@@ -763,5 +770,47 @@ const styles = StyleSheet.create({
         color: colors.primary,
         fontSize: 13,
         fontWeight: '600',
+    },
+    ritualCard: {
+        backgroundColor: colors.backgroundCard,
+        borderRadius: borderRadius.lg,
+        padding: spacing.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    ritualHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: spacing.sm,
+    },
+    ritualTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: colors.text,
+        marginBottom: 4,
+    },
+    ritualSubtitle: {
+        fontSize: 12,
+        color: colors.success,
+        fontWeight: '600',
+    },
+    ritualDescription: {
+        fontSize: 13,
+        color: colors.textSecondary,
+        marginBottom: spacing.md,
+        lineHeight: 18,
+    },
+    ritualButton: {
+        backgroundColor: colors.secondary, // Use distinct color for Magic AI
+        borderRadius: borderRadius.md,
+        paddingVertical: spacing.md,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    ritualButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
     },
 });

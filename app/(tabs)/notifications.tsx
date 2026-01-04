@@ -30,7 +30,6 @@ import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { triggerHaptic } from '../../src/lib/haptics';
 import { timeAgo } from '../../src/lib/date';
 import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
-import { getThemeColors } from '../../src/lib/cosmetics';
 
 // Types pour les différentes notifications
 type NotificationType = 'friend_request' | 'follow' | 'like' | 'comment' | 'mention' | 'system';
@@ -56,6 +55,8 @@ interface NotificationSection {
     title: string;
     data: Notification[];
 }
+
+import { getThemeColors } from '../../src/lib/cosmetics';
 
 export default function NotificationsScreen() {
     const { currentAlter, alters, user } = useAuth();
@@ -362,8 +363,24 @@ export default function NotificationsScreen() {
         const time_ago = timeAgo(item.timestamp);
         const hasMedia = !!item.mediaUrl;
 
+        // Handle press: navigate to post or profile
         const handlePress = () => {
             if (item.postId) {
+                // Navigate to post detail (we can use the modal profile trick or a dedidcated route)
+                // For now, assuming modal logic or feed logic. 
+                // If we have a route for single post, use it.
+                // We have /post/[id] but usually it's better to show in context.
+                // Ideally we'd open the post in a way that allows scrolling.
+                // Let's just create a generic route or assume standard navigation.
+                // Since we don't have a direct "view post" handy globally without context, 
+                // we might check if there is a generic post view.
+                // There is app/post/[id].tsx (implied from earlier context).
+                // Try:
+                // router.push(`/post/${item.postId}`);
+                // Actually previous snippets showed we used a Modal in Profile.
+                // Let's try to navigate to the user profile and open the post? No, too complex.
+                // app/post/[id] seems safe if exists.
+                // Wait, context said "Post Not Found" error debugging used app/post/[id].tsx. So it exists.
                 router.push(`/post/${item.postId}` as any);
             } else if (item.senderId) {
                 router.push(`/profile/${item.senderId}` as any);
@@ -382,18 +399,29 @@ export default function NotificationsScreen() {
                 ]}
                 onPress={handlePress}
             >
+                {/* Avatar Left */}
                 <TouchableOpacity onPress={() => item.senderId && router.push(`/profile/${item.senderId}` as any)}>
                     <View style={styles.notificationAvatarContainer}>
                         {item.actorAvatar ? (
-                            <Image source={{ uri: item.actorAvatar }} style={styles.notificationAvatar} />
+                            <Image
+                                source={{ uri: item.actorAvatar }}
+                                style={styles.notificationAvatar}
+                            />
                         ) : (
                             <View style={[styles.notificationAvatar, { backgroundColor: themeColor, justifyContent: 'center', alignItems: 'center' }]}>
                                 <Text style={{ color: 'white', fontWeight: 'bold' }}>{item.actorName?.[0] || '?'}</Text>
                             </View>
                         )}
+                        {/* Type Icon Badge (optional, Insta usually doesn't show it on avatar except stories) */}
+                        {/* 
+                        <View style={styles.typeBadge}>
+                             <Ionicons name={getIcon(item.type)} size={10} color="white" />
+                        </View>
+                        */}
                     </View>
                 </TouchableOpacity>
 
+                {/* Center Text */}
                 <View style={styles.notificationContent}>
                     <Text style={styles.notificationText} numberOfLines={3}>
                         <Text style={styles.username}>{item.actorName || "Un utilisateur"}</Text>
@@ -409,57 +437,70 @@ export default function NotificationsScreen() {
                     </Text>
                 </View>
 
+                {/* Right Side: Media or Follow Button */}
                 {hasMedia && item.mediaUrl ? (
                     <TouchableOpacity onPress={handlePress}>
-                        <Image source={{ uri: item.mediaUrl }} style={styles.notificationMedia} />
+                        <Image
+                            source={{ uri: item.mediaUrl }}
+                            style={styles.notificationMedia}
+                        />
                     </TouchableOpacity>
                 ) : item.type === 'follow' || item.type === 'friend_request' ? (
                     <TouchableOpacity style={[styles.followButtonSmall, { backgroundColor: themeColor }]}>
                         <Text style={styles.followButtonText}>Suivre</Text>
                     </TouchableOpacity>
                 ) : null}
+
             </AnimatedPressable>
         );
     };
 
+
+    // État vide
     const renderEmpty = () => (
         <View style={styles.emptyState}>
             <Ionicons name="notifications-off-outline" size={64} color={colors.textMuted} />
             <Text style={styles.emptyTitle}>Aucune notification</Text>
-            <Text style={[styles.emptySubtitle, themeColors && { color: themeColors.textSecondary }]}>
+            <Text style={styles.emptySubtitle}>
                 Les demandes d'amis, likes et commentaires apparaîtront ici
             </Text>
         </View>
     );
 
+    // Calculer s'il y a du contenu
     const hasContent = friendRequests.length > 0 || notifications.length > 0;
 
     return (
-        <SafeAreaView style={[
-            styles.container,
-            { backgroundColor: backgroundColor },
-            themeColors && { borderTopColor: themeColors.border }
-        ]}>
+        <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={textColor} />
+                <TouchableOpacity
+                    onPress={() => {
+                        if (currentAlter) {
+                            router.push({ pathname: '/alter-space/[alterId]', params: { alterId: currentAlter.id } });
+                        } else {
+                            router.back();
+                        }
+                    }}
+                    style={styles.backButton}
+                >
+                    <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
                 <View style={{ alignItems: 'center' }}>
                     <Text style={[styles.title, { color: themeColor }]}>Notifications</Text>
                 </View>
                 {hasContent ? (
                     <TouchableOpacity onPress={handleClearAll}>
-                        <Text style={{ color: themeColor, fontSize: 14 }}>Tout effacer</Text>
+                        <Text style={[styles.clearAllText, { color: themeColor }]}>Tout effacer</Text>
                     </TouchableOpacity>
-                ) : <View style={{ width: 24 }} />}
+                ) : <View style={{ width: 60 }} />}
             </View>
 
             <FlatList
-                data={notifications.filter(n => n.type !== 'friend_request')}
-                renderItem={renderNotification}
-                keyExtractor={item => item.id}
+                data={[]}
+                renderItem={null}
                 ListHeaderComponent={
                     <>
+                        {/* Section Demandes d'amis */}
                         {friendRequests.length > 0 && (
                             <View style={styles.section}>
                                 <View style={styles.sectionHeader}>
@@ -476,10 +517,21 @@ export default function NotificationsScreen() {
                             </View>
                         )}
 
+                        {/* Section Activité récente */}
                         {notifications.filter(n => n.type !== 'friend_request').length > 0 && (
-                            <View style={styles.sectionHeader}>
-                                <Ionicons name="pulse" size={20} color={themeColor} />
-                                <Text style={styles.sectionTitle}>Activité récente</Text>
+                            <View style={styles.section}>
+                                <View style={styles.sectionHeader}>
+                                    <Ionicons name="pulse" size={20} color={themeColor} />
+                                    <Text style={styles.sectionTitle}>Activité récente</Text>
+                                </View>
+                                {notifications
+                                    .filter(n => n.type !== 'friend_request')
+                                    .map(notification => (
+                                        <React.Fragment key={notification.id}>
+                                            {renderNotification({ item: notification })}
+                                        </React.Fragment>
+                                    ))
+                                }
                             </View>
                         )}
                     </>

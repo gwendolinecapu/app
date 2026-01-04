@@ -52,12 +52,29 @@ export const FriendService = {
             throw new Error("Receiver system ID not found (checked userId, systemId, system_id)");
         }
 
-        await addDoc(collection(db, 'friend_requests'), {
+        const docRef = await addDoc(collection(db, 'friend_requests'), {
             senderId,
             receiverId,
             systemId: auth.currentUser.uid, // Sender's System ID
             receiverSystemId, // Receiver's System ID (for security rules)
             status: 'pending',
+            createdAt: serverTimestamp()
+        });
+
+        // Create a notification for the receiver
+        await addDoc(collection(db, 'notifications'), {
+            recipientId: receiverId, // The alter receiving the notification
+            type: 'friend_request', // Must match NotificationType in NotificationTypes.ts or handled in UI
+            title: 'Nouvelle demande d\'ami',
+            message: 'Quelqu\'un souhaite devenir votre ami.',
+            subtitle: 'Nouvelle demande',
+            data: {
+                requestId: docRef.id,
+                senderId: senderId,
+                alterId: receiverId
+            },
+            senderId: senderId, // Important for UI enrichment
+            read: false,
             createdAt: serverTimestamp()
         });
     },
@@ -111,15 +128,17 @@ export const FriendService = {
 
         // 3. Notify the sender (THEM) that we accepted
 
+        // 3. Notify the sender (THEM) that we accepted
         await addDoc(collection(db, 'notifications'), {
-            recipientId: senderSystemId, // The system receiving the notification
-            type: 'FRIEND_REQUEST_ACCEPTED',
+            recipientId: senderId, // The alter receiving the notification (sender of request)
+            type: 'friend_request_accepted',
             title: 'Demande acceptée',
             message: 'Votre demande d\'ami a été acceptée.',
             data: {
                 alterId: receiverId, // The alter who accepted (us)
                 friendId: senderId, // The alter who sent (them)
             },
+            senderId: receiverId, // Important for UI enrichment
             read: false,
             createdAt: serverTimestamp()
         });
@@ -160,8 +179,7 @@ export const FriendService = {
         const qFriend = query(
             collection(db, 'friendships'),
             where('alterId', '==', alterId1),
-            where('friendId', '==', alterId2),
-            where('systemId', '==', auth.currentUser?.uid) // Add systemId check
+            where('friendId', '==', alterId2)
         );
         const friendSnap = await getDocs(qFriend);
         if (!friendSnap.empty) return 'friends';
@@ -210,6 +228,19 @@ export const FriendService = {
             collection(db, 'friend_requests'),
             where('receiverId', '==', alterId),
             where('status', 'in', statuses)
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as FriendRequest));
+    },
+
+    /**
+     * Get all pending requests for a system (aggregated)
+     */
+    getSystemRequests: async (systemId: string) => {
+        const q = query(
+            collection(db, 'friend_requests'),
+            where('receiverSystemId', '==', systemId),
+            where('status', '==', 'pending')
         );
         const snapshot = await getDocs(q);
         return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as FriendRequest));
@@ -275,8 +306,7 @@ export const FriendService = {
         const q1 = query(
             collection(db, 'friendships'),
             where('alterId', '==', alterId),
-            where('friendId', '==', friendId),
-            where('systemId', '==', auth.currentUser.uid)
+            where('friendId', '==', friendId)
         );
         const snap1 = await getDocs(q1);
         snap1.forEach(async (doc) => {

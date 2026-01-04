@@ -27,6 +27,8 @@ import {
     EMOTION_LABELS
 } from '../../src/types';
 
+import { getThemeColors } from '../../src/lib/cosmetics';
+
 const { width } = Dimensions.get('window');
 
 // Liste des émotions disponibles
@@ -39,6 +41,18 @@ const EMOTIONS: EmotionType[] = [
 
 export default function EmotionsScreen() {
     const { currentAlter, user } = useAuth();
+
+    // Determine Theme Colors
+    const themeColors = currentAlter?.equipped_items?.theme
+        ? getThemeColors(currentAlter.equipped_items.theme)
+        : null;
+
+    const textColor = themeColors?.text || colors.text;
+    const textSecondaryColor = themeColors?.textSecondary || colors.textSecondary;
+    const primaryColor = themeColors?.primary || colors.primary;
+    const backgroundColor = themeColors?.background || colors.background;
+    const cardColor = themeColors?.backgroundCard || colors.backgroundCard;
+
     const [selectedEmotions, setSelectedEmotions] = useState<EmotionType[]>([]);
     const [intensity, setIntensity] = useState<number>(3);
     const [note, setNote] = useState('');
@@ -142,27 +156,27 @@ export default function EmotionsScreen() {
 
     if (!currentAlter) {
         return (
-            <View style={styles.container}>
+            <View style={[styles.container, { backgroundColor }]}>
                 <View style={styles.emptyState}>
                     <Text style={styles.emptyEmoji}>💭</Text>
-                    <Text style={styles.emptyTitle}>Sélectionne un alter</Text>
+                    <Text style={[styles.emptyTitle, { color: textColor }]}>Sélectionne un alter</Text>
                 </View>
             </View>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 {/* Header */}
                 <View style={[styles.header, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }]}>
                     <View style={{ flexDirection: 'row', gap: 10 }}>
                         <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 5 }}>
-                            <Ionicons name="arrow-back" size={24} color={colors.text} />
+                            <Ionicons name="arrow-back" size={24} color={textColor} />
                         </TouchableOpacity>
                         <View>
-                            <Text style={styles.title}>Comment te sens-tu ?</Text>
-                            <Text style={styles.subtitle}>
+                            <Text style={[styles.title, { color: textColor }]}>Comment te sens-tu ?</Text>
+                            <Text style={[styles.subtitle, { color: textSecondaryColor }]}>
                                 En tant que {currentAlter.name}
                             </Text>
                         </View>
@@ -174,8 +188,8 @@ export default function EmotionsScreen() {
 
                 {/* Info si déjà enregistré aujourd'hui */}
                 {todayEmotion && (
-                    <View style={styles.todayBanner}>
-                        <Text style={styles.todayText}>
+                    <View style={[styles.todayBanner, { backgroundColor: primaryColor + '30' }]}>
+                        <Text style={[styles.todayText, { color: primaryColor }]}>
                             nc                             Tu as déjà enregistré &quot;{EMOTION_LABELS[todayEmotion.emotion as EmotionType]}&quot;
                             {' '}aujourd&apos;hui
                         </Text>
@@ -191,7 +205,8 @@ export default function EmotionsScreen() {
                                 key={emotion}
                                 style={[
                                     styles.emotionButton,
-                                    isSelected && styles.emotionButtonSelected,
+                                    { backgroundColor: cardColor },
+                                    isSelected && { borderColor: primaryColor, backgroundColor: primaryColor + '20' },
                                 ]}
                                 onPress={() => {
                                     setSelectedEmotions(prev => {
@@ -208,7 +223,8 @@ export default function EmotionsScreen() {
                                 </Text>
                                 <Text style={[
                                     styles.emotionLabel,
-                                    isSelected && styles.emotionLabelSelected,
+                                    { color: textSecondaryColor },
+                                    isSelected && { color: primaryColor, fontWeight: 'bold' },
                                 ]}>
                                     {EMOTION_LABELS[emotion]}
                                 </Text>
@@ -220,20 +236,26 @@ export default function EmotionsScreen() {
                 {/* Intensité */}
                 {selectedEmotions.length > 0 && (
                     <View style={styles.intensitySection}>
-                        <Text style={styles.sectionTitle}>Intensité</Text>
+                        <Text style={[styles.sectionTitle, { color: textColor }]}>Intensité</Text>
                         <View style={styles.intensityRow}>
                             {[1, 2, 3, 4, 5].map((level) => (
                                 <TouchableOpacity
                                     key={level}
                                     style={[
                                         styles.intensityButton,
-                                        intensity === level && styles.intensityButtonSelected,
+                                        { backgroundColor: cardColor },
+                                        intensity === level && { borderColor: primaryColor, backgroundColor: primaryColor },
                                     ]}
                                     onPress={() => setIntensity(level)}
                                 >
                                     <Text style={[
                                         styles.intensityText,
-                                        intensity === level && styles.intensityTextSelected,
+                                        { color: textSecondaryColor },
+                                        intensity === level && { color: textColor }, // Or white? Usually white on primary. Let's try textColor for contrast if primary is light. 
+                                        // Wait, on pastel primary is light, so text should be brown. 
+                                        // If primary is dark, text should be white.
+                                        // "themeColors.text" is designed to contrast with background.
+                                        // Let's rely on theme logic: if theme is pastel, text is brown.
                                     ]}>
                                         {level}
                                     </Text>
@@ -241,8 +263,8 @@ export default function EmotionsScreen() {
                             ))}
                         </View>
                         <View style={styles.intensityLabels}>
-                            <Text style={styles.intensityHint}>Faible</Text>
-                            <Text style={styles.intensityHint}>Forte</Text>
+                            <Text style={[styles.intensityHint, { color: textSecondaryColor }]}>Faible</Text>
+                            <Text style={[styles.intensityHint, { color: textSecondaryColor }]}>Forte</Text>
                         </View>
                     </View>
                 )}
@@ -250,11 +272,11 @@ export default function EmotionsScreen() {
                 {/* Note optionnelle */}
                 {selectedEmotions.length > 0 && (
                     <View style={styles.noteSection}>
-                        <Text style={styles.sectionTitle}>Note (optionnel)</Text>
+                        <Text style={[styles.sectionTitle, { color: textColor }]}>Note (optionnel)</Text>
                         <TextInput
-                            style={styles.noteInput}
+                            style={[styles.noteInput, { backgroundColor: cardColor, color: textColor }]}
                             placeholder="Qu'est-ce qui t'a fait ressentir ça ?"
-                            placeholderTextColor={colors.textMuted}
+                            placeholderTextColor={textSecondaryColor}
                             value={note}
                             onChangeText={setNote}
                             multiline
@@ -266,11 +288,11 @@ export default function EmotionsScreen() {
                 {/* Bouton enregistrer */}
                 {selectedEmotions.length > 0 && (
                     <TouchableOpacity
-                        style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+                        style={[styles.saveButton, { backgroundColor: primaryColor }, loading && styles.saveButtonDisabled]}
                         onPress={handleSaveEmotion}
                         disabled={loading}
                     >
-                        <Text style={styles.saveButtonText}>
+                        <Text style={[styles.saveButtonText, { color: themeColors?.text || 'white' }]}>
                             {loading ? 'Enregistrement...' : 'Enregistrer'}
                         </Text>
                     </TouchableOpacity>
@@ -279,20 +301,20 @@ export default function EmotionsScreen() {
                 {/* Historique récent */}
                 <View style={styles.historySection}>
                     <View style={styles.historyHeader}>
-                        <Text style={styles.sectionTitle}>Historique récent</Text>
+                        <Text style={[styles.sectionTitle, { color: textColor }]}>Historique récent</Text>
                         <TouchableOpacity onPress={() => router.push({ pathname: '/history', params: { tab: 'emotions' } })}>
-                            <Text style={styles.seeAllLink}>Voir tout →</Text>
+                            <Text style={[styles.seeAllLink, { color: primaryColor }]}>Voir tout →</Text>
                         </TouchableOpacity>
                     </View>
 
                     {recentEmotions.length === 0 ? (
-                        <Text style={styles.noHistory}>
+                        <Text style={[styles.noHistory, { color: textSecondaryColor }]}>
                             Aucune émotion enregistrée cette semaine
                         </Text>
                     ) : (
                         <View style={styles.historyList}>
                             {recentEmotions.slice(0, 5).map((emotion) => (
-                                <View key={emotion.id} style={styles.historyItem}>
+                                <View key={emotion.id} style={[styles.historyItem, { backgroundColor: cardColor }]}>
                                     <Text style={styles.historyEmoji}>
                                         {emotion.emotions
                                             ? emotion.emotions.map(e => EMOTION_EMOJIS[e]).join(' ')
@@ -300,18 +322,18 @@ export default function EmotionsScreen() {
                                         }
                                     </Text>
                                     <View style={styles.historyInfo}>
-                                        <Text style={styles.historyLabel}>
+                                        <Text style={[styles.historyLabel, { color: textColor }]}>
                                             {emotion.emotions
                                                 ? emotion.emotions.map(e => EMOTION_LABELS[e]).join(', ')
                                                 : EMOTION_LABELS[emotion.emotion as EmotionType]
                                             }
                                         </Text>
-                                        <Text style={styles.historyDate}>
+                                        <Text style={[styles.historyDate, { color: textSecondaryColor }]}>
                                             {formatDate(emotion.created_at)}
                                         </Text>
                                     </View>
-                                    <View style={styles.historyIntensity}>
-                                        <Text style={styles.historyIntensityText}>
+                                    <View style={[styles.historyIntensity, { backgroundColor: backgroundColor }]}>
+                                        <Text style={[styles.historyIntensityText, { color: textSecondaryColor }]}>
                                             {emotion.intensity}/5
                                         </Text>
                                     </View>
@@ -328,7 +350,7 @@ export default function EmotionsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.background,
+        // backgroundColor handled dynamically
     },
     scrollContent: {
         padding: spacing.lg,
@@ -340,10 +362,11 @@ const styles = StyleSheet.create({
     title: {
         ...typography.h1,
         marginBottom: spacing.xs,
+        // color handled dynamically
     },
     subtitle: {
         ...typography.bodySmall,
-        color: colors.textSecondary,
+        // color handled dynamically
     },
     todayBanner: {
         backgroundColor: colors.primaryLight + '30',
@@ -395,6 +418,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         ...typography.h3,
         marginBottom: spacing.md,
+        // color handled dynamically
     },
     intensityRow: {
         flexDirection: 'row',

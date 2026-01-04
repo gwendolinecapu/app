@@ -27,6 +27,7 @@ import { FriendService } from '../../src/services/friends';
 import { AlterService } from '../../src/services/alters';
 
 import { useSuccessAnimation } from '../../src/contexts/SuccessAnimationContext';
+import { MagicPostGenerator } from '../../src/components/posts/MagicPostGenerator';
 
 type PostType = 'text' | 'photo' | 'video' | 'audio';
 
@@ -52,6 +53,7 @@ export default function CreatePostScreen() {
     const [filteredMentions, setFilteredMentions] = useState<MentionSuggestion[]>([]);
     const [mentionedIds, setMentionedIds] = useState<Set<string>>(new Set());
     const [cursorPosition, setCursorPosition] = useState(0);
+    const [showMagicModal, setShowMagicModal] = useState(false);
 
     // --- COSMETICS ---
     const themeId = activeFront?.type === 'single' ? activeFront?.alters[0]?.equipped_items?.theme : undefined;
@@ -360,46 +362,71 @@ export default function CreatePostScreen() {
         }
     };
 
+
+
+    const handleMagicSuccess = (imageUri: string) => {
+        setMediaUri(imageUri);
+        setPostType('photo');
+        setShowMagicModal(false);
+    };
+
     const renderTypeSelector = () => (
-        <View style={[styles.typeSelector, themeColors && { backgroundColor: themeColors.backgroundCard }]}>
+        <View>
             <TouchableOpacity
-                style={[styles.typeButton, postType === 'text' && styles.typeButtonActive]}
-                onPress={() => {
-                    setPostType('text');
-                    setMediaUri(null);
-                    setAudioUri(null);
-                }}
+                style={styles.magicButton}
+                onPress={() => setShowMagicModal(true)}
             >
-                <Ionicons name="text" size={20} color={postType === 'text' ? colors.primary : colors.textSecondary} />
-                <Text style={[styles.typeText, postType === 'text' && styles.typeTextActive]}>Tweet</Text>
+                <LinearGradient
+                    colors={[colors.secondary, '#8b5cf6']} // Gold/Purple gradient
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.magicGradient}
+                >
+                    <Ionicons name="sparkles" size={20} color="white" style={{ marginRight: 8 }} />
+                    <Text style={styles.magicButtonText}>Générer avec Magie IA</Text>
+                </LinearGradient>
             </TouchableOpacity>
 
-            <TouchableOpacity
-                style={[styles.typeButton, postType === 'photo' && styles.typeButtonActive]}
-                onPress={() => pickMedia('photo')}
-            >
-                <Ionicons name="image" size={20} color={postType === 'photo' ? colors.primary : colors.textSecondary} />
-                <Text style={[styles.typeText, postType === 'photo' && styles.typeTextActive]}>Photo</Text>
-            </TouchableOpacity>
+            <View style={[styles.typeSelector, themeColors && { backgroundColor: themeColors.backgroundCard }]}>
+                <TouchableOpacity
+                    style={[styles.typeButton, postType === 'text' && styles.typeButtonActive]}
+                    onPress={() => {
+                        setPostType('text');
+                        setMediaUri(null);
+                        setAudioUri(null);
+                    }}
+                >
+                    <Ionicons name="text" size={20} color={postType === 'text' ? colors.primary : colors.textSecondary} />
+                    <Text style={[styles.typeText, postType === 'text' && styles.typeTextActive]}>Tweet</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-                style={[styles.typeButton, postType === 'video' && styles.typeButtonActive]}
-                onPress={() => pickMedia('video')}
-            >
-                <Ionicons name="videocam" size={20} color={postType === 'video' ? colors.primary : colors.textSecondary} />
-                <Text style={[styles.typeText, postType === 'video' && styles.typeTextActive]}>Vidéo</Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.typeButton, postType === 'photo' && styles.typeButtonActive]}
+                    onPress={() => pickMedia('photo')}
+                >
+                    <Ionicons name="image" size={20} color={postType === 'photo' ? colors.primary : colors.textSecondary} />
+                    <Text style={[styles.typeText, postType === 'photo' && styles.typeTextActive]}>Photo</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-                style={[styles.typeButton, postType === 'audio' && styles.typeButtonActive]}
-                onPress={() => {
-                    setPostType('audio');
-                    setMediaUri(null);
-                }}
-            >
-                <Ionicons name="mic" size={20} color={postType === 'audio' ? colors.primary : colors.textSecondary} />
-                <Text style={[styles.typeText, postType === 'audio' && styles.typeTextActive]}>Vocal</Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.typeButton, postType === 'video' && styles.typeButtonActive]}
+                    onPress={() => pickMedia('video')}
+                >
+                    <Ionicons name="videocam" size={20} color={postType === 'video' ? colors.primary : colors.textSecondary} />
+                    <Text style={[styles.typeText, postType === 'video' && styles.typeTextActive]}>Vidéo</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.typeButton, postType === 'audio' && styles.typeButtonActive]}
+                    onPress={() => {
+                        setPostType('audio');
+                        setMediaUri(null);
+                    }}
+                >
+                    <Ionicons name="mic" size={20} color={postType === 'audio' ? colors.primary : colors.textSecondary} />
+                    <Text style={[styles.typeText, postType === 'audio' && styles.typeTextActive]}>Vocal</Text>
+                </TouchableOpacity>
+            </View>
         </View>
     );
 
@@ -534,7 +561,16 @@ export default function CreatePostScreen() {
                     />
                 </View>
             )}
-        </KeyboardAvoidingView>
+
+
+            <MagicPostGenerator
+                visible={showMagicModal}
+                onClose={() => setShowMagicModal(false)}
+                onSuccess={handleMagicSuccess}
+                alters={alters} // Pass all alters, component filters for DNA
+                activeAlterId={activeFront?.type === 'single' ? activeFront.alters[0]?.id : undefined}
+            />
+        </KeyboardAvoidingView >
     );
 }
 
@@ -693,5 +729,22 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.6)',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+
+    magicButton: {
+        marginBottom: spacing.md,
+        borderRadius: borderRadius.lg,
+        overflow: 'hidden',
+    },
+    magicGradient: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: spacing.md,
+    },
+    magicButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
 });

@@ -29,5 +29,11 @@ service firebase.storage {
       allow read: if true;
       allow write: if isAuthenticated();
     }
+    // Visual DNA images
+    match /visual_dna/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
   }
 }

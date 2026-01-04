@@ -141,72 +141,72 @@ export const getThemeColors = (themeId?: string): ThemeColors | null => {
             return {
                 background: '#E8F5E9',     // Deeper Mint Cream
                 backgroundCard: '#FFFFFF',
-                primary: '#98FB98',        // Pale Green (Darker than MintCream)
-                text: '#004D40',
-                textSecondary: '#2E7D32',
+                primary: '#66bb6a',        // Darker Green for better visibility
+                text: '#1b5e20',           // Dark Green (High Contrast)
+                textSecondary: '#2e7d32',  // Medium Green
                 border: '#C8E6C9'
             };
         case 'theme_cute_sky':
             return {
                 background: '#E3F2FD',     // Deeper Alice Blue
                 backgroundCard: '#FFFFFF',
-                primary: '#81D4FA',        // Light Blue (Darker than #A0E7E5)
-                text: '#01579B',
-                textSecondary: '#0277BD',
+                primary: '#29b6f6',        // Darker Blue for visibility
+                text: '#0d47a1',           // Dark Blue (High Contrast)
+                textSecondary: '#1565c0',  // Medium Blue
                 border: '#BBDEFB'
             };
         case 'theme_cute_lavender':
             return {
                 background: '#EDE7F6',     // Deeper Purple Mist
                 backgroundCard: '#FFFFFF',
-                primary: '#D1C4E9',        // Deep Lavender
-                text: '#311B92',
-                textSecondary: '#512DA8',
+                primary: '#9575cd',        // Darker Lavender
+                text: '#311b92',           // Deep Purple (High Contrast)
+                textSecondary: '#4527a0',  // Medium Purple
                 border: '#E1BEE7'
             };
         case 'theme_cute_peach':
             return {
-                background: '#fff9e7ff',
+                background: '#fff3e0',     // Light Orange
                 backgroundCard: '#FFFFFF',
-                primary: '#FFCCBC',        // Deep Peach
-                text: '#BF360C',
-                textSecondary: '#E64A19',
+                primary: '#ff8a65',        // Darker Peach
+                text: '#bf360c',           // Deep Rust (High Contrast)
+                textSecondary: '#d84315',  // Rust
                 border: '#FFE0B2'
             };
         case 'theme_cute_lemon':
             return {
-                background: '#fffddbff',
+                background: '#fffde7',     // Light Yellow
                 backgroundCard: '#FFFFFF',
-                primary: '#FFF59D',        // Deeper Lemon
-                text: '#F57F17',
-                textSecondary: '#F9A825',
+                primary: '#fbc02d',        // Darker Yellow/Gold
+                text: '#f57f17',           // Dark Orange/Gold (High Contrast)
+                textSecondary: '#f9a825',  // Gold
                 border: '#FFF9C4'
             };
         case 'theme_cute_aqua':
             return {
                 background: '#E0F7FA',
                 backgroundCard: '#FFFFFF',
-                primary: '#80DEEA',        // Deeper Cyan
-                text: '#004D40',
-                textSecondary: '#00838F',
+                primary: '#26c6da',        // Darker Cyan
+                text: '#006064',           // Deep Cyan (High Contrast)
+                textSecondary: '#00838f',  // Medium Cyan
                 border: '#B2EBF2'
             };
         case 'theme_cute_cream':
             return {
                 background: '#FFF8E1',     // Amber-ish Cream
                 backgroundCard: '#FFFFFF',
-                primary: '#FFE0B2',        // Biscotti
-                text: '#3E2723',
-                textSecondary: '#5D4037',
+                primary: '#ffb74d',        // Darker Tan
+                text: '#3e2723',           // Dark Brown (High Contrast)
+                textSecondary: '#4e342e',  // Brown
                 border: '#D7CCC8'
             };
         case 'theme_cute_coral':
             return {
                 background: '#FFEBEE',
                 backgroundCard: '#FFFFFF',
-                primary: '#FFAB91',        // Deep Coral
-                text: '#B71C1C',
-                textSecondary: '#C62828',
+                primary: '#ff7043',        // Darker Coral
+                text: '#b71c1c',           // Deep Red (High Contrast)
+                textSecondary: '#c62828',  // Red
                 border: '#FFCDD2'
             };
         default:

@@ -528,14 +528,18 @@ const styles = StyleSheet.create({
     },
     reDoButton: {
         marginTop: spacing.md,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm,
-        backgroundColor: 'rgba(255,255,255,0.05)',
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.md,
+        backgroundColor: colors.surfaceLight, // More visible background
         borderRadius: borderRadius.full,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
+        alignSelf: 'center',
     },
     reDoText: {
         ...typography.button,
-        color: colors.textSecondary,
+        color: '#FFFFFF',
+        fontSize: 16,
     },
     cancelRedoButton: {
         marginTop: spacing.md,

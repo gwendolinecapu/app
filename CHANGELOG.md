@@ -1,7 +1,8 @@
 # Changelog
 
 ## [2026-01-04] Correctifs & Améliorations 🔧
-- **Cosmétiques**: Augmentation de l'échelle du cadre **Flammes** (`frame_flames_v2`) de 5% (1.0 -> 1.05) pour un rendu plus imposant.
+- **Cosmétiques**: Augmentation de l'échelle du cadre **Flammes** (`frame_flames_v2`) de 15% au total (1.0 -> 1.15) pour un rendu maximal.
+- **Shop**: Suppression des cadres "Oasis Désert" et "Naufragé Steampunk" suite aux retours utilisateurs.
 - **Shop**: Correctif critique pour l'achat de crédits en mode DEV. La vérification manquait le champ `priceIAP`, empêchant la détection des packs.
 
 ## [2026-01-03] Ajout Cadres Animés (Tropical & Flammes) 🌴🔥

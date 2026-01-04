@@ -429,36 +429,50 @@ export default function ProfileScreen() {
                             style={{ padding: spacing.xxl, width: '100%' }}
                         />
                     ) : (
-                        posts.map((post, index) => (
-                            <AnimatedPressable
-                                key={post.id}
-                                style={styles.gridItem}
-                                scaleMin={0.98}
-                                onPress={() => {
-                                    triggerHaptic.selection();
-                                    setSelectedPostIndex(index);
-                                }}
-                            >
-                                {post.media_url ? (
-                                    (post.media_url.includes('.mp4') || post.media_url.includes('video')) ? (
-                                        <View style={[styles.gridImage, { backgroundColor: colors.backgroundCard, justifyContent: 'center', alignItems: 'center' }]}>
-                                            <Ionicons name="play-circle" size={32} color={colors.text} />
-                                        </View>
+                        posts.map((post, index) => {
+                            // Video detection logic
+                            const mediaUrl = post.media_url?.toLowerCase() || '';
+                            const isVideo = mediaUrl.includes('.mp4') ||
+                                mediaUrl.includes('video') ||
+                                mediaUrl.includes('mov') ||
+                                mediaUrl.includes('quicktime');
+
+                            if (post.media_url) {
+                                // console.log(`[ProfileGrid] Post ${post.id} media: ${post.media_url} (isVideo: ${isVideo})`);
+                            }
+
+                            return (
+                                <AnimatedPressable
+                                    key={post.id}
+                                    style={styles.gridItem}
+                                    scaleMin={0.98}
+                                    onPress={() => {
+                                        triggerHaptic.selection();
+                                        setSelectedPostIndex(index);
+                                    }}
+                                >
+                                    {post.media_url ? (
+                                        isVideo ? (
+                                            <View style={[styles.gridImage, { backgroundColor: '#333', justifyContent: 'center', alignItems: 'center' }]}>
+                                                <Ionicons name="play" size={32} color="white" />
+                                            </View>
+                                        ) : (
+                                            <Image
+                                                source={{ uri: post.media_url }}
+                                                style={styles.gridImage}
+                                                resizeMode="cover"
+                                            />
+                                        )
                                     ) : (
-                                        <Image
-                                            source={{ uri: post.media_url }}
-                                            style={styles.gridImage}
-                                        />
-                                    )
-                                ) : (
-                                    <View style={styles.gridItemContent}>
-                                        <Text style={styles.gridItemText} numberOfLines={3}>
-                                            {post.content}
-                                        </Text>
-                                    </View>
-                                )}
-                            </AnimatedPressable>
-                        ))
+                                        <View style={styles.gridItemContent}>
+                                            <Text style={styles.gridItemText} numberOfLines={3}>
+                                                {post.content}
+                                            </Text>
+                                        </View>
+                                    )}
+                                </AnimatedPressable>
+                            );
+                        })
                     )}
                 </View>
             </ScrollView>

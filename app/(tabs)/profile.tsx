@@ -440,10 +440,16 @@ export default function ProfileScreen() {
                                 }}
                             >
                                 {post.media_url ? (
-                                    <Image
-                                        source={{ uri: post.media_url }}
-                                        style={styles.gridImage}
-                                    />
+                                    (post.media_url.includes('.mp4') || post.media_url.includes('video')) ? (
+                                        <View style={[styles.gridImage, { backgroundColor: colors.backgroundCard, justifyContent: 'center', alignItems: 'center' }]}>
+                                            <Ionicons name="play-circle" size={32} color={colors.text} />
+                                        </View>
+                                    ) : (
+                                        <Image
+                                            source={{ uri: post.media_url }}
+                                            style={styles.gridImage}
+                                        />
+                                    )
                                 ) : (
                                     <View style={styles.gridItemContent}>
                                         <Text style={styles.gridItemText} numberOfLines={3}>

@@ -16,12 +16,17 @@ export const GridMediaItem: React.FC<GridMediaItemProps> = ({ mediaUrl, themeCol
     const [thumbnail, setThumbnail] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const isVideo = mediaUrl && (
-        mediaUrl.toLowerCase().endsWith('.mp4') ||
-        mediaUrl.toLowerCase().endsWith('.mov') ||
-        mediaUrl.toLowerCase().endsWith('.avi') ||
-        mediaUrl.toLowerCase().endsWith('.webm')
-    );
+    const isVideo = React.useMemo(() => {
+        if (!mediaUrl) return false;
+        // Clean URL from query params
+        const cleanUrl = mediaUrl.split('?')[0].toLowerCase();
+        return (
+            cleanUrl.endsWith('.mp4') ||
+            cleanUrl.endsWith('.mov') ||
+            cleanUrl.endsWith('.avi') ||
+            cleanUrl.endsWith('.webm')
+        );
+    }, [mediaUrl]);
 
     useEffect(() => {
         let isMounted = true;

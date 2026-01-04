@@ -91,7 +91,7 @@ export function useFrontNotifications({
     // Met à jour le Dynamic Island
     useEffect(() => {
         if (!settings?.dynamicIslandEnabled || !currentFront) {
-            DynamicIslandService.stop();
+            DynamicIslandService.stopFronterActivity();
             return;
         }
 
@@ -100,7 +100,7 @@ export function useFrontNotifications({
         const firstAlter = getAlter(firstAlterId);
 
         if (!firstAlter) {
-            DynamicIslandService.stop();
+            DynamicIslandService.stopFronterActivity();
             return;
         }
 
@@ -115,17 +115,17 @@ export function useFrontNotifications({
             const isActive = DynamicIslandService.getIsActive();
 
             const data = {
-                currentAlterName: firstAlter.name,
-                currentAlterColor: firstAlter.color || '#8B5CF6',
-                currentAlterInitial: getInitial(firstAlter.name),
-                timeSinceSwitch: getTimeSince(currentFront.timestamp),
-                coFronters,
+                name: firstAlter.name,
+                color: firstAlter.color || '#8B5CF6',
+                initial: getInitial(firstAlter.name),
+                coFronterCount: frontAlterIds.length > 1 ? frontAlterIds.length - 1 : 0,
+                isCoFront: frontAlterIds.length > 1,
+                systemName: 'Mon Système'
             };
-
             if (isActive) {
-                await DynamicIslandService.update(data);
+                await DynamicIslandService.updateFronterActivity(data);
             } else {
-                await DynamicIslandService.start(data);
+                await DynamicIslandService.startFronterActivity(data);
             }
         };
 
@@ -136,12 +136,13 @@ export function useFrontNotifications({
             if (DynamicIslandService.getIsActive() && currentFront) {
                 const firstAlter = getAlter(frontAlterIds[0]);
                 if (firstAlter) {
-                    DynamicIslandService.update({
-                        currentAlterName: firstAlter.name,
-                        currentAlterColor: firstAlter.color || '#8B5CF6',
-                        currentAlterInitial: getInitial(firstAlter.name),
-                        timeSinceSwitch: getTimeSince(currentFront.timestamp),
-                        coFronters,
+                    DynamicIslandService.updateFronterActivity({
+                        name: firstAlter.name,
+                        color: firstAlter.color || '#8B5CF6',
+                        initial: getInitial(firstAlter.name),
+                        coFronterCount: frontAlterIds.length > 1 ? frontAlterIds.length - 1 : 0,
+                        isCoFront: frontAlterIds.length > 1,
+                        systemName: 'Mon Système'
                     });
                 }
             }

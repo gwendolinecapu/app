@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { Post } from '../../types';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { ThemeColors } from '../../lib/cosmetics';
+import { GridMediaItem } from './GridMediaItem';
 
 const { width } = Dimensions.get('window');
 const MAX_WIDTH = 430;
@@ -209,11 +210,9 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
                     }}
                 >
                     {item.media_url ? (
-                        <Image
-                            source={{ uri: item.media_url }}
-                            style={styles.gridImage}
-                            contentFit="cover"
-                            transition={200}
+                        <GridMediaItem
+                            mediaUrl={item.media_url}
+                            themeColors={themeColors}
                         />
                     ) : (
                         <View style={[styles.gridTextContent, themeColors && { backgroundColor: themeColors.backgroundCard }]}>

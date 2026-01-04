@@ -167,6 +167,14 @@ export default function HistoryScreen() {
             anxious: '#F39C12',
             sad: '#3498DB',
             angry: '#E74C3C',
+            fear: '#8E44AD',
+            shame: '#F06292',
+            bored: '#95A5A6',
+            proud: '#F1C40F',
+            love: '#E91E63',
+            sick: '#8BC34A',
+            guilt: '#607D8B',
+            hurt: '#C0392B',
         };
 
         return emotionDistribution.slice(0, 5).map(e => ({

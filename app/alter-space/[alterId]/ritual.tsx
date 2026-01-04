@@ -184,6 +184,33 @@ export default function RitualScreen() {
                         <View style={styles.successContent}>
                             <Ionicons name="checkmark-circle" size={64} color={colors.success} />
                             <Text style={styles.dropZoneTitle}>Rituel Accompli</Text>
+
+                            {alter?.visual_dna?.description && (
+                                <View style={[styles.dnaCard, { borderColor: primaryColor + '40', backgroundColor: primaryColor + '10' }]}>
+                                    <View style={styles.dnaHeader}>
+                                        <Ionicons name="finger-print" size={20} color={primaryColor} />
+                                        <Text style={[styles.dnaTitle, { color: primaryColor }]}>ADN Visuel Extrait</Text>
+                                    </View>
+
+                                    {/* Display Reference Sheet if available */}
+                                    {alter.visual_dna.reference_sheet_url && (
+                                        <View style={{ marginBottom: spacing.md }}>
+                                            <Image
+                                                source={{ uri: alter.visual_dna.reference_sheet_url }}
+                                                style={{ width: '100%', height: 200, borderRadius: borderRadius.md, resizeMode: 'cover' }}
+                                            />
+                                            <Text style={{ ...typography.caption, color: colors.textSecondary, marginTop: 4, fontStyle: 'italic' }}>
+                                                Planche de référence générée
+                                            </Text>
+                                        </View>
+                                    )}
+
+                                    <ScrollView style={styles.dnaScroll} nestedScrollEnabled>
+                                        <Text style={styles.dnaText}>{alter.visual_dna.description}</Text>
+                                    </ScrollView>
+                                </View>
+                            )}
+
                             <TouchableOpacity style={styles.reDoButton} onPress={pickImages}>
                                 <Text style={styles.reDoText}>Refaire le Rituel</Text>
                             </TouchableOpacity>
@@ -454,5 +481,33 @@ const styles = StyleSheet.create({
         ...typography.h4,
         color: 'white',
         fontWeight: 'bold',
+    },
+    dnaCard: {
+        width: '100%',
+        marginTop: spacing.lg,
+        padding: spacing.md,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1,
+        maxHeight: 200, // Limit height
+    },
+    dnaHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: spacing.xs,
+        gap: spacing.sm,
+    },
+    dnaTitle: {
+        ...typography.h3,
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    dnaScroll: {
+        marginTop: spacing.xs,
+    },
+    dnaText: {
+        ...typography.body,
+        color: colors.textSecondary,
+        fontSize: 14,
+        lineHeight: 20,
     },
 });

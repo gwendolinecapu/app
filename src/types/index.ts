@@ -87,6 +87,7 @@ export interface Alter {
 
 export interface VisualDNA {
     description: string;
+    reference_sheet_url?: string; // New: Turn-around view
     reference_sheet: string;
     generated_at: any; // Firestore Timestamp
     is_ready: boolean;

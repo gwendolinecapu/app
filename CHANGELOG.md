@@ -76,7 +76,7 @@
   - Updated AI Pricing Model (2026 Strategy):
     - **Rituel** : 270 -> 50 Credits (Lower entry barrier).
     - **Magie** : Tiered 60/120/180 Credits (Aligned with new margins).
-  - Fixed Vertex AI Model 404 (Updated to `gemini-1.5-pro`).
+  - Fixed Vertex AI Model 404 (Updated to `gemini-2.5-flash-001`).
   - RoadMap: Fixed "Impossible to load" error by adding `isUnchanged` helper to Firestore rules and fixing logical operators.
 
 ### ✨ Nouveautés (Features)

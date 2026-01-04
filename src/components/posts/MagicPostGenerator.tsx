@@ -55,7 +55,9 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
     );
     const [prompt, setPrompt] = useState('');
     const [quality, setQuality] = useState<QualityTier>('mid');
+    const [style, setStyle] = useState('Cinematic'); // New: Style state
     const [sceneImageUri, setSceneImageUri] = useState<string | null>(null);
+    const [poseImageUri, setPoseImageUri] = useState<string | null>(null); // New: Pose state
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<string | null>(null);
 
@@ -82,6 +84,17 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
         }
     };
 
+    const pickPoseImage = async () => {
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets[0]) {
+            setPoseImageUri(result.assets[0].uri);
+        }
+    };
+
     const handleGenerate = async () => {
         if (!selectedAlterId) return Alert.alert("Erreur", "Sélectionnez un alter avec ADN Visuel.");
         if (!prompt && !sceneImageUri) return Alert.alert("Erreur", "Décrivez la scène ou ajoutez une image.");
@@ -99,13 +112,26 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
                 blob.close && blob.close();
             }
 
+            let uploadedPoseUrl = undefined;
+            if (poseImageUri) {
+                // Upload pose reference
+                const blob = await getBlobFromUri(poseImageUri) as any;
+                const path = `magic_uploads/${selectedAlterId}/${Date.now()}_pose.jpg`;
+                const sRef = ref(storage, path);
+                await uploadBytes(sRef, blob);
+                uploadedPoseUrl = await getDownloadURL(sRef);
+                blob.close && blob.close();
+            }
+
             const generateMagicPost = httpsCallable(functions, 'generateMagicPost');
             const result: any = await generateMagicPost({
                 alterId: selectedAlterId,
                 prompt: prompt,
                 quality: quality,
+                style, // New
                 sceneImageUrl: uploadedSceneUrl,
-                isBodySwap: !!sceneImageUri // Simplistic toggle: if image provided, treat as body swap/incrustation context
+                poseImageUrl: uploadedPoseUrl, // New
+                isBodySwap: !!sceneImageUri
             });
 
             if (result.data.success && result.data.imageUrl) {
@@ -226,16 +252,66 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
                                 ))}
                             </View>
 
-                            {/* 3. SCENE / BODY SWAP */}
-                            <Text style={styles.label}>Mise en Scène (Optionnel)</Text>
-                            <Text style={styles.helperText}>Ajoutez une photo pour incruster l&apos;alter dedans (Body Swap).</Text>
+                            {/* 2.5 STYLE / VIBE (New) */}
+                            <Text style={styles.label}>Style Artistique</Text>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }}>
+                                {['Cinematic', 'Anime', 'Painting', 'Cyberpunk', 'Polaroid'].map(s => (
+                                    <TouchableOpacity
+                                        key={s}
+                                        style={[
+                                            styles.styleChip,
+                                            style === s && { backgroundColor: colors.primary, borderColor: colors.primary }
+                                        ]}
+                                        onPress={() => setStyle(s)}
+                                    >
+                                        <Text style={[styles.styleChipText, style === s && { color: 'white' }]}>
+                                            {s}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+
+                            {/* 3. SCENE & POSE */}
+                            <Text style={styles.label}>Références (Optionnel)</Text>
+
+                            {/* Scene / Body Swap */}
+                            <Text style={styles.helperText}>Image de fond ou Body Swap</Text>
                             <TouchableOpacity style={styles.imagePicker} onPress={pickSceneImage}>
                                 {sceneImageUri ? (
-                                    <Image source={{ uri: sceneImageUri }} style={styles.previewScene} />
+                                    <>
+                                        <Image source={{ uri: sceneImageUri }} style={styles.previewScene} />
+                                        <TouchableOpacity
+                                            style={styles.removeImagesButton}
+                                            onPress={() => setSceneImageUri(null)}
+                                        >
+                                            <Ionicons name="close-circle" size={24} color="white" />
+                                        </TouchableOpacity>
+                                    </>
                                 ) : (
                                     <View style={styles.uploadPlaceholder}>
-                                        <Ionicons name="image-outline" size={32} color={colors.textSecondary} />
-                                        <Text style={styles.uploadText}>Choisir une image de fond</Text>
+                                        <Ionicons name="image-outline" size={24} color={colors.textSecondary} />
+                                        <Text style={styles.uploadText}>Fond / BodySwap</Text>
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+
+                            {/* Pose / Scribble */}
+                            <Text style={[styles.helperText, { marginTop: spacing.sm }]}>Pose ou Gribouillage (Structure)</Text>
+                            <TouchableOpacity style={styles.imagePicker} onPress={pickPoseImage}>
+                                {poseImageUri ? (
+                                    <>
+                                        <Image source={{ uri: poseImageUri }} style={styles.previewScene} />
+                                        <TouchableOpacity
+                                            style={styles.removeImagesButton}
+                                            onPress={() => setPoseImageUri(null)}
+                                        >
+                                            <Ionicons name="close-circle" size={24} color="white" />
+                                        </TouchableOpacity>
+                                    </>
+                                ) : (
+                                    <View style={styles.uploadPlaceholder}>
+                                        <Ionicons name="body-outline" size={24} color={colors.textSecondary} />
+                                        <Text style={styles.uploadText}>Pose / Croquis</Text>
                                     </View>
                                 )}
                             </TouchableOpacity>
@@ -346,11 +422,22 @@ const styles = StyleSheet.create({
     qDesc: { fontSize: 10, color: colors.textSecondary, lineHeight: 12 },
 
     imagePicker: {
-        height: 150, backgroundColor: colors.backgroundCard,
+        height: 120, // Reduced
+        backgroundColor: colors.backgroundCard,
         borderRadius: borderRadius.lg, overflow: 'hidden',
         justifyContent: 'center', alignItems: 'center',
         borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed'
     },
+    removeImagesButton: {
+        position: 'absolute', top: 5, right: 5,
+        backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 15
+    },
+    styleChip: {
+        paddingHorizontal: 16, paddingVertical: 8,
+        borderRadius: 20, borderWidth: 1, borderColor: colors.border,
+        marginRight: 8, backgroundColor: colors.backgroundCard
+    },
+    styleChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
     previewScene: { width: '100%', height: '100%', resizeMode: 'cover' },
     uploadPlaceholder: { alignItems: 'center' },
     uploadText: { marginTop: 8, color: colors.textSecondary, fontSize: 12 },

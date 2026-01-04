@@ -390,7 +390,6 @@ const styles = StyleSheet.create({
         marginRight: spacing.md,
     },
     content: {
-        flex: 1,
         padding: spacing.lg,
         paddingBottom: 40,
     },

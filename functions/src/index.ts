@@ -13,8 +13,17 @@ const db = admin.firestore();
 const GOOGLE_AI_API_KEY = process.env.GOOGLE_AI_API_KEY || "MISSING_KEY";
 
 // BytePlus Ark API Key (Seedream-4.5)
-const BYTEPLUS_API_KEY = "e8af2fb7-2b82-410d-ad9b-611ad702648a"; // TODO: Move to secret
+const BYTEPLUS_API_KEY = process.env.BYTEPLUS_API_KEY; // Secured via Cloud Secret Manager
 const SEEDREAM_MODEL = "seedream-4-5-251128";
+
+// Style prompts mapping
+const STYLES: { [key: string]: string } = {
+    "Cinematic": "cinematic film still, 8k, photorealistic, highly detailed, dramatic lighting, depth of field, color graded, movie scene",
+    "Anime": "anime style, studio ghibli inspired, vibrant colors, cel shaded, highly detailed, 2d animation style",
+    "Painting": "digital oil painting, textured brushstrokes, artistic, detailed, masterpiece, conceptual art",
+    "Cyberpunk": "cyberpunk style, neon lights, futuristic city, chromatic aberration, high tech, night time",
+    "Polaroid": "vintage polaroid photo, film grain, flash photography, retro aesthetic, soft focus, 90s style"
+};
 
 // AI Models
 const GEMINI_MODEL = "gemini-3-pro-image-preview"; // Used for Vision/Analysis only now
@@ -46,6 +55,8 @@ interface MagicPostRequest {
     prompt: string;
     quality: 'eco' | 'mid' | 'high';
     sceneImageUrl?: string;
+    style?: string; // New: Vibe selector
+    poseImageUrl?: string; // New: Scribble/Pose control
     isBodySwap?: boolean;
 }
 
@@ -158,7 +169,7 @@ async function callBytePlusArk(prompt: string, imagesBase64: string[] = [], size
 // --- Cloud Functions ---
 
 export const performBirthRitual = functions.runWith({
-    secrets: ["GOOGLE_AI_API_KEY"],
+    secrets: ["GOOGLE_AI_API_KEY", "BYTEPLUS_API_KEY"],
     timeoutSeconds: 300,
     memory: "1GB"
 }).https.onCall(async (data: RitualRequest, context) => {
@@ -271,7 +282,7 @@ export const performBirthRitual = functions.runWith({
 });
 
 export const generateMagicPost = functions.runWith({
-    secrets: ["GOOGLE_AI_API_KEY"],
+    secrets: ["GOOGLE_AI_API_KEY", "BYTEPLUS_API_KEY"],
     timeoutSeconds: 300,
     memory: "1GB"
 }).https.onCall(async (data: MagicPostRequest, context) => {
@@ -283,26 +294,90 @@ export const generateMagicPost = functions.runWith({
         const alterDoc = await db.collection('alters').doc(alterId).get();
         if (!alterDoc.exists) throw new functions.https.HttpsError('not-found', 'Alter not found');
 
-        const credits = alterDoc.data()?.credits || 0;
+        const alterData = alterDoc.data();
+        const credits = alterData?.credits || 0;
         const cost = COSTS.POST_STD; // Use standard cost for Seedream now
         if (credits < cost) throw new functions.https.HttpsError('resource-exhausted', 'Insufficient credits');
         await chargeCredits(alterId, cost, `Magic Post`);
 
-        let charDescription = alterDoc.data()?.visual_dna?.description || alterDoc.data()?.name;
-        let fullPrompt = `Character detailed: ${charDescription}. Scene: ${prompt}. Photorealistic, cinematic lighting, 8k.`;
+        const visualDNA = alterData?.visual_dna;
+        const charDescription = visualDNA?.description || alterData?.name;
+        const refSheetUrl = visualDNA?.reference_sheet_url;
 
-        let imageBuffer: Buffer;
-        let referenceImages: string[] = [];
+        // 1. Magic Prompt Expansion (Gemini)
+        let magicPrompt = prompt;
+        const selectedStyle = data.style || "Cinematic";
+        const styleKeywords = STYLES[selectedStyle] || STYLES["Cinematic"];
 
-        if (sceneImageUrl) {
-            // I2I / Image Guidance
-            const sceneB64 = await downloadImageAsBase64(sceneImageUrl);
-            referenceImages.push(sceneB64);
+        if (genAI) {
+            try {
+                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Fast model for text
+                const enhancementPrompt = `
+                    Act as an expert Art Director. Rewrite the following user prompt into a detailed image generation prompt.
+                    
+                    User Prompt: "${prompt}"
+                    Character Context: "${charDescription}"
+                    Style Goal: "${selectedStyle}" (${styleKeywords})
+                    
+                    Rules:
+                    1. Keep it under 400 characters.
+                    2. Focus on visual description (lighting, texture, composition).
+                    3. Ensure the character looks like the Context provided (hair, gender, vibes).
+                    4. Output ONLY the raw prompt, no "Here is the prompt:" prefix.
+                `;
+                const result = await model.generateContent(enhancementPrompt);
+                const candidates = result.response.candidates;
+                if (candidates && candidates.length > 0 && candidates[0].content.parts.length > 0) {
+                    magicPrompt = candidates[0].content.parts[0].text || prompt;
+                }
+            } catch (err) {
+                console.warn("Magic Prompt expansion failed, falling back to raw prompt", err);
+                magicPrompt = `${charDescription}. ${prompt}. ${styleKeywords}`;
+            }
+        } else {
+            magicPrompt = `${charDescription}. ${prompt}. ${styleKeywords}`;
         }
 
-        // T2I or I2I using Seedream
-        // Seedream allows prompt + optional images.
-        imageBuffer = await callBytePlusArk(fullPrompt, referenceImages, "2048x2048");
+        console.log("✨ Magic Prompt:", magicPrompt);
+
+        // 2. Prepare Reference Images
+        let referenceImages: string[] = [];
+
+        // A. Character Consistency (Priority #1)
+        if (refSheetUrl) {
+            try {
+                const refSheetB64 = await downloadImageAsBase64(refSheetUrl);
+                referenceImages.push(refSheetB64);
+                console.log("✅ Added Reference Sheet for consistency");
+            } catch (e) {
+                console.warn("Failed to download Ref Sheet:", e);
+            }
+        }
+
+        // B. Scene Guidance (I2I)
+        if (sceneImageUrl) {
+            try {
+                const sceneB64 = await downloadImageAsBase64(sceneImageUrl);
+                referenceImages.push(sceneB64);
+            } catch (e) {
+                console.warn("Failed to download Scene Image:", e);
+            }
+        }
+
+        // C. Pose/Scribble Guidance (New)
+        if (data.poseImageUrl) {
+            try {
+                const poseB64 = await downloadImageAsBase64(data.poseImageUrl);
+                referenceImages.push(poseB64);
+                console.log("✅ Added Pose Image");
+            } catch (e) {
+                console.warn("Failed to download Pose Image:", e);
+            }
+        }
+
+        // 3. Generate Image (Seedream)
+        let imageBuffer: Buffer;
+        imageBuffer = await callBytePlusArk(magicPrompt, referenceImages, "2048x2048");
 
         const filename = `posts/ai/${alterId}_${Date.now()}.png`;
         const bucket = admin.storage().bucket();

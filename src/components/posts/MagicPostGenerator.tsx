@@ -22,6 +22,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { Alter } from '../../types';
 import { SketchCanvas } from '../shared/SketchCanvas';
+import { MagicalLoadingView } from '../shared/MagicalLoadingView';
 
 interface MagicPostGeneratorProps {
     visible: boolean;
@@ -373,6 +374,12 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
                     }}
                 />
             </Modal>
+
+            <MagicalLoadingView
+                visible={isGenerating}
+                message="Tissage du Post..."
+                subMessage="Veuillez patienter..."
+            />
         </Modal>
     );
 };

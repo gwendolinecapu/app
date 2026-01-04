@@ -164,131 +164,147 @@ export default function RitualScreen() {
 
                 <Text style={styles.sectionTitle}>Offrandes ({selectedImages.length}/5)</Text>
 
-                {/* Drop Zone / Image Preview */}
-                <TouchableOpacity
-                    style={[
-                        styles.dropZone,
-                        { borderColor: loading ? colors.textMuted : primaryColor },
-                        selectedImages.length > 0 && styles.dropZoneActive
-                    ]}
-                    onPress={loading || !!alter?.visual_dna?.is_ready ? undefined : pickImages}
-                    disabled={loading || !!alter?.visual_dna?.is_ready}
-                >
-                    {loading ? (
-                        <View style={styles.loadingContent}>
-                            <ActivityIndicator size="large" color={primaryColor} />
-                            <Text style={styles.loadingText}>Incantation...</Text>
-                            <Text style={styles.loadingSubtext}>Fusion des {selectedImages.length} offrandes</Text>
+                {/* 1. Loading State */}
+                {loading && (
+                    <View style={styles.loadingContent}>
+                        <ActivityIndicator size="large" color={primaryColor} />
+                        <Text style={[styles.loadingText, { color: primaryColor }]}>
+                            Incantation en cours...
+                        </Text>
+                        <Text style={styles.loadingSubtext}>Analyse de l'ADN Visuel...</Text>
+                    </View>
+                )}
+
+                {/* 2. Success State (Ritual Done, No new selection being made) */}
+                {!loading && !!alter?.visual_dna?.is_ready && selectedImages.length === 0 && (
+                    <View style={styles.successContent}>
+                        <View style={styles.successHeader}>
+                            <Ionicons name="checkmark-circle" size={48} color={primaryColor} />
+                            <Text style={[styles.successTitle, { color: primaryColor }]}>Rituel Accompli</Text>
                         </View>
-                    ) : !!alter?.visual_dna?.is_ready ? (
-                        <View style={styles.successContent}>
-                            <Ionicons name="checkmark-circle" size={64} color={colors.success} />
-                            <Text style={styles.dropZoneTitle}>Rituel Accompli</Text>
 
-                            {alter?.visual_dna?.description && (
-                                <View style={[styles.dnaCard, { borderColor: primaryColor + '40', backgroundColor: primaryColor + '10' }]}>
-                                    <View style={styles.dnaHeader}>
-                                        <Ionicons name="finger-print" size={20} color={primaryColor} />
-                                        <Text style={[styles.dnaTitle, { color: primaryColor }]}>ADN Visuel Extrait</Text>
-                                    </View>
-
-                                    {/* Display Reference Sheet if available */}
-                                    {alter.visual_dna.reference_sheet_url && (
-                                        <View style={{ marginBottom: spacing.md }}>
-                                            <Image
-                                                source={{ uri: alter.visual_dna.reference_sheet_url }}
-                                                style={{ width: '100%', height: 200, borderRadius: borderRadius.md, resizeMode: 'cover' }}
-                                            />
-                                            <Text style={{ ...typography.caption, color: colors.textSecondary, marginTop: 4, fontStyle: 'italic' }}>
-                                                Planche de référence générée
-                                            </Text>
-                                        </View>
-                                    )}
-
-                                    <ScrollView style={styles.dnaScroll} nestedScrollEnabled>
-                                        <Text style={styles.dnaText}>{alter.visual_dna.description}</Text>
-                                    </ScrollView>
+                        {/* Visual DNA Display */}
+                        {alter?.visual_dna?.description && (
+                            <View style={[styles.dnaCard, { borderColor: primaryColor + '40', backgroundColor: primaryColor + '10' }]}>
+                                <View style={styles.dnaHeader}>
+                                    <Ionicons name="finger-print" size={20} color={primaryColor} />
+                                    <Text style={[styles.dnaTitle, { color: primaryColor }]}>ADN Visuel Extrait</Text>
                                 </View>
-                            )}
 
-                            <TouchableOpacity style={styles.reDoButton} onPress={pickImages}>
-                                <Text style={styles.reDoText}>Refaire le Rituel</Text>
-                            </TouchableOpacity>
-                        </View>
-                    ) : selectedImages.length > 0 ? (
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.previewScroll}>
-                            {selectedImages.map((img, i) => (
-                                <Image key={i} source={{ uri: img.uri }} style={styles.previewImage} />
-                            ))}
-                            <View style={styles.addMoreCard}>
-                                <Ionicons name="add" size={32} color={primaryColor} />
-                                <Text style={[styles.addMoreText, { color: primaryColor }]}>Modifier</Text>
+                                {/* Display Reference Sheet if available */}
+                                {alter.visual_dna.reference_sheet_url && (
+                                    <View style={{ marginBottom: spacing.md }}>
+                                        <Image
+                                            source={{ uri: alter.visual_dna.reference_sheet_url }}
+                                            style={{ width: '100%', height: 200, borderRadius: borderRadius.md, resizeMode: 'cover' }}
+                                        />
+                                        <Text style={{ ...typography.caption, color: colors.textSecondary, marginTop: 4, fontStyle: 'italic' }}>
+                                            Planche de référence générée
+                                        </Text>
+                                    </View>
+                                )}
+
+                                <ScrollView style={styles.dnaScroll} nestedScrollEnabled>
+                                    <Text style={styles.dnaText}>{alter.visual_dna.description}</Text>
+                                </ScrollView>
                             </View>
-                        </ScrollView>
-                    ) : (
-                        <>
-                            <Ionicons name="images-outline" size={64} color={primaryColor} />
-                            <Text style={styles.dropZoneTitle}>Déposer les Offrandes</Text>
-                            <Text style={styles.dropZoneDesc}>Appuyez pour sélectionner plusieurs images</Text>
-                        </>
-                    )}
-                </TouchableOpacity>
+                        )}
 
-                {/* Confirm Action */}
-                {!loading && !alter?.visual_dna?.is_ready && selectedImages.length > 0 && (
+                        <TouchableOpacity style={styles.reDoButton} onPress={pickImages}>
+                            <Text style={styles.reDoText}>Refaire le Rituel</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {/* 3. Preview State (User has selected images, either for first time or redo) */}
+                {!loading && selectedImages.length > 0 && (
+                    <View style={styles.previewContainer}>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.previewScroll}>
+                            {selectedImages.map((asset, index) => (
+                                <View key={index} style={styles.previewImageContainer}>
+                                    <Image source={{ uri: asset.uri }} style={styles.previewImage} />
+                                    <TouchableOpacity
+                                        style={styles.removeButton}
+                                        onPress={() => setSelectedImages(prev => prev.filter((_, i) => i !== index))}
+                                    >
+                                        <Ionicons name="close-circle" size={24} color="#FF4444" />
+                                    </TouchableOpacity>
+                                </View>
+                            ))}
+                            <TouchableOpacity style={styles.addMoreCard} onPress={pickImages}>
+                                <Ionicons name="add" size={32} color={colors.textSecondary} />
+                                <Text style={styles.addMoreText}>Ajouter</Text>
+                            </TouchableOpacity>
+                        </ScrollView>
+                        <Text style={styles.imageCountText}>{selectedImages.length} images sélectionnées</Text>
+                    </View>
+                )}
+
+                {/* 4. Empty/Upload State (Not ready, no selection) */}
+                {!loading && !alter?.visual_dna?.is_ready && selectedImages.length === 0 && (
                     <TouchableOpacity
-                        style={[styles.confirmButton, { backgroundColor: primaryColor }]}
+                        style={[styles.dropZone, { borderColor: primaryColor }]}
+                        onPress={pickImages}
+                    >
+                        <Ionicons name="images-outline" size={48} color={primaryColor} />
+                        <Text style={[styles.dropZoneTitle, { color: primaryColor }]}>Sélectionner des images</Text>
+                        <Text style={styles.dropZoneDesc}>Photos claires du visage et du corps</Text>
+                    </TouchableOpacity>
+                )}
+
+                {/* Confirm Button */}
+                {!loading && selectedImages.length > 0 && (
+                    <TouchableOpacity
+                        style={[
+                            styles.confirmButton,
+                            { backgroundColor: primaryColor } // Fallback if gradient fails, but we use gradient inside
+                        ]}
                         onPress={confirmRitual}
+                        disabled={loading}
                     >
                         <LinearGradient
                             colors={[primaryColor, accentColor]}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
-                            style={StyleSheet.absoluteFill}
-                        />
-                        <Ionicons name="flame" size={24} color="white" style={{ marginRight: 8 }} />
-                        <Text style={styles.confirmButtonText}>Commencer le Rituel ({AI_COSTS.RITUAL} Crédits)</Text>
+                            style={styles.confirmGradient}
+                        >
+                            <Text style={styles.confirmText}>Commencer le Rituel ({AI_COSTS.RITUAL} Crédits)</Text>
+                            <Ionicons name="flame" size={24} color="white" style={{ marginLeft: 8 }} />
+                        </LinearGradient>
                     </TouchableOpacity>
                 )}
-
-                <View style={styles.noteContainer}>
-                    <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
-                    <Text style={styles.noteText}>
-                        Vous pouvez sélectionner jusqu'à 5 images pour aider l'IA à mieux comprendre l'apparence de votre alter sous tous les angles.
-                    </Text>
-                </View>
-
             </ScrollView>
         </SafeAreaView>
     );
-}
+};
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.background,
+        backgroundColor: '#121212',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+        paddingTop: 60,
+        paddingBottom: spacing.md,
     },
     headerTitle: {
-        ...typography.h3,
-        color: 'white',
-        fontWeight: 'bold',
-        textShadowColor: 'rgba(0,0,0,0.5)',
-        textShadowOffset: { width: 0, height: 2 },
-        textShadowRadius: 4,
+        ...typography.h2,
+        color: '#FFF',
     },
     backButton: {
-        padding: spacing.xs,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: 'rgba(255,255,255,0.1)',
-        borderRadius: borderRadius.full,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: spacing.md,
     },
     content: {
+        flex: 1,
         padding: spacing.lg,
         paddingBottom: 40,
     },
@@ -353,35 +369,33 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     dropZone: {
-        minHeight: 200,
-        backgroundColor: 'rgba(0,0,0,0.3)',
+        width: '100%',
+        minHeight: 300,
+        borderRadius: borderRadius.lg,
         borderWidth: 2,
         borderStyle: 'dashed',
-        borderRadius: borderRadius.xl,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: spacing.xl,
-        padding: spacing.lg,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        marginBottom: spacing.lg,
+        padding: spacing.md,
     },
     dropZoneActive: {
         borderStyle: 'solid',
         padding: spacing.md,
         alignItems: 'flex-start',
         justifyContent: 'flex-start',
+        borderColor: '#FFF',
+        backgroundColor: 'rgba(255,255,255,0.1)',
     },
     dropZoneTitle: {
         ...typography.h3,
-        color: 'white',
         marginTop: spacing.md,
-        marginBottom: spacing.xs,
-        fontWeight: 'bold',
-        textAlign: 'center',
     },
     dropZoneDesc: {
         ...typography.body,
         color: colors.textSecondary,
-        textAlign: 'center',
-        marginBottom: spacing.lg,
+        marginTop: spacing.xs,
     },
     costTag: {
         flexDirection: 'row',
@@ -399,10 +413,10 @@ const styles = StyleSheet.create({
     },
     loadingContent: {
         alignItems: 'center',
+        padding: spacing.xl,
     },
     loadingText: {
         ...typography.h3,
-        color: 'white',
         marginTop: spacing.md,
         fontWeight: '600',
     },
@@ -415,66 +429,68 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         width: '100%',
     },
-    reDoButton: {
-        marginTop: spacing.lg,
-        paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.lg,
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        borderRadius: borderRadius.md,
-    },
-    reDoText: {
-        color: colors.textSecondary,
-        fontSize: 12,
-    },
-    noteContainer: {
+    successHeader: {
         flexDirection: 'row',
-        backgroundColor: 'rgba(168, 85, 247, 0.1)', // Light purple bg
-        padding: spacing.md,
-        borderRadius: borderRadius.lg,
-        alignItems: 'flex-start',
-        gap: spacing.sm,
+        alignItems: 'center',
+        marginBottom: spacing.lg,
     },
-    noteText: {
-        ...typography.bodySmall,
-        color: colors.textSecondary,
-        flex: 1,
-        lineHeight: 18,
+    successTitle: {
+        ...typography.h2,
+        marginLeft: spacing.sm,
+    },
+    previewContainer: {
+        width: '100%',
+        marginBottom: spacing.lg,
     },
     previewScroll: {
-        flexGrow: 0,
-        width: '100%',
+        flexDirection: 'row',
+    },
+    previewImageContainer: {
+        position: 'relative',
+        marginRight: spacing.sm,
     },
     previewImage: {
-        width: 100,
-        height: 140,
+        width: 120,
+        height: 160,
         borderRadius: borderRadius.md,
-        marginRight: spacing.sm,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.2)',
+        resizeMode: 'cover',
+    },
+    removeButton: {
+        position: 'absolute',
+        top: 5,
+        right: 5,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        borderRadius: 12,
+        width: 24,
+        height: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     addMoreCard: {
-        width: 100,
-        height: 140,
+        width: 120,
+        height: 160,
         borderRadius: borderRadius.md,
-        marginRight: spacing.sm,
         borderWidth: 2,
         borderColor: 'rgba(255,255,255,0.1)',
         borderStyle: 'dashed',
         alignItems: 'center',
         justifyContent: 'center',
+        backgroundColor: 'rgba(255,255,255,0.02)',
     },
     addMoreText: {
         ...typography.caption,
         marginTop: spacing.xs,
-        fontWeight: 'bold',
+        color: colors.textSecondary,
+    },
+    imageCountText: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        textAlign: 'center',
+        marginTop: spacing.sm,
     },
     confirmButton: {
-        marginTop: spacing.xl,
-        borderRadius: borderRadius.full,
-        overflow: 'hidden',
+        width: '100%',
         height: 56,
-        flexDirection: 'row',
-        alignItems: 'center',
         justifyContent: 'center',
     },
     confirmButtonText: {

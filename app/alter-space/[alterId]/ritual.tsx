@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { httpsCallable } from 'firebase/functions';
 import Markdown from 'react-native-markdown-display';
@@ -105,9 +106,16 @@ export default function RitualScreen() {
         try {
             const uploadedUrls: string[] = [];
 
-            // 1. Upload All References
+            // 1. Upload All References (Resized)
             for (const asset of selectedImages) {
-                const blob = await getBlobFromUri(asset.uri) as any;
+                // Resize to max 2048 to avoid API limits (36MP)
+                const manipResult = await ImageManipulator.manipulateAsync(
+                    asset.uri,
+                    [{ resize: { width: 2048 } }], // Scale width to 2048, height auto-scales
+                    { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+                );
+
+                const blob = await getBlobFromUri(manipResult.uri) as any;
                 const refPath = `visual_dna/${alterId}/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
                 const refRef = ref(storage, refPath);
                 await uploadBytes(refRef, blob);
@@ -195,7 +203,7 @@ export default function RitualScreen() {
                         <View style={styles.successContent}>
                             <View style={styles.successHeader}>
                                 <Ionicons name="checkmark-circle" size={48} color={primaryColor} />
-                                <Text style={[styles.successTitle, { color: primaryColor }]}>Rituel Accompli</Text>
+                                <Text style={[styles.successTitle, { color: primaryColor }]}>Résonance Confirmée</Text>
                             </View>
 
                             {/* Visual DNA Display */}
@@ -203,7 +211,7 @@ export default function RitualScreen() {
                                 <View style={[styles.dnaCard, { borderColor: 'rgba(255,255,255,0.1)' }]}>
                                     <View style={styles.dnaHeader}>
                                         <Ionicons name="finger-print" size={20} color={primaryColor} />
-                                        <Text style={[styles.dnaTitle, { color: primaryColor }]}>ADN Visuel Extrait</Text>
+                                        <Text style={[styles.dnaTitle, { color: primaryColor }]}>Identité Visuelle</Text>
                                     </View>
 
                                     {/* Display Reference Sheet if available */}
@@ -247,17 +255,18 @@ export default function RitualScreen() {
                                         </View>
                                     )}
 
-                                    <ScrollView style={styles.dnaScroll} nestedScrollEnabled>
+                                    {/* Removed nested ScrollView to fix scrolling issues */}
+                                    <View style={styles.dnaScroll}>
                                         <Markdown
                                             style={{
                                                 body: {
                                                     color: '#E0E0E0',
-                                                    fontSize: 14,
+                                                    fontSize: 15,
                                                     fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-                                                    lineHeight: 22,
+                                                    lineHeight: 24,
                                                 },
-                                                heading1: { color: primaryColor, marginVertical: 10, fontWeight: 'bold', fontSize: 20 },
-                                                heading2: { color: primaryColor, marginVertical: 8, fontWeight: 'bold', fontSize: 18 },
+                                                heading1: { color: primaryColor, marginVertical: 12, fontWeight: 'bold', fontSize: 22 },
+                                                heading2: { color: primaryColor, marginVertical: 10, fontWeight: 'bold', fontSize: 19 },
                                                 strong: { color: '#FFF', fontWeight: 'bold' },
                                                 em: { color: colors.textSecondary, fontStyle: 'italic' },
                                                 bullet_list: { marginVertical: 8 },
@@ -266,7 +275,7 @@ export default function RitualScreen() {
                                         >
                                             {displayDescription}
                                         </Markdown>
-                                    </ScrollView>
+                                    </View>
                                 </View>
                             )}
 
@@ -595,7 +604,6 @@ const styles = StyleSheet.create({
         letterSpacing: 0.5,
     },
     dnaScroll: {
-        maxHeight: 300,
         paddingHorizontal: spacing.xs,
     },
     reDoButton: {

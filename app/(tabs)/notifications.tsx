@@ -153,7 +153,7 @@ export default function NotificationsScreen() {
             // Charger les notifications
             const q = query(
                 collection(db, 'notifications'),
-                where('recipientId', '==', user.uid),
+                where('recipientId', '==', currentAlter.id),
                 limit(50)
             );
 

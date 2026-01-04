@@ -63,7 +63,7 @@ export const FriendService = {
 
         // Create a notification for the receiver
         await addDoc(collection(db, 'notifications'), {
-            recipientId: receiverSystemId, // The system receiving the notification
+            recipientId: receiverId, // The alter receiving the notification
             type: 'friend_request', // Must match NotificationType in NotificationTypes.ts or handled in UI
             title: 'Nouvelle demande d\'ami',
             message: 'Quelqu\'un souhaite devenir votre ami.',
@@ -129,9 +129,8 @@ export const FriendService = {
         // 3. Notify the sender (THEM) that we accepted
 
         // 3. Notify the sender (THEM) that we accepted
-
         await addDoc(collection(db, 'notifications'), {
-            recipientId: senderSystemId, // The system receiving the notification
+            recipientId: senderId, // The alter receiving the notification (sender of request)
             type: 'friend_request_accepted',
             title: 'Demande acceptée',
             message: 'Votre demande d\'ami a été acceptée.',

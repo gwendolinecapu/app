@@ -52,12 +52,29 @@ export const FriendService = {
             throw new Error("Receiver system ID not found (checked userId, systemId, system_id)");
         }
 
-        await addDoc(collection(db, 'friend_requests'), {
+        const docRef = await addDoc(collection(db, 'friend_requests'), {
             senderId,
             receiverId,
             systemId: auth.currentUser.uid, // Sender's System ID
             receiverSystemId, // Receiver's System ID (for security rules)
             status: 'pending',
+            createdAt: serverTimestamp()
+        });
+
+        // Create a notification for the receiver
+        await addDoc(collection(db, 'notifications'), {
+            recipientId: receiverSystemId, // The system receiving the notification
+            type: 'friend_request', // Must match NotificationType in NotificationTypes.ts or handled in UI
+            title: 'Nouvelle demande d\'ami',
+            message: 'Quelqu\'un souhaite devenir votre ami.',
+            subtitle: 'Nouvelle demande',
+            data: {
+                requestId: docRef.id,
+                senderId: senderId,
+                alterId: receiverId
+            },
+            senderId: senderId, // Important for UI enrichment
+            read: false,
             createdAt: serverTimestamp()
         });
     },

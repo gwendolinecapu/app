@@ -422,22 +422,31 @@ export const PostService = {
                                 console.warn('Error fetching sender details for notification:', fetchError);
                             }
 
-                            const notificationRef = collection(db, 'notifications');
-                            await addDoc(notificationRef, {
+                            // [DEBUG] Trace notification creation
+                            console.log('Creating notification for:', post.system_id);
+
+                            const notificationRef = collection(db, 'notifications'); // Re-introduced definition
+
+                            const notificationPayload = {
                                 type: 'like',
-                                recipientId: post.alter_id || post.system_id, // Target the specific alter (or system if system posts)
-                                targetSystemId: post.system_id, // REQUIRED for security rules and filtering
+                                recipientId: post.alter_id || post.system_id, // Target
+                                targetSystemId: post.system_id,
                                 senderId: userId,
                                 senderAlterId: alterId || null,
-                                actorName: senderName, // Added for UI
+                                actorName: senderName,
                                 postId: postId,
                                 read: false,
                                 created_at: serverTimestamp(),
                                 title: "Nouveau J'aime",
                                 body: `${senderName} a aimé votre publication`,
                                 subtitle: post.content || (post.media_url ? "Photo" : "Publication"),
-                                mediaUrl: post.media_url || null, // Add media URL for thumbnail
-                            });
+                                mediaUrl: post.media_url || null,
+                            };
+                            console.log('Payload:', JSON.stringify(notificationPayload));
+
+                            await addDoc(notificationRef, notificationPayload);
+                            console.log('Notification created successfully!');
+
 
                             // Send Push Notification
                             // We need to import PushNotificationService at top of file, or use require/dynamic import to avoid circular dep if any

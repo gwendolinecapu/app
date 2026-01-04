@@ -156,10 +156,10 @@ export default function NotificationsScreen() {
             setFriendRequests(enrichedRequests as FriendRequest[]); // We augmented it but it's compatible enough or we cast
 
             // Charger les notifications
-            // On filtre pour récupérer UNIQUEMENT les notifs de l'Alter connecté (et du système)
-            // C'est le comportement "Instagram" demandé : séparation des profils.
+            // [DEBUG] REVERT TEMPORAIRE POUR TESTER
+            // 2. Query with strict composite index (targetSystemId + recipientId + created_at)
+            // This requires the index: targetSystemId ASC, recipientId ASC, created_at DESC
             const recipientIds = Array.from(new Set([currentAlter.id, user.uid]));
-
             const q = query(
                 collection(db, 'notifications'),
                 where('targetSystemId', '==', user.uid),

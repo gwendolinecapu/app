@@ -249,6 +249,20 @@
                     "order": "ASCENDING"
                 },
                 {
+                    "fieldPath": "created_at",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "notifications",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "targetSystemId",
+                    "order": "ASCENDING"
+                },
+                {
                     "fieldPath": "recipientId",
                     "order": "ASCENDING"
                 },

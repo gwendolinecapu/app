@@ -48,7 +48,7 @@ export default function FullPageVideoScreen() {
         setPost({ ...post, likes: newLikes });
 
         try {
-            await PostService.toggleLike(post.id, user.id);
+            await PostService.toggleLike(post.id, user.uid);
         } catch (error) {
             console.error(error);
             // Revert on error would go here

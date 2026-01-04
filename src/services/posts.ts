@@ -425,7 +425,8 @@ export const PostService = {
                             const notificationRef = collection(db, 'notifications');
                             await addDoc(notificationRef, {
                                 type: 'like',
-                                recipientId: post.system_id, // Notify the system owner
+                                recipientId: post.alter_id || post.system_id, // Target the specific alter (or system if system posts)
+                                targetSystemId: post.system_id, // REQUIRED for security rules and filtering
                                 senderId: userId,
                                 senderAlterId: alterId || null,
                                 actorName: senderName, // Added for UI

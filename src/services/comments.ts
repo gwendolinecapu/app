@@ -75,7 +75,8 @@ export async function addComment(input: CreateCommentInput): Promise<Comment> {
                 const notificationRef = collection(db, 'notifications');
                 await addDoc(notificationRef, {
                     type: 'comment',
-                    recipientId: postOwnerId,
+                    recipientId: postData.alter_id || postData.system_id, // Target the specific alter
+                    targetSystemId: postData.system_id, // REQUIRED for security rules and filtering
                     senderId: authorId,
                     senderAlterId: null, // Comment author ID is authorId (which could be alter or system)
                     actorName: authorName,

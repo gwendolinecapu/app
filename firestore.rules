@@ -382,7 +382,8 @@ service cloud.firestore {
       // Read: Recipient is User UID OR Recipient is an Alter owned by User (via denormalized targetSystemId)
       allow read: if isAuthenticated() && (
         resource.data.recipientId == request.auth.uid ||
-        resource.data.targetSystemId == request.auth.uid
+        resource.data.targetSystemId == request.auth.uid ||
+        get(/databases/$(database)/documents/alters/$(resource.data.recipientId)).data.systemId == request.auth.uid
       );
       
       // Create: Allow any authenticated user to send a notification (needed for friend requests events)

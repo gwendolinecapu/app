@@ -10,16 +10,16 @@
  * 4. Si l'upgrade échoue, le coffre s'ouvre avec la rareté actuelle
  */
 
-import { ShopItem, Rarity, COSMETIC_ITEMS } from './MonetizationTypes';
+import { ShopItem, Rarity, COSMETIC_ITEMS, LOOT_BOX_PRICE, RARITY_COLORS } from './MonetizationTypes';
 
 // ==================== CONFIGURATION ====================
 
 export const LOOT_BOX = {
     id: 'chain_chest',
     name: 'Coffre Évolutif',
-    price: 150, // Prix un peu plus bas car on commence souvent en commun
+    price: LOOT_BOX_PRICE, // Uses centralized price (30)
     description: 'Une chance d\'améliorer la rareté à chaque coup !',
-    color: '#9CA3AF', // Gris (Commun) au départ
+    color: RARITY_COLORS.common, // Starts at Common
 };
 
 /**
@@ -34,33 +34,23 @@ const UPGRADE_CHANCES: Record<Rarity, number> = {
 };
 
 export const REFUND_VALUES: Record<Rarity, number> = {
-    common: 20,
-    rare: 50,
-    epic: 150,
-    legendary: 300,
+    common: 1, // Reduced refunds to match lower prices
+    rare: 5,
+    epic: 25,
+    legendary: 125,
     mythic: 500
 };
 
 /**
- * Classification des items par rareté (basée sur le prix)
- */
-const getRarityFromPrice = (price: number): Rarity => {
-    if (price <= 50) return 'common';
-    if (price <= 150) return 'rare';
-    if (price <= 350) return 'epic';
-    if (price <= 600) return 'legendary';
-    return 'mythic'; // Prix > 600 = Mythic (ex: cadre sakura)
-};
-
-/**
  * Items groupés par rareté
+ * Uses the explicit 'rarity' field from ShopItem
  */
 const ITEMS_BY_RARITY: Record<Rarity, ShopItem[]> = {
-    common: COSMETIC_ITEMS.filter(item => getRarityFromPrice(item.priceCredits || 0) === 'common'),
-    rare: COSMETIC_ITEMS.filter(item => getRarityFromPrice(item.priceCredits || 0) === 'rare'),
-    epic: COSMETIC_ITEMS.filter(item => getRarityFromPrice(item.priceCredits || 0) === 'epic'),
-    legendary: COSMETIC_ITEMS.filter(item => getRarityFromPrice(item.priceCredits || 0) === 'legendary'),
-    mythic: COSMETIC_ITEMS.filter(item => getRarityFromPrice(item.priceCredits || 0) === 'mythic'),
+    common: COSMETIC_ITEMS.filter(item => (item.rarity || 'common') === 'common'),
+    rare: COSMETIC_ITEMS.filter(item => item.rarity === 'rare'),
+    epic: COSMETIC_ITEMS.filter(item => item.rarity === 'epic'),
+    legendary: COSMETIC_ITEMS.filter(item => item.rarity === 'legendary'),
+    mythic: COSMETIC_ITEMS.filter(item => item.rarity === 'mythic'),
 };
 
 export const LootBoxService = {
@@ -95,6 +85,14 @@ export const LootBoxService = {
         // Filtrer les items de cette rareté
         const pool = ITEMS_BY_RARITY[rarity];
 
+        // Ensure pool exists
+        if (!pool || pool.length === 0) {
+            // Fallback to common if pool is empty
+            const fallbackPool = ITEMS_BY_RARITY['common'];
+            const fallbackItem = fallbackPool[Math.floor(Math.random() * fallbackPool.length)];
+            return { item: fallbackItem, isNew: !ownedItemIds.includes(fallbackItem.id) };
+        }
+
         // Essayer de trouver un item non possédé
         const unowned = pool.filter(item => !ownedItemIds.includes(item.id));
 
@@ -118,14 +116,7 @@ export const LootBoxService = {
      * Couleur associée à une rareté
      */
     getRarityColor(rarity: Rarity): string {
-        switch (rarity) {
-            case 'common': return '#9CA3AF';    // Gris
-            case 'rare': return '#3B82F6';       // Bleu
-            case 'epic': return '#A855F7';       // Violet
-            case 'legendary': return '#F59E0B';  // Or
-            case 'mythic': return '#EF4444';     // Rouge (Mythic)
-            default: return '#9CA3AF';
-        }
+        return RARITY_COLORS[rarity];
     },
 
     getRarityName(rarity: Rarity): string {

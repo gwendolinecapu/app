@@ -19,9 +19,18 @@ import Animated, {
     withDelay,
     Easing
 } from 'react-native-reanimated';
-import { ShopItem } from '../../services/MonetizationTypes';
+import { ShopItem, RARITY_COLORS, Rarity } from '../../services/MonetizationTypes';
 import { colors, spacing, borderRadius } from '../../lib/theme';
 import { ItemPreview } from './ItemPreview';
+
+// Rarity Translations
+const RARITY_LABELS: Record<Rarity, string> = {
+    common: 'COMMUN',
+    rare: 'RARE',
+    epic: 'ÉPIQUE',
+    legendary: 'LÉGENDAIRE',
+    mythic: 'MYTHIQUE',
+};
 
 // Mini flocons pour la preview animée du thème Winter
 const MiniSnowfall = React.memo(() => {
@@ -86,8 +95,13 @@ interface ShopItemCardProps {
 
 export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits, containerStyle }: ShopItemCardProps) {
     const canAfford = (item.priceCredits || 0) <= userCredits;
-    const isPremium = item.isPremium;
     const isFree = (item.priceCredits || 0) === 0;
+
+    // Rarity Logic
+    const rarity = item.rarity || 'common';
+    const rarityColor = RARITY_COLORS[rarity];
+    const isSpecial = rarity !== 'common';
+    const rarityLabel = RARITY_LABELS[rarity];
 
     return (
         <TouchableOpacity
@@ -95,21 +109,20 @@ export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits, 
                 styles.container,
                 isEquipped && styles.containerEquipped,
                 isOwned && !isEquipped && styles.containerOwned,
+                // Rarity Border for the whole card (optional, user asked for "contour autour de la couleur", but subtle card border is nice too)
+                // Let's stick to the preview container for the main "color" border as requested, 
+                // but maybe a subtle glow for Mythic?
                 containerStyle
             ]}
             onPress={() => onPress(item)}
             activeOpacity={0.8}
         >
             {/* Preview */}
-            <View style={styles.previewContainer}>
+            <View style={[
+                styles.previewContainer,
+                isSpecial && { borderColor: rarityColor, borderWidth: 2 } // Colored border around preview
+            ]}>
                 <ItemPreview item={item} size="small" />
-
-                {/* Premium badge */}
-                {isPremium && (
-                    <View style={styles.premiumBadge}>
-                        <Ionicons name="star" size={10} color="#FFD700" />
-                    </View>
-                )}
 
                 {/* Equipped indicator */}
                 {isEquipped && (
@@ -124,21 +137,24 @@ export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits, 
                 <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
 
                 <View style={styles.priceRow}>
-                    {/* Badges Container */}
-                    <View style={styles.badgesContainer}>
-                        {item.isAnimated && (
-                            <View style={[styles.badge, styles.luxeBadge]}>
-                                <Ionicons name="sparkles" size={10} color="#FFFFFF" />
-                                <Text style={styles.badgeText}>LUXE</Text>
-                            </View>
-                        )}
-                        {item.isPremium && !item.isAnimated && (
-                            <View style={[styles.badge, styles.badgePremium]}>
-                                <Ionicons name="diamond" size={10} color="#FFD700" />
-                                <Text style={[styles.badgeText, { color: '#FFD700' }]}>PREMIUM</Text>
-                            </View>
-                        )}
-                    </View>
+                    {/* Rarity Badge */}
+                    {isSpecial ? (
+                        <View style={[
+                            styles.badge,
+                            {
+                                backgroundColor: rarityColor + '20', // 20% opacity hex
+                                borderColor: rarityColor,
+                                borderWidth: 1
+                            }
+                        ]}>
+                            <Text style={[styles.badgeText, { color: rarityColor }]}>
+                                {rarityLabel}
+                            </Text>
+                        </View>
+                    ) : (
+                        <View style={{ flex: 1 }} /> // Spacer if no badge
+                    )}
+
                     {isOwned ? (
                         <View style={styles.ownedBadge}>
                             <Ionicons name="checkmark" size={12} color={colors.success} />
@@ -180,7 +196,6 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.05)',
-        // Width is now controlled by parent via containerStyle prop
     },
     containerEquipped: {
         borderColor: colors.success,
@@ -195,17 +210,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         position: 'relative',
-    },
-    premiumBadge: {
-        position: 'absolute',
-        top: 6,
-        right: 6,
-        backgroundColor: 'rgba(139, 92, 246, 0.8)',
-        borderRadius: 10,
-        width: 18,
-        height: 18,
-        justifyContent: 'center',
-        alignItems: 'center',
+        // Default border
+        borderColor: 'transparent',
+        borderBottomWidth: 0,
     },
     equippedBadge: {
         position: 'absolute',
@@ -231,11 +238,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginTop: 4,
-    },
-    badgesContainer: {
-        flexDirection: 'row',
-        gap: 4,
-        marginBottom: 4,
+        gap: 4, // Add gap
     },
     badge: {
         flexDirection: 'row',
@@ -243,20 +246,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 6,
         paddingVertical: 2,
         borderRadius: 4,
-        gap: 2,
-    },
-    luxeBadge: {
-        backgroundColor: '#8B5CF6', // Purple for Animated/Luxe
-    },
-    badgePremium: {
-        backgroundColor: 'rgba(255, 215, 0, 0.1)',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 215, 0, 0.3)',
     },
     badgeText: {
-        fontSize: 9,
+        fontSize: 8, // Smaller text
         fontWeight: 'bold',
-        color: '#FFFFFF',
+        textTransform: 'uppercase',
     },
     priceTag: {
         flexDirection: 'row',

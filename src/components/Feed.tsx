@@ -359,6 +359,7 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
                 visible={showSystemSelector}
                 onClose={() => setShowSystemSelector(false)}
                 currentAlterId={alterId || ''}
+                themeColors={themeColors}
             />
         </>
     );

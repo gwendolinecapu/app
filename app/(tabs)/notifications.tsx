@@ -89,7 +89,7 @@ export default function NotificationsScreen() {
             // This ensures we catch NEW requests (via receiverSystemId) and OLD legacy requests (via receiverId)
 
             // A. System-wide fetch (Efficient)
-            const systemRequestsPromise = FriendService.getSystemRequests(user.uid);
+            const systemRequestsPromise = FriendService.getSystemRequests(user.uid, ['pending', 'accepted']);
 
             // B. Per-Alter fetch (Legacy compatibility)
             const allAlterIds = alters.map(a => a.id);
@@ -98,7 +98,7 @@ export default function NotificationsScreen() {
             }
 
             const individualRequestsPromises = allAlterIds.map(id =>
-                FriendService.getRequests(id, ['pending'])
+                FriendService.getRequests(id, ['pending', 'accepted'])
                     .catch(e => {
                         console.log(`Failed to fetch requests for ${id}`, e);
                         return [];
@@ -119,26 +119,31 @@ export default function NotificationsScreen() {
             const uniqueRequests = Array.from(new Map(allRequests.map(item => [item.id, item])).values());
 
             // Helper to fetch keys
-            const getSenderName = async (senderId: string) => {
+            const getSenderInfo = async (senderId: string) => {
                 try {
                     // Try Alter
                     const { doc, getDoc } = await import('firebase/firestore');
                     const { db } = await import('../../src/lib/firebase');
                     const alterSnap = await getDoc(doc(db, 'alters', senderId));
-                    if (alterSnap.exists()) return alterSnap.data().name;
+                    if (alterSnap.exists()) {
+                        const data = alterSnap.data();
+                        return { name: data.name, avatar: data.avatar || data.avatar_url };
+                    }
 
                     // Try System
                     const systemSnap = await getDoc(doc(db, 'systems', senderId));
-                    if (systemSnap.exists()) return systemSnap.data().username || 'Système';
-                } catch (e) { return 'Utilisateur inconnu'; }
-                return 'Utilisateur';
+                    if (systemSnap.exists()) {
+                        const data = systemSnap.data();
+                        return { name: data.username || 'Système', avatar: data.avatar || data.avatar_url };
+                    }
+                } catch (e) { return { name: 'Utilisateur inconnu' }; }
+                return { name: 'Utilisateur' };
             };
 
             // Use Promise.all to enrich requests parallel
             const enrichedRequests = await Promise.all(uniqueRequests.map(async (req) => {
-                const name = await getSenderName(req.senderId);
-                // Also get avatar if possible? For now just name.
-                return { ...req, senderName: name };
+                const info = await getSenderInfo(req.senderId);
+                return { ...req, senderName: info.name, senderAvatar: info.avatar };
             }));
 
             // Sort by date descending
@@ -154,6 +159,7 @@ export default function NotificationsScreen() {
             const q = query(
                 collection(db, 'notifications'),
                 where('recipientId', '==', currentAlter.id),
+                where('targetSystemId', '==', user.uid),
                 limit(50)
             );
 
@@ -187,10 +193,11 @@ export default function NotificationsScreen() {
                         if (friendId) {
                             // Attempt to get friend name
                             try {
-                                if (typeof getSenderName === 'function') {
-                                    const name = await getSenderName(friendId);
-                                    if (name && !name.includes('Utilisateur')) {
-                                        n.targetName = name;
+                                if (typeof getSenderInfo === 'function') {
+                                    const info = await getSenderInfo(friendId);
+                                    if (info.name && !info.name.includes('Utilisateur')) {
+                                        n.targetName = info.name;
+                                        if (info.avatar) n.targetAvatar = info.avatar;
                                     }
                                 }
 
@@ -218,10 +225,11 @@ export default function NotificationsScreen() {
                     if (senderId) {
                         try {
                             // Try to get name via helper if available, or fetch doc
-                            if (typeof getSenderName === 'function') {
-                                const name = await getSenderName(senderId);
-                                if (name && !name.includes('Utilisateur')) {
-                                    n.actorName = name;
+                            if (typeof getSenderInfo === 'function') {
+                                const info = await getSenderInfo(senderId);
+                                if (info.name && !info.name.includes('Utilisateur')) {
+                                    n.actorName = info.name;
+                                    if (info.avatar) n.actorAvatar = info.avatar;
                                 }
                             }
 
@@ -399,9 +407,16 @@ export default function NotificationsScreen() {
         return (
             <View style={[styles.requestCard, isAccepted && { opacity: 0.6, backgroundColor: colors.backgroundLight + '40' }]}>
                 <View style={[styles.requestAvatar, isAccepted && { backgroundColor: colors.textMuted }, !isAccepted && { backgroundColor: themeColor }]}>
-                    <Text style={styles.requestAvatarText}>
-                        {senderName.charAt(0).toUpperCase()}
-                    </Text>
+                    {(item as any).senderAvatar ? (
+                        <Image
+                            source={{ uri: (item as any).senderAvatar }}
+                            style={{ width: 50, height: 50, borderRadius: 25 }}
+                        />
+                    ) : (
+                        <Text style={styles.requestAvatarText}>
+                            {senderName.charAt(0).toUpperCase()}
+                        </Text>
+                    )}
                 </View>
                 <View style={styles.requestContent}>
                     <Text style={[styles.requestTitle, { color: textColor }]}>{senderName}</Text>

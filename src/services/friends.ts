@@ -64,6 +64,7 @@ export const FriendService = {
         // Create a notification for the receiver
         await addDoc(collection(db, 'notifications'), {
             recipientId: receiverId, // The alter receiving the notification
+            targetSystemId: receiverSystemId, // The system receiving the notification (for security rules)
             type: 'friend_request', // Must match NotificationType in NotificationTypes.ts or handled in UI
             title: 'Nouvelle demande d\'ami',
             message: 'Quelqu\'un souhaite devenir votre ami.',
@@ -128,20 +129,43 @@ export const FriendService = {
 
         // 3. Notify the sender (THEM) that we accepted
 
+        let targetSystemId = senderSystemId;
+
+        // Fallback: If systemId is missing in the request (old requests), fetch from sender alter
+        if (!targetSystemId) {
+            console.warn("Friend request missing systemId, fetching from sender alter...");
+            const senderDoc = await getDoc(doc(db, 'alters', senderId));
+            if (senderDoc.exists()) {
+                const senderData = senderDoc.data();
+                targetSystemId = senderData.userId || senderData.systemId || senderData.system_id;
+            }
+        }
+
+        // If still no system ID, we can't create a compliant notification
+        if (!targetSystemId) {
+            console.error("Could not find system ID for sender", senderId);
+            // Proceed without notification or with best effort? 
+            // Best effort: use senderId as recipient, but rules might block read if not system owner.
+            // We'll try anyway, but log error.
+        }
+
         // 3. Notify the sender (THEM) that we accepted
-        await addDoc(collection(db, 'notifications'), {
-            recipientId: senderId, // The alter receiving the notification (sender of request)
-            type: 'friend_request_accepted',
-            title: 'Demande acceptée',
-            message: 'Votre demande d\'ami a été acceptée.',
-            data: {
-                alterId: receiverId, // The alter who accepted (us)
-                friendId: senderId, // The alter who sent (them)
-            },
-            senderId: receiverId, // Important for UI enrichment
-            read: false,
-            createdAt: serverTimestamp()
-        });
+        if (targetSystemId) {
+            await addDoc(collection(db, 'notifications'), {
+                recipientId: senderId, // The alter receiving the notification (sender of request)
+                targetSystemId: targetSystemId, // The system receiving the notification (for security rules)
+                type: 'friend_request_accepted',
+                title: 'Demande acceptée',
+                message: 'Votre demande d\'ami a été acceptée.',
+                data: {
+                    alterId: receiverId, // The alter who accepted (us)
+                    friendId: senderId, // The alter who sent (them)
+                },
+                senderId: receiverId, // Important for UI enrichment
+                read: false,
+                createdAt: serverTimestamp()
+            });
+        }
 
     },
 
@@ -236,11 +260,11 @@ export const FriendService = {
     /**
      * Get all pending requests for a system (aggregated)
      */
-    getSystemRequests: async (systemId: string) => {
+    getSystemRequests: async (systemId: string, statuses: FriendRequestStatus[] = ['pending']) => {
         const q = query(
             collection(db, 'friend_requests'),
             where('receiverSystemId', '==', systemId),
-            where('status', '==', 'pending')
+            where('status', 'in', statuses)
         );
         const snapshot = await getDocs(q);
         return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as FriendRequest));

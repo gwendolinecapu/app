@@ -26,6 +26,8 @@ import { storage, functions } from '../../../src/lib/firebase';
 import { colors, spacing, typography, borderRadius } from '../../../src/lib/theme';
 import { getThemeColors } from '../../../src/lib/cosmetics';
 import { useAlterData } from '../../../src/hooks/useAlterData';
+import { useAuth } from '../../../src/contexts/AuthContext';
+import { MagicalLoadingView } from '../../../src/components/shared/MagicalLoadingView';
 import { AI_COSTS } from '../../../src/services/MonetizationTypes';
 import { triggerHaptic } from '../../../src/lib/haptics';
 
@@ -187,15 +189,8 @@ export default function RitualScreen() {
                 <Text style={styles.sectionTitle}>Offrandes ({selectedImages.length}/5)</Text>
 
                 {/* 1. Loading State */}
-                {loading && (
-                    <View style={styles.loadingContent}>
-                        <ActivityIndicator size="large" color={primaryColor} />
-                        <Text style={[styles.loadingText, { color: primaryColor }]}>
-                            Incantation en cours...
-                        </Text>
-                        <Text style={styles.loadingSubtext}>Analyse de l'ADN Visuel...</Text>
-                    </View>
-                )}
+                {/* 1. Loading State - REPLACED BY OVERLAY */}
+                {/* {loading && (...)} */}
 
                 {/* 2. Success State (Ritual Done) */}
                 {
@@ -360,6 +355,12 @@ export default function RitualScreen() {
                     )
                 }
             </ScrollView >
+            {/* Awesome Loading Screen */}
+            <MagicalLoadingView
+                visible={loading}
+                message="Incantation en cours..."
+                subMessage="Analyse de l'ADN Visuel..."
+            />
         </SafeAreaView >
     );
 };

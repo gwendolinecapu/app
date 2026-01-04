@@ -114,6 +114,7 @@ export default function RitualScreen() {
 
             if (data.success) {
                 triggerHaptic.success();
+                setSelectedImages([]); // Clear selection on success
                 await refresh();
                 Alert.alert(
                     "Rituel Accompli ✨",
@@ -211,7 +212,7 @@ export default function RitualScreen() {
                         )}
 
                         <TouchableOpacity style={styles.reDoButton} onPress={pickImages}>
-                            <Text style={styles.reDoText}>Refaire le Rituel</Text>
+                            <Text style={styles.reDoText}>Refaire le Rituel (Mettre à jour)</Text>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -237,6 +238,16 @@ export default function RitualScreen() {
                             </TouchableOpacity>
                         </ScrollView>
                         <Text style={styles.imageCountText}>{selectedImages.length} images sélectionnées</Text>
+
+                        {/* Cancel Redo Button */}
+                        {!!alter?.visual_dna?.is_ready && (
+                            <TouchableOpacity
+                                style={styles.cancelRedoButton}
+                                onPress={() => setSelectedImages([])}
+                            >
+                                <Text style={styles.cancelRedoText}>Annuler et garder l'ADN actuel</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 )}
 
@@ -488,42 +499,73 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: spacing.sm,
     },
-    confirmButton: {
-        width: '100%',
-        height: 56,
-        justifyContent: 'center',
-    },
-    confirmButtonText: {
-        ...typography.h4,
-        color: 'white',
-        fontWeight: 'bold',
-    },
+
     dnaCard: {
         width: '100%',
-        marginTop: spacing.lg,
-        padding: spacing.md,
         borderRadius: borderRadius.lg,
         borderWidth: 1,
-        maxHeight: 200, // Limit height
+        padding: spacing.md,
+        marginBottom: spacing.lg,
+        maxHeight: 400,
     },
     dnaHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: spacing.xs,
-        gap: spacing.sm,
+        marginBottom: spacing.sm,
     },
     dnaTitle: {
-        ...typography.h3,
-        fontSize: 16,
+        ...typography.h4,
         fontWeight: 'bold',
+        marginLeft: spacing.xs,
     },
     dnaScroll: {
-        marginTop: spacing.xs,
+        maxHeight: 250,
     },
     dnaText: {
-        ...typography.body,
+        ...typography.bodySmall,
         color: colors.textSecondary,
-        fontSize: 14,
         lineHeight: 20,
+    },
+    reDoButton: {
+        marginTop: spacing.md,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: borderRadius.full,
+    },
+    reDoText: {
+        ...typography.button,
+        color: colors.textSecondary,
+    },
+    cancelRedoButton: {
+        marginTop: spacing.md,
+        padding: spacing.sm,
+    },
+    cancelRedoText: {
+        ...typography.button,
+        color: colors.textSecondary,
+        textDecorationLine: 'underline',
+        opacity: 0.7,
+    },
+    confirmButton: {
+        width: '100%',
+        height: 56,
+        borderRadius: borderRadius.xl,
+        overflow: 'hidden',
+        marginTop: spacing.xl,
+        marginBottom: spacing.xl,
+        elevation: 8,
+    },
+    confirmGradient: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    confirmText: {
+        ...typography.button,
+        color: '#FFF',
+        fontSize: 18,
+        fontWeight: '600',
     },
 });

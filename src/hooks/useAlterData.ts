@@ -113,7 +113,8 @@ export const useAlterData = (alterId: string | undefined): AlterData => {
         return () => {
             mounted = false;
         };
-    }, [alterId, fetchAlter, fetchStats, fetchPosts]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [alterId]);
 
     // Sync alter from AuthContext.alters when it changes (e.g., after refreshAlters())
     // This ensures UI updates immediately when theme/cosmetics are equipped

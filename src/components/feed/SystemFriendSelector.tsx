@@ -14,72 +14,60 @@ interface Props {
 }
 
 export const SystemFriendSelector = ({ visible, onClose, currentAlterId, themeColors }: Props) => {
-    const { alters, refreshAlters } = useAuth(); // "alters" contains the current user's system alters
+    const { alters, refreshAlters } = useAuth();
     const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
+    const [statuses, setStatuses] = useState<Record<string, string>>({});
 
-    // Filter out the current alter (Gwendo shouldn't friend Gwendo, unless allowed?)
-    // User request: "pour quelle puisse choisir avec quel alter du systeme elle veux etre ami"
-    // "Elle" = Gwenna/Gwendo. "Du systeme" = Her system?
-    // If she is viewing "Feed", she is likely "Gwendo".
-    // We want to list OTHER alters in the SAME system.
     const systemAlters = alters.filter(a => a.id !== currentAlterId);
+
+    // Load initial statuses
+    React.useEffect(() => {
+        if (visible) {
+            loadStatuses();
+        }
+    }, [visible, currentAlterId, systemAlters]);
+
+    const loadStatuses = async () => {
+        const newStatuses: Record<string, string> = {};
+        await Promise.all(systemAlters.map(async (alter) => {
+            try {
+                const status = await FriendService.checkStatus(currentAlterId, alter.id);
+                newStatuses[alter.id] = status;
+            } catch (e) {
+                console.error("Error checking status for", alter.id, e);
+                newStatuses[alter.id] = 'none';
+            }
+        }));
+        setStatuses(newStatuses);
+    };
 
     const handleToggleFriend = async (targetAlterId: string) => {
         setLoadingMap(prev => ({ ...prev, [targetAlterId]: true }));
         try {
-            // Check if already friends? 
-            // We need to know status. 
-            // Ideally we'd pass "relationships" or fetch them.
-            // For now, let's assume we are toggling or just adding.
-            // FriendService.addFriendship(currentAlterId, targetAlterId)?
-            // We need to implement a 'toggle' or check check.
-            // But let's look at `FriendService`.
+            const currentStatus = statuses[targetAlterId] || 'none';
 
-            // Wait, FriendService usually works with requests between users.
-            // Between alters of SAME system, it's usually just "Relationship".
-            // "Relationship" type "friend" in `alters` collection.
-
-            // Let's use `SystemRelationships` logic: update `relationships` array in Firestore.
-            // Actually, we can just call a helper or do it manually.
-            // Let's check `FriendService`... it might be for cross-system.
-            // If it's internal, we update `alter` document.
-
-            // We'll reuse logic similar to SystemRelationships.
-            // But simplified.
-
-            // Wait, we don't have access to the *current alter's* relationship list here directly unless we find it in `alters`.
-            const currentAlter = alters.find(a => a.id === currentAlterId);
-            if (!currentAlter) return;
-
-            const relationships = currentAlter.relationships || [];
-            const existingRel = relationships.find(r => r.target_alter_id === targetAlterId);
-
-            // Import db/updateDoc
-            const { doc, updateDoc } = require('firebase/firestore');
-            const { db } = require('../../lib/firebase');
-
-            if (existingRel) {
-                // Remove (Unfriend)
-                const newRels = relationships.filter(r => r.target_alter_id !== targetAlterId);
-                await updateDoc(doc(db, 'alters', currentAlterId), { relationships: newRels });
+            if (currentStatus === 'friends') {
+                // Remove friend
+                await FriendService.removeFriend(currentAlterId, targetAlterId);
+                setStatuses(prev => ({ ...prev, [targetAlterId]: 'none' }));
+            } else if (currentStatus === 'pending') {
+                // Cancel request
+                await FriendService.cancelRequest(currentAlterId, targetAlterId);
+                setStatuses(prev => ({ ...prev, [targetAlterId]: 'none' }));
             } else {
-                // Add (Friend)
-                const newRel = { target_alter_id: targetAlterId, type: 'friend' };
-                await updateDoc(doc(db, 'alters', currentAlterId), { relationships: [...relationships, newRel] });
+                // Send request
+                await FriendService.sendRequest(currentAlterId, targetAlterId);
+                setStatuses(prev => ({ ...prev, [targetAlterId]: 'pending' }));
             }
 
-            await refreshAlters();
+            // Refresh alters to sync any deep changes if needed, mainly for other components
+            refreshAlters();
 
         } catch (error) {
-            console.error(error);
+            console.error("Error toggling friend:", error);
         } finally {
             setLoadingMap(prev => ({ ...prev, [targetAlterId]: false }));
         }
-    };
-
-    const isFriend = (targetId: string) => {
-        const currentAlter = alters.find(a => a.id === currentAlterId);
-        return currentAlter?.relationships?.some(r => r.target_alter_id === targetId && r.type === 'friend');
     };
 
     return (
@@ -97,13 +85,41 @@ export const SystemFriendSelector = ({ visible, onClose, currentAlterId, themeCo
                     keyExtractor={item => item.id}
                     contentContainerStyle={styles.list}
                     renderItem={({ item }) => {
-                        const friendBound = isFriend(item.id);
+                        const status = statuses[item.id] || 'none';
                         const isLoading = loadingMap[item.id];
+
+                        let btnText = "Ajouter";
+                        let btnIcon: any = "add"; // explicit any for icon name
+                        let isActionActive = false; // Blue/Primary background
+
+                        if (status === 'friends') {
+                            btnText = "Ami·e";
+                            btnIcon = "checkmark";
+                            isActionActive = true; // "Ami-e" is active state (but maybe outlines?)
+                            // Actually user said "si accepté alors ami". 
+                        } else if (status === 'pending') {
+                            btnText = "Demande envoyée";
+                            btnIcon = "time-outline";
+                            isActionActive = false; // Or a different color? Usually gray or outlined.
+                        }
+
+                        // Style logic matches original intent:
+                        // Friends -> Outlined/Transparent (Already added)
+                        // Pending -> Outlined/Gray?
+                        // Add -> Primary Color
+
+                        // Let's refine based on typical UI:
+                        // Add -> Primary (Blue/Pink)
+                        // Pending -> Gray/Muted
+                        // Friends -> Green or Outlined
+
+                        const isAdded = status === 'friends';
+                        const isPending = status === 'pending';
 
                         return (
                             <View style={[styles.item, themeColors && { backgroundColor: themeColors.backgroundCard }]}>
                                 <View style={styles.avatarRow}>
-                                    <View style={[styles.avatar, { backgroundColor: item.color }]}>
+                                    <View style={[styles.avatar, { backgroundColor: item.color || colors.primary }]}>
                                         {item.avatar_url ? (
                                             <Image source={{ uri: item.avatar_url }} style={styles.avatarImg} />
                                         ) : (
@@ -116,27 +132,31 @@ export const SystemFriendSelector = ({ visible, onClose, currentAlterId, themeCo
                                 <TouchableOpacity
                                     style={[
                                         styles.actionBtn,
-                                        friendBound ? styles.btnRemove : styles.btnAdd,
-                                        themeColors && !friendBound && { backgroundColor: themeColors.primary },
-                                        themeColors && friendBound && { borderColor: themeColors.border, backgroundColor: 'transparent' }
+                                        // Base styles based on state
+                                        !isAdded && !isPending && styles.btnAdd, // "Ajouter"
+                                        (isAdded || isPending) && styles.btnRemove, // Outlinedish
+
+                                        // Dynamic Theme Overrides
+                                        themeColors && !isAdded && !isPending && { backgroundColor: themeColors.primary },
+                                        themeColors && (isAdded || isPending) && { borderColor: themeColors.border, backgroundColor: 'transparent' }
                                     ]}
                                     onPress={() => handleToggleFriend(item.id)}
                                     disabled={isLoading}
                                 >
                                     {isLoading ? (
-                                        <ActivityIndicator color={friendBound ? colors.text : 'white'} size="small" />
+                                        <ActivityIndicator color={(!isAdded && !isPending) ? 'white' : colors.text} size="small" />
                                     ) : (
                                         <>
                                             <Ionicons
-                                                name={friendBound ? "checkmark" : "add"}
+                                                name={isAdded ? "checkmark" : isPending ? "time-outline" : "add"}
                                                 size={16}
-                                                color={friendBound ? (themeColors?.text || colors.text) : 'white'}
+                                                color={(!isAdded && !isPending) ? 'white' : (themeColors?.text || colors.text)}
                                             />
                                             <Text style={[
                                                 styles.btnText,
-                                                friendBound ? { color: themeColors?.text || colors.text } : { color: 'white' }
+                                                (!isAdded && !isPending) ? { color: 'white' } : { color: themeColors?.text || colors.text }
                                             ]}>
-                                                {friendBound ? 'Ami·e' : 'Ajouter'}
+                                                {status === 'friends' ? 'Ami·e' : status === 'pending' ? 'Demande envoyée' : 'Ajouter'}
                                             </Text>
                                         </>
                                     )}

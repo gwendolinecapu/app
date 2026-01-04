@@ -17,8 +17,11 @@ export interface ThemeColors {
     background: string;
     backgroundCard: string;
     primary: string;
+    surface?: string;
     text: string;
     textSecondary: string;
+    textMuted?: string;
+    backgroundLight?: string;
     border: string;
     isAnimated?: boolean;
 }

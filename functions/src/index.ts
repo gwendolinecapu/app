@@ -61,7 +61,7 @@ interface MagicPostRequest {
 
 async function chargeCredits(alterId: string, amount: number, description: string) {
     const alterRef = db.collection('alters').doc(alterId);
-    await db.runTransaction(async (t) => {
+    await db.runTransaction(async (t: admin.firestore.Transaction) => {
         const doc = await t.get(alterRef);
         if (!doc.exists) throw new functions.https.HttpsError('not-found', 'Alter not found');
         const data = doc.data();
@@ -188,7 +188,7 @@ async function callGeminiGeneration(prompt: string, imageBase64?: string): Promi
 
 // --- Cloud Functions ---
 
-export const performBirthRitual = functions.https.onCall(async (data: RitualRequest, context) => {
+export const performBirthRitual = functions.https.onCall(async (data: RitualRequest, context: functions.https.CallableContext) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Login required');
     const { alterId, referenceImageUrls } = data;
     // const userId = context.auth.uid;
@@ -272,7 +272,7 @@ export const performBirthRitual = functions.https.onCall(async (data: RitualRequ
     }
 });
 
-export const generateMagicPost = functions.https.onCall(async (data: MagicPostRequest, context) => {
+export const generateMagicPost = functions.https.onCall(async (data: MagicPostRequest, context: functions.https.CallableContext) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Login required');
     const { alterId, prompt, quality, sceneImageUrl } = data; // quality ignored for Gemini if used directly
     // Use quality for log or analytics if not for model

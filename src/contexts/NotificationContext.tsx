@@ -199,7 +199,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         await DynamicIslandService.setEnabled(enabled);
 
         if (!enabled) {
-            await DynamicIslandService.stop();
+            await DynamicIslandService.stopFronterActivity();
             setIsDynamicIslandActive(false);
         }
     }, []);
@@ -309,17 +309,16 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
                 .filter(Boolean) as string[];
 
             const data = {
-                currentAlterName: firstAlter.name,
-                currentAlterColor: firstAlter.color || '#8B5CF6',
-                currentAlterInitial: getInitial(firstAlter.name),
-                timeSinceSwitch: getTimeSince(front.timestamp),
-                coFronters,
-            };
-
-            if (DynamicIslandService.getIsActive()) {
-                await DynamicIslandService.update(data);
+                name: firstAlter.name,
+                color: firstAlter.color || '#8B5CF6',
+                initial: getInitial(firstAlter.name),
+                coFronterCount: 0,
+                isCoFront: false,
+                systemName: 'Mon Système'
+            }; if (DynamicIslandService.getIsActive()) {
+                await DynamicIslandService.updateFronterActivity(data);
             } else {
-                await DynamicIslandService.start(data);
+                await DynamicIslandService.startFronterActivity(data);
             }
             setIsDynamicIslandActive(true);
         }

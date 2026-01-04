@@ -116,7 +116,8 @@ export type CreditTransactionType =
     | 'bug_report_reward' // Récompense pour rapport de bug
     | 'refund'          // Remboursement
     | 'gift'            // Cadeau admin
-    | 'purchase_lootbox'; // Achat Loot Box
+    | 'purchase_lootbox' // Achat Loot Box
+    | 'ai_generation';   // Génération IA
 
 /** Transaction de crédits */
 export interface CreditTransaction {
@@ -133,9 +134,23 @@ export interface CreditTransaction {
 export const CREDIT_REWARDS = {
     DAILY_LOGIN_FREE: 10,
     DAILY_LOGIN_PREMIUM: 25,
-    REWARD_AD: 50,
+    REWARD_AD: 5, // Met à jour selon la tokenomics (0.015€ = 15 credits value, user gets 1/3)
     STREAK_7_DAYS: 100,
     STREAK_30_DAYS: 500,
+} as const;
+
+/** Coûts des fonctionnalités IA */
+export const AI_COSTS = {
+    // 2026 Pricing: Gemini 1.5 Pro cost ~$0.005. Price 50 Credits ($0.05).
+    RITUAL: 50,
+
+    // Generation Tiers (Imagen 4 / 3)
+    // Eco ($0.02 cost) -> 60 Credits ($0.06)
+    // Std ($0.04 cost) -> 120 Credits ($0.12)
+    // Pro ($0.06 cost) -> 180 Credits ($0.18)
+    GEN_ECO: 60,
+    GEN_STANDARD: 120,
+    GEN_PRO: 180,
 } as const;
 
 // ==================== BOUTIQUE ====================

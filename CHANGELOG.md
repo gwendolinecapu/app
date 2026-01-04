@@ -1,8 +1,17 @@
 # Changelog
 
 ## [2026-01-04] Correctifs & Améliorations 🔧
-- **Cosmétiques**: Augmentation de l'échelle du cadre **Flammes** (`frame_flames_v2`) de 5% (1.0 -> 1.05) pour un rendu plus imposant.
+- **Cosmétiques**: Augmentation de l'échelle du cadre **Flammes** (`frame_flames_v2`) de 15% au total (1.0 -> 1.15) pour un rendu maximal.
+- **Shop**: Suppression des cadres "Oasis Désert" et "Naufragé Steampunk" suite aux retours utilisateurs.
 - **Shop**: Correctif critique pour l'achat de crédits en mode DEV. La vérification manquait le champ `priceIAP`, empêchant la détection des packs.
+- **Backend**: Correction critique de la gestion des crédits ("Crédits Insuffisants"). Les fonctions Cloud `performBirthRitual` et `generateMagicPost` débitent désormais correctement le portefeuille de l'Alter (et non celui de l'utilisateur principal), alignant la logique sur le modèle de données.
+- **Infrastructure**: Mise à niveau du runtime Cloud Functions vers Node.js 22.
+
+### ✨ Intelligence Artificielle (Features) 🧠
+- **Rituel de Naissance** : Importez une planche de référence pour que l'IA mémorise l'apparence de votre alter (15 Crédits).
+- **Magie IA** : Générateur d'images pour mettre en scène vos alters dans n'importe quel contexte via un prompt texte.
+- **Modes** : Supporte "Incrustation/Body Swap" (via photo chargée) et Génération Pure.
+- **Qualité** : Choix entre Eco (1C), Standard (4C), Pro (12C).
 
 ## [2026-01-03] Ajout Cadres Animés (Tropical & Flammes) 🌴🔥
 ### Boutique (Shop)
@@ -61,7 +70,14 @@
 - **[Shop]** Refonte complète de la Boutique et ajout des récompenses (`DailyReward`, `AdReward`).
 - **[Fix]** Correction du crash RevenueCat et des erreurs Backend (Firestore Index, Credits).
 - **Navigation**: Resolved persistent double headers by forcing `headerShown: false` in RootLayout and Settings route.
-- **Roadmap**: Fixed "Impossible to load" error by adding `isUnchanged` helper to Firestore rules and fixing logical operators.
+- **Backend** :
+  - Fixed "Insufficient Credits" error (Credit check now targets `alters` collection).
+  - Updated to Node.js 22 runtime.
+  - Updated AI Pricing Model (2026 Strategy):
+    - **Rituel** : 270 -> 50 Credits (Lower entry barrier).
+    - **Magie** : Tiered 60/120/180 Credits (Aligned with new margins).
+  - Fixed Vertex AI Model 404 (Updated to `gemini-2.5-flash-001`).
+  - RoadMap: Fixed "Impossible to load" error by adding `isUnchanged` helper to Firestore rules and fixing logical operators.
 
 ### ✨ Nouveautés (Features)
 - **Système de Feedback** :

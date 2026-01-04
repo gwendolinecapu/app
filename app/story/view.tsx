@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StoryViewer } from '../../src/components/StoryViewer';
-import { StoriesService, Story } from '../../src/services/stories';
+import { StoriesService } from '../../src/services/stories';
+import { Story } from '../../src/types';
 import { colors } from '../../src/lib/theme';
 
 export default function StoryViewScreen() {

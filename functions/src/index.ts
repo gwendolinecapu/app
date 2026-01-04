@@ -12,7 +12,7 @@ const PROJECT_ID = process.env.GCLOUD_PROJECT || "plural-connect-default"; // Fa
 const LOCATION = "us-central1";
 
 // AI Models
-const GEMINI_MODEL = "gemini-1.5-pro-preview-0409";
+const GEMINI_MODEL = "gemini-3-pro-preview";
 const IMAGEN_MODEL_STD = "imagegeneration@006"; // Fallback to Imagen 2 for stability/availability
 const IMAGEN_MODEL_PRO = "imagen-3.0-generate-001"; // Target Imagen 3
 
@@ -28,11 +28,16 @@ const auth = new GoogleAuth({
 });
 
 // Costs (Tokenomics: 1€ = 1000 Credits)
+// Based on 2026 Pricing (Vertex AI):
+// - Ritual (Gemini 1.5 Pro): ~$0.005 cost -> 50 Credits ($0.05) -> x10 Margin (Setup fee)
+// - Eco (Imagen 4 Fast / 3 Fast): $0.02 cost -> 60 Credits ($0.06) -> x3 Margin
+// - Std (Imagen 4 / 3): $0.04 cost -> 120 Credits ($0.12) -> x3 Margin
+// - Pro (Imagen 4 Ultra): $0.06 cost -> 180 Credits ($0.18) -> x3 Margin
 const COSTS = {
-    RITUAL: 270,    // ~0.27€ (nano banana 3 pro scan)
-    POST_ECO: 40,   // ~0.04€ (gemini 2.5 flash + imagen 3)
-    POST_STD: 80,   // ~0.08€ (nano banana 2.5 flash)
-    POST_PRO: 270   // ~0.27€ (nano banana 3 pro)
+    RITUAL: 50,
+    POST_ECO: 60,
+    POST_STD: 120,
+    POST_PRO: 180
 };
 
 // --- Interfaces ---
@@ -51,18 +56,20 @@ interface MagicPostRequest {
 
 // --- Helpers ---
 
-async function chargeCredits(userId: string, amount: number, description: string) {
-    const userRef = db.collection('users').doc(userId);
+async function chargeCredits(alterId: string, amount: number, description: string) {
+    const alterRef = db.collection('alters').doc(alterId);
     await db.runTransaction(async (t) => {
-        const doc = await t.get(userRef);
-        if (!doc.exists) throw new functions.https.HttpsError('not-found', 'User not found');
+        const doc = await t.get(alterRef);
+        if (!doc.exists) throw new functions.https.HttpsError('not-found', 'Alter not found');
         const data = doc.data();
         const credits = data?.credits || 0;
         if (credits < amount) throw new functions.https.HttpsError('resource-exhausted', 'Insufficient credits');
-        t.update(userRef, { credits: credits - amount });
-        const txRef = db.collection('credit_transactions').doc();
+        t.update(alterRef, { credits: credits - amount });
+
+        // Store transaction in subcollection for the Alter
+        const txRef = alterRef.collection('credit_transactions').doc();
         t.set(txRef, {
-            userId,
+            alterId,
             amount: -amount,
             type: 'ai_generation',
             description,
@@ -167,13 +174,12 @@ export const performBirthRitual = functions.https.onCall(async (data: RitualRequ
             // throw new functions.https.HttpsError('permission-denied', 'Not your alter');
         }
 
-        // 2. Check Balance
-        const userDoc = await db.collection('users').doc(userId).get();
-        const credits = userDoc.data()?.credits || 0;
+        // 2. Check Balance (Wallet Alter)
+        const credits = alterData?.credits || 0;
         if (credits < COSTS.RITUAL) throw new functions.https.HttpsError('resource-exhausted', `Crédits insuffisants. Requis: ${COSTS.RITUAL}`);
 
         // 3. Charge Credits
-        await chargeCredits(userId, COSTS.RITUAL, `Rituel de Naissance (${alterId})`);
+        await chargeCredits(alterId, COSTS.RITUAL, `Rituel de Naissance`);
 
         // 4. Perform Analysis
         // Download all images in parallel
@@ -256,15 +262,15 @@ export const generateMagicPost = functions.https.onCall(async (data: MagicPostRe
         if (quality === 'high') cost = COSTS.POST_PRO;
 
         // 3. Check Balance (Read-only)
-        const userDoc = await db.collection('users').doc(userId).get();
-        const userCredits = userDoc.data()?.credits || 0;
-        if (userCredits < cost) throw new functions.https.HttpsError('resource-exhausted', `Crédits insuffisants. Requis: ${cost}, Dispo: ${userCredits}`);
+        // Note: We check against the Alter's credits now
+        const credits = alterData?.credits || 0;
+        if (credits < cost) throw new functions.https.HttpsError('resource-exhausted', `Crédits insuffisants. Requis: ${cost}, Dispo: ${credits}`);
 
         // 4. Charge Credits (Transaction)
         // We charge BEFORE the AI call to prevent exploit (calling AI then canceling).
         // If AI fails, we could refund, but complex. Standard practice: Charge for the *attempt* if valid, or refund on specific error types.
         // For simplicity/safety: Charge now.
-        await chargeCredits(userId, cost, `Magic Post (${quality})`);
+        await chargeCredits(alterId, cost, `Magic Post (${quality})`);
 
         // 5. AI Operations
         let fullPrompt = `

@@ -32,7 +32,7 @@ import { timeAgo } from '../../src/lib/date';
 import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
 
 // Types pour les différentes notifications
-type NotificationType = 'friend_request' | 'follow' | 'like' | 'comment' | 'mention' | 'system';
+type NotificationType = 'friend_request' | 'follow' | 'like' | 'comment' | 'mention' | 'system' | 'friend_request_accepted' | 'FRIEND_REQUEST_ACCEPTED';
 
 interface Notification {
     id: string;
@@ -49,6 +49,9 @@ interface Notification {
     mediaUrl?: string | null;  // Added
     postId?: string;
     senderId?: string;
+    data?: any; // For legacy or complex data
+    targetName?: string; // For "You accepted X's request"
+    targetAvatar?: string; // For double avatar display
 }
 
 interface NotificationSection {
@@ -70,6 +73,7 @@ export default function NotificationsScreen() {
     const themeColor = themeColors?.primary || currentAlter?.color || colors.primary;
     const backgroundColor = themeColors?.background || colors.background;
     const textColor = themeColors?.text || colors.text;
+    const textSecondaryColor = themeColors?.textSecondary || colors.textSecondary;
 
     const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
     const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -81,15 +85,19 @@ export default function NotificationsScreen() {
         if (!currentAlter || !user) return;
 
         try {
-            // 2. Différents fetch pour voir les requêtes reçues pour TOUS les alters du système
+            // 2. Fetch requests using Hybrid Strategy (System + Individual Alters)
+            // This ensures we catch NEW requests (via receiverSystemId) and OLD legacy requests (via receiverId)
+
+            // A. System-wide fetch (Efficient)
+            const systemRequestsPromise = FriendService.getSystemRequests(user.uid);
+
+            // B. Per-Alter fetch (Legacy compatibility)
             const allAlterIds = alters.map(a => a.id);
-            // Include system ID (user.uid)
             if (user.uid && !allAlterIds.includes(user.uid)) {
-                allAlterIds.push(user.uid);
+                allAlterIds.push(user.uid); // Ensure system profile is included
             }
 
-            // Fetch requests for all IDs in parallel
-            const requestsPromises = allAlterIds.map(id =>
+            const individualRequestsPromises = allAlterIds.map(id =>
                 FriendService.getRequests(id, ['pending'])
                     .catch(e => {
                         console.log(`Failed to fetch requests for ${id}`, e);
@@ -97,8 +105,15 @@ export default function NotificationsScreen() {
                     })
             );
 
-            const results = await Promise.all(requestsPromises);
-            const allRequests = results.flat();
+            const [systemRequests, ...individualResults] = await Promise.all([
+                systemRequestsPromise,
+                ...individualRequestsPromises
+            ]);
+
+            const allRequests = [
+                ...systemRequests,
+                ...individualResults.flat()
+            ];
 
             // Deduplicate by ID
             const uniqueRequests = Array.from(new Map(allRequests.map(item => [item.id, item])).values());
@@ -159,28 +174,84 @@ export default function NotificationsScreen() {
             if (notificationsToEnrich.length > 0) {
                 console.log('Enriching', notificationsToEnrich.length, 'notifications');
                 await Promise.all(notificationsToEnrich.map(async (n) => {
-                    if (n.senderId) {
-                        const name = await getSenderName(n.senderId);
-                        if (name && !name.includes('Utilisateur')) {
-                            n.actorName = name;
-                        }
+                    let senderId = n.senderId;
 
-                        // Try to get avatar too if missing
-                        if (!n.actorAvatar) {
+                    // Specific handling for friend_request_accepted if senderId is missing (legacy)
+                    if ((n.type === 'friend_request_accepted' || n.type === 'FRIEND_REQUEST_ACCEPTED') && !senderId && n.data) {
+                        senderId = n.data.alterId || n.data.friendId;
+                    }
+
+                    // For friend_request_accepted, we also want the TARGET name (the friend)
+                    if ((n.type === 'friend_request_accepted' || n.type === 'FRIEND_REQUEST_ACCEPTED') && n.data) {
+                        const friendId = n.data.friendId;
+                        if (friendId) {
+                            // Attempt to get friend name
                             try {
-                                const { doc, getDoc } = await import('firebase/firestore');
-                                const { db } = await import('../../src/lib/firebase');
-                                const alterSnap = await getDoc(doc(db, 'alters', n.senderId!));
-                                if (alterSnap.exists()) {
-                                    n.actorAvatar = alterSnap.data().avatar || alterSnap.data().avatar_url;
-                                } else {
-                                    // Try system
-                                    const sysSnap = await getDoc(doc(db, 'systems', n.senderId!));
-                                    if (sysSnap.exists()) n.actorAvatar = sysSnap.data().avatar_url || sysSnap.data().avatar;
+                                if (typeof getSenderName === 'function') {
+                                    const name = await getSenderName(friendId);
+                                    if (name && !name.includes('Utilisateur')) {
+                                        n.targetName = name;
+                                    }
+                                }
+
+                                if (!n.targetName || !n.targetAvatar) {
+                                    const { doc, getDoc } = await import('firebase/firestore');
+                                    const { db } = await import('../../src/lib/firebase');
+                                    const friendDoc = await getDoc(doc(db, 'alters', friendId));
+                                    if (friendDoc.exists()) {
+                                        if (!n.targetName) n.targetName = friendDoc.data().name;
+                                        if (!n.targetAvatar) n.targetAvatar = friendDoc.data().avatar || friendDoc.data().avatar_url;
+                                    } else {
+                                        const sysSnap = await getDoc(doc(db, 'systems', friendId));
+                                        if (sysSnap.exists()) {
+                                            if (!n.targetName) n.targetName = sysSnap.data().name;
+                                            if (!n.targetAvatar) n.targetAvatar = sysSnap.data().avatar_url || sysSnap.data().avatar;
+                                        }
+                                    }
                                 }
                             } catch (e) {
-                                console.log('Error fetching avatar for', n.senderId, e);
+                                console.log('Error fetching target info for', friendId, e);
                             }
+                        }
+                    }
+
+                    if (senderId) {
+                        try {
+                            // Try to get name via helper if available, or fetch doc
+                            if (typeof getSenderName === 'function') {
+                                const name = await getSenderName(senderId);
+                                if (name && !name.includes('Utilisateur')) {
+                                    n.actorName = name;
+                                }
+                            }
+
+                            // If actorName is still missing/generic, fetch directly
+                            if (!n.actorName || n.actorName === '?' || n.actorName.includes('tilisateur')) {
+                                const { doc, getDoc } = await import('firebase/firestore');
+                                const { db } = await import('../../src/lib/firebase');
+                                const senderDoc = await getDoc(doc(db, 'alters', senderId));
+                                if (senderDoc.exists()) {
+                                    n.actorName = senderDoc.data().name;
+                                    n.actorAvatar = senderDoc.data().avatar || senderDoc.data().avatar_url;
+                                } else {
+                                    // Try system as fallback
+                                    const sysSnap = await getDoc(doc(db, 'systems', senderId));
+                                    if (sysSnap.exists()) {
+                                        n.actorName = sysSnap.data().name || 'Système';
+                                        n.actorAvatar = sysSnap.data().avatar_url || sysSnap.data().avatar;
+                                    }
+                                }
+                            } else if (!n.actorAvatar) {
+                                // Just avatar missing
+                                const { doc, getDoc } = await import('firebase/firestore');
+                                const { db } = await import('../../src/lib/firebase');
+                                const senderDoc = await getDoc(doc(db, 'alters', senderId));
+                                if (senderDoc.exists()) {
+                                    n.actorAvatar = senderDoc.data().avatar || senderDoc.data().avatar_url;
+                                }
+                            }
+                        } catch (err) {
+                            console.log(`Could not fetch actor for notification ${n.id}`, err);
                         }
                     } else {
                         console.log('Notification missing senderId:', n.id, n);
@@ -333,8 +404,8 @@ export default function NotificationsScreen() {
                     </Text>
                 </View>
                 <View style={styles.requestContent}>
-                    <Text style={styles.requestTitle}>{senderName}</Text>
-                    <Text style={styles.requestSubtitle}>
+                    <Text style={[styles.requestTitle, { color: textColor }]}>{senderName}</Text>
+                    <Text style={[styles.requestSubtitle, { color: textSecondaryColor }]}>
                         {isAccepted ? "Demande acceptée" : "Veut être ton ami"}
                     </Text>
                 </View>
@@ -402,7 +473,28 @@ export default function NotificationsScreen() {
                 {/* Avatar Left */}
                 <TouchableOpacity onPress={() => item.senderId && router.push(`/profile/${item.senderId}` as any)}>
                     <View style={styles.notificationAvatarContainer}>
-                        {item.actorAvatar ? (
+                        {/* Special case: Double Avatar for Self-Accepted Friend Request */}
+                        {(item.type === 'friend_request_accepted' || item.type === 'FRIEND_REQUEST_ACCEPTED') && item.senderId === currentAlter?.id && item.targetAvatar ? (
+                            <View style={{ width: 50, height: 50, flexDirection: 'row', alignItems: 'center' }}>
+                                {/* User Avatar (Back) */}
+                                {item.actorAvatar ? (
+                                    <Image
+                                        source={{ uri: item.actorAvatar }}
+                                        style={[styles.notificationAvatar, { width: 35, height: 35, borderRadius: 17.5, position: 'absolute', left: 0, opacity: 0.8 }]}
+                                    />
+                                ) : (
+                                    <View style={[styles.notificationAvatar, { width: 35, height: 35, borderRadius: 17.5, position: 'absolute', left: 0, backgroundColor: themeColor, justifyContent: 'center', alignItems: 'center' }]}>
+                                        <Text style={{ color: 'white', fontSize: 12 }}>{item.actorName?.[0] || '?'}</Text>
+                                    </View>
+                                )}
+
+                                {/* Friend Avatar (Front) */}
+                                <Image
+                                    source={{ uri: item.targetAvatar }}
+                                    style={[styles.notificationAvatar, { width: 35, height: 35, borderRadius: 17.5, position: 'absolute', right: 0, borderWidth: 2, borderColor: themeColor }]}
+                                />
+                            </View>
+                        ) : item.actorAvatar ? (
                             <Image
                                 source={{ uri: item.actorAvatar }}
                                 style={styles.notificationAvatar}
@@ -424,16 +516,25 @@ export default function NotificationsScreen() {
                 {/* Center Text */}
                 <View style={styles.notificationContent}>
                     <Text style={styles.notificationText} numberOfLines={3}>
-                        <Text style={styles.username}>{item.actorName || "Un utilisateur"}</Text>
-                        <Text style={styles.actionText}>
+                        {/* Conditionally render actor name */
+                            !((item.type === 'friend_request_accepted' || item.type === 'FRIEND_REQUEST_ACCEPTED') && item.senderId === currentAlter?.id) && (
+                                <Text style={[styles.username, { color: textColor }]}>{item.actorName || "Un utilisateur"}</Text>
+                            )}
+
+                        <Text style={[styles.actionText, { color: textColor }]}>
                             {item.type === 'like' && " a aimé votre publication."}
                             {item.type === 'comment' && ` a commenté : "${item.subtitle || ''}"`}
                             {item.type === 'follow' && " a commencé à vous suivre."}
                             {item.type === 'mention' && " vous a mentionné."}
                             {item.type === 'friend_request' && " vous a envoyé une demande d'ami."}
-                            {!['like', 'comment', 'follow', 'mention', 'friend_request'].includes(item.type) && " : Nouvelle notification"}
+                            {(item.type === 'friend_request_accepted' || item.type === 'FRIEND_REQUEST_ACCEPTED') && (
+                                item.senderId === currentAlter?.id
+                                    ? `Vous avez accepté la demande d'ami${item.targetName ? ` de ${item.targetName}` : ''}.`
+                                    : " a accepté votre demande d'ami."
+                            )}
+                            {!['like', 'comment', 'follow', 'mention', 'friend_request', 'friend_request_accepted', 'FRIEND_REQUEST_ACCEPTED'].includes(item.type) && " : Nouvelle notification"}
                         </Text>
-                        <Text style={styles.timeText}> {time_ago}</Text>
+                        <Text style={[styles.timeText, { color: textSecondaryColor }]}> {time_ago}</Text>
                     </Text>
                 </View>
 
@@ -459,9 +560,9 @@ export default function NotificationsScreen() {
     // État vide
     const renderEmpty = () => (
         <View style={styles.emptyState}>
-            <Ionicons name="notifications-off-outline" size={64} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>Aucune notification</Text>
-            <Text style={styles.emptySubtitle}>
+            <Ionicons name="notifications-off-outline" size={64} color={textSecondaryColor} />
+            <Text style={[styles.emptyTitle, { color: textColor }]}>Aucune notification</Text>
+            <Text style={[styles.emptySubtitle, { color: textSecondaryColor }]}>
                 Les demandes d'amis, likes et commentaires apparaîtront ici
             </Text>
         </View>
@@ -471,7 +572,7 @@ export default function NotificationsScreen() {
     const hasContent = friendRequests.length > 0 || notifications.length > 0;
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, { backgroundColor }]}>
             <View style={styles.header}>
                 <TouchableOpacity
                     onPress={() => {
@@ -483,14 +584,14 @@ export default function NotificationsScreen() {
                     }}
                     style={styles.backButton}
                 >
-                    <Ionicons name="arrow-back" size={24} color={colors.text} />
+                    <Ionicons name="arrow-back" size={24} color={textColor} />
                 </TouchableOpacity>
                 <View style={{ alignItems: 'center' }}>
-                    <Text style={[styles.title, { color: themeColor }]}>Notifications</Text>
+                    <Text style={[styles.title, { color: textColor }]}>Notifications</Text>
                 </View>
                 {hasContent ? (
                     <TouchableOpacity onPress={handleClearAll}>
-                        <Text style={[styles.clearAllText, { color: themeColor }]}>Tout effacer</Text>
+                        <Text style={[styles.clearAllText, { color: textColor }]}>Tout effacer</Text>
                     </TouchableOpacity>
                 ) : <View style={{ width: 60 }} />}
             </View>
@@ -504,8 +605,8 @@ export default function NotificationsScreen() {
                         {friendRequests.length > 0 && (
                             <View style={styles.section}>
                                 <View style={styles.sectionHeader}>
-                                    <Ionicons name="person-add" size={20} color={themeColor} />
-                                    <Text style={styles.sectionTitle}>
+                                    <Ionicons name="person-add" size={20} color={textColor} />
+                                    <Text style={[styles.sectionTitle, { color: textColor }]}>
                                         Demandes d'amis ({friendRequests.length})
                                     </Text>
                                 </View>
@@ -521,8 +622,8 @@ export default function NotificationsScreen() {
                         {notifications.filter(n => n.type !== 'friend_request').length > 0 && (
                             <View style={styles.section}>
                                 <View style={styles.sectionHeader}>
-                                    <Ionicons name="pulse" size={20} color={themeColor} />
-                                    <Text style={styles.sectionTitle}>Activité récente</Text>
+                                    <Ionicons name="pulse" size={20} color={textColor} />
+                                    <Text style={[styles.sectionTitle, { color: textColor }]}>Activité récente</Text>
                                 </View>
                                 {notifications
                                     .filter(n => n.type !== 'friend_request')
@@ -553,7 +654,7 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.background,
+        // backgroundColor matches the theme dynamically handled in component style prop
     },
     header: {
         flexDirection: 'row',

@@ -168,42 +168,36 @@ export default function NotificationsScreen() {
                 limit(50)
             );
 
-            /* ANCIEN FILTRE STRICT :
-            const recipientIds = Array.from(new Set([currentAlter.id, user.uid]));
-             ... where('recipientId', 'in', recipientIds) ...
-            */
+            // console.log('[Notifications] Fetching with recipientIds:', recipientIds);
+            const querySnapshot = await getDocs(q);
+            // console.log('[Notifications] Fetched docs count:', querySnapshot.size);
 
-            const snapshot = await getDocs(q);
             const loadedNotifications: Notification[] = [];
-
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                // The original instruction had a malformed snippet.
-                // Assuming the intent was to add filtering logic or a different way of pushing.
-                // Since 'change' and 'newNotifications' are not defined in this context (getDocs),
-                // and to maintain syntactic correctness, I'm interpreting the instruction
-                // as replacing the existing push with the new data structure,
-                // while keeping the filtering comments as they were provided.
-
-                // Optionnel : Filtrer ici si on veut re-cibler uniquement l'alter conecté
-                // Pour l'instant, on laisse passer pour voir si ça résout le problème "aucune notif"
-                // On peut imaginer un toggle "Voir tout le système" plus tard.
-                // const recipientIds = [currentAlter.id, user.uid];
-                // if (!recipientIds.includes(data.recipientId)) return;
+            for (const docSnapshot of querySnapshot.docs) {
+                const data = docSnapshot.data();
+                // console.log('[Notifications] Doc data:', JSON.stringify(data));
 
                 loadedNotifications.push({
-                    id: doc.id,
+                    id: docSnapshot.id,
                     ...data,
                     timestamp: data.created_at?.toDate() || new Date()
                 } as Notification);
-            });
+            }
 
-            // Enrich Notifications that are missing actor info OR have generic placeholder
-            const notificationsToEnrich = loadedNotifications.filter(n => (!n.actorName || n.actorName.includes('tilisateur') || n.actorName === '?') && n.senderId);
+            // Enrich Notifications that are missing actor info OR have generic placeholder OR are missing avatar
+            const notificationsToEnrich = loadedNotifications.filter(n =>
+                (
+                    !n.actorName ||
+                    n.actorName.includes('tilisateur') ||
+                    n.actorName === '?' ||
+                    !n.actorAvatar // Enrichir aussi si l'avatar manque
+                ) && n.senderId
+            );
             if (notificationsToEnrich.length > 0) {
                 console.log('Enriching', notificationsToEnrich.length, 'notifications');
                 await Promise.all(notificationsToEnrich.map(async (n) => {
-                    let senderId = n.senderId;
+                    // PRIORITÉ À L'ALTER ID si disponible pour afficher le bon profil
+                    let senderId = (n as any).senderAlterId || n.senderId;
 
                     // Specific handling for friend_request_accepted if senderId is missing (legacy)
                     if ((n.type === 'friend_request_accepted' || n.type === 'FRIEND_REQUEST_ACCEPTED') && !senderId && n.data) {
@@ -315,8 +309,8 @@ export default function NotificationsScreen() {
             setNotifications(loadedNotifications);
 
             // Marquer comme lu
-            if (snapshot.docs.length > 0) {
-                markAllAsRead(snapshot.docs);
+            if (querySnapshot.docs.length > 0) {
+                markAllAsRead(querySnapshot.docs);
             }
 
         } catch (error) {
@@ -635,46 +629,18 @@ export default function NotificationsScreen() {
             </View>
 
             <FlatList
-                data={[]}
-                renderItem={null}
-                ListHeaderComponent={
-                    <>
-                        {/* Section Demandes d'amis */}
-                        {friendRequests.length > 0 && (
-                            <View style={styles.section}>
-                                <View style={styles.sectionHeader}>
-                                    <Ionicons name="person-add" size={20} color={textColor} />
-                                    <Text style={[styles.sectionTitle, { color: textColor }]}>
-                                        Demandes d'amis ({friendRequests.length})
-                                    </Text>
-                                </View>
-                                {friendRequests.map(request => (
-                                    <React.Fragment key={request.id}>
-                                        {renderFriendRequest({ item: request })}
-                                    </React.Fragment>
-                                ))}
-                            </View>
-                        )}
-
-                        {/* Section Activité récente */}
-                        {notifications.filter(n => n.type !== 'friend_request').length > 0 && (
-                            <View style={styles.section}>
-                                <View style={styles.sectionHeader}>
-                                    <Ionicons name="pulse" size={20} color={textColor} />
-                                    <Text style={[styles.sectionTitle, { color: textColor }]}>Activité récente</Text>
-                                </View>
-                                {notifications
-                                    .filter(n => n.type !== 'friend_request')
-                                    .map(notification => (
-                                        <React.Fragment key={notification.id}>
-                                            {renderNotification({ item: notification })}
-                                        </React.Fragment>
-                                    ))
-                                }
-                            </View>
-                        )}
-                    </>
-                }
+                data={[
+                    ...friendRequests.map(req => ({ ...req, _isFriendRequest: true, sortTime: req.createdAt?.seconds ? req.createdAt.seconds * 1000 : Date.now() })),
+                    ...notifications.filter(n => n.type !== 'friend_request').map(n => ({ ...n, _isFriendRequest: false, sortTime: n.timestamp?.getTime?.() || 0 }))
+                ].sort((a, b) => b.sortTime - a.sortTime)}
+                keyExtractor={(item: any) => item.id}
+                renderItem={({ item }: { item: any }) => {
+                    if (item._isFriendRequest) {
+                        return renderFriendRequest({ item });
+                    } else {
+                        return renderNotification({ item });
+                    }
+                }}
                 ListEmptyComponent={!hasContent && !loading ? renderEmpty : null}
                 refreshControl={
                     <RefreshControl

@@ -398,8 +398,12 @@ export const PostService = {
                         likes: arrayUnion(userId)
                     });
 
-                    // Create notification for post owner if it's not their own post
-                    if (post.system_id !== userId) {
+                    // Create notification if the liker is not the post owner
+                    // We allow same-system notifications if they are between different alters
+                    const recipientId = post.alter_id || post.system_id;
+                    const senderIdentifier = alterId || userId;
+
+                    if (recipientId !== senderIdentifier) {
                         try {
                             // Fetch sender details to detail the notification
                             let senderName = 'Quelqu\'un';

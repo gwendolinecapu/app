@@ -128,15 +128,18 @@ export const FriendService = {
 
         // 3. Notify the sender (THEM) that we accepted
 
+        // 3. Notify the sender (THEM) that we accepted
+
         await addDoc(collection(db, 'notifications'), {
             recipientId: senderSystemId, // The system receiving the notification
-            type: 'FRIEND_REQUEST_ACCEPTED',
+            type: 'friend_request_accepted',
             title: 'Demande acceptée',
             message: 'Votre demande d\'ami a été acceptée.',
             data: {
                 alterId: receiverId, // The alter who accepted (us)
                 friendId: senderId, // The alter who sent (them)
             },
+            senderId: receiverId, // Important for UI enrichment
             read: false,
             createdAt: serverTimestamp()
         });
@@ -177,8 +180,7 @@ export const FriendService = {
         const qFriend = query(
             collection(db, 'friendships'),
             where('alterId', '==', alterId1),
-            where('friendId', '==', alterId2),
-            where('systemId', '==', auth.currentUser?.uid) // Add systemId check
+            where('friendId', '==', alterId2)
         );
         const friendSnap = await getDocs(qFriend);
         if (!friendSnap.empty) return 'friends';
@@ -227,6 +229,19 @@ export const FriendService = {
             collection(db, 'friend_requests'),
             where('receiverId', '==', alterId),
             where('status', 'in', statuses)
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as FriendRequest));
+    },
+
+    /**
+     * Get all pending requests for a system (aggregated)
+     */
+    getSystemRequests: async (systemId: string) => {
+        const q = query(
+            collection(db, 'friend_requests'),
+            where('receiverSystemId', '==', systemId),
+            where('status', '==', 'pending')
         );
         const snapshot = await getDocs(q);
         return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as FriendRequest));
@@ -292,8 +307,7 @@ export const FriendService = {
         const q1 = query(
             collection(db, 'friendships'),
             where('alterId', '==', alterId),
-            where('friendId', '==', friendId),
-            where('systemId', '==', auth.currentUser.uid)
+            where('friendId', '==', friendId)
         );
         const snap1 = await getDocs(q1);
         snap1.forEach(async (doc) => {

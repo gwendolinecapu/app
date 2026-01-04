@@ -9,7 +9,8 @@ import {
     ActivityIndicator,
     Image,
     Dimensions,
-    Modal
+    Modal,
+    Platform
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,9 +19,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { httpsCallable } from 'firebase/functions';
-import { doc, updateDoc } from 'firebase/firestore';
+import Markdown from 'react-native-markdown-display';
 
-import { storage, functions, db } from '../../../src/lib/firebase';
+import { storage, functions } from '../../../src/lib/firebase';
 import { colors, spacing, typography, borderRadius } from '../../../src/lib/theme';
 import { getThemeColors } from '../../../src/lib/cosmetics';
 import { useAlterData } from '../../../src/hooks/useAlterData';
@@ -116,7 +117,7 @@ export default function RitualScreen() {
             }
 
             // 2. Call Cloud Function
-            const performBirthRitual = httpsCallable(functions, 'performBirthRitual');
+            const performBirthRitual = httpsCallable(functions, 'performBirthRitual', { timeout: 540000 }); // 9 mins timeout
             const response = await performBirthRitual({ alterId, referenceImageUrls: uploadedUrls });
             const data = response.data as any;
 
@@ -199,7 +200,7 @@ export default function RitualScreen() {
 
                             {/* Visual DNA Display */}
                             {displayDescription && (
-                                <View style={[styles.dnaCard, { borderColor: primaryColor + '40', backgroundColor: primaryColor + '10' }]}>
+                                <View style={[styles.dnaCard, { borderColor: 'rgba(255,255,255,0.1)' }]}>
                                     <View style={styles.dnaHeader}>
                                         <Ionicons name="finger-print" size={20} color={primaryColor} />
                                         <Text style={[styles.dnaTitle, { color: primaryColor }]}>ADN Visuel Extrait</Text>
@@ -247,7 +248,24 @@ export default function RitualScreen() {
                                     )}
 
                                     <ScrollView style={styles.dnaScroll} nestedScrollEnabled>
-                                        <Text style={styles.dnaText}>{displayDescription}</Text>
+                                        <Markdown
+                                            style={{
+                                                body: {
+                                                    color: '#E0E0E0',
+                                                    fontSize: 14,
+                                                    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+                                                    lineHeight: 22,
+                                                },
+                                                heading1: { color: primaryColor, marginVertical: 10, fontWeight: 'bold', fontSize: 20 },
+                                                heading2: { color: primaryColor, marginVertical: 8, fontWeight: 'bold', fontSize: 18 },
+                                                strong: { color: '#FFF', fontWeight: 'bold' },
+                                                em: { color: colors.textSecondary, fontStyle: 'italic' },
+                                                bullet_list: { marginVertical: 8 },
+                                                list_item: { marginVertical: 4, flexDirection: 'row', alignItems: 'flex-start' },
+                                            }}
+                                        >
+                                            {displayDescription}
+                                        </Markdown>
                                     </ScrollView>
                                 </View>
                             )}
@@ -578,12 +596,7 @@ const styles = StyleSheet.create({
     },
     dnaScroll: {
         maxHeight: 300,
-    },
-    dnaText: {
-        ...typography.body, // Larger text
-        color: '#E0E0E0', // Whiter text
-        lineHeight: 24, // More breathing room
-        fontFamily: 'System', // Cleaner font rendering
+        paddingHorizontal: spacing.xs,
     },
     reDoButton: {
         marginTop: spacing.md,

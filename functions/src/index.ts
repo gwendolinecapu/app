@@ -14,7 +14,7 @@ const GOOGLE_AI_API_KEY = process.env.GOOGLE_AI_API_KEY || "MISSING_KEY";
 
 // BytePlus Ark API Key (Seedream-4.5)
 const BYTEPLUS_API_KEY = "e8af2fb7-2b82-410d-ad9b-611ad702648a"; // TODO: Move to secret
-const SEEDREAM_MODEL = "seedream-4.5"; // or seedream-4.0
+const SEEDREAM_MODEL = "seedream-4-5-251128";
 
 // AI Models
 const GEMINI_MODEL = "gemini-3-pro-image-preview"; // Used for Vision/Analysis only now

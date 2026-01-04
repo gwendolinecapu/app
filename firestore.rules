@@ -187,7 +187,18 @@ service cloud.firestore {
         (request.resource.data.systemId == request.auth.uid) || 
         (request.resource.data.senderId == request.auth.uid)
       );
-      allow update, delete: if isAuthenticated() && (
+      allow update: if isAuthenticated() && (
+        (resource.data.systemId == request.auth.uid) ||
+        (resource.data.senderId == request.auth.uid) ||
+        // Allow recipient to mark as read
+        (
+             // Check if user is the receiver system (using systemId logic or alter ownership)
+             // Since messages have receiver_alter_id, we check if that alter belongs to auth user
+             get(/databases/$(database)/documents/alters/$(resource.data.receiver_alter_id)).data.systemId == request.auth.uid &&
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['is_read'])
+        )
+      );
+      allow delete: if isAuthenticated() && (
         (resource.data.systemId == request.auth.uid) ||
         (resource.data.senderId == request.auth.uid)
       );
@@ -436,6 +447,18 @@ service cloud.firestore {
         resource.data.system_id == request.auth.uid || 
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewers'])
       );
+    }
+
+    // ============================================
+    // FCM Tokens Collection
+    // ============================================
+    match /fcm_tokens/{tokenId} {
+      // Read: Authenticated users need to read tokens to send pushes (client-side implementation)
+      allow read: if isAuthenticated();
+      
+      // Write: User can only write their own token matches their UID
+      // Doc ID format is usually ${userId}_${deviceId}
+      allow write: if isAuthenticated() && tokenId.matches(request.auth.uid + '_.*');
     }
   }
 }

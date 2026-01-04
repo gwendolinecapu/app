@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Video, ResizeMode } from 'expo-av';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { db } from '../../src/lib/firebase';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
@@ -430,16 +431,18 @@ export default function ProfileScreen() {
                         />
                     ) : (
                         posts.map((post, index) => {
-                            // Video detection logic
-                            const mediaUrl = post.media_url?.toLowerCase() || '';
-                            const isVideo = mediaUrl.includes('.mp4') ||
-                                mediaUrl.includes('video') ||
-                                mediaUrl.includes('mov') ||
-                                mediaUrl.includes('quicktime');
+                            // Video detection logic: Assume video if it's NOT a standard image extension
+                            // This catch-all logic helps if the URL doesn't look like a standard video file
+                            const mediaUrlLower = post.media_url?.toLowerCase() || '';
+                            const isImage = mediaUrlLower.includes('.jpg') ||
+                                mediaUrlLower.includes('.jpeg') ||
+                                mediaUrlLower.includes('.png') ||
+                                mediaUrlLower.includes('.webp') ||
+                                mediaUrlLower.includes('.heic') ||
+                                mediaUrlLower.includes('.gif');
 
-                            if (post.media_url) {
-                                // console.log(`[ProfileGrid] Post ${post.id} media: ${post.media_url} (isVideo: ${isVideo})`);
-                            }
+                            // If it has a URL but it's not a known image type, treat as video
+                            const isVideo = !isImage;
 
                             return (
                                 <AnimatedPressable
@@ -453,8 +456,18 @@ export default function ProfileScreen() {
                                 >
                                     {post.media_url ? (
                                         isVideo ? (
-                                            <View style={[styles.gridImage, { backgroundColor: '#333', justifyContent: 'center', alignItems: 'center' }]}>
-                                                <Ionicons name="play" size={32} color="white" />
+                                            <View style={{ width: '100%', height: '100%', backgroundColor: 'black', justifyContent: 'center', alignItems: 'center' }}>
+                                                <Video
+                                                    source={{ uri: post.media_url }}
+                                                    style={{ width: '100%', height: '100%' }}
+                                                    resizeMode={ResizeMode.COVER}
+                                                    shouldPlay={false}
+                                                    isMuted={true}
+                                                    useNativeControls={false}
+                                                />
+                                                <View style={{ position: 'absolute' }}>
+                                                    <Ionicons name="play" size={32} color="rgba(255,255,255,0.8)" />
+                                                </View>
                                             </View>
                                         ) : (
                                             <Image
@@ -664,7 +677,7 @@ const styles = StyleSheet.create({
         width: '33.33%',
         aspectRatio: 1,
         borderWidth: 1,
-        borderColor: colors.background,
+        borderColor: 'red', // DEBUG: visible borders
     },
     gridImage: {
         width: '100%',

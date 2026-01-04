@@ -141,13 +141,16 @@ export const CREDIT_REWARDS = {
 
 /** Coûts des fonctionnalités IA */
 export const AI_COSTS = {
-    // 0.135€ cost = ~135 credits. Price x2 margin = ~270 credits.
-    RITUAL: 270,
+    // 2026 Pricing: Gemini 1.5 Pro cost ~$0.005. Price 50 Credits ($0.05).
+    RITUAL: 50,
 
-    // Generation Tiers
-    GEN_ECO: 40,      // ~0.04€ cost (Imagen 4 optimized/Standard) => 40-80 credits. Let's start accessible.
-    GEN_STANDARD: 80, // Target margins
-    GEN_PRO: 270,     // High end (Gemini 3 Pro)
+    // Generation Tiers (Imagen 4 / 3)
+    // Eco ($0.02 cost) -> 60 Credits ($0.06)
+    // Std ($0.04 cost) -> 120 Credits ($0.12)
+    // Pro ($0.06 cost) -> 180 Credits ($0.18)
+    GEN_ECO: 60,
+    GEN_STANDARD: 120,
+    GEN_PRO: 180,
 } as const;
 
 // ==================== BOUTIQUE ====================

@@ -374,5 +374,18 @@ export const FriendService = {
         snapshot.forEach(async (doc) => {
             await deleteDoc(doc.ref);
         });
+    },
+
+    /**
+     * Get ALL unique Friend System IDs for a specific System (aggregated across all alters)
+     */
+    getAllSystemFriendSystemIds: async (systemId: string): Promise<string[]> => {
+        const q = query(
+            collection(db, 'friendships'),
+            where('systemId', '==', systemId)
+        );
+        const snapshot = await getDocs(q);
+        const systemIds = new Set(snapshot.docs.map(d => d.data().friendSystemId as string));
+        return Array.from(systemIds).filter(id => id);
     }
 };

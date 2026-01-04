@@ -14,6 +14,8 @@ import {
     arrayUnion,
 } from 'firebase/firestore';
 
+import { Story } from '../types';
+
 // =====================================================
 // STORIES SERVICE
 // Gère les stories éphémères (type Instagram)
@@ -21,20 +23,6 @@ import {
 // - Marquage comme vu
 // - Support image/vidéo
 // =====================================================
-
-export interface Story {
-    id: string;
-    author_id: string;        // Alter ID
-    author_name: string;      // Dénormalisé
-    author_avatar?: string;
-    system_id: string;
-    media_url: string;
-    media_type: 'image' | 'video';
-    created_at: string;
-    expires_at: string;       // 24h après created_at
-    viewers: string[];        // IDs des users qui ont vu
-    // Futur: text overlay, stickers, etc.
-}
 
 export interface CreateStoryInput {
     authorId: string;

@@ -20,9 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage, functions } from '../../../src/lib/firebase';
-import { AI_COSTS } from '../../../src/services/MonetizationTypes';
-import { httpsCallable } from 'firebase/functions';
+import { db, storage } from '../../../src/lib/firebase';
 import { Alter } from '../../../src/types';
 import { alterColors, freeAlterColors, premiumAlterColors, colors, spacing, borderRadius, typography } from '../../../src/lib/theme';
 import PremiumService from '../../../src/services/PremiumService';
@@ -51,7 +49,7 @@ export default function EditAlterProfileScreen() {
     const [showBirthPicker, setShowBirthPicker] = useState(false);
 
     const [showArrivalPicker, setShowArrivalPicker] = useState(false);
-    const [isRitualLoading, setIsRitualLoading] = useState(false);
+
 
     const [initialAlter, setInitialAlter] = useState<Alter | null>(null);
 
@@ -137,55 +135,7 @@ export default function EditAlterProfileScreen() {
         });
     };
 
-    // AI Ritual Handler
-    const handleRitual = async () => {
-        // 1. Pick Image
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images'],
-            quality: 0.8,
-            base64: false, // We upload file
-        });
 
-        if (result.canceled || !result.assets[0]) return;
-
-        Alert.alert(
-            "Confirmation du Rituel",
-            "Le Rituel de Naissance coûte 15 Crédits. L'IA analysera cette image pour établir l'ADN Visuel de l'alter.",
-            [
-                { text: "Annuler", style: "cancel" },
-                {
-                    text: "Commencer (15 Crédits)",
-                    onPress: async () => {
-                        setIsRitualLoading(true);
-                        try {
-                            const asset = result.assets[0];
-
-                            // 2. Upload Reference
-                            const blob = await getBlobFromUri(asset.uri) as any;
-                            const refPath = `visual_dna/${alterId}/${Date.now()}_ref.jpg`;
-                            const refRef = ref(storage, refPath);
-                            await uploadBytes(refRef, blob);
-                            const downloadUrl = await getDownloadURL(refRef);
-                            blob.close && blob.close(); // Clean up
-
-                            // 3. Call Cloud Function
-                            const performBirthRitual = httpsCallable(functions, 'performBirthRitual');
-                            await performBirthRitual({ alterId, referenceImageUrl: downloadUrl });
-
-                            Alert.alert("Succès", "Le Rituel est accompli. L'ADN Visuel a été extrait.");
-                            fetchAlter(); // Refresh data
-
-                        } catch (err: any) {
-                            console.error("Ritual failed:", err);
-                            Alert.alert("Échec du Rituel", err.message || "Une erreur est survenue.");
-                        } finally {
-                            setIsRitualLoading(false);
-                        }
-                    }
-                }
-            ]
-        );
-    };
 
     const handleSave = async () => {
         if (!name.trim()) {
@@ -397,50 +347,7 @@ export default function EditAlterProfileScreen() {
                 </View>
 
 
-                {/* ==================== AI RITUAL SECTION ==================== */}
-                <View style={[styles.sectionHeader, { marginTop: spacing.xl }]}>
-                    <Ionicons name="sparkles-outline" size={20} color={colors.secondary} />
-                    <Text style={styles.sectionHeaderText}>ADN Visuel (IA)</Text>
-                </View>
-
-                <View style={styles.formSection}>
-                    {initialAlter?.visual_dna?.is_ready ? (
-                        <View style={styles.ritualCard}>
-                            <View style={styles.ritualHeader}>
-                                <Ionicons name="finger-print" size={24} color={colors.success} />
-                                <View style={{ marginLeft: spacing.sm, flex: 1 }}>
-                                    <Text style={styles.ritualTitle}>Signature Visuelle Établie</Text>
-                                    <Text style={styles.ritualSubtitle}>Prêt pour la Magie IA</Text>
-                                </View>
-                            </View>
-                            <Text style={styles.ritualDescription} numberOfLines={3}>
-                                {initialAlter.visual_dna.description}
-                            </Text>
-                            {/* Future: Show reference image thumbnail or re-do button */}
-                        </View>
-                    ) : (
-                        <View style={styles.ritualCard}>
-                            <Text style={styles.ritualTitle}>Rituel de Naissance</Text>
-                            <Text style={styles.ritualDescription}>
-                                Chargez une &quot;Planche de Référence&quot; pour que l&apos;IA (Nano Banana 3 Pro Preview) scanne votre alter en 3D et mémorise son ADN visuel.
-                            </Text>
-                            <TouchableOpacity
-                                style={[styles.ritualButton, isRitualLoading && { opacity: 0.7 }]}
-                                onPress={handleRitual}
-                                disabled={isRitualLoading}
-                            >
-                                {isRitualLoading ? (
-                                    <ActivityIndicator color="white" />
-                                ) : (
-                                    <>
-                                        <Ionicons name="flame" size={18} color="white" style={{ marginRight: 8 }} />
-                                        <Text style={styles.ritualButtonText}>Commencer le Rituel ({AI_COSTS.RITUAL} Crédits)</Text>
-                                    </>
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                    )}
-                </View>
+                <View style={{ height: 40 }} />
 
                 {/* ==================== APPEARANCE SECTION ==================== */}
                 <View style={[styles.sectionHeader, { marginTop: spacing.xl }]}>

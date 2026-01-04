@@ -32,7 +32,7 @@ export default function RitualScreen() {
     const { alterId } = useLocalSearchParams<{ alterId: string }>();
     const { alter, refresh } = useAlterData(alterId);
     const [loading, setLoading] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState(0);
+    const [selectedImages, setSelectedImages] = useState<ImagePicker.ImagePickerAsset[]>([]);
 
     const themeColors = getThemeColors(alter?.equipped_items?.theme);
     const primaryColor = themeColors?.primary || colors.primary;
@@ -54,52 +54,62 @@ export default function RitualScreen() {
         });
     };
 
-    const handleRitual = async () => {
+    const pickImages = async () => {
         try {
-            // 1. Pick Image
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ['images'],
                 quality: 0.9,
-                base64: false,
+                allowsMultipleSelection: true, // Enable multiple
+                selectionLimit: 5, // Reasonable limit
             });
 
-            if (result.canceled || !result.assets[0]) return;
-
-            Alert.alert(
-                "Commencer le Rituel ?",
-                `Cette offrande coûtera ${AI_COSTS.RITUAL} Crédits. L'Oracle (IA) analysera votre planche de référence pour capturer l'essence visuelle de ${alter?.name || "l'alter"}.`,
-                [
-                    { text: "Annuler", style: "cancel" },
-                    {
-                        text: `Offrir (${AI_COSTS.RITUAL} Crédits)`,
-                        style: 'default',
-                        onPress: async () => await processRitual(result.assets[0])
-                    }
-                ]
-            );
-
+            if (!result.canceled && result.assets.length > 0) {
+                setSelectedImages(result.assets);
+            }
         } catch (error) {
             console.error("Pick error:", error);
-            Alert.alert("Erreur", "Impossible de sélectionner l'image.");
+            Alert.alert("Erreur", "Impossible de sélectionner les images.");
         }
     };
 
-    const processRitual = async (asset: ImagePicker.ImagePickerAsset) => {
+    const confirmRitual = () => {
+        if (selectedImages.length === 0) return;
+
+        Alert.alert(
+            "Commencer le Rituel ?",
+            `Cette offrande (${selectedImages.length} images) coûte ${AI_COSTS.RITUAL} Crédits. L'Oracle va analyser votre alter en détail.`,
+            [
+                { text: "Annuler", style: "cancel" },
+                {
+                    text: `Offrir (${AI_COSTS.RITUAL} Crédits)`,
+                    style: 'default',
+                    onPress: processRitual
+                }
+            ]
+        );
+    };
+
+    const processRitual = async () => {
         setLoading(true);
         triggerHaptic.selection();
 
         try {
-            // 2. Upload Reference
-            const blob = await getBlobFromUri(asset.uri) as any;
-            const refPath = `visual_dna/${alterId}/${Date.now()}_ref.jpg`;
-            const refRef = ref(storage, refPath);
-            await uploadBytes(refRef, blob);
-            const downloadUrl = await getDownloadURL(refRef);
-            blob.close && blob.close();
+            const uploadedUrls: string[] = [];
 
-            // 3. Call Cloud Function
+            // 1. Upload All References
+            for (const asset of selectedImages) {
+                const blob = await getBlobFromUri(asset.uri) as any;
+                const refPath = `visual_dna/${alterId}/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+                const refRef = ref(storage, refPath);
+                await uploadBytes(refRef, blob);
+                const downloadUrl = await getDownloadURL(refRef);
+                uploadedUrls.push(downloadUrl);
+                blob.close && blob.close();
+            }
+
+            // 2. Call Cloud Function
             const performBirthRitual = httpsCallable(functions, 'performBirthRitual');
-            const response = await performBirthRitual({ alterId, referenceImageUrl: downloadUrl });
+            const response = await performBirthRitual({ alterId, referenceImageUrls: uploadedUrls });
             const data = response.data as any;
 
             if (data.success) {
@@ -107,7 +117,7 @@ export default function RitualScreen() {
                 await refresh();
                 Alert.alert(
                     "Rituel Accompli ✨",
-                    `L'ADN Visuel de ${alter?.name} a été extrait avec succès. Vous pouvez maintenant utiliser la Magie IA !`,
+                    `L'ADN Visuel de ${alter?.name} a été extrait. L'Oracle a fusionné vos ${selectedImages.length} offrandes.`,
                     [{ text: "Super", onPress: () => router.back() }]
                 );
             } else {
@@ -125,9 +135,8 @@ export default function RitualScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            {/* Background & Header */}
             <LinearGradient
-                colors={[themeColors?.background || colors.background, '#1a1025']} // Dark mystic bottom
+                colors={[themeColors?.background || colors.background, '#1a1025']}
                 style={StyleSheet.absoluteFill}
             />
 
@@ -141,7 +150,6 @@ export default function RitualScreen() {
 
             <ScrollView contentContainerStyle={styles.content}>
 
-                {/* Intro Card */}
                 <View style={[styles.card, { borderColor: primaryColor }]}>
                     <LinearGradient
                         colors={[primaryColor + '20', 'transparent']}
@@ -150,73 +158,76 @@ export default function RitualScreen() {
                     <Ionicons name="sparkles" size={32} color={primaryColor} style={styles.cardIcon} />
                     <Text style={styles.cardTitle}>Rituel de Naissance</Text>
                     <Text style={styles.cardDesc}>
-                        Donnez vie à {alter?.name || "votre alter"} en définissant son ADN Visuel unique.
-                        Une fois accompli, l'IA reconnaîtra son apparence pour toutes vos futures créations.
+                        Donnez vie à {alter?.name || "votre alter"}. Sélectionnez plusieurs images (Face, Profil, Détails) pour un résultat plus précis.
                     </Text>
                 </View>
 
-                {/* Steps */}
-                <Text style={styles.sectionTitle}>Comment ça marche</Text>
-                <View style={styles.stepsContainer}>
-                    <View style={styles.step}>
-                        <View style={[styles.stepNumber, { backgroundColor: accentColor }]}>
-                            <Text style={styles.stepNumberText}>1</Text>
-                        </View>
-                        <Text style={styles.stepText}>Choisissez une "Planche de Référence" précise (Turnaround).</Text>
-                    </View>
-                    <View style={styles.step}>
-                        <View style={[styles.stepNumber, { backgroundColor: accentColor }]}>
-                            <Text style={styles.stepNumberText}>2</Text>
-                        </View>
-                        <Text style={styles.stepText}>L'Oracle analyse les traits, vêtements et couleurs.</Text>
-                    </View>
-                    <View style={styles.step}>
-                        <View style={[styles.stepNumber, { backgroundColor: accentColor }]}>
-                            <Text style={styles.stepNumberText}>3</Text>
-                        </View>
-                        <Text style={styles.stepText}>L'ADN Visuel est scellé. Magie IA débloquée !</Text>
-                    </View>
-                </View>
+                <Text style={styles.sectionTitle}>Offrandes ({selectedImages.length}/5)</Text>
 
-                {/* Drop Zone / Action */}
+                {/* Drop Zone / Image Preview */}
                 <TouchableOpacity
-                    style={[styles.dropZone, { borderColor: loading ? colors.textMuted : primaryColor }]}
-                    onPress={handleRitual}
+                    style={[
+                        styles.dropZone,
+                        { borderColor: loading ? colors.textMuted : primaryColor },
+                        selectedImages.length > 0 && styles.dropZoneActive
+                    ]}
+                    onPress={loading || !!alter?.visual_dna?.is_ready ? undefined : pickImages}
                     disabled={loading || !!alter?.visual_dna?.is_ready}
                 >
                     {loading ? (
                         <View style={styles.loadingContent}>
                             <ActivityIndicator size="large" color={primaryColor} />
-                            <Text style={styles.loadingText}>Incantation en cours...</Text>
-                            <Text style={styles.loadingSubtext}>L'Oracle analyse votre offrande</Text>
+                            <Text style={styles.loadingText}>Incantation...</Text>
+                            <Text style={styles.loadingSubtext}>Fusion des {selectedImages.length} offrandes</Text>
                         </View>
-                    ) : alter?.visual_dna?.is_ready ? (
+                    ) : !!alter?.visual_dna?.is_ready ? (
                         <View style={styles.successContent}>
                             <Ionicons name="checkmark-circle" size={64} color={colors.success} />
-                            <Text style={styles.dropZoneTitle}>Rituel Déjà Accompli</Text>
-                            <Text style={styles.dropZoneDesc}>L'ADN Visuel est actif.</Text>
-                            <TouchableOpacity style={styles.reDoButton} onPress={handleRitual}>
-                                <Text style={styles.reDoText}>Recommencer le Rituel ({AI_COSTS.RITUAL} ©)</Text>
+                            <Text style={styles.dropZoneTitle}>Rituel Accompli</Text>
+                            <TouchableOpacity style={styles.reDoButton} onPress={pickImages}>
+                                <Text style={styles.reDoText}>Refaire le Rituel</Text>
                             </TouchableOpacity>
                         </View>
+                    ) : selectedImages.length > 0 ? (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.previewScroll}>
+                            {selectedImages.map((img, i) => (
+                                <Image key={i} source={{ uri: img.uri }} style={styles.previewImage} />
+                            ))}
+                            <View style={styles.addMoreCard}>
+                                <Ionicons name="add" size={32} color={primaryColor} />
+                                <Text style={[styles.addMoreText, { color: primaryColor }]}>Modifier</Text>
+                            </View>
+                        </ScrollView>
                     ) : (
                         <>
-                            <Ionicons name="cloud-upload-outline" size={64} color={primaryColor} />
-                            <Text style={styles.dropZoneTitle}>Déposer l'Offrande</Text>
-                            <Text style={styles.dropZoneDesc}>Appuyez pour sélectionner votre planche de référence</Text>
-                            <View style={[styles.costTag, { backgroundColor: primaryColor }]}>
-                                <Ionicons name="diamond-outline" size={14} color="white" />
-                                <Text style={styles.costText}>{AI_COSTS.RITUAL} Crédits</Text>
-                            </View>
+                            <Ionicons name="images-outline" size={64} color={primaryColor} />
+                            <Text style={styles.dropZoneTitle}>Déposer les Offrandes</Text>
+                            <Text style={styles.dropZoneDesc}>Appuyez pour sélectionner plusieurs images</Text>
                         </>
                     )}
                 </TouchableOpacity>
 
-                {/* Info Note */}
+                {/* Confirm Action */}
+                {!loading && !alter?.visual_dna?.is_ready && selectedImages.length > 0 && (
+                    <TouchableOpacity
+                        style={[styles.confirmButton, { backgroundColor: primaryColor }]}
+                        onPress={confirmRitual}
+                    >
+                        <LinearGradient
+                            colors={[primaryColor, accentColor]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={StyleSheet.absoluteFill}
+                        />
+                        <Ionicons name="flame" size={24} color="white" style={{ marginRight: 8 }} />
+                        <Text style={styles.confirmButtonText}>Commencer le Rituel ({AI_COSTS.RITUAL} Crédits)</Text>
+                    </TouchableOpacity>
+                )}
+
                 <View style={styles.noteContainer}>
                     <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
                     <Text style={styles.noteText}>
-                        Pour un meilleur résultat, utilisez une image claire montrant le visage et la tenue entière (face/profil). Évitez les arrière-plans complexes.
+                        Vous pouvez sélectionner jusqu'à 5 images pour aider l'IA à mieux comprendre l'apparence de votre alter sous tous les angles.
                     </Text>
                 </View>
 
@@ -315,7 +326,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     dropZone: {
-        height: 280,
+        minHeight: 200,
         backgroundColor: 'rgba(0,0,0,0.3)',
         borderWidth: 2,
         borderStyle: 'dashed',
@@ -325,12 +336,19 @@ const styles = StyleSheet.create({
         marginBottom: spacing.xl,
         padding: spacing.lg,
     },
+    dropZoneActive: {
+        borderStyle: 'solid',
+        padding: spacing.md,
+        alignItems: 'flex-start',
+        justifyContent: 'flex-start',
+    },
     dropZoneTitle: {
         ...typography.h3,
         color: 'white',
         marginTop: spacing.md,
         marginBottom: spacing.xs,
         fontWeight: 'bold',
+        textAlign: 'center',
     },
     dropZoneDesc: {
         ...typography.body,
@@ -345,6 +363,7 @@ const styles = StyleSheet.create({
         paddingVertical: spacing.xs,
         borderRadius: borderRadius.full,
         gap: 6,
+        marginTop: spacing.sm,
     },
     costText: {
         color: 'white',
@@ -393,5 +412,47 @@ const styles = StyleSheet.create({
         color: colors.textSecondary,
         flex: 1,
         lineHeight: 18,
+    },
+    previewScroll: {
+        flexGrow: 0,
+        width: '100%',
+    },
+    previewImage: {
+        width: 100,
+        height: 140,
+        borderRadius: borderRadius.md,
+        marginRight: spacing.sm,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
+    },
+    addMoreCard: {
+        width: 100,
+        height: 140,
+        borderRadius: borderRadius.md,
+        marginRight: spacing.sm,
+        borderWidth: 2,
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderStyle: 'dashed',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    addMoreText: {
+        ...typography.caption,
+        marginTop: spacing.xs,
+        fontWeight: 'bold',
+    },
+    confirmButton: {
+        marginTop: spacing.xl,
+        borderRadius: borderRadius.full,
+        overflow: 'hidden',
+        height: 56,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    confirmButtonText: {
+        ...typography.h4,
+        color: 'white',
+        fontWeight: 'bold',
     },
 });

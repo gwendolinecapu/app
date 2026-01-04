@@ -38,7 +38,7 @@ const COSTS = {
 // --- Interfaces ---
 interface RitualRequest {
     alterId: string;
-    referenceImageUrl: string;
+    referenceImageUrls: string[];
 }
 
 interface MagicPostRequest {
@@ -150,12 +150,14 @@ async function callImagen(prompt: string, quality: 'eco' | 'mid' | 'high', refIm
  */
 export const performBirthRitual = functions.https.onCall(async (data: RitualRequest, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Login required');
-    const { alterId, referenceImageUrl } = data;
+    const { alterId, referenceImageUrls } = data;
     const userId = context.auth.uid;
 
     try {
         // 1. Validation (Cost-Free)
-        if (!referenceImageUrl) throw new functions.https.HttpsError('invalid-argument', 'Image de référence manquante');
+        if (!referenceImageUrls || referenceImageUrls.length === 0) {
+            throw new functions.https.HttpsError('invalid-argument', 'Images de référence manquantes');
+        }
 
         // Security: Check ownership
         const alterDoc = await db.collection('alters').doc(alterId).get();
@@ -174,7 +176,8 @@ export const performBirthRitual = functions.https.onCall(async (data: RitualRequ
         await chargeCredits(userId, COSTS.RITUAL, `Rituel de Naissance (${alterId})`);
 
         // 4. Perform Analysis
-        const b64 = await downloadImageAsBase64(referenceImageUrl);
+        // Download all images in parallel
+        const imagesBase64 = await Promise.all(referenceImageUrls.map(url => downloadImageAsBase64(url)));
 
         // Gemini Vision Analysis
         const model = vertexAI.getGenerativeModel({
@@ -183,20 +186,22 @@ export const performBirthRitual = functions.https.onCall(async (data: RitualRequ
         });
 
         const prompt = `
-            Analyze this character reference sheet deeply (3D Scan Mode).
+            Analyze these character reference images deeply (3D Scan Mode).
             Extract a "Visual DNA" description for an AI image generator.
             Focus on: Physical build, Face details, Hair, Clothing styles, Key colors.
             Ignore pose and background.
             Output purely the visual description.
         `;
 
+        const parts = [
+            { text: prompt },
+            ...imagesBase64.map(base64 => ({ inlineData: { mimeType: 'image/jpeg', data: base64 } }))
+        ];
+
         const res = await model.generateContent({
             contents: [{
                 role: 'user',
-                parts: [
-                    { text: prompt },
-                    { inlineData: { mimeType: 'image/jpeg', data: b64 } }
-                ]
+                parts: parts as any
             }]
         });
 
@@ -207,7 +212,7 @@ export const performBirthRitual = functions.https.onCall(async (data: RitualRequ
         await db.collection('alters').doc(alterId).update({
             visual_dna: {
                 description: visualDescription,
-                reference_sheet: referenceImageUrl,
+                reference_sheets: referenceImageUrls, // Store Array
                 created_at: admin.firestore.FieldValue.serverTimestamp(),
                 is_ready: true
             }

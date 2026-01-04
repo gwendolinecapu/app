@@ -1,7 +1,7 @@
 
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 // import { GoogleAuth } from "google-auth-library"; // Unused
 
 admin.initializeApp();
@@ -10,18 +10,16 @@ const db = admin.firestore();
 // --- Configuration ---
 // const PROJECT_ID = process.env.GCLOUD_PROJECT || "plural-connect-default"; 
 // CRITICAL: Google AI Studio API Key from environment variable
-// Set this in a .env file in functions/ folder: GOOGLE_AI_API_KEY=your_key_here
 const GOOGLE_AI_API_KEY = process.env.GOOGLE_AI_API_KEY || "MISSING_KEY";
 
+// BytePlus Ark API Key (Seedream-4.5)
+const BYTEPLUS_API_KEY = "e8af2fb7-2b82-410d-ad9b-611ad702648a"; // TODO: Move to secret
+const SEEDREAM_MODEL = "seedream-4-5-251128";
+
 // AI Models
-const GEMINI_MODEL = "gemini-3-pro-image-preview"; // Google AI Studio Model ID
-// const IMAGEN_MODEL_ECO = "imagen-4.0-fast-generate-001";
-// const IMAGEN_MODEL_STD = "imagen-4.0-generate-001";
-// const IMAGEN_MODEL_PRO = "imagen-4.0-ultra-generate-001";
+const GEMINI_MODEL = "gemini-3-pro-image-preview"; // Used for Vision/Analysis only now
 
-// const LOCATION_IMAGEN = "us-central1"; // Imagen is still on Vertex AI (Google Cloud)
-
-// Google AI Client (for Gemini)
+// Google AI Client (for Gemini Vision)
 let genAI: GoogleGenerativeAI;
 if (GOOGLE_AI_API_KEY) {
     genAI = new GoogleGenerativeAI(GOOGLE_AI_API_KEY);
@@ -29,17 +27,11 @@ if (GOOGLE_AI_API_KEY) {
     console.warn("GOOGLE_AI_API_KEY is missing! Gemini calls will fail.");
 }
 
-
-// Auth Client (for REST calls to Imagen via Vertex AI) // Unused now
-// const auth = new GoogleAuth({
-//     scopes: ['https://www.googleapis.com/auth/cloud-platform']
-// });
-
 // Costs
 const COSTS = {
     RITUAL: 50,
     POST_ECO: 60,
-    POST_STD: 120,
+    POST_STD: 120, // Seedream Standard
     POST_PRO: 180
 };
 
@@ -61,7 +53,7 @@ interface MagicPostRequest {
 
 async function chargeCredits(alterId: string, amount: number, description: string) {
     const alterRef = db.collection('alters').doc(alterId);
-    await db.runTransaction(async (t: admin.firestore.Transaction) => {
+    await db.runTransaction(async (t) => {
         const doc = await t.get(alterRef);
         if (!doc.exists) throw new functions.https.HttpsError('not-found', 'Alter not found');
         const data = doc.data();
@@ -96,105 +88,89 @@ async function downloadImageAsBase64(url: string): Promise<string> {
 }
 
 /**
- * Call Imagen 4 (Vertex AI REST API)
- * Kept for future reference or fallback
+ * Call BytePlus Ark (Seedream) for Image Generation
  */
-// async function callImagen(prompt: string, quality: 'eco' | 'mid' | 'high'): Promise<Buffer> {
-//     const client = await auth.getClient();
-//     const token = await client.getAccessToken();
+async function callBytePlusArk(prompt: string, imagesBase64: string[] = [], size: string = "2048x2048"): Promise<Buffer> {
+    const endpoint = "https://ark.ap-southeast.bytepluses.com/api/v3/images/generations";
 
-//     let modelId = IMAGEN_MODEL_STD;
-//     if (quality === 'eco') modelId = IMAGEN_MODEL_ECO;
-//     if (quality === 'high') modelId = IMAGEN_MODEL_PRO;
+    // Construct payload
+    const payload: any = {
+        model: SEEDREAM_MODEL,
+        prompt: prompt,
+        response_format: "b64_json",
+        size: size,
+        sequential_image_generation: "disabled" // Single image output for now
+    };
 
-//     const endpoint = `https://${LOCATION_IMAGEN}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION_IMAGEN}/publishers/google/models/${modelId}:predict`;
+    // Handle reference images
+    if (imagesBase64.length > 0) {
+        // Seedream supports referencing images via Base64 (data:image/...) or URL.
+        // We have base64 data (without prefix usually from our helper), let's format it.
+        // API requires: "data:image/png;base64,..."
 
-//     const instances = [{ prompt: prompt }];
-//     const parameters = { sampleCount: 1, aspectRatio: "1:1" };
+        const formattedImages = imagesBase64.map(b64 => `data:image/jpeg;base64,${b64}`);
 
-//     const response = await fetch(endpoint, {
-//         method: 'POST',
-//         headers: {
-//             'Authorization': `Bearer ${token.token}`,
-//             'Content-Type': 'application/json'
-//         },
-//         body: JSON.stringify({ instances, parameters })
-//     });
+        if (formattedImages.length === 1) {
+            payload.image = formattedImages[0];
+        } else {
+            payload.image = formattedImages; // Array for multi-image
+            // If strictly multi-image (2-14), ensure valid count. 
+            // Our ritual allows up to 5, so valid.
+        }
+    }
 
-//     if (!response.ok) {
-//         const errText = await response.text();
-//         throw new Error(`Imagen API Error: ${response.status} - ${errText}`);
-//     }
+    const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${BYTEPLUS_API_KEY}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    });
 
-//     const result = await response.json();
-//     const predictions = result.predictions;
-//     if (!predictions || predictions.length === 0) throw new Error("No image generated");
+    if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`BytePlus Ark Error (${response.status}): ${errText}`);
+    }
 
-//     const b64 = predictions[0].bytesBase64Encoded;
-//     return Buffer.from(b64, 'base64');
-// }
+    const result = await response.json();
+    // Check for data
+    if (!result.data || result.data.length === 0) {
+        throw new Error("No image data returned from BytePlus");
+    }
+
+    const b64Data = result.data[0].b64_json;
+    return Buffer.from(b64Data, 'base64');
+}
+
+// REMOVE old callGeminiGeneration (or keep for Vision, but Vision uses genAI directly)
+// We keep callGeminiGeneration logic ONLY if we need it for something else, 
+// but actually the Vision part uses `genAI.getGenerativeModel` directly in performBirthRitual.
+// `callGeminiGeneration` was used for Image Gen. We can likely replace it or rename it.
 
 /**
- * Call Gemini 3 Pro (Google AI Studio SDK)
+ * Call Gemini 3 Pro (Google AI Studio SDK) - Vision Analysis
+ * Actually we use direct SDK calls in ritual for vision.
+ * We can remove the old image-gen `callGeminiGeneration` wrapper or leave it unused.
  */
-async function callGeminiGeneration(prompt: string, imageBase64?: string): Promise<Buffer> {
-    if (!genAI) throw new Error("Google AI Config missing (API Key)");
 
-    const model = genAI.getGenerativeModel({
-        model: GEMINI_MODEL,
-        safetySettings: [{ category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE }]
-    });
-
-    const parts: any[] = [{ text: prompt }];
-    if (imageBase64) {
-        parts.push({ inlineData: { mimeType: 'image/jpeg', data: imageBase64 } });
-    }
-
-    const result = await model.generateContent({
-        contents: [{ role: 'user', parts }]
-    });
-
-    const response = result.response;
-    // Google AI Studio SDK structure is slightly different for images sometimes
-    // But usually returns text unless specific image generation endpoint is used.
-    // WAIT: gemini-3-pro-image-preview generates images via generateContent?
-    // User says "Gemini 3 Pro Image".
-    // If it returns an image, it might be in inlineData or File URI.
-
-    // NOTE: For now, assuming standard generation structure.
-    // If this is purely Text-to-Image via Gemini, usage differs.
-    // But Ritual uses Vision (Image-to-Text), which returns TEXT (Visual DNA).
-    // The "Reference Sheet" generation uses Text-to-Image.
-
-    // If Gemini 3 Pro Image Preview returns an image directly:
-    // Check candidates.
-    const candidates = response.candidates;
-    if (!candidates || candidates.length === 0) throw new Error("No candidates returned");
-
-    // Check for inline data (Image generation)
-    // Note: The SDK types might not explicitly show image output for generateContent yet if using older types,
-    // but the raw response should contain it if the model supports it.
-    // Checking first part.
-    const part = candidates[0].content.parts[0];
-
-    // Type assertion or check
-    if ('inlineData' in part && part.inlineData) {
-        return Buffer.from(part.inlineData.data, 'base64');
-    }
-
-    // If it returned text, maybe it failed to generate image or user misuse?
-    throw new Error("Gemini generation return text instead of image: " + (part.text ? part.text.substring(0, 50) : "No text"));
-}
 
 // --- Cloud Functions ---
 
-export const performBirthRitual = functions.https.onCall(async (data: RitualRequest, context: functions.https.CallableContext) => {
+export const performBirthRitual = functions.runWith({
+    secrets: ["GOOGLE_AI_API_KEY"],
+    timeoutSeconds: 300,
+    memory: "1GB"
+}).https.onCall(async (data: RitualRequest, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Login required');
     const { alterId, referenceImageUrls } = data;
-    // const userId = context.auth.uid;
 
     try {
-        if (!genAI) throw new functions.https.HttpsError('failed-precondition', 'Server AI Config Missing');
+        if (!genAI) {
+            const key = process.env.GOOGLE_AI_API_KEY;
+            if (key) genAI = new GoogleGenerativeAI(key);
+            else throw new functions.https.HttpsError('failed-precondition', 'Server AI Config Missing');
+        }
 
         // 1. Validation & Security
         if (!referenceImageUrls || referenceImageUrls.length === 0) {
@@ -208,7 +184,8 @@ export const performBirthRitual = functions.https.onCall(async (data: RitualRequ
         if (credits < COSTS.RITUAL) throw new functions.https.HttpsError('resource-exhausted', 'Insufficient credits');
         await chargeCredits(alterId, COSTS.RITUAL, `Rituel de Naissance`);
 
-        // 3. DNA Analysis (Vision)
+        // 3. DNA Analysis (Gemini Vision)
+        // Download images once for both Vision and Generation
         const imagesBase64 = await Promise.all(referenceImageUrls.map(url => downloadImageAsBase64(url)));
 
         const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
@@ -233,36 +210,57 @@ export const performBirthRitual = functions.https.onCall(async (data: RitualRequ
         const visualDescription = res.response.text();
         if (!visualDescription) throw new Error("Analysis failed - No description");
 
-        // 4. Reference Sheet (Image Gen)
+        // 4. Reference Sheet (Seedream-4.5)
         const refSheetPrompt = `
-            Generate an image of a Character Reference Sheet (Turn-around view: Front, Side, Back).
-            Based on this description: ${visualDescription}
-            Full body, neutral lighting, white background.
-            High resolution, detailed character design.
+            Generate a SINGLE “character turnaround sheet” image from the provided reference photos.
+            
+            Goal:
+            One composite sheet with 4 full-body views of the SAME subject: FRONT / 3-4 FRONT / SIDE / BACK.
+            
+            Layout:
+            2x2 grid, full body, neutral standing pose, arms relaxed.
+            Same scale and alignment across all views (feet on the same baseline).
+            Plain neutral background, consistent studio lighting.
+            
+            Consistency rules:
+            Same outfit in every view (no changes).
+            Same hair shape/color (style-consistent).
+            No dramatic poses, no scene background.
+            Identity match, exact likeness.
+            
+            Visual DNA Context:
+            ${visualDescription}
         `;
 
         let refSheetUrl = "";
         try {
-            // Using our helper which handles the Image return check
-            const refImageBuffer = await callGeminiGeneration(refSheetPrompt);
+            // Call Seedream-4.5 with MULTI-IMAGE references + Prompt
+            const refImageBuffer = await callBytePlusArk(refSheetPrompt, imagesBase64, "2048x2048"); // Using high res
+
             const refSheetFilename = `alters/${alterId}/visual_dna/ref_sheet_${Date.now()}.png`;
             const itemBucket = admin.storage().bucket();
             const file = itemBucket.file(refSheetFilename);
             await file.save(refImageBuffer, { metadata: { contentType: 'image/png' } });
-            [refSheetUrl] = await file.getSignedUrl({ action: 'read', expires: '03-01-2500' });
-        } catch (genErr) {
-            console.warn("Reference Sheet generation failed:", genErr);
+            await file.makePublic(); // Keep using public URL
+            refSheetUrl = file.publicUrl();
+        } catch (genErr: any) {
+            console.error("Reference Sheet generation failed DETAILS:", genErr.message, genErr);
         }
 
         // 5. Save
-        await db.collection('alters').doc(alterId).update({
-            visual_dna: {
-                description: visualDescription,
-                reference_sheet_url: refSheetUrl || admin.firestore.FieldValue.delete(),
-                created_at: admin.firestore.FieldValue.serverTimestamp(),
-                is_ready: true
-            }
-        });
+        const updates: { [key: string]: any } = {
+            'visual_dna.description': visualDescription,
+            'visual_dna.created_at': admin.firestore.FieldValue.serverTimestamp(),
+            'visual_dna.is_ready': true
+        };
+
+        if (refSheetUrl) {
+            updates['visual_dna.reference_sheet_url'] = refSheetUrl;
+        } else {
+            updates['visual_dna.reference_sheet_url'] = admin.firestore.FieldValue.delete();
+        }
+
+        await db.collection('alters').doc(alterId).update(updates);
 
         return { success: true, visualDescription, refSheetUrl };
 
@@ -272,46 +270,39 @@ export const performBirthRitual = functions.https.onCall(async (data: RitualRequ
     }
 });
 
-export const generateMagicPost = functions.https.onCall(async (data: MagicPostRequest, context: functions.https.CallableContext) => {
+export const generateMagicPost = functions.runWith({
+    secrets: ["GOOGLE_AI_API_KEY"],
+    timeoutSeconds: 300,
+    memory: "1GB"
+}).https.onCall(async (data: MagicPostRequest, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Login required');
-    const { alterId, prompt, quality, sceneImageUrl } = data; // quality ignored for Gemini if used directly
-    // Use quality for log or analytics if not for model
+    const { alterId, prompt, quality, sceneImageUrl } = data;
     console.log("Quality requested:", quality);
 
     try {
-        if (!genAI) throw new functions.https.HttpsError('failed-precondition', 'Server AI Config Missing');
-
         const alterDoc = await db.collection('alters').doc(alterId).get();
         if (!alterDoc.exists) throw new functions.https.HttpsError('not-found', 'Alter not found');
 
         const credits = alterDoc.data()?.credits || 0;
-        // Cost logic simplified for brevity, assuming standard post cost
-        const cost = COSTS.POST_STD;
+        const cost = COSTS.POST_STD; // Use standard cost for Seedream now
         if (credits < cost) throw new functions.https.HttpsError('resource-exhausted', 'Insufficient credits');
         await chargeCredits(alterId, cost, `Magic Post`);
 
         let charDescription = alterDoc.data()?.visual_dna?.description || alterDoc.data()?.name;
-
-        let fullPrompt = `Character integrity: ${charDescription}. Scene: ${prompt}. Photorealistic.`;
+        let fullPrompt = `Character detailed: ${charDescription}. Scene: ${prompt}. Photorealistic, cinematic lighting, 8k.`;
 
         let imageBuffer: Buffer;
+        let referenceImages: string[] = [];
 
         if (sceneImageUrl) {
-            // I2I / Editing with Gemini
+            // I2I / Image Guidance
             const sceneB64 = await downloadImageAsBase64(sceneImageUrl);
-            // Note: Gemini 3 Pro supports image editing or image-guided generation
-            imageBuffer = await callGeminiGeneration(fullPrompt, sceneB64);
-        } else {
-            // T2I -> Use Imagen 4 (Vertex) OR Gemini 3 Pro (if it supports T2I)
-            // User requested Gemini 3 Pro Image Preview... presumably it does T2I too.
-            // Let's try Gemini 3 Pro for everything if possible, but keeping Imagen as fallback logic in our head.
-            // For now, let's route T2I to IMAGEN (Vertex) as it's proven for T2I, unless user explicitly said "Forget Vertex".
-            // User said: "oublie gemini 1.5 pro il n'existe plus [on Vertex US Central?] ... passer a ia google studio"
-            // But Imagen is Vertex. 
-            // Let's adhere to "Use Gemini 3 Pro Image (nano banana pro)" which implies image gen capabilities.
-            // We will try Gemini for T2I as well!
-            imageBuffer = await callGeminiGeneration(fullPrompt);
+            referenceImages.push(sceneB64);
         }
+
+        // T2I or I2I using Seedream
+        // Seedream allows prompt + optional images.
+        imageBuffer = await callBytePlusArk(fullPrompt, referenceImages, "2048x2048");
 
         const filename = `posts/ai/${alterId}_${Date.now()}.png`;
         const bucket = admin.storage().bucket();

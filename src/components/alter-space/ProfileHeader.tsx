@@ -127,12 +127,12 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     const isSakuraFrame = alter.equipped_items?.frame === 'frame_anim_sakura';
 
     // Composant Avatar interne (réutilisable avec ou sans Sakura)
-    const AvatarContent = () => (
-        <View style={[styles.avatar, { backgroundColor: alter.color || colors.primary }]}>
+    const AvatarContent = ({ imageStyle }: { imageStyle?: any }) => (
+        <View style={[styles.avatar, { backgroundColor: alter.color || colors.primary }, imageStyle]}>
             {alter.avatar_url ? (
                 <AnimatedImage
                     source={{ uri: alter.avatar_url }}
-                    style={styles.avatarImage}
+                    style={[styles.avatarImage, imageStyle]}
                     contentFit="cover"
                     transition={500}
                     {...({ sharedTransitionTag: `avatar-${alter.id}` } as any)}
@@ -150,22 +150,22 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             {isSakuraFrame ? (
                 // Cadre Sakura animé avec pétales
                 <SakuraFrame size={88}>
-                    <AvatarContent />
+                    <AvatarContent imageStyle={frameStyle.imageStyle} />
                 </SakuraFrame>
             ) : alter.equipped_items?.frame === 'frame_tropical' ? (
                 // Cadre Tropical animé avec feuilles
                 <TropicalFrame size={88}>
-                    <AvatarContent />
+                    <AvatarContent imageStyle={frameStyle.imageStyle} />
                 </TropicalFrame>
             ) : alter.equipped_items?.frame === 'frame_flames' ? (
                 // Cadre Flammes animé
                 <FlameFrame size={88}>
-                    <AvatarContent />
+                    <AvatarContent imageStyle={frameStyle.imageStyle} />
                 </FlameFrame>
             ) : alter.equipped_items?.frame === 'frame_nature_mystic' ? (
                 // Cadre Nature Mystic animé
                 <NatureMysticFrame size={88}>
-                    <AvatarContent />
+                    <AvatarContent imageStyle={frameStyle.imageStyle} />
                 </NatureMysticFrame>
             ) : (
                 // Cadre standard ou Image Frame
@@ -175,7 +175,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                     frameStyle.containerStyle,
                     frameStyle.imageSource ? { borderWidth: 0, backgroundColor: 'transparent', overflow: 'visible' } : undefined
                 ]}>
-                    <AvatarContent />
+                    <AvatarContent imageStyle={frameStyle.imageStyle} />
                     {frameStyle.imageSource && (
                         <Image
                             source={frameStyle.imageSource}
@@ -248,14 +248,17 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
                 {alter.custom_fields?.find(f => f.label === 'Role')?.value && (
                     <AnimatedPressable
-                        style={styles.roleRow}
+                        style={[
+                            styles.roleRow,
+                            themeColors ? { backgroundColor: themeColors.primary } : { backgroundColor: colors.primary }
+                        ]}
                         onPress={() => {
                             const role = alter.custom_fields?.find(f => f.label === 'Role')?.value || '';
                             Alert.alert("Définition du rôle", getRoleDefinition(role));
                         }}
                     >
-                        <Ionicons name="information-circle" size={14} color={themeColors?.primary || colors.primaryLight} style={{ marginRight: 4 }} />
-                        <Text style={[styles.roleText, themeColors && { color: themeColors.textSecondary }]}>{alter.custom_fields.find(f => f.label === 'Role')?.value}</Text>
+                        <Ionicons name="information-circle" size={14} color="white" style={{ marginRight: 4 }} />
+                        <Text style={[styles.roleText, { color: 'white', fontWeight: 'bold' }]}>{alter.custom_fields.find(f => f.label === 'Role')?.value}</Text>
                     </AnimatedPressable>
                 )}
 
@@ -445,16 +448,22 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        marginBottom: 4,
-        backgroundColor: colors.surface,
+        marginBottom: 8,
         alignSelf: 'flex-start',
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 4,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 20, // Rounded pill shape
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
     },
     roleText: {
-        fontSize: 13,
-        color: colors.textSecondary,
+        fontSize: 12,
+        color: 'white',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     bioText: {
         ...typography.body,

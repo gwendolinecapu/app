@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import {
     User,
     createUserWithEmailAndPassword,
@@ -151,6 +152,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
     }, []);
 
+    // 3. AppState Listener for Session Management
+    const appState = useRef(AppState.currentState);
+    const hasInitialSessionStarted = useRef(false);
+
+    useEffect(() => {
+        // Start session on mount if active
+        if (user && activeFront.alters.length > 0 && !hasInitialSessionStarted.current) {
+            FrontingService.startSession(user.uid, activeFront.alters[0].id);
+            hasInitialSessionStarted.current = true;
+        }
+
+        const subscription = AppState.addEventListener('change', async (nextAppState) => {
+            if (!user) return;
+
+            if (
+                appState.current.match(/inactive|background/) &&
+                nextAppState === 'active'
+            ) {
+                // App has come to the foreground
+                if (activeFront.alters.length > 0) {
+                    await FrontingService.startSession(user.uid, activeFront.alters[0].id);
+                }
+            } else if (
+                appState.current === 'active' &&
+                nextAppState.match(/inactive|background/)
+            ) {
+                // App has gone to the background
+                await FrontingService.stopActiveSessions(user.uid);
+            }
+
+            appState.current = nextAppState;
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, [user, activeFront.alters[0]?.id]); // Use specific ID to avoid excessive re-runs
+
     const updateActiveFront = (currentAlters: Alter[]) => {
         const activeAlters = currentAlters.filter(a => a.is_active);
         if (activeAlters.length === 1) {
@@ -211,6 +250,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const signOut = async () => {
         try {
+            if (user) {
+                await FrontingService.stopActiveSessions(user.uid);
+            }
             await firebaseSignOut(auth);
         } catch (error) {
             console.error('Error signing out:', error);

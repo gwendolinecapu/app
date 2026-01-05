@@ -429,11 +429,13 @@ export interface InnerWorld {
     system_id: string;
     alter_id: string;
     name: string;
+    description?: string;
+    background_color?: string;
     created_at: string;
     updated_at: string;
 }
 
-export type ShapeType = 'rectangle' | 'l-shape' | 'irregular' | 'organic';
+export type ShapeType = 'rectangle' | 'l-shape' | 'irregular' | 'organic' | 'custom' | 'building' | 'nature' | 'transport' | 'furniture';
 
 export interface InnerWorldShape {
     id: string;
@@ -446,7 +448,10 @@ export interface InnerWorldShape {
     rotation: number;
     name: string;
     image_url?: string;
+    icon?: string; // Icon name (Ionicons) or sticker ID
     emotion?: EmotionType;
     intention?: string;
+    color?: string;
+    border_radius?: number;
     created_at: string;
 }

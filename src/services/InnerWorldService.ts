@@ -62,7 +62,12 @@ export const InnerWorldService = {
     /**
      * Real-time subscription to shapes of a world
      */
-    subscribeToShapes: (worldId: string, systemId: string, onUpdate: (shapes: InnerWorldShape[]) => void) => {
+    subscribeToShapes: (
+        worldId: string,
+        systemId: string,
+        onUpdate: (shapes: InnerWorldShape[]) => void,
+        onError?: (error: any) => void
+    ) => {
         const q = query(
             collection(db, SHAPES_COLLECTION),
             where('system_id', '==', systemId),
@@ -77,6 +82,9 @@ export const InnerWorldService = {
                 created_at: d.data().created_at?.toDate()?.toISOString() || new Date().toISOString(),
             } as InnerWorldShape));
             onUpdate(shapes);
+        }, (error) => {
+            if (onError) onError(error);
+            else console.error('Snapshot error:', error);
         });
     },
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## [2026-01-05] Amélioration du Système de Tâches & Pubs Natives 📋📈
+- **Gamification Tâches**: Compléter une tâche rapporte maintenant **+5 Crédits** (ou XP personnalisé) à l'alter assigné.
+- **Tâches Récurrentes**: Les tâches quotidiennes/hebdomadaires se régénèrent automatiquement après complétion.
+- **Assignation**: Support explicite de l'assignation des tâches aux alters.
+- **Pubs Natives (Stories)**: Intégration fluide de publicités natives dans le visualiseur de Stories (toutes les 3 stories).
+- **Correctif**: Résolution des problèmes d'import dans `StoryNativeAd`.
+- **Infrastructure**: Unification de la collection `tasks` et nettoyage du code legacy.
+
 ## [2026-01-04] Correctifs & Améliorations 🔧
 - **Refonte Économie (Shop 2.0)**: Rééquilibrage complet des prix selon les paliers de rareté :
   - **Commun**: 1 Crédit (au lieu de 50).

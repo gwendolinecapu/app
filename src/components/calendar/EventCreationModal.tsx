@@ -58,8 +58,16 @@ export const EventCreationModal: React.FC<EventCreationModalProps> = ({
     React.useEffect(() => {
         if (selectedDate) {
             const date = new Date(selectedDate);
-            // Defaut at 9am if selected from calendar grid
-            date.setHours(9, 0, 0, 0);
+            // Si la date fournie n'a pas d'heure précise (e.g. minuit), on met l'heure actuelle arrondie
+            // Sinon on garde l'heure fournie. Comme on reçoit souvent YYYY-MM-DD (minuit), faisons une logique intelligente.
+            const now = new Date();
+
+            // Si c'est aujourd'hui ou futur, on propose une heure confortable
+            if (date.getHours() === 0 && date.getMinutes() === 0) {
+                // Set to current hour + 1
+                date.setHours(now.getHours() + 1, 0, 0, 0);
+            }
+
             setStartDate(date);
             setEndDate(new Date(date.getTime() + 60 * 60 * 1000));
         }

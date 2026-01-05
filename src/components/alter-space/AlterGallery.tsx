@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert, StyleSheet, Modal } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { SecureContainer } from '../security/SecureContainer';
 import { Alter } from '../../types';
@@ -35,7 +35,7 @@ export const AlterGallery: React.FC<AlterGalleryProps> = ({ alter, isCloudEnable
     const loadGallery = async () => {
         try {
             setLoading(true);
-            const stored = await SecureStore.getItemAsync(`gallery_${alter.id}`);
+            const stored = await AsyncStorage.getItem(`gallery_${alter.id}`);
             if (stored) {
                 setGalleryImages(JSON.parse(stored));
             }
@@ -72,7 +72,7 @@ export const AlterGallery: React.FC<AlterGalleryProps> = ({ alter, isCloudEnable
                 const updatedGallery = [newImage, ...galleryImages];
                 setGalleryImages(updatedGallery);
 
-                await SecureStore.setItemAsync(`gallery_${alter.id}`, JSON.stringify(updatedGallery));
+                await AsyncStorage.setItem(`gallery_${alter.id}`, JSON.stringify(updatedGallery));
                 toast.showToast('Photo ajoutée', 'success');
             }
         } catch (e) {

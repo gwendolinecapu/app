@@ -19,6 +19,7 @@ import {
     NativeAdData,
     BannerPlacement,
     AD_CONFIG,
+    REWARD_AD_AMOUNT,
 } from './MonetizationTypes';
 
 // =====================================================
@@ -274,7 +275,7 @@ class AdMediationService {
                 return {
                     completed: true,
                     rewardType: 'credits',
-                    rewardAmount: 50, // Défini dans CREDIT_REWARDS.REWARD_AD
+                    rewardAmount: REWARD_AD_AMOUNT,
                     network: available.network,
                 };
             }
@@ -305,9 +306,15 @@ class AdMediationService {
                 let earned = false;
 
                 // On doit réattacher les listeners pour cette instance d'affichage spécifique
+                const cleanup = () => {
+                    if (unsubscribeEarned) unsubscribeEarned();
+                    if (unsubscribeClosed) unsubscribeClosed();
+                };
+
                 const unsubscribeEarned = this.rewardedAd!.addAdEventListener(
                     RewardedAdEventType.EARNED_REWARD,
-                    () => {
+                    (reward: any) => {
+                        console.log('[AdMediation] Reward earned:', reward);
                         earned = true;
                     }
                 );
@@ -315,18 +322,37 @@ class AdMediationService {
                 const unsubscribeClosed = this.rewardedAd!.addAdEventListener(
                     AdEventType.CLOSED,
                     () => {
-                        unsubscribeEarned();
-                        unsubscribeClosed();
+                        console.log('[AdMediation] Ad closed');
+                        cleanup();
                         resolve(earned);
                     }
                 );
+
+                // Add error listener just in case
+                const unsubscribeError = this.rewardedAd!.addAdEventListener(
+                    AdEventType.ERROR,
+                    (error: any) => {
+                        console.error('[AdMediation] Ad error:', error);
+                        cleanup();
+                        // If error happens during show, we probably didn't earn reward
+                        resolve(false);
+                    }
+                );
+
+                // Override cleanup to include error listener
+                const originalCleanup = cleanup;
+                // @ts-ignore
+                cleanup = () => {
+                    originalCleanup();
+                    if (unsubscribeError) unsubscribeError();
+                };
 
                 try {
                     this.rewardedAd!.show();
                 } catch (e) {
                     console.error('[AdMediation] Show failed:', e);
-                    unsubscribeEarned();
-                    unsubscribeClosed();
+                    console.error('[AdMediation] Show failed:', e);
+                    cleanup();
                     resolve(false);
                 }
             });

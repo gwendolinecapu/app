@@ -208,7 +208,7 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
     const renderItem = ({ item, index }: { item: any, index: number }) => {
         // Render publicité
         if (item.type === 'ad') {
-            return <NativeAdCard />;
+            return <NativeAdCard themeColors={themeColors} />;
         }
 
         // Render Post

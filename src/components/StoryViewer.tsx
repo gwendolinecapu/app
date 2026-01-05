@@ -28,6 +28,13 @@ import { useAuth } from '../contexts/AuthContext';
 // - Auto-advance après 5s (images)
 // =====================================================
 
+import { StoryNativeAd } from './stories/StoryNativeAd';
+
+// Wrapper type for Stories queue
+type ViewerItem =
+    | { type: 'story'; data: Story }
+    | { type: 'ad'; id: string };
+
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const STORY_DURATION = 5000; // 5 secondes par story image
 
@@ -40,21 +47,65 @@ interface StoryViewerProps {
 
 export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: StoryViewerProps) => {
     const { user } = useAuth();
-    const [currentIndex, setCurrentIndex] = useState(initialIndex);
+    const [viewerItems, setViewerItems] = useState<ViewerItem[]>([]);
+    const [currentIndex, setCurrentIndex] = useState(0);
     const progressAnim = useRef(new Animated.Value(0)).current;
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-    const currentStory = stories[currentIndex];
+    // Initialize items with ads injected
+    useEffect(() => {
+        if (visible) {
+            const items: ViewerItem[] = [];
+            let storyCount = 0;
+
+            // Map initial index to new structure? 
+            // Simplified: We assume initialIndex maps to the story at that index.
+            // But if we inject ads, indices shift.
+            // Strategy: Inject ads AFTER the user's current sequence if possible, or interleaved.
+
+            stories.forEach((story, index) => {
+                items.push({ type: 'story', data: story });
+                storyCount++;
+
+                // Inject ad every 3 stories
+                if (storyCount % 3 === 0 && index < stories.length - 1) {
+                    items.push({ type: 'ad', id: `ad-${index}` });
+                }
+            });
+
+            setViewerItems(items);
+
+            // Find the correct index in the new list corresponding to initialIndex
+            // Assuming initialIndex refers to original stories array
+            // We need to count how many ads are before this story
+            let newIndex = 0;
+            let originalIndexCounter = 0;
+
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type === 'story') {
+                    if (originalIndexCounter === initialIndex) {
+                        newIndex = i;
+                        break;
+                    }
+                    originalIndexCounter++;
+                }
+            }
+            setCurrentIndex(newIndex);
+        }
+    }, [visible, stories, initialIndex]);
+
+    const currentItem = viewerItems[currentIndex];
 
     useEffect(() => {
-        if (visible && currentStory) {
-            startProgress();
-            markAsViewed();
+        if (visible && currentItem) {
+            if (currentItem.type === 'story') {
+                startProgress();
+                markAsViewed(currentItem.data);
+            } else {
+                // Ad handles its own progress/timer
+                progressAnim.setValue(0); // Reset for visual consistency if needed
+            }
         }
-        return () => {
-            if (timerRef.current) clearTimeout(timerRef.current);
-        };
-    }, [visible, currentIndex]);
+    }, [visible, currentIndex, currentItem]);
 
     const startProgress = () => {
         progressAnim.setValue(0);
@@ -69,10 +120,10 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
         });
     };
 
-    const markAsViewed = async () => {
-        if (currentStory && user) {
+    const markAsViewed = async (story: Story) => {
+        if (user) {
             try {
-                await StoriesService.markStoryAsViewed(currentStory.id, user.uid);
+                await StoriesService.markStoryAsViewed(story.id, user.uid);
             } catch (err) {
                 console.error('Failed to mark story as viewed:', err);
             }
@@ -80,7 +131,7 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
     };
 
     const goNext = () => {
-        if (currentIndex < stories.length - 1) {
+        if (currentIndex < viewerItems.length - 1) {
             setCurrentIndex(prev => prev + 1);
         } else {
             onClose();
@@ -103,31 +154,20 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
     };
 
     const handleDelete = (storyId: string) => {
-        // Pause progress
         progressAnim.stopAnimation();
-
         Alert.alert(
             "Supprimer la story",
             "Êtes-vous sûr de vouloir supprimer cette story ?",
             [
-                {
-                    text: "Annuler",
-                    style: "cancel",
-                    onPress: () => {
-                        // Resume progress (hacky reset)
-                        startProgress();
-                    }
-                },
+                { text: "Annuler", style: "cancel", onPress: () => startProgress() },
                 {
                     text: "Supprimer",
                     style: "destructive",
                     onPress: async () => {
                         try {
                             await StoriesService.deleteStory(storyId);
-                            // Close viewer to refresh
                             onClose();
                         } catch (error) {
-                            console.error("Failed to delete story:", error);
                             Alert.alert("Erreur", "Impossible de supprimer la story.");
                         }
                     }
@@ -136,7 +176,29 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
         );
     };
 
-    if (!currentStory) return null;
+    if (!currentItem) return null;
+
+    // Render Native Ad
+    if (currentItem.type === 'ad') {
+        return (
+            <Modal
+                visible={visible}
+                animationType="fade"
+                statusBarTranslucent
+                onRequestClose={onClose}
+            >
+                <StatusBar backgroundColor="black" barStyle="light-content" />
+                <StoryNativeAd
+                    onClose={onClose}
+                    onNext={goNext}
+                    onPrev={goPrev}
+                />
+            </Modal>
+        );
+    }
+
+    // Render Normal Story
+    const story = currentItem.data;
 
     return (
         <Modal
@@ -147,9 +209,13 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
         >
             <StatusBar backgroundColor="black" barStyle="light-content" />
             <View style={styles.container}>
-                {/* Progress Bars */}
+                {/* Progress Bars (Only show for stories, or maybe skip for ads?) 
+                    Instagram hides top bars for ads or shows a different one. 
+                    Let's show bars for all items to indicate position, but maybe style ads differently?
+                    Actually, let's keep it simple: Show bars for everything.
+                */}
                 <View style={styles.progressContainer}>
-                    {stories.map((_, index) => (
+                    {viewerItems.map((item, index) => (
                         <View key={index} style={styles.progressBarBg}>
                             <Animated.View
                                 style={[
@@ -163,6 +229,8 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
                                                     outputRange: ['0%', '100%'],
                                                 })
                                                 : '0%',
+                                        // Ad items might have different color or style?
+                                        backgroundColor: item.type === 'ad' ? '#FFD700' : 'white'
                                     },
                                 ]}
                             />
@@ -173,22 +241,21 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
                 {/* Header */}
                 <View style={styles.header}>
                     <View style={styles.authorInfo}>
-                        {currentStory.author_avatar ? (
-                            <Image source={{ uri: currentStory.author_avatar }} style={styles.avatar} />
+                        {story.author_avatar ? (
+                            <Image source={{ uri: story.author_avatar }} style={styles.avatar} />
                         ) : (
                             <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
-                                <Text style={styles.avatarInitial}>{currentStory.author_name?.charAt(0)}</Text>
+                                <Text style={styles.avatarInitial}>{story.author_name?.charAt(0)}</Text>
                             </View>
                         )}
                         <View>
-                            <Text style={styles.authorName}>{currentStory.author_name}</Text>
-                            <Text style={styles.timestamp}>{timeAgo(currentStory.created_at)}</Text>
+                            <Text style={styles.authorName}>{story.author_name}</Text>
+                            <Text style={styles.timestamp}>{timeAgo(story.created_at)}</Text>
                         </View>
                     </View>
                     <View style={{ flexDirection: 'row', gap: spacing.md }}>
-                        {/* Delete Button (Only for Author) */}
-                        {user && (currentStory.author_id === user.uid || currentStory.system_id === user.uid) && (
-                            <TouchableOpacity onPress={() => handleDelete(currentStory.id)} style={styles.closeButton}>
+                        {user && (story.author_id === user.uid || story.system_id === user.uid) && (
+                            <TouchableOpacity onPress={() => handleDelete(story.id)} style={styles.closeButton}>
                                 <Ionicons name="trash-outline" size={24} color="white" />
                             </TouchableOpacity>
                         )}
@@ -204,18 +271,18 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
                     activeOpacity={1}
                     onPress={handlePress}
                 >
-                    {currentStory.media_type === 'image' ? (
+                    {story.media_type === 'image' ? (
                         <Image
-                            source={{ uri: currentStory.media_url }}
+                            source={{ uri: story.media_url }}
                             style={styles.storyMedia}
                             resizeMode="contain"
                         />
                     ) : (
                         <Video
-                            source={{ uri: currentStory.media_url }}
+                            source={{ uri: story.media_url }}
                             style={styles.storyMedia}
                             resizeMode={ResizeMode.CONTAIN}
-                            shouldPlay
+                            shouldPlay={currentIndex === viewerItems.indexOf(currentItem)} // Only play if active
                             isLooping={false}
                             onPlaybackStatusUpdate={(status) => {
                                 if (status.isLoaded && status.didJustFinish) {
@@ -258,6 +325,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.sm,
+        zIndex: 10,
     },
     authorInfo: {
         flexDirection: 'row',

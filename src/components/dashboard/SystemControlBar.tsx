@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
         borderRadius: 36,
         overflow: 'hidden',
         paddingHorizontal: 12,
-        backgroundColor: Platform.OS === 'ios' ? 'transparent' : 'rgba(22, 53, 96, 0.9)',
+        backgroundColor: 'transparent',
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.1)',
         shadowColor: "#000",

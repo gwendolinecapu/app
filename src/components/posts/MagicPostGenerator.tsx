@@ -19,7 +19,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { functions, storage } from '../../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
+// import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads'; // REMOVED: Crash fix
+import AdMediationService from '../../services/AdMediationService';
+import CreditService from '../../services/CreditService'; // Added
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { Alter } from '../../types';
 import { SketchCanvas } from '../shared/SketchCanvas';
@@ -34,11 +36,7 @@ interface MagicPostGeneratorProps {
     activeAlterId?: string;
 }
 
-// Helper for Ads
-const adUnitId = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyy';
-const rewardedAd = RewardedAd.createForAdRequest(adUnitId, {
-    requestNonPersonalizedAdsOnly: true,
-});
+// Helper for Ads - Removed direct instance
 
 export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
     visible,
@@ -69,34 +67,42 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
     const [selectedResultIndex, setSelectedResultIndex] = useState(0);
 
     // Ads
-    const [adLoaded, setAdLoaded] = useState(false);
+    // const [adLoaded, setAdLoaded] = useState(false); // Managed by Service
 
     React.useEffect(() => {
-        const unsubscribeLoaded = rewardedAd.addAdEventListener(RewardedAdEventType.LOADED, () => {
-            setAdLoaded(true);
-        });
-        const unsubscribeEarned = rewardedAd.addAdEventListener(RewardedAdEventType.EARNED_REWARD, reward => {
-            // TODO: Call cloud function to add credits? Or just optimist update?
-            // Ideally we call a helper function. For now we will Alert.
-            Alert.alert("Récompense reçue !", `Vous avez gagné ${REWARD_AD_AMOUNT} crédits.`);
-            // In real app, trigger backend addCredits
-        });
-
-        rewardedAd.load();
-
-        return () => {
-            unsubscribeLoaded();
-            unsubscribeEarned();
-        };
+        // Init ads service if needed (idempotent)
+        AdMediationService.initialize();
     }, []);
 
-    const showRewardAd = () => {
-        if (adLoaded) {
-            rewardedAd.show();
-            setAdLoaded(false); // Reset load state
-            rewardedAd.load(); // Load next
-        } else {
-            Alert.alert("Publicité non prête", "Veuillez réessayer dans quelques instants.");
+    const showRewardAd = async () => {
+        // Check availability
+        if (!AdMediationService.canWatchRewardAd()) {
+            return Alert.alert("Limite atteinte", "Vous avez atteint votre limite quotidienne de publicités.");
+        }
+
+        // Check if alter is selected for credit attribution
+        if (!selectedAlterId) {
+            return Alert.alert("Erreur", "Aucun alter sélectionné pour recevoir les crédits.");
+        }
+
+        try {
+            const result = await AdMediationService.showRewardedAd();
+
+            if (result.completed) {
+                // Grant credits via CreditService
+                await CreditService.claimRewardAd(selectedAlterId);
+
+                Alert.alert("Récompense reçue !", `Vous avez gagné ${REWARD_AD_AMOUNT} crédits pour ${selectedAlter?.name || 'votre alter'}.`);
+            } else {
+                if (result.network === 'admob' && result.rewardAmount === 0) {
+                    // Ad failed or closed early - Do nothing or show generic error if needed
+                } else {
+                    Alert.alert("Vidéo interrompue", "Regardez la vidéo jusqu'au bout pour recevoir la récompense.");
+                }
+            }
+        } catch (e) {
+            console.error(e);
+            Alert.alert("Erreur", "Impossible de lancer la publicité.");
         }
     };
 

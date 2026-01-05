@@ -117,7 +117,8 @@ export type CreditTransactionType =
     | 'refund'          // Remboursement
     | 'gift'            // Cadeau admin
     | 'purchase_lootbox' // Achat Loot Box
-    | 'ai_generation';   // Génération IA
+    | 'ai_generation'    // Génération IA
+    | 'task_completion'; // Complétion de tâche
 
 // ==================== CONFIGURATION PUBS ====================
 

@@ -1,65 +1,83 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, ActivityIndicator, Alert } from 'react-native';
-import { collection, addDoc, query, where, onSnapshot, orderBy, updateDoc, doc, deleteDoc } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, ActivityIndicator, Alert, Modal, ScrollView } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { formatRelativeTime } from '../../lib/date';
+import { TaskService } from '../../services/tasks';
+import { Task, Alter } from '../../types';
+import { useAlterData } from '../../hooks/useAlterData';
 
-interface SystemTask {
-    id: string;
-    content: string;
-    completed: boolean;
-    created_at: number;
-    created_by: string; // system_id or alter_id if avail
-}
+// Constants for Dropdowns
+const CATEGORIES = [
+    { id: 'general', label: 'Général', icon: 'list', color: colors.text },
+    { id: 'care', label: 'Self-Care', icon: 'heart', color: '#FF6B6B' },
+    { id: 'admin', label: 'Admin', icon: 'briefcase', color: '#4ECDC4' },
+    { id: 'work', label: 'Travail', icon: 'laptop-outline', color: '#45B7D1' }, // laptop -> laptop-outline
+    { id: 'fun', label: 'Fun', icon: 'game-controller', color: '#96CEB4' }
+];
+
+const RECURRENCE = [
+    { id: 'none', label: 'Une fois' },
+    { id: 'daily', label: 'Quotidien' },
+    { id: 'weekly', label: 'Hebdo' }
+];
 
 export const SystemTasks = () => {
     const { user } = useAuth();
-    const [tasks, setTasks] = useState<SystemTask[]>([]);
+    const { alters } = useAlterData(); // Hook to get alters list
+    const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [newTask, setNewTask] = useState('');
     const [adding, setAdding] = useState(false);
 
+    // New Task State
+    const [selectedAssignee, setSelectedAssignee] = useState<string | null>(null); // null = System
+    const [selectedCategory, setSelectedCategory] = useState<string>('general');
+    const [selectedRecurrence, setSelectedRecurrence] = useState<string>('none');
+
+    // UI State
+    const [showOptions, setShowOptions] = useState(false);
+
     useEffect(() => {
-        if (!user) return;
-
-        // Tasks stored in a subcollection of the user (system) or root collection
-        // Let's use a root collection 'system_tasks' linked by system_id for easier querying
-        const q = query(
-            collection(db, 'system_tasks'),
-            where('system_id', '==', user.uid),
-            orderBy('created_at', 'desc')
-        );
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const loadedTasks = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            } as SystemTask));
-            setTasks(loadedTasks);
-            setLoading(false);
-        }, (err) => {
-            console.error("Error fetching tasks:", err);
-            setLoading(false);
-        });
-
-        return () => unsubscribe();
+        loadTasks();
     }, [user]);
+
+    const loadTasks = async () => {
+        if (!user) return;
+        try {
+            const data = await TaskService.getTasks(user.uid, 'all');
+            setTasks(data);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleAddTask = async () => {
         if (!newTask.trim() || !user) return;
 
         setAdding(true);
         try {
-            await addDoc(collection(db, 'system_tasks'), {
+            await TaskService.createTask({
                 system_id: user.uid,
-                content: newTask.trim(),
-                completed: false,
-                created_at: Date.now(),
+                title: newTask.trim(),
+                assigned_to: selectedAssignee,
+                created_by: user.uid, // Or current fronter ID if available
+                category: selectedCategory as any,
+                recurrence: selectedRecurrence as any,
+                visibility: 'public'
             });
             setNewTask('');
+            setShowOptions(false);
+            // Reset defaults
+            setSelectedAssignee(null);
+            setSelectedCategory('general');
+            setSelectedRecurrence('none');
+
+            // Reload
+            loadTasks();
         } catch (err) {
             Alert.alert("Erreur", "Impossible d'ajouter la tâche");
         } finally {
@@ -67,76 +85,195 @@ export const SystemTasks = () => {
         }
     };
 
-    const toggleTask = async (taskId: string, currentStatus: boolean) => {
+    const toggleTask = async (task: Task) => {
         try {
-            const taskRef = doc(db, 'system_tasks', taskId);
-            await updateDoc(taskRef, { completed: !currentStatus });
+            // Optimistic update
+            const updatedTasks = tasks.map(t =>
+                t.id === task.id ? { ...t, is_completed: !t.is_completed } : t
+            );
+            setTasks(updatedTasks);
+
+            const result = await TaskService.toggleTaskCompletion(task.id, !task.is_completed, task);
+
+            if (result.rewardEarned) {
+                Alert.alert("🎉 Bravo !", "Vous avez gagné +5 Crédits !");
+            }
+
+            // Reload to sync state (important for recurring tasks that might have been created)
+            loadTasks();
         } catch (err) {
             console.error("Error toggling task:", err);
+            loadTasks(); // Revert on error
         }
     };
 
     const deleteTask = async (taskId: string) => {
-        try {
-            const taskRef = doc(db, 'system_tasks', taskId);
-            await deleteDoc(taskRef);
-        } catch (err) {
-            console.error("Error deleting task:", err);
-        }
+        Alert.alert(
+            "Supprimer",
+            "Voulez-vous supprimer cette tâche ?",
+            [
+                { text: "Annuler", style: "cancel" },
+                {
+                    text: "Supprimer",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            await TaskService.deleteTask(taskId);
+                            loadTasks();
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    }
+                }
+            ]
+        );
     };
 
-    const renderItem = ({ item }: { item: SystemTask }) => (
-        <View style={styles.taskItem}>
-            <TouchableOpacity
-                style={[styles.checkbox, item.completed && styles.checkboxChecked]}
-                onPress={() => toggleTask(item.id, item.completed)}
-            >
-                {item.completed && <Ionicons name="checkmark" size={16} color="white" />}
-            </TouchableOpacity>
+    const getAssigneeName = (id: string | null) => {
+        if (!id) return "Système";
+        const alt = alters.find(a => a.id === id);
+        return alt ? alt.name : "Inconnu";
+    };
 
-            <View style={styles.taskContent}>
-                <Text style={[styles.taskText, item.completed && styles.taskTextDone]}>
-                    {item.content}
-                </Text>
+    const renderItem = ({ item }: { item: Task }) => {
+        const cat = CATEGORIES.find(c => c.id === item.category) || CATEGORIES[0];
+
+        return (
+            <View style={styles.taskItem}>
+                <TouchableOpacity
+                    style={[styles.checkbox, item.is_completed && styles.checkboxChecked]}
+                    onPress={() => toggleTask(item)}
+                >
+                    {item.is_completed && <Ionicons name="checkmark" size={16} color="white" />}
+                </TouchableOpacity>
+
+                <View style={styles.taskContent}>
+                    <Text style={[styles.taskText, item.is_completed && styles.taskTextDone]}>
+                        {item.title}
+                    </Text>
+                    <View style={styles.metaRow}>
+                        {/* Category Badge */}
+                        <View style={[styles.miniBadge, { backgroundColor: cat.color + '20' }]}>
+                            <Ionicons name={cat.icon as any} size={10} color={cat.color} />
+                            <Text style={[styles.miniBadgeText, { color: cat.color }]}>{cat.label}</Text>
+                        </View>
+
+                        {/* Assignee Badge */}
+                        <View style={styles.miniBadge}>
+                            <Ionicons name="person" size={10} color={colors.textSecondary} />
+                            <Text style={styles.miniBadgeText}>{getAssigneeName(item.assigned_to)}</Text>
+                        </View>
+
+                        {/* Recurrence Badge */}
+                        {item.recurrence && item.recurrence !== 'none' && (
+                            <View style={styles.miniBadge}>
+                                <Ionicons name="repeat" size={10} color={colors.primary} />
+                            </View>
+                        )}
+                    </View>
+                </View>
+
+                <TouchableOpacity onPress={() => deleteTask(item.id)} style={styles.deleteButton}>
+                    <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
+                </TouchableOpacity>
             </View>
-
-            <TouchableOpacity onPress={() => deleteTask(item.id)} style={styles.deleteButton}>
-                <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
-            </TouchableOpacity>
-        </View>
-    );
+        );
+    };
 
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>Tâches Système</Text>
+                <Text style={styles.title}>Tâches & Quêtes</Text>
                 <View style={styles.badge}>
                     <Text style={styles.badgeText}>
-                        {tasks.filter(t => !t.completed).length}
+                        {tasks.filter(t => !t.is_completed).length}
                     </Text>
                 </View>
             </View>
 
-            <View style={styles.inputRow}>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Nouvelle tâche..."
-                    placeholderTextColor={colors.textMuted}
-                    value={newTask}
-                    onChangeText={setNewTask}
-                    onSubmitEditing={handleAddTask}
-                />
-                <TouchableOpacity
-                    style={[styles.addButton, !newTask.trim() && styles.addButtonDisabled]}
-                    onPress={handleAddTask}
-                    disabled={!newTask.trim() || adding}
-                >
-                    {adding ? (
-                        <ActivityIndicator size="small" color="white" />
-                    ) : (
-                        <Ionicons name="add" size={20} color="white" />
-                    )}
-                </TouchableOpacity>
+            {/* Input Area */}
+            <View style={styles.inputContainer}>
+                <View style={styles.inputRow}>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Nouvelle tâche..."
+                        placeholderTextColor={colors.textMuted}
+                        value={newTask}
+                        onChangeText={setNewTask}
+                        onSubmitEditing={handleAddTask}
+                    />
+                    <TouchableOpacity
+                        style={styles.optionsButton}
+                        onPress={() => setShowOptions(!showOptions)}
+                    >
+                        <Ionicons name="options" size={20} color={showOptions ? colors.primary : colors.textSecondary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.addButton, !newTask.trim() && styles.addButtonDisabled]}
+                        onPress={handleAddTask}
+                        disabled={!newTask.trim() || adding}
+                    >
+                        {adding ? (
+                            <ActivityIndicator size="small" color="white" />
+                        ) : (
+                            <Ionicons name="add" size={20} color="white" />
+                        )}
+                    </TouchableOpacity>
+                </View>
+
+                {/* Extended Options (Collapsible) */}
+                {showOptions && (
+                    <View style={styles.optionsContainer}>
+                        {/* Assignee Scroller */}
+                        <Text style={styles.optionLabel}>Pour qui ?</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionScroll}>
+                            <TouchableOpacity
+                                style={[styles.chip, selectedAssignee === null && styles.chipActive]}
+                                onPress={() => setSelectedAssignee(null)}
+                            >
+                                <Text style={[styles.chipText, selectedAssignee === null && styles.chipTextActive]}>Système</Text>
+                            </TouchableOpacity>
+                            {alters.map(alter => (
+                                <TouchableOpacity
+                                    key={alter.id}
+                                    style={[styles.chip, selectedAssignee === alter.id && styles.chipActive]}
+                                    onPress={() => setSelectedAssignee(alter.id)}
+                                >
+                                    <Text style={[styles.chipText, selectedAssignee === alter.id && styles.chipTextActive]}>{alter.name}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+
+                        {/* Category Scroller */}
+                        <Text style={styles.optionLabel}>Catégorie</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionScroll}>
+                            {CATEGORIES.map(cat => (
+                                <TouchableOpacity
+                                    key={cat.id}
+                                    style={[styles.chip, selectedCategory === cat.id && { backgroundColor: cat.color + '20', borderColor: cat.color }]}
+                                    onPress={() => setSelectedCategory(cat.id)}
+                                >
+                                    <Ionicons name={cat.icon as any} size={14} color={cat.color} style={{ marginRight: 4 }} />
+                                    <Text style={{ color: cat.color, fontWeight: '600', fontSize: 12 }}>{cat.label}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+
+                        {/* Recurrence Scroller */}
+                        <Text style={styles.optionLabel}>Récurrence</Text>
+                        <View style={styles.row}>
+                            {RECURRENCE.map(rec => (
+                                <TouchableOpacity
+                                    key={rec.id}
+                                    style={[styles.chip, selectedRecurrence === rec.id && styles.chipActive]}
+                                    onPress={() => setSelectedRecurrence(rec.id)}
+                                >
+                                    <Text style={[styles.chipText, selectedRecurrence === rec.id && styles.chipTextActive]}>{rec.label}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+                )}
             </View>
 
             {loading ? (
@@ -193,10 +330,13 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: 'bold',
     },
+    inputContainer: {
+        marginBottom: spacing.md,
+    },
     inputRow: {
         flexDirection: 'row',
         gap: spacing.sm,
-        marginBottom: spacing.md,
+        alignItems: 'center',
     },
     input: {
         flex: 1,
@@ -205,6 +345,17 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.sm,
         paddingVertical: 8,
         color: colors.text,
+        borderWidth: 1,
+        borderColor: colors.border,
+        height: 40,
+    },
+    optionsButton: {
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: borderRadius.md,
+        backgroundColor: colors.background,
         borderWidth: 1,
         borderColor: colors.border,
     },
@@ -220,6 +371,50 @@ const styles = StyleSheet.create({
         backgroundColor: colors.textMuted,
         opacity: 0.5,
     },
+    optionsContainer: {
+        marginTop: spacing.sm,
+        padding: spacing.sm,
+        backgroundColor: colors.background,
+        borderRadius: borderRadius.md,
+        gap: spacing.sm,
+    },
+    optionLabel: {
+        ...typography.tiny,
+        color: colors.textSecondary,
+        marginBottom: 4,
+        fontWeight: 'bold',
+    },
+    optionScroll: {
+        marginBottom: 8,
+    },
+    row: {
+        flexDirection: 'row',
+        gap: 8,
+        flexWrap: 'wrap',
+    },
+    chip: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        backgroundColor: colors.backgroundCard,
+        borderWidth: 1,
+        borderColor: colors.border,
+        marginRight: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    chipActive: {
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
+    },
+    chipText: {
+        fontSize: 12,
+        color: colors.textSecondary,
+        fontWeight: '600',
+    },
+    chipTextActive: {
+        color: 'white',
+    },
     listContainer: {
         gap: spacing.sm,
     },
@@ -230,6 +425,8 @@ const styles = StyleSheet.create({
         padding: spacing.sm,
         borderRadius: borderRadius.md,
         gap: spacing.sm,
+        borderLeftWidth: 3,
+        borderLeftColor: 'transparent', // Default
     },
     checkbox: {
         width: 24,
@@ -253,6 +450,24 @@ const styles = StyleSheet.create({
     taskTextDone: {
         textDecorationLine: 'line-through',
         color: colors.textMuted,
+    },
+    metaRow: {
+        flexDirection: 'row',
+        marginTop: 4,
+        gap: 6,
+    },
+    miniBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.backgroundCard,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        gap: 4,
+    },
+    miniBadgeText: {
+        fontSize: 10,
+        color: colors.textSecondary,
     },
     deleteButton: {
         padding: 4,

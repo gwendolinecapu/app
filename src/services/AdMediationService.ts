@@ -52,6 +52,15 @@ if (!isExpoGo) {
 
 }
 
+
+// =====================================================
+// CONFIGURATION AVANCÉE
+// =====================================================
+// ⚠️ DANGER : Mettre à TRUE uniquement pour tester les vraies pubs avant release.
+// NE JAMAIS CLIQUER SUR VOS PROPRES PUBS, VOUS SEREZ BANNI PAR GOOGLE.
+// Ajoutez votre appareil en "Test Device" dans la console AdMob pour éviter les problèmes.
+const FORCE_REAL_ADS = false;
+
 // Configuration des App IDs (Production AdMob)
 const AD_CONFIG_KEYS = {
     // Google AdMob - Production IDs (iOS)
@@ -172,9 +181,14 @@ class AdMediationService {
         }
 
         // Créer l'instance AdMob
-        const adUnitId = __DEV__
-            ? TestIds.REWARDED
-            : (Platform.OS === 'ios' ? AD_CONFIG_KEYS.ADMOB_REWARDED_ID_IOS : AD_CONFIG_KEYS.ADMOB_REWARDED_ID_ANDROID);
+        // LOGIQUE FORCE_REAL_ADS : Si FORCE_REAL_ADS est true, on ignore __DEV__
+        const shouldUseRealAds = FORCE_REAL_ADS || !__DEV__;
+
+        const adUnitId = shouldUseRealAds
+            ? (Platform.OS === 'ios' ? AD_CONFIG_KEYS.ADMOB_REWARDED_ID_IOS : AD_CONFIG_KEYS.ADMOB_REWARDED_ID_ANDROID)
+            : TestIds.REWARDED;
+
+        console.log(`[AdMediation] Loading Rewarded Ad (Real Ads: ${shouldUseRealAds}) - ID: ${adUnitId}`);
 
         this.rewardedAd = RewardedAd.createForAdRequest(adUnitId, {
             requestNonPersonalizedAdsOnly: true,

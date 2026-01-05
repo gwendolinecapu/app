@@ -345,6 +345,12 @@ export interface Task {
     due_date?: string;
     assigned_alter?: Alter; // Joined data
     creator_alter?: Alter; // Joined data
+    // New fields for Alter Task System
+    category?: 'general' | 'care' | 'admin' | 'fun' | 'work';
+    recurrence?: 'none' | 'daily' | 'weekly';
+    visibility?: 'private' | 'public';
+    reward_claimed?: boolean; // If +5 credits have been claimed
+    xp_reward?: number; // Potential XP reward
 }
 
 export interface HelpRequest {

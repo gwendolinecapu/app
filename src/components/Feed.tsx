@@ -225,62 +225,65 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
     };
 
     const renderHeader = () => (
-        <View style={[styles.headerContainer, themeColors && { backgroundColor: themeColors.background, borderBottomColor: themeColors.border }]}>
-            {/* Bouton de tri */}
-            <TouchableOpacity
-                style={[styles.sortButton, themeColors && { backgroundColor: themeColors.backgroundCard }]}
-                onPress={() => {
-                    triggerHaptic.selection();
-                    setShowSortMenu(!showSortMenu);
-                }}
-            >
-                <Ionicons name="filter" size={18} color={themeColors?.text || colors.text} />
-                <Text style={[styles.sortButtonText, themeColors && { color: themeColors.text }]}>{getSortLabel(sortBy)}</Text>
-                <Ionicons
-                    name={showSortMenu ? "chevron-up" : "chevron-down"}
-                    size={16}
-                    color={themeColors?.textSecondary || colors.textSecondary}
-                />
-            </TouchableOpacity>
-
-            {/* Menu de tri */}
-            {showSortMenu && (
-                <View style={[styles.sortMenu, themeColors && { backgroundColor: themeColors.backgroundCard }]}>
-                    {(['recent', 'oldest', 'popular'] as SortOption[]).map(option => (
-                        <TouchableOpacity
-                            key={option}
-                            style={[
-                                styles.sortMenuItem,
-                                themeColors && { borderBottomColor: themeColors.border },
-                                sortBy === option && styles.sortMenuItemActive
-                            ]}
-                            onPress={() => handleSortChange(option)}
-                        >
-                            <Text style={[
-                                styles.sortMenuItemText,
-                                themeColors && { color: themeColors.text },
-                                sortBy === option && styles.sortMenuItemTextActive
-                            ]}>
-                                {getSortLabel(option)}
-                            </Text>
-                            {sortBy === option && (
-                                <Ionicons name="checkmark" size={18} color={themeColors?.primary || colors.primary} />
-                            )}
-                        </TouchableOpacity>
-                    ))}
-                </View>
-            )}
-
-            {/* Bouton Voir Système */}
-            {type === 'friends' && alterId && (
+        <View>
+            {ListHeaderComponent}
+            <View style={[styles.headerContainer, themeColors && { backgroundColor: themeColors.background, borderBottomColor: themeColors.border }]}>
+                {/* Bouton de tri */}
                 <TouchableOpacity
-                    style={[styles.systemButton, themeColors && { backgroundColor: themeColors.primary + '15' }]}
-                    onPress={() => setShowSystemSelector(true)}
+                    style={[styles.sortButton, themeColors && { backgroundColor: themeColors.backgroundCard }]}
+                    onPress={() => {
+                        triggerHaptic.selection();
+                        setShowSortMenu(!showSortMenu);
+                    }}
                 >
-                    <Ionicons name="people" size={16} color={themeColors?.primary || colors.primary} />
-                    <Text style={[styles.systemButtonText, themeColors && { color: themeColors.primary }]}>Voir système</Text>
+                    <Ionicons name="filter" size={18} color={themeColors?.text || colors.text} />
+                    <Text style={[styles.sortButtonText, themeColors && { color: themeColors.text }]}>{getSortLabel(sortBy)}</Text>
+                    <Ionicons
+                        name={showSortMenu ? "chevron-up" : "chevron-down"}
+                        size={16}
+                        color={themeColors?.textSecondary || colors.textSecondary}
+                    />
                 </TouchableOpacity>
-            )}
+
+                {/* Menu de tri */}
+                {showSortMenu && (
+                    <View style={[styles.sortMenu, themeColors && { backgroundColor: themeColors.backgroundCard }]}>
+                        {(['recent', 'oldest', 'popular'] as SortOption[]).map(option => (
+                            <TouchableOpacity
+                                key={option}
+                                style={[
+                                    styles.sortMenuItem,
+                                    themeColors && { borderBottomColor: themeColors.border },
+                                    sortBy === option && styles.sortMenuItemActive
+                                ]}
+                                onPress={() => handleSortChange(option)}
+                            >
+                                <Text style={[
+                                    styles.sortMenuItemText,
+                                    themeColors && { color: themeColors.text },
+                                    sortBy === option && styles.sortMenuItemTextActive
+                                ]}>
+                                    {getSortLabel(option)}
+                                </Text>
+                                {sortBy === option && (
+                                    <Ionicons name="checkmark" size={18} color={themeColors?.primary || colors.primary} />
+                                )}
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )}
+
+                {/* Bouton Voir Système */}
+                {type === 'friends' && alterId && (
+                    <TouchableOpacity
+                        style={[styles.systemButton, themeColors && { backgroundColor: themeColors.primary + '15' }]}
+                        onPress={() => setShowSystemSelector(true)}
+                    >
+                        <Ionicons name="people" size={16} color={themeColors?.primary || colors.primary} />
+                        <Text style={[styles.systemButtonText, themeColors && { color: themeColors.primary }]}>Voir système</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
         </View>
     );
 
@@ -312,7 +315,6 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
                 renderItem={renderItem}
                 keyExtractor={(item: any, index: number) => item.id || `item-${index}`}
                 ListHeaderComponent={renderHeader}
-                stickyHeaderIndices={[0]}
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}

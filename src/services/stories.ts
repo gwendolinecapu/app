@@ -28,6 +28,7 @@ export interface CreateStoryInput {
     authorId: string;
     authorName: string;
     authorAvatar?: string;
+    authorFrame?: string;
     systemId: string;
     mediaUrl: string;
     mediaType: 'image' | 'video';
@@ -40,7 +41,7 @@ const STORY_DURATION_MS = 24 * 60 * 60 * 1000; // 24 heures
  * Expire automatiquement après 24h
  */
 export async function createStory(input: CreateStoryInput): Promise<Story> {
-    const { authorId, authorName, authorAvatar, systemId, mediaUrl, mediaType } = input;
+    const { authorId, authorName, authorAvatar, authorFrame, systemId, mediaUrl, mediaType } = input;
 
     const now = new Date();
     const expiresAt = new Date(now.getTime() + STORY_DURATION_MS);
@@ -49,6 +50,7 @@ export async function createStory(input: CreateStoryInput): Promise<Story> {
         author_id: authorId,
         author_name: authorName,
         author_avatar: authorAvatar || null,
+        author_frame: authorFrame || null,
         system_id: systemId,
         media_url: mediaUrl,
         media_type: mediaType,
@@ -62,6 +64,7 @@ export async function createStory(input: CreateStoryInput): Promise<Story> {
         author_id: authorId,
         author_name: authorName,
         author_avatar: authorAvatar,
+        author_frame: authorFrame,
         system_id: systemId,
         media_url: mediaUrl,
         media_type: mediaType,
@@ -105,6 +108,7 @@ export async function fetchActiveStories(
             author_id: data.author_id,
             author_name: data.author_name,
             author_avatar: data.author_avatar,
+            author_frame: data.author_frame,
             system_id: data.system_id,
             media_url: data.media_url,
             media_type: data.media_type,
@@ -142,6 +146,7 @@ export async function fetchAuthorStories(authorId: string): Promise<Story[]> {
             author_id: data.author_id,
             author_name: data.author_name,
             author_avatar: data.author_avatar,
+            author_frame: data.author_frame,
             system_id: data.system_id,
             media_url: data.media_url,
             media_type: data.media_type,
@@ -188,6 +193,7 @@ export function groupStoriesByAuthor(stories: Story[]): {
         authorId: string;
         authorName: string;
         authorAvatar?: string;
+        authorFrame?: string;
         stories: Story[];
     }> = new Map();
 
@@ -200,6 +206,7 @@ export function groupStoriesByAuthor(stories: Story[]): {
                 authorId: story.author_id,
                 authorName: story.author_name,
                 authorAvatar: story.author_avatar,
+                authorFrame: story.author_frame,
                 stories: [story],
             });
         }

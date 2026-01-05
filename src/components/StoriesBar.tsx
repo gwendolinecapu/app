@@ -7,11 +7,13 @@ import {
     Image,
     Text,
     ActivityIndicator,
+    Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { colors, spacing, typography } from '../lib/theme';
+import { getFrameStyle } from '../lib/cosmetics';
 import { StoriesService } from '../services/stories';
 import { Story } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,20 +25,23 @@ import { triggerHaptic } from '../lib/haptics';
 // Style Instagram avec cercle dégradé pour stories non-vues
 // =====================================================
 
+
 interface StoriesBarProps {
     onStoryPress: (authorId: string, stories: Story[]) => void;
     friendIds?: string[];
+    themeColors?: any | null;
 }
 
 interface StoryAuthor {
     authorId: string;
     authorName: string;
     authorAvatar?: string;
+    authorFrame?: string;
     stories: Story[];
     hasUnviewed: boolean;
 }
 
-export const StoriesBar = ({ onStoryPress, friendIds = [] }: StoriesBarProps) => {
+export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors }: StoriesBarProps) => {
     const { currentAlter, user } = useAuth();
     const [authors, setAuthors] = useState<StoryAuthor[]>([]);
     const [loading, setLoading] = useState(true);
@@ -89,7 +94,24 @@ export const StoriesBar = ({ onStoryPress, friendIds = [] }: StoriesBarProps) =>
     const handleMyStoryPress = () => {
         if (myStories.length > 0 && currentAlter) {
             triggerHaptic.selection();
-            onStoryPress(currentAlter.id, myStories);
+            Alert.alert(
+                "Ma Story",
+                "Que souhaitez-vous faire ?",
+                [
+                    {
+                        text: "Annuler",
+                        style: "cancel"
+                    },
+                    {
+                        text: "Ajouter une story",
+                        onPress: handleCreateStory
+                    },
+                    {
+                        text: "Voir ma story",
+                        onPress: () => onStoryPress(currentAlter.id, myStories)
+                    }
+                ]
+            );
         } else {
             handleCreateStory();
         }
@@ -97,14 +119,14 @@ export const StoriesBar = ({ onStoryPress, friendIds = [] }: StoriesBarProps) =>
 
     if (loading) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color={colors.primary} />
+            <View style={[styles.loadingContainer, themeColors && { backgroundColor: themeColors.background }]}>
+                <ActivityIndicator size="small" color={themeColors?.primary || colors.primary} />
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, themeColors && { backgroundColor: themeColors.background, borderBottomColor: themeColors.border }]}>
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -113,24 +135,58 @@ export const StoriesBar = ({ onStoryPress, friendIds = [] }: StoriesBarProps) =>
                 {/* My Story / Add Story */}
                 <TouchableOpacity style={styles.storyItem} onPress={handleMyStoryPress}>
                     <View style={styles.avatarContainer}>
-                        {currentAlter?.avatar || currentAlter?.avatar_url ? (
-                            <Image
-                                source={{ uri: currentAlter.avatar || currentAlter.avatar_url }}
-                                style={styles.avatar}
-                            />
-                        ) : (
-                            <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
-                                <Text style={styles.avatarInitial}>{currentAlter?.name?.charAt(0) || '?'}</Text>
-                            </View>
-                        )}
+                        {(() => {
+                            const frameId = currentAlter?.equipped_items?.frame;
+                            // Use RING_SIZE (70) for the frame container size
+                            const frameStyle = getFrameStyle(frameId, 70);
+                            const isImageFrame = !!frameStyle.imageSource;
+
+                            return (
+                                <View style={[
+                                    styles.viewedRing,
+                                    // Remove default styling if we have a special frame
+                                    frameId ? frameStyle.containerStyle : {},
+                                    // If no frame is equipped, restrict to theme default (use PRIMARY for visibility)
+                                    !frameId && themeColors ? { borderColor: themeColors.primary } : {},
+                                    // Handle image frames (transparent container)
+                                    isImageFrame ? { borderWidth: 0, backgroundColor: 'transparent' } : {},
+                                ]}>
+                                    {currentAlter?.avatar || currentAlter?.avatar_url ? (
+                                        <Image
+                                            source={{ uri: currentAlter.avatar || currentAlter.avatar_url }}
+                                            style={[styles.avatar]}
+                                        />
+                                    ) : (
+                                        <View style={[styles.avatarPlaceholder, { backgroundColor: themeColors?.primary || colors.primary }]}>
+                                            <Text style={styles.avatarInitial}>{currentAlter?.name?.charAt(0) || '?'}</Text>
+                                        </View>
+                                    )}
+
+                                    {/* Frame Overlay Image */}
+                                    {frameStyle.imageSource && (
+                                        <Image
+                                            source={frameStyle.imageSource}
+                                            style={{
+                                                position: 'absolute',
+                                                width: 76,
+                                                height: 76,
+                                                zIndex: 10,
+                                                resizeMode: 'contain'
+                                            }}
+                                        />
+                                    )}
+                                </View>
+                            );
+                        })()}
+
                         {/* Add button overlay if no stories */}
                         {myStories.length === 0 && (
-                            <View style={styles.addButton}>
+                            <View style={[styles.addButton, themeColors && { backgroundColor: themeColors.primary, borderColor: themeColors.background }]}>
                                 <Ionicons name="add" size={14} color="white" />
                             </View>
                         )}
                     </View>
-                    <Text style={styles.storyName} numberOfLines={1}>
+                    <Text style={[styles.storyName, themeColors && { color: themeColors.text }]} numberOfLines={1}>
                         {myStories.length > 0 ? 'Ma story' : 'Ajouter'}
                     </Text>
                 </TouchableOpacity>
@@ -142,38 +198,74 @@ export const StoriesBar = ({ onStoryPress, friendIds = [] }: StoriesBarProps) =>
                         style={styles.storyItem}
                         onPress={() => handleStoryPress(author)}
                     >
-                        {/* Gradient ring for unviewed stories */}
-                        <View style={styles.avatarContainer}>
-                            {author.hasUnviewed ? (
-                                <LinearGradient
-                                    colors={['#F58529', '#DD2A7B', '#8134AF', '#515BD4']}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
-                                    style={styles.gradientRing}
-                                >
-                                    <View style={styles.innerRing}>
-                                        {author.authorAvatar ? (
-                                            <Image source={{ uri: author.authorAvatar }} style={styles.avatar} />
+                        {(() => {
+                            const frameId = author.authorFrame;
+                            const frameStyle = getFrameStyle(frameId, 70);
+                            const isImageFrame = !!frameStyle.imageSource;
+
+                            return (
+                                <View style={styles.avatarContainer}>
+                                    <View style={[
+                                        // Base style depending on viewed status, but overridden by frameStyle if present
+                                        author.hasUnviewed && !frameId ? styles.gradientRing : styles.viewedRing,
+                                        frameId ? frameStyle.containerStyle : {},
+                                        isImageFrame ? { borderWidth: 0, backgroundColor: 'transparent' } : {},
+                                        !frameId && !author.hasUnviewed && themeColors ? { borderColor: themeColors.border } : {}
+                                    ]}>
+                                        {/* If unviewed AND no frame, use Gradient. If frame, just use frame container. */}
+                                        {author.hasUnviewed && !frameId ? (
+                                            <LinearGradient
+                                                colors={['#F58529', '#DD2A7B', '#8134AF', '#515BD4']}
+                                                start={{ x: 0, y: 1 }}
+                                                end={{ x: 1, y: 0 }}
+                                                style={styles.gradientRing}
+                                            >
+                                                <View style={[styles.innerRing, themeColors && { borderColor: themeColors.background }]}>
+                                                    {author.authorAvatar ? (
+                                                        <Image source={{ uri: author.authorAvatar }} style={styles.avatar} />
+                                                    ) : (
+                                                        <View style={[styles.avatarPlaceholder, { backgroundColor: themeColors?.primary || colors.primary }]}>
+                                                            <Text style={styles.avatarInitial}>{author.authorName?.charAt(0)}</Text>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                            </LinearGradient>
                                         ) : (
-                                            <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
-                                                <Text style={styles.avatarInitial}>{author.authorName?.charAt(0)}</Text>
+                                            <View style={{ flex: 1, width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
+                                                {/* Content */}
+                                                <View style={[
+                                                    styles.innerRing,
+                                                    frameId ? { width: 64, height: 64, borderWidth: 0 } : { borderColor: themeColors?.border || colors.border }
+                                                ]}>
+                                                    {author.authorAvatar ? (
+                                                        <Image source={{ uri: author.authorAvatar }} style={styles.avatar} />
+                                                    ) : (
+                                                        <View style={[styles.avatarPlaceholder, { backgroundColor: themeColors?.primary || colors.primary }]}>
+                                                            <Text style={styles.avatarInitial}>{author.authorName?.charAt(0)}</Text>
+                                                        </View>
+                                                    )}
+                                                </View>
+
+                                                {/* Frame Overlay */}
+                                                {frameStyle.imageSource && (
+                                                    <Image
+                                                        source={frameStyle.imageSource}
+                                                        style={{
+                                                            position: 'absolute',
+                                                            width: 76,
+                                                            height: 76,
+                                                            zIndex: 10,
+                                                            resizeMode: 'contain'
+                                                        }}
+                                                    />
+                                                )}
                                             </View>
                                         )}
                                     </View>
-                                </LinearGradient>
-                            ) : (
-                                <View style={styles.viewedRing}>
-                                    {author.authorAvatar ? (
-                                        <Image source={{ uri: author.authorAvatar }} style={styles.avatar} />
-                                    ) : (
-                                        <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
-                                            <Text style={styles.avatarInitial}>{author.authorName?.charAt(0)}</Text>
-                                        </View>
-                                    )}
                                 </View>
-                            )}
-                        </View>
-                        <Text style={styles.storyName} numberOfLines={1}>{author.authorName}</Text>
+                            );
+                        })()}
+                        <Text style={[styles.storyName, themeColors && { color: themeColors.text }]} numberOfLines={1}>{author.authorName}</Text>
                     </TouchableOpacity>
                 ))}
             </ScrollView>

@@ -10,6 +10,7 @@ import {
     StatusBar,
     Platform,
     Animated,
+    Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Video, ResizeMode } from 'expo-av';
@@ -101,6 +102,40 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
         }
     };
 
+    const handleDelete = (storyId: string) => {
+        // Pause progress
+        progressAnim.stopAnimation();
+
+        Alert.alert(
+            "Supprimer la story",
+            "Êtes-vous sûr de vouloir supprimer cette story ?",
+            [
+                {
+                    text: "Annuler",
+                    style: "cancel",
+                    onPress: () => {
+                        // Resume progress (hacky reset)
+                        startProgress();
+                    }
+                },
+                {
+                    text: "Supprimer",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            await StoriesService.deleteStory(storyId);
+                            // Close viewer to refresh
+                            onClose();
+                        } catch (error) {
+                            console.error("Failed to delete story:", error);
+                            Alert.alert("Erreur", "Impossible de supprimer la story.");
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     if (!currentStory) return null;
 
     return (
@@ -150,9 +185,17 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
                             <Text style={styles.timestamp}>{timeAgo(currentStory.created_at)}</Text>
                         </View>
                     </View>
-                    <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                        <Ionicons name="close" size={28} color="white" />
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', gap: spacing.md }}>
+                        {/* Delete Button (Only for Author) */}
+                        {user && (currentStory.author_id === user.uid || currentStory.system_id === user.uid) && (
+                            <TouchableOpacity onPress={() => handleDelete(currentStory.id)} style={styles.closeButton}>
+                                <Ionicons name="trash-outline" size={24} color="white" />
+                            </TouchableOpacity>
+                        )}
+                        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                            <Ionicons name="close" size={28} color="white" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Story Content */}

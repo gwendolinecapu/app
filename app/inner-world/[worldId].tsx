@@ -24,13 +24,13 @@ import Animated, {
     withSpring,
     runOnJS
 } from 'react-native-reanimated';
-import { useAuth } from '../../../src/contexts/AuthContext';
-import { InnerWorldService } from '../../../src/services/InnerWorldService';
-import { InnerWorldShape, ShapeType, EmotionType, EMOTION_LABELS } from '../../../src/types';
-import { colors, spacing, borderRadius } from '../../../src/lib/theme';
-import { getThemeColors } from '../../../src/lib/cosmetics';
-import { triggerHaptic } from '../../../src/lib/haptics';
-import { DraggableItem } from '../../../src/components/story-editor/DraggableItem';
+import { useAuth } from '../../src/contexts/AuthContext';
+import { InnerWorldService } from '../../src/services/InnerWorldService';
+import { InnerWorldShape, ShapeType, EmotionType, EMOTION_LABELS } from '../../src/types';
+import { colors, spacing, borderRadius } from '../../src/lib/theme';
+import { getThemeColors } from '../../src/lib/cosmetics';
+import { triggerHaptic } from '../../src/lib/haptics';
+import { DraggableItem } from '../../src/components/story-editor/DraggableItem';
 import * as ImagePicker from 'expo-image-picker';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -45,7 +45,7 @@ const SHAPE_CONFIG: { type: ShapeType; icon: any; label: string }[] = [
 
 export default function InnerWorldEditorScreen() {
     const { worldId } = useLocalSearchParams<{ worldId: string }>();
-    const { currentAlter } = useAuth();
+    const { currentAlter, user } = useAuth();
     const router = useRouter();
 
     const [shapes, setShapes] = useState<InnerWorldShape[]>([]);
@@ -68,16 +68,16 @@ export default function InnerWorldEditorScreen() {
     const backgroundColor = themeColors?.background || '#F8F9FA'; // Soft architectural background
 
     useEffect(() => {
-        if (!worldId) return;
-        const unsubscribe = InnerWorldService.subscribeToShapes(worldId, (data) => {
+        if (!worldId || !user) return;
+        const unsubscribe = InnerWorldService.subscribeToShapes(worldId, user.uid, (data: InnerWorldShape[]) => {
             setShapes(data);
             setLoading(false);
         });
         return () => unsubscribe();
-    }, [worldId]);
+    }, [worldId, user]);
 
     const handleAddShape = async (type: ShapeType) => {
-        if (!worldId) return;
+        if (!worldId || !user) return;
         triggerHaptic.selection();
         setLibraryVisible(false);
 
@@ -93,7 +93,7 @@ export default function InnerWorldEditorScreen() {
         };
 
         try {
-            await InnerWorldService.addShape(newShape);
+            await InnerWorldService.addShape(newShape, user.uid);
         } catch (error) {
             console.error('Error adding shape:', error);
         }
@@ -185,7 +185,7 @@ export default function InnerWorldEditorScreen() {
                 key={shape.id}
                 initialX={shape.x}
                 initialY={shape.y}
-                onDragEnd={(x, y) => handleUpdateShapePosition(shape.id, x, y)}
+                onDragEnd={(x: number, y: number) => handleUpdateShapePosition(shape.id, x, y)}
             >
                 <TouchableOpacity
                     onLongPress={() => handleOpenEdit(shape)}

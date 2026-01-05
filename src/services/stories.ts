@@ -187,6 +187,7 @@ export function groupStoriesByAuthor(stories: Story[]): {
     authorId: string;
     authorName: string;
     authorAvatar?: string;
+    authorFrame?: string;
     stories: Story[];
     hasUnviewed: boolean;
 }[] {

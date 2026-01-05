@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { InnerWorldService } from '../../src/services/InnerWorldService';
-import { InnerWorld } from '../../src/types';
+import { InnerWorld, InnerWorldShape } from '../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { getThemeColors } from '../../src/lib/cosmetics';
 import { triggerHaptic } from '../../src/lib/haptics';
@@ -44,9 +44,9 @@ export default function InnerWorldListScreen() {
     const textColor = themeColors?.text || colors.text;
 
     const loadWorlds = useCallback(async () => {
-        if (!alterId) return;
+        if (!alterId || !user) return;
         try {
-            const data = await InnerWorldService.fetchWorlds(alterId);
+            const data = await InnerWorldService.fetchWorlds(alterId, user.uid);
             setWorlds(data);
         } catch (error) {
             console.error('Error loading worlds:', error);
@@ -54,7 +54,7 @@ export default function InnerWorldListScreen() {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [alterId]);
+    }, [alterId, user]);
 
     useEffect(() => {
         loadWorlds();
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
     createButton: {
         paddingHorizontal: spacing.lg,
         paddingVertical: spacing.md,
-        borderRadius: borderRadius.pill,
+        borderRadius: borderRadius.full,
     },
     createButtonText: {
         color: 'white',

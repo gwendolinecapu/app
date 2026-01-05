@@ -34,6 +34,7 @@ export default function InnerWorldListScreen() {
     const [modalVisible, setModalVisible] = useState(false);
     const [newWorldName, setNewWorldName] = useState('');
     const [creating, setCreating] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const themeColors = currentAlter?.equipped_items?.theme
         ? getThemeColors(currentAlter.equipped_items.theme)
@@ -46,10 +47,16 @@ export default function InnerWorldListScreen() {
     const loadWorlds = useCallback(async () => {
         if (!alterId || !user) return;
         try {
+            setError(null);
             const data = await InnerWorldService.fetchWorlds(alterId, user.uid);
             setWorlds(data);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error loading worlds:', error);
+            if (error.code === 'failed-precondition') {
+                setError('Indexation en cours... Veuillez patienter quelques minutes.');
+            } else {
+                setError('Erreur lors du chargement des mondes.');
+            }
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -147,6 +154,20 @@ export default function InnerWorldListScreen() {
             {loading ? (
                 <View style={styles.center}>
                     <ActivityIndicator size="large" color={activeColor} />
+                </View>
+            ) : error ? (
+                <View style={styles.center}>
+                    <Ionicons name="alert-circle-outline" size={60} color={colors.textMuted} />
+                    <Text style={[styles.errorText, { color: textColor }]}>{error}</Text>
+                    <TouchableOpacity
+                        style={[styles.retryButton, { backgroundColor: activeColor }]}
+                        onPress={() => {
+                            setLoading(true);
+                            loadWorlds();
+                        }}
+                    >
+                        <Text style={styles.retryText}>Réessayer</Text>
+                    </TouchableOpacity>
                 </View>
             ) : (
                 <FlatList
@@ -364,5 +385,23 @@ const styles = StyleSheet.create({
     modalSubmitText: {
         color: 'white',
         fontWeight: 'bold',
+    },
+    errorText: {
+        fontSize: 16,
+        textAlign: 'center',
+        marginTop: spacing.md,
+        paddingHorizontal: spacing.xl,
+        color: colors.textSecondary,
+    },
+    retryButton: {
+        marginTop: spacing.lg,
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.full,
+    },
+    retryText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 16,
     }
 });

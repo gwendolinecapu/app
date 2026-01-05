@@ -18,6 +18,11 @@ import { StoriesService } from '../services/stories';
 import { Story } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { triggerHaptic } from '../lib/haptics';
+import { SakuraFrame } from './effects/SakuraPetals';
+import { TropicalFrame } from './effects/TropicalLeaves';
+import { FlameFrame } from './effects/FlameFrame';
+import { NatureMysticFrame } from './effects/NatureMysticFrame';
+import { getCosmeticItem } from '../lib/cosmetics';
 
 // =====================================================
 // STORIES BAR
@@ -151,6 +156,46 @@ export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors }: Storie
                             const frameStyle = getFrameStyle(frameId, 70);
                             const isImageFrame = !!frameStyle.imageSource;
 
+                            const avatarContent = currentAlter?.avatar || currentAlter?.avatar_url ? (
+                                <Image
+                                    source={{ uri: currentAlter.avatar || currentAlter.avatar_url }}
+                                    style={[styles.avatar]}
+                                />
+                            ) : (
+                                <View style={[styles.avatarPlaceholder, { backgroundColor: themeColors?.primary || colors.primary }]}>
+                                    <Text style={styles.avatarInitial}>{currentAlter?.name?.charAt(0) || '?'}</Text>
+                                </View>
+                            );
+
+                            if (frameId === 'frame_anim_sakura') {
+                                return (
+                                    <View style={[styles.avatarContainer, { alignItems: 'center', justifyContent: 'center' }]}>
+                                        <SakuraFrame size={68}>{avatarContent}</SakuraFrame>
+                                    </View>
+                                );
+                            }
+                            if (frameId === 'frame_tropical') {
+                                return (
+                                    <View style={[styles.avatarContainer, { alignItems: 'center', justifyContent: 'center' }]}>
+                                        <TropicalFrame size={68}>{avatarContent}</TropicalFrame>
+                                    </View>
+                                );
+                            }
+                            if (frameId === 'frame_flames') {
+                                return (
+                                    <View style={[styles.avatarContainer, { alignItems: 'center', justifyContent: 'center' }]}>
+                                        <FlameFrame size={68}>{avatarContent}</FlameFrame>
+                                    </View>
+                                );
+                            }
+                            if (frameId === 'frame_nature_mystic') {
+                                return (
+                                    <View style={[styles.avatarContainer, { alignItems: 'center', justifyContent: 'center' }]}>
+                                        <NatureMysticFrame size={68}>{avatarContent}</NatureMysticFrame>
+                                    </View>
+                                );
+                            }
+
                             return (
                                 <View style={[
                                     styles.viewedRing,
@@ -161,16 +206,7 @@ export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors }: Storie
                                     // Handle image frames (transparent container)
                                     isImageFrame ? { borderWidth: 0, backgroundColor: 'transparent' } : {},
                                 ]}>
-                                    {currentAlter?.avatar || currentAlter?.avatar_url ? (
-                                        <Image
-                                            source={{ uri: currentAlter.avatar || currentAlter.avatar_url }}
-                                            style={[styles.avatar]}
-                                        />
-                                    ) : (
-                                        <View style={[styles.avatarPlaceholder, { backgroundColor: themeColors?.primary || colors.primary }]}>
-                                            <Text style={styles.avatarInitial}>{currentAlter?.name?.charAt(0) || '?'}</Text>
-                                        </View>
-                                    )}
+                                    {avatarContent}
 
                                     {/* Frame Overlay Image */}
                                     {frameStyle.imageSource && (
@@ -213,6 +249,43 @@ export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors }: Storie
                             const frameStyle = getFrameStyle(frameId, 70);
                             const isImageFrame = !!frameStyle.imageSource;
 
+                            const avatarContent = author.authorAvatar ? (
+                                <Image source={{ uri: author.authorAvatar }} style={styles.avatar} />
+                            ) : (
+                                <View style={[styles.avatarPlaceholder, { backgroundColor: themeColors?.primary || colors.primary }]}>
+                                    <Text style={styles.avatarInitial}>{author.authorName?.charAt(0)}</Text>
+                                </View>
+                            );
+
+                            if (frameId === 'frame_anim_sakura') {
+                                return (
+                                    <View style={[styles.avatarContainer, { alignItems: 'center', justifyContent: 'center' }]}>
+                                        <SakuraFrame size={68}>{avatarContent}</SakuraFrame>
+                                    </View>
+                                );
+                            }
+                            if (frameId === 'frame_tropical') {
+                                return (
+                                    <View style={[styles.avatarContainer, { alignItems: 'center', justifyContent: 'center' }]}>
+                                        <TropicalFrame size={68}>{avatarContent}</TropicalFrame>
+                                    </View>
+                                );
+                            }
+                            if (frameId === 'frame_flames') {
+                                return (
+                                    <View style={[styles.avatarContainer, { alignItems: 'center', justifyContent: 'center' }]}>
+                                        <FlameFrame size={68}>{avatarContent}</FlameFrame>
+                                    </View>
+                                );
+                            }
+                            if (frameId === 'frame_nature_mystic') {
+                                return (
+                                    <View style={[styles.avatarContainer, { alignItems: 'center', justifyContent: 'center' }]}>
+                                        <NatureMysticFrame size={68}>{avatarContent}</NatureMysticFrame>
+                                    </View>
+                                );
+                            }
+
                             return (
                                 <View style={styles.avatarContainer}>
                                     <View style={[
@@ -231,13 +304,7 @@ export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors }: Storie
                                                 style={styles.gradientRing}
                                             >
                                                 <View style={[styles.innerRing, themeColors && { borderColor: themeColors.background }]}>
-                                                    {author.authorAvatar ? (
-                                                        <Image source={{ uri: author.authorAvatar }} style={styles.avatar} />
-                                                    ) : (
-                                                        <View style={[styles.avatarPlaceholder, { backgroundColor: themeColors?.primary || colors.primary }]}>
-                                                            <Text style={styles.avatarInitial}>{author.authorName?.charAt(0)}</Text>
-                                                        </View>
-                                                    )}
+                                                    {avatarContent}
                                                 </View>
                                             </LinearGradient>
                                         ) : (
@@ -247,13 +314,7 @@ export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors }: Storie
                                                     styles.innerRing,
                                                     frameId ? { width: 64, height: 64, borderWidth: 0 } : { borderColor: themeColors?.border || colors.border }
                                                 ]}>
-                                                    {author.authorAvatar ? (
-                                                        <Image source={{ uri: author.authorAvatar }} style={styles.avatar} />
-                                                    ) : (
-                                                        <View style={[styles.avatarPlaceholder, { backgroundColor: themeColors?.primary || colors.primary }]}>
-                                                            <Text style={styles.avatarInitial}>{author.authorName?.charAt(0)}</Text>
-                                                        </View>
-                                                    )}
+                                                    {avatarContent}
                                                 </View>
 
                                                 {/* Frame Overlay */}

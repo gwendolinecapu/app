@@ -19,6 +19,8 @@
 - **Magie IA (Batch)**: Implémentation complète de la génération par lot (x3 images) avec réduction de coût (25 crédits au lieu de 30).
 - **Magie IA (UI)**: Nouvelle interface de sélection (1 ou 3 images), affichage du solde de crédits et bouton "Watch Ad" intégré.
 - **Backend (Pricing)**: Réajustement des coûts IA pour un modèle plus généreux (Standard: 10, Batch: 25).
+- **Correctif (Ads)**: Correction du crash `RNGoogleMobileAdsModule` en mode Expo Go grâce à une couche de médiation sécurisée (`AdMediationService`).
+- **Ads Reward**: Les récompenses publicitaires donnent maintenant dynamiquement **10 Crédits** (aligné avec `MonetizationTypes`).
 ### ✨ Intelligence Artificielle (Features) 🧠
 - **Rituel de Naissance** : Importez une planche de référence pour que l'IA mémorise l'apparence de votre alter (15 Crédits).
 - **Magie IA** : Générateur d'images pour mettre en scène vos alters dans n'importe quel contexte via un prompt texte.

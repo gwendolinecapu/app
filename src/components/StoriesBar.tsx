@@ -59,9 +59,19 @@ export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors }: Storie
             const stories = await StoriesService.fetchActiveStories(friendIds, user.uid);
             const grouped = StoriesService.groupStoriesByAuthor(stories);
 
+            // Fetch live decorations for all authors to ensure frames are up to date
+            const authorIds = grouped.map(g => g.authorId);
+            const liveDecorations = await StoriesService.fetchAuthorsDecorations(authorIds);
+
+            // Merge live decorations
+            const groupedWithDecorations = grouped.map(g => ({
+                ...g,
+                authorFrame: liveDecorations[g.authorId] || g.authorFrame
+            }));
+
             // Séparer mes stories des autres
-            const mine = grouped.filter(a => a.authorId === currentAlter?.id);
-            const others = grouped.filter(a => a.authorId !== currentAlter?.id);
+            const mine = groupedWithDecorations.filter(a => a.authorId === currentAlter?.id);
+            const others = groupedWithDecorations.filter(a => a.authorId !== currentAlter?.id);
 
             setMyStories(mine.length > 0 ? mine[0].stories : []);
             setAuthors(others);

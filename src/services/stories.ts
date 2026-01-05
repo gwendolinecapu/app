@@ -12,6 +12,7 @@ import {
     Timestamp,
     updateDoc,
     arrayUnion,
+    documentId,
 } from 'firebase/firestore';
 
 import { Story } from '../types';
@@ -218,6 +219,36 @@ export function groupStoriesByAuthor(stories: Story[]): {
     }));
 }
 
+/**
+ * Récupère les décorations actuelles pour une liste d'auteurs.
+ */
+export const fetchAuthorsDecorations = async (authorIds: string[]): Promise<Record<string, string>> => {
+    if (!authorIds.length) return {};
+
+    try {
+        const uniqueIds = [...new Set(authorIds)].slice(0, 10);
+        const q = query(
+            collection(db, 'alters'),
+            where(documentId(), 'in', uniqueIds)
+        );
+
+        const snapshot = await getDocs(q);
+        const decorations: Record<string, string> = {};
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.equipped_items?.frame) {
+                decorations[doc.id] = data.equipped_items.frame;
+            }
+        });
+
+        return decorations;
+    } catch (error) {
+        console.error('Error fetching author decorations:', error);
+        return {};
+    }
+};
+
 export const StoriesService = {
     createStory,
     fetchActiveStories,
@@ -225,4 +256,5 @@ export const StoriesService = {
     markStoryAsViewed,
     deleteStory,
     groupStoriesByAuthor,
+    fetchAuthorsDecorations,
 };

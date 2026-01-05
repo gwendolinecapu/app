@@ -26,6 +26,20 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { LineChart, PieChart, BarChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Calendar, LocaleConfig } from 'react-native-calendars';
+import { Modal } from 'react-native';
+import { format, subDays, startOfDay, endOfDay, isAfter, isBefore, parseISO } from 'date-fns';
+import { fr } from 'date-fns/locale';
+
+// Configuration calendrier en français
+LocaleConfig.locales['fr'] = {
+    monthNames: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
+    monthNamesShort: ['Janv.', 'Févr.', 'Mars', 'Avril', 'Mai', 'Juin', 'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.'],
+    dayNames: ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'],
+    dayNamesShort: ['Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.'],
+    today: "Aujourd'hui"
+};
+LocaleConfig.defaultLocale = 'fr';
 
 import { useAuth } from '../../src/contexts/AuthContext';
 import { FrontingService } from '../../src/services/fronting';
@@ -63,9 +77,15 @@ export default function HistoryScreen() {
 
     // ... (state remains same until renderStatCard)
     const [activeTab, setActiveTab] = useState<TabType>(params.tab || 'summary');
-    const [period, setPeriod] = useState<PeriodType>('7d');
+    const [period, setPeriod] = useState<PeriodType | 'custom'>('7d');
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+
+    // Custom Date Range
+    const [isCalendarVisible, setIsCalendarVisible] = useState(false);
+    const [startDate, setStartDate] = useState<string>(format(subDays(new Date(), 6), 'yyyy-MM-dd'));
+    const [endDate, setEndDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+    const [markedDates, setMarkedDates] = useState<any>({});
 
     // Données Front
     const [frontStats, setFrontStats] = useState<Record<string, number>>({});
@@ -85,12 +105,25 @@ export default function HistoryScreen() {
     const loadData = useCallback(async () => {
         if (!system) return;
         try {
-            const days = PERIOD_DAYS[period];
+            let daysOrDate: number | Date;
+            let finalEndDate: Date | undefined = undefined;
+
+            if (period === 'custom') {
+                daysOrDate = new Date(startDate);
+                daysOrDate.setHours(0, 0, 0, 0);
+                if (endDate) {
+                    finalEndDate = new Date(endDate);
+                    finalEndDate.setHours(23, 59, 59, 999);
+                }
+            } else {
+                daysOrDate = PERIOD_DAYS[period as PeriodType];
+            }
+
             const [statsData, breakdownData, switchData, topData] = await Promise.all([
-                FrontingService.getStatsForPeriod(system.id, days),
-                FrontingService.getDailyBreakdown(system.id, Math.min(days, 30)),
-                FrontingService.getSwitchCount(system.id, days),
-                FrontingService.getTopAlters(system.id, days, 5)
+                FrontingService.getStatsForPeriod(system.id, daysOrDate, finalEndDate),
+                FrontingService.getDailyBreakdown(system.id, daysOrDate, finalEndDate),
+                FrontingService.getSwitchCount(system.id, daysOrDate, finalEndDate),
+                FrontingService.getTopAlters(system.id, daysOrDate, 5, finalEndDate)
             ]);
 
             setFrontStats(statsData);
@@ -100,11 +133,11 @@ export default function HistoryScreen() {
 
             if (currentAlter) {
                 const [trendData, distData, moodData, patternData, summaryData] = await Promise.all([
-                    EmotionService.getEmotionsTrend(currentAlter.id, Math.min(days, 30)),
-                    EmotionService.getEmotionsDistribution(currentAlter.id, days),
-                    EmotionService.getMoodAverage(currentAlter.id, days),
+                    EmotionService.getEmotionsTrend(currentAlter.id, daysOrDate, finalEndDate),
+                    EmotionService.getEmotionsDistribution(currentAlter.id, daysOrDate, finalEndDate),
+                    EmotionService.getMoodAverage(currentAlter.id, daysOrDate, finalEndDate),
                     EmotionService.detectPatterns(currentAlter.id),
-                    EmotionService.getSummaryStats(currentAlter.id, days)
+                    EmotionService.getSummaryStats(currentAlter.id, daysOrDate, finalEndDate)
                 ]);
 
                 setEmotionTrend(trendData);
@@ -119,7 +152,7 @@ export default function HistoryScreen() {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [system, currentAlter, period]);
+    }, [system, currentAlter, period, startDate, endDate]);
 
     useEffect(() => {
         setLoading(true);
@@ -139,6 +172,56 @@ export default function HistoryScreen() {
             friction: 8,
         }).start();
         setActiveTab(tab);
+    };
+
+    const onDayPress = (day: any) => {
+        if (!startDate || (startDate && endDate)) {
+            setStartDate(day.dateString);
+            setEndDate('');
+            setMarkedDates({
+                [day.dateString]: { startingDay: true, color: colors.primary, textColor: 'white', selected: true }
+            });
+        } else {
+            let start = startDate;
+            let end = day.dateString;
+
+            if (new Date(end) < new Date(start)) {
+                [start, end] = [end, start];
+            }
+
+            setStartDate(start);
+            setEndDate(end);
+
+            // Mark range
+            const range: any = {};
+            let current = new Date(start);
+            const stop = new Date(end);
+
+            while (current <= stop) {
+                const dateString = format(current, 'yyyy-MM-dd');
+                range[dateString] = {
+                    color: colors.primary,
+                    textColor: 'white',
+                    selected: true,
+                    startingDay: dateString === start,
+                    endingDay: dateString === end
+                };
+                current.setDate(current.getDate() + 1);
+            }
+            setMarkedDates(range);
+        }
+    };
+
+    const applyCustomRange = () => {
+        if (startDate && endDate) {
+            setPeriod('custom');
+            setIsCalendarVisible(false);
+        } else {
+            // If only one day selected, use it as range start to now or just one day
+            setEndDate(startDate);
+            setPeriod('custom');
+            setIsCalendarVisible(false);
+        }
     };
 
     const totalHours = useMemo(() => {
@@ -463,7 +546,71 @@ export default function HistoryScreen() {
                         </Text>
                     </TouchableOpacity>
                 ))}
+                <TouchableOpacity
+                    style={[
+                        styles.periodButton,
+                        period === 'custom' && styles.periodButtonActive,
+                        { paddingHorizontal: 10 } // Slightly wider for the icon
+                    ]}
+                    onPress={() => setIsCalendarVisible(true)}
+                >
+                    <Ionicons
+                        name="calendar"
+                        size={18}
+                        color={period === 'custom' ? '#FFF' : colors.primary}
+                    />
+                </TouchableOpacity>
             </View>
+
+            {period === 'custom' && (
+                <View style={styles.customDateTextContainer}>
+                    <Text style={styles.customDateText}>
+                        Période : {format(new Date(startDate), 'dd MMM', { locale: fr })} - {format(new Date(endDate || startDate), 'dd MMM', { locale: fr })}
+                    </Text>
+                </View>
+            )}
+
+            <Modal
+                visible={isCalendarVisible}
+                transparent={true}
+                animationType="slide"
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.calendarContainer}>
+                        <View style={styles.calendarHeader}>
+                            <Text style={styles.calendarTitle}>Choisir une période</Text>
+                            <TouchableOpacity onPress={() => setIsCalendarVisible(false)}>
+                                <Ionicons name="close" size={24} color={colors.text} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <Calendar
+                            onDayPress={onDayPress}
+                            markedDates={markedDates}
+                            markingType={'period'}
+                            theme={{
+                                calendarBackground: colors.backgroundCard,
+                                textSectionTitleColor: colors.textSecondary,
+                                selectedDayBackgroundColor: colors.primary,
+                                selectedDayTextColor: '#ffffff',
+                                todayTextColor: colors.primary,
+                                dayTextColor: colors.text,
+                                textDisabledColor: colors.textMuted,
+                                dotColor: colors.primary,
+                                monthTextColor: colors.text,
+                                indicatorColor: colors.primary,
+                            }}
+                        />
+
+                        <TouchableOpacity
+                            style={styles.applyButton}
+                            onPress={applyCustomRange}
+                        >
+                            <Text style={styles.applyButtonText}>Appliquer</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
 
             <ScrollView
                 style={styles.content}
@@ -740,5 +887,55 @@ const styles = StyleSheet.create({
     emotionCount: {
         ...typography.bodySmall,
         color: colors.textSecondary,
+    },
+    customDateTextContainer: {
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+        backgroundColor: colors.primary + '10',
+        marginHorizontal: spacing.md,
+        borderRadius: borderRadius.sm,
+        marginBottom: spacing.md,
+        alignItems: 'center',
+    },
+    customDateText: {
+        ...typography.caption,
+        color: colors.primary,
+        fontWeight: '600',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: spacing.lg,
+    },
+    calendarContainer: {
+        width: '100%',
+        backgroundColor: colors.backgroundCard,
+        borderRadius: borderRadius.lg,
+        padding: spacing.md,
+        overflow: 'hidden',
+    },
+    calendarHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.md,
+    },
+    calendarTitle: {
+        ...typography.h3,
+        color: colors.text,
+    },
+    applyButton: {
+        backgroundColor: colors.primary,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.md,
+        alignItems: 'center',
+        marginTop: spacing.md,
+    },
+    applyButtonText: {
+        ...typography.body,
+        color: '#FFF',
+        fontWeight: 'bold',
     },
 });

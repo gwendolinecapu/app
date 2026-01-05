@@ -12,6 +12,7 @@ import {
     StatusBar,
     ScrollView
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -52,6 +53,7 @@ export default function CreateStoryScreen() {
 
     // Background & UI State
     const [canvasBackgroundColor, setCanvasBackgroundColor] = useState('#000000');
+    const [canvasBackgroundGradient, setCanvasBackgroundGradient] = useState<[string, string, ...string[]] | null>(null);
     const [bgColorPickerVisible, setBgColorPickerVisible] = useState(false);
 
     const baseColors = [
@@ -69,6 +71,15 @@ export default function CreateStoryScreen() {
     ];
     const pastelColors = ['#FFD1DC', '#FFDAB9', '#FFF9CA', '#B2FAAF', '#AEC6CF', '#B39EB5', '#E6E6FA'];
     const backgroundColors = [...baseColors, ...pastelColors];
+
+    const backgroundGradients = [
+        { id: 'sunset', colors: ['#f83600', '#f9d423'] as [string, string, ...string[]] },
+        { id: 'ocean', colors: ['#43e97b', '#38f9d7'] as [string, string, ...string[]] },
+        { id: 'purple', colors: ['#667eea', '#764ba2'] as [string, string, ...string[]] },
+        { id: 'candy', colors: ['#ee9ca7', '#ffdde1'] as [string, string, ...string[]] },
+        { id: 'night', colors: ['#09203f', '#537895'] as [string, string, ...string[]] },
+        { id: 'deep_sky', colors: ['#00c6ff', '#0072ff'] as [string, string, ...string[]] },
+    ];
 
     const lightColors = ['#ffffff', '#facc15', '#0ea5e9', '#f97316', '#22c55e', ...pastelColors];
     const isUiDark = lightColors.includes(canvasBackgroundColor);
@@ -201,7 +212,8 @@ export default function CreateStoryScreen() {
                     <Canvas
                         ref={canvasRef}
                         layers={layers}
-                        backgroundColor={canvasBackgroundColor}
+                        backgroundColor={canvasBackgroundGradient ? undefined : canvasBackgroundColor}
+                        backgroundGradient={canvasBackgroundGradient || undefined}
                         onDeleteLayer={(id) => setLayers(prev => prev.filter(l => l.id !== id))}
                     />
                 ) : selectedMedia ? (
@@ -249,17 +261,35 @@ export default function CreateStoryScreen() {
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={styles.colorPaletteScroll}
                     >
-                        {backgroundColors.map(c => {
-                            const isPastel = pastelColors.includes(c);
-                            const locked = isPastel && !isPremium;
+                        {/* Solid Colors (Including Free Pastels) */}
+                        {backgroundColors.map(c => (
+                            <TouchableOpacity
+                                key={c}
+                                style={[
+                                    styles.paletteDot,
+                                    { backgroundColor: c, borderColor: uiColor },
+                                    canvasBackgroundColor === c && !canvasBackgroundGradient && styles.paletteDotSelected,
+                                ]}
+                                onPress={() => {
+                                    setCanvasBackgroundColor(c);
+                                    setCanvasBackgroundGradient(null);
+                                    setEditorMode(true);
+                                }}
+                            />
+                        ))}
+
+                        {/* Gradients (Premium) */}
+                        {backgroundGradients.map(g => {
+                            const locked = !isPremium;
+                            const isSelected = canvasBackgroundGradient?.join(',') === g.colors.join(',');
 
                             return (
                                 <TouchableOpacity
-                                    key={c}
+                                    key={g.id}
                                     style={[
                                         styles.paletteDot,
-                                        { backgroundColor: c, borderColor: uiColor },
-                                        canvasBackgroundColor === c && styles.paletteDotSelected,
+                                        { borderColor: uiColor, overflow: 'hidden' },
+                                        isSelected && styles.paletteDotSelected,
                                         locked && { opacity: 0.8 }
                                     ]}
                                     onPress={() => {
@@ -267,13 +297,15 @@ export default function CreateStoryScreen() {
                                             presentPaywall();
                                             return;
                                         }
-                                        setCanvasBackgroundColor(c);
+                                        setCanvasBackgroundGradient(g.colors);
+                                        setCanvasBackgroundColor(g.colors[0]);
                                         setEditorMode(true);
                                     }}
                                 >
+                                    <LinearGradient colors={g.colors} style={StyleSheet.absoluteFill} />
                                     {locked && (
                                         <View style={styles.lockIconContainer}>
-                                            <Ionicons name="lock-closed" size={14} color="rgba(0,0,0,0.4)" />
+                                            <Ionicons name="lock-closed" size={14} color="rgba(255,255,255,0.8)" />
                                         </View>
                                     )}
                                 </TouchableOpacity>
@@ -533,5 +565,12 @@ const styles = StyleSheet.create({
     paletteDotSelected: {
         transform: [{ scale: 1.25 }],
         borderWidth: 3,
+    },
+    lockIconContainer: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.1)',
+        borderRadius: 16,
     },
 });

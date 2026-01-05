@@ -9,7 +9,8 @@ import {
     getDocs,
     Timestamp,
     limit,
-    serverTimestamp
+    serverTimestamp,
+    writeBatch
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { FrontingEntry } from '../types';
@@ -20,48 +21,60 @@ export const FrontingService = {
      */
     async switchAlter(systemId: string, newAlterId: string): Promise<void> {
         try {
-            // 1. Chercher la session active
+            await this.stopActiveSessions(systemId);
+            await this.startSession(systemId, newAlterId);
+        } catch (error) {
+            console.error("Error switching alter fronting:", error);
+            throw error;
+        }
+    },
+
+    /**
+     * Termine toutes les sessions actives (end_time == null) pour un système.
+     */
+    async stopActiveSessions(systemId: string): Promise<void> {
+        try {
             const q = query(
                 collection(db, 'fronting_history'),
                 where('system_id', '==', systemId),
-                where('end_time', '==', null),
-                limit(1)
+                where('end_time', '==', null)
             );
 
             const snapshot = await getDocs(q);
             const now = new Date();
 
-            if (!snapshot.empty) {
-                const currentSessionDoc = snapshot.docs[0];
-                const data = currentSessionDoc.data();
-
-                // Si c'est déjà le même alter, ne rien faire
-                if (data.alter_id === newAlterId) {
-                    return;
-                }
-
-                // Clôturer la session
+            const batch = writeBatch(db);
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
                 const startTime = data.start_time.toDate();
-                const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000); // en secondes
+                const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
 
-                await updateDoc(doc(db, 'fronting_history', currentSessionDoc.id), {
+                batch.update(doc(db, 'fronting_history', docSnap.id), {
                     end_time: now,
-                    duration: duration
+                    duration: duration > 0 ? duration : 0
                 });
-            }
+            });
 
-            // 2. Créer la nouvelle session
+            await batch.commit();
+        } catch (error) {
+            console.error("Error stopping active sessions:", error);
+        }
+    },
+
+    /**
+     * Démarre une nouvelle session de fronting.
+     */
+    async startSession(systemId: string, alterId: string): Promise<void> {
+        try {
             await addDoc(collection(db, 'fronting_history'), {
                 system_id: systemId,
-                alter_id: newAlterId,
-                start_time: now, // Sera stocké comme Timestamp Firestore mais typé string dans l'app
+                alter_id: alterId,
+                start_time: serverTimestamp(),
                 end_time: null,
                 duration: 0
             });
-
         } catch (error) {
-            console.error("Error switching alter fronting:", error);
-            throw error;
+            console.error("Error starting fronting session:", error);
         }
     },
 
@@ -186,15 +199,26 @@ export const FrontingService = {
      * Stats par jour pour une période configurable (LineChart)
      * Remplace getWeeklyBreakdown pour les périodes > 7 jours
      */
-    async getDailyBreakdown(systemId: string, days: number = 7): Promise<{ date: string; hours: number; switches: number }[]> {
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - (days - 1));
+    async getDailyBreakdown(systemId: string, daysOrStartDate: number | Date = 7, endDate?: Date): Promise<{ date: string; hours: number; switches: number }[]> {
+        let startDate: Date;
+        let finalEndDate = endDate || new Date();
+
+        if (daysOrStartDate instanceof Date) {
+            startDate = daysOrStartDate;
+        } else {
+            startDate = new Date();
+            startDate.setDate(startDate.getDate() - (daysOrStartDate - 1));
+        }
         startDate.setHours(0, 0, 0, 0);
+        finalEndDate.setHours(23, 59, 59, 999);
+
+        const days = Math.ceil((finalEndDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 
         const q = query(
             collection(db, 'fronting_history'),
             where('system_id', '==', systemId),
             where('start_time', '>=', startDate),
+            where('start_time', '<=', finalEndDate),
             orderBy('start_time', 'asc')
         );
 
@@ -202,9 +226,9 @@ export const FrontingService = {
         const dailyMap = new Map<string, { seconds: number; switches: number }>();
 
         // Initialiser tous les jours
-        for (let i = days - 1; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
+        for (let i = 0; i < days; i++) {
+            const d = new Date(startDate);
+            d.setDate(d.getDate() + i);
             const key = d.toISOString().split('T')[0];
             dailyMap.set(key, { seconds: 0, switches: 0 });
         }
@@ -243,14 +267,22 @@ export const FrontingService = {
     /**
      * Stats sur une période custom (30j, 90j, 365j)
      */
-    async getStatsForPeriod(systemId: string, days: number): Promise<Record<string, number>> {
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - days);
+    async getStatsForPeriod(systemId: string, daysOrStartDate: number | Date, endDate?: Date): Promise<Record<string, number>> {
+        let startDate: Date;
+        let finalEndDate = endDate || new Date();
+
+        if (daysOrStartDate instanceof Date) {
+            startDate = daysOrStartDate;
+        } else {
+            startDate = new Date();
+            startDate.setDate(startDate.getDate() - daysOrStartDate);
+        }
 
         const q = query(
             collection(db, 'fronting_history'),
             where('system_id', '==', systemId),
             where('start_time', '>=', startDate),
+            where('start_time', '<=', finalEndDate),
             orderBy('start_time', 'desc')
         );
 
@@ -335,14 +367,22 @@ export const FrontingService = {
     /**
      * Compte total de switchs sur une période
      */
-    async getSwitchCount(systemId: string, days: number = 7): Promise<{ current: number; previous: number; trend: 'up' | 'down' | 'stable' }> {
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - days);
+    async getSwitchCount(systemId: string, daysOrStartDate: number | Date = 7, endDate?: Date): Promise<{ current: number; previous: number; trend: 'up' | 'down' | 'stable' }> {
+        let startDate: Date;
+        let finalEndDate = endDate || new Date();
+
+        if (daysOrStartDate instanceof Date) {
+            startDate = daysOrStartDate;
+        } else {
+            startDate = new Date();
+            startDate.setDate(startDate.getDate() - daysOrStartDate);
+        }
 
         const q = query(
             collection(db, 'fronting_history'),
             where('system_id', '==', systemId),
             where('start_time', '>=', startDate),
+            where('start_time', '<=', finalEndDate),
             orderBy('start_time', 'desc')
         );
 
@@ -350,10 +390,11 @@ export const FrontingService = {
         const current = snapshot.size;
 
         // Période précédente
-        const prevStartDate = new Date();
-        prevStartDate.setDate(prevStartDate.getDate() - (days * 2));
-        const prevEndDate = new Date();
-        prevEndDate.setDate(prevEndDate.getDate() - days);
+        const days = Math.ceil((finalEndDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+
+        const prevStartDate = new Date(startDate);
+        prevStartDate.setDate(prevStartDate.getDate() - days);
+        const prevEndDate = startDate;
 
         const qPrev = query(
             collection(db, 'fronting_history'),
@@ -376,8 +417,8 @@ export const FrontingService = {
     /**
      * Top 3 alters par temps de front
      */
-    async getTopAlters(systemId: string, days: number = 7, limit: number = 3): Promise<{ alterId: string; hours: number; percentage: number }[]> {
-        const stats = await this.getStatsForPeriod(systemId, days);
+    async getTopAlters(systemId: string, daysOrStartDate: number | Date = 7, limit: number = 3, endDate?: Date): Promise<{ alterId: string; hours: number; percentage: number }[]> {
+        const stats = await this.getStatsForPeriod(systemId, daysOrStartDate, endDate);
 
         const totalSeconds = Object.values(stats).reduce((a, b) => a + b, 0) || 1;
 

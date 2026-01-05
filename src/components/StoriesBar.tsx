@@ -159,39 +159,48 @@ export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors }: Storie
                             const avatarContent = currentAlter?.avatar || currentAlter?.avatar_url ? (
                                 <Image
                                     source={{ uri: currentAlter.avatar || currentAlter.avatar_url }}
-                                    style={[styles.avatar]}
+                                    style={[
+                                        { width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2 },
+                                        frameStyle.imageStyle as any
+                                    ]}
                                 />
                             ) : (
-                                <View style={[styles.avatarPlaceholder, { backgroundColor: themeColors?.primary || colors.primary }]}>
+                                <View style={[
+                                    styles.avatarPlaceholder,
+                                    { backgroundColor: themeColors?.primary || colors.primary },
+                                    frameStyle.imageStyle
+                                ]}>
                                     <Text style={styles.avatarInitial}>{currentAlter?.name?.charAt(0) || '?'}</Text>
                                 </View>
                             );
 
+                            const animatedFrameProps = { size: AVATAR_SIZE };
+
                             if (frameId === 'frame_anim_sakura') {
                                 return (
-                                    <View style={[styles.avatarContainer, { alignItems: 'center', justifyContent: 'center' }]}>
-                                        <SakuraFrame size={68}>{avatarContent}</SakuraFrame>
+                                    <View style={styles.frameWrapper}>
+                                        <SakuraFrame {...animatedFrameProps}>{avatarContent}</SakuraFrame>
                                     </View>
                                 );
                             }
                             if (frameId === 'frame_tropical') {
                                 return (
-                                    <View style={[styles.avatarContainer, { alignItems: 'center', justifyContent: 'center' }]}>
-                                        <TropicalFrame size={68}>{avatarContent}</TropicalFrame>
+                                    <View style={styles.frameWrapper}>
+                                        <TropicalFrame {...animatedFrameProps}>{avatarContent}</TropicalFrame>
                                     </View>
                                 );
                             }
                             if (frameId === 'frame_flames') {
                                 return (
-                                    <View style={[styles.avatarContainer, { alignItems: 'center', justifyContent: 'center' }]}>
-                                        <FlameFrame size={68}>{avatarContent}</FlameFrame>
+                                    <View style={styles.frameWrapper}>
+                                        <FlameFrame {...animatedFrameProps}>{avatarContent}</FlameFrame>
                                     </View>
                                 );
                             }
                             if (frameId === 'frame_nature_mystic') {
                                 return (
-                                    <View style={[styles.avatarContainer, { alignItems: 'center', justifyContent: 'center' }]}>
-                                        <NatureMysticFrame size={68}>{avatarContent}</NatureMysticFrame>
+                                    <View style={styles.frameWrapper}>
+                                        <NatureMysticFrame {...animatedFrameProps}>{avatarContent}</NatureMysticFrame>
                                     </View>
                                 );
                             }
@@ -250,38 +259,50 @@ export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors }: Storie
                             const isImageFrame = !!frameStyle.imageSource;
 
                             const avatarContent = author.authorAvatar ? (
-                                <Image source={{ uri: author.authorAvatar }} style={styles.avatar} />
+                                <Image
+                                    source={{ uri: author.authorAvatar }}
+                                    style={[
+                                        { width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2 },
+                                        frameStyle.imageStyle
+                                    ]}
+                                />
                             ) : (
-                                <View style={[styles.avatarPlaceholder, { backgroundColor: themeColors?.primary || colors.primary }]}>
+                                <View style={[
+                                    styles.avatarPlaceholder,
+                                    { backgroundColor: themeColors?.primary || colors.primary },
+                                    frameStyle.imageStyle
+                                ]}>
                                     <Text style={styles.avatarInitial}>{author.authorName?.charAt(0)}</Text>
                                 </View>
                             );
 
+                            const animatedFrameProps = { size: AVATAR_SIZE };
+
                             if (frameId === 'frame_anim_sakura') {
                                 return (
-                                    <View style={[styles.avatarContainer, { alignItems: 'center', justifyContent: 'center' }]}>
-                                        <SakuraFrame size={68}>{avatarContent}</SakuraFrame>
+                                    <View style={styles.frameWrapper}>
+                                        <SakuraFrame {...animatedFrameProps}>{avatarContent}</SakuraFrame>
                                     </View>
                                 );
                             }
                             if (frameId === 'frame_tropical') {
                                 return (
-                                    <View style={[styles.avatarContainer, { alignItems: 'center', justifyContent: 'center' }]}>
-                                        <TropicalFrame size={68}>{avatarContent}</TropicalFrame>
+                                    <View style={styles.frameWrapper}>
+                                        <TropicalFrame {...animatedFrameProps}>{avatarContent}</TropicalFrame>
                                     </View>
                                 );
                             }
                             if (frameId === 'frame_flames') {
                                 return (
-                                    <View style={[styles.avatarContainer, { alignItems: 'center', justifyContent: 'center' }]}>
-                                        <FlameFrame size={68}>{avatarContent}</FlameFrame>
+                                    <View style={styles.frameWrapper}>
+                                        <FlameFrame {...animatedFrameProps}>{avatarContent}</FlameFrame>
                                     </View>
                                 );
                             }
                             if (frameId === 'frame_nature_mystic') {
                                 return (
-                                    <View style={[styles.avatarContainer, { alignItems: 'center', justifyContent: 'center' }]}>
-                                        <NatureMysticFrame size={68}>{avatarContent}</NatureMysticFrame>
+                                    <View style={styles.frameWrapper}>
+                                        <NatureMysticFrame {...animatedFrameProps}>{avatarContent}</NatureMysticFrame>
                                     </View>
                                 );
                             }
@@ -344,8 +365,8 @@ export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors }: Storie
     );
 };
 
-const AVATAR_SIZE = 64;
-const RING_SIZE = AVATAR_SIZE + 6;
+const AVATAR_SIZE = 62;
+const RING_SIZE = 72;
 
 const styles = StyleSheet.create({
     container: {
@@ -417,8 +438,8 @@ const styles = StyleSheet.create({
     },
     addButton: {
         position: 'absolute',
-        bottom: 0,
-        right: 0,
+        bottom: 2,
+        right: 2,
         width: 22,
         height: 22,
         borderRadius: 11,
@@ -427,6 +448,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderWidth: 2,
         borderColor: colors.backgroundCard,
+        zIndex: 30,
+    },
+    frameWrapper: {
+        width: RING_SIZE,
+        height: RING_SIZE,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     storyName: {
         ...typography.caption,

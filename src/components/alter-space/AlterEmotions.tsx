@@ -15,24 +15,7 @@ interface AlterEmotionsProps {
     themeColors?: ThemeColors | null;
 }
 
-const EMOTION_CONFIG: { type: EmotionType; icon: keyof typeof Ionicons.glyphMap; label: string; color: string }[] = [
-    { type: 'happy', icon: 'happy-outline', label: 'Joyeux', color: '#FFD93D' },
-    { type: 'love', icon: 'heart-outline', label: 'Amoureux', color: '#FF6B81' },
-    { type: 'excited', icon: 'star-outline', label: 'Excité', color: '#FF9F43' },
-    { type: 'proud', icon: 'trophy-outline', label: 'Fier', color: '#FDCB6E' },
-    { type: 'calm', icon: 'leaf-outline', label: 'Calme', color: '#2ECC71' },
-    { type: 'bored', icon: 'ellipsis-horizontal-circle-outline', label: 'Ennuyé', color: '#95A5A6' },
-    { type: 'tired', icon: 'battery-dead-outline', label: 'Fatigué', color: '#7F8C8D' },
-    { type: 'sad', icon: 'sad-outline', label: 'Triste', color: '#3498DB' },
-    { type: 'anxious', icon: 'alert-circle-outline', label: 'Anxieux', color: '#E67E22' },
-    { type: 'fear', icon: 'skull-outline', label: 'Peur', color: '#8E44AD' },
-    { type: 'confused', icon: 'help-circle-outline', label: 'Confus', color: '#9B59B6' },
-    { type: 'angry', icon: 'flame-outline', label: 'En colère', color: '#E74C3C' },
-    { type: 'shame', icon: 'eye-off-outline', label: 'Honte', color: '#D63031' },
-    { type: 'guilt', icon: 'cloud-outline', label: 'Coupable', color: '#636E72' },
-    { type: 'hurt', icon: 'bandage-outline', label: 'Blessé', color: '#FD79A8' },
-    { type: 'sick', icon: 'medkit-outline', label: 'Malade', color: '#00B894' },
-];
+import { EMOTION_CONFIG, getEmotionConfig } from '../../lib/emotions';
 
 export const AlterEmotions: React.FC<AlterEmotionsProps> = ({ alterId, alterName, themeColors }) => {
     const [latestEmotion, setLatestEmotion] = useState<Emotion | null>(null);
@@ -116,7 +99,12 @@ export const AlterEmotions: React.FC<AlterEmotionsProps> = ({ alterId, alterName
                             <View style={[styles.iconContainer, { backgroundColor: item.color + '20' }]}>
                                 <Ionicons name={item.icon} size={28} color={item.color} />
                             </View>
-                            <Text style={[styles.emotionLabel, { color: colors.text, fontWeight: isSelected ? '700' : '500' }]}>{item.label}</Text>
+                            <Text style={[
+                                styles.emotionLabel,
+                                { color: themeColors?.text || colors.text, fontWeight: isSelected ? '700' : '500' }
+                            ]}>
+                                {item.label}
+                            </Text>
                         </TouchableOpacity>
                     );
                 })}
@@ -143,7 +131,7 @@ export const AlterEmotions: React.FC<AlterEmotionsProps> = ({ alterId, alterName
                             <Ionicons name={primaryConfig?.icon || 'heart-outline'} size={24} color={primaryConfig?.color || colors.primary} />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.statusText}>
+                            <Text style={[styles.statusText, themeColors && { color: themeColors.text }]}>
                                 Actuellement{' '}
                                 {isCurrentMulti ? (
                                     <Text style={{ fontWeight: 'bold', color: colors.text }}>
@@ -155,7 +143,7 @@ export const AlterEmotions: React.FC<AlterEmotionsProps> = ({ alterId, alterName
                                     </Text>
                                 )}
                             </Text>
-                            <Text style={styles.statusTime}>
+                            <Text style={[styles.statusTime, themeColors && { color: themeColors.textSecondary }]}>
                                 {timeAgo(latestEmotion.created_at) ? `Depuis ${timeAgo(latestEmotion.created_at)}` : "À l'instant"}
                             </Text>
                         </View>

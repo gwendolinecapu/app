@@ -6,24 +6,7 @@ import { EmotionService } from '../../services/emotions';
 import { Emotion, EmotionType } from '../../types';
 import { colors, spacing, typography } from '../../lib/theme';
 
-const EMOTION_CONFIG: { type: EmotionType; emoji: string; color: string; label: string }[] = [
-    { type: 'happy', emoji: '😊', color: '#FFD93D', label: 'Joyeux(se)' },
-    { type: 'sad', emoji: '😢', color: '#3498DB', label: 'Triste' },
-    { type: 'anxious', emoji: '😰', color: '#F39C12', label: 'Anxieux(se)' },
-    { type: 'angry', emoji: '😡', color: '#E74C3C', label: 'En colère' },
-    { type: 'tired', emoji: '😴', color: '#A0AEC0', label: 'Fatigué(e)' },
-    { type: 'calm', emoji: '😌', color: '#6BCB77', label: 'Calme' },
-    { type: 'confused', emoji: '😕', color: '#9B59B6', label: 'Confus(e)' },
-    { type: 'excited', emoji: '🤩', color: '#FF6B6B', label: 'Excité(e)' },
-    { type: 'fear', emoji: '😨', color: '#5D4037', label: 'Peur' },
-    { type: 'shame', emoji: '😳', color: '#E91E63', label: 'Honte' },
-    { type: 'bored', emoji: '😐', color: '#7F8C8D', label: 'Ennuyé(e)' },
-    { type: 'proud', emoji: '🦁', color: '#F1C40F', label: 'Fier(e)' },
-    { type: 'love', emoji: '🥰', color: '#FF4081', label: 'Amoureux(se)' },
-    { type: 'sick', emoji: '🤢', color: '#8BC34A', label: 'Malade' },
-    { type: 'guilt', emoji: '😔', color: '#607D8B', label: 'Coupable' },
-    { type: 'hurt', emoji: '🤕', color: '#FF5722', label: 'Blessé(e)' },
-];
+import { EMOTION_CONFIG, getEmotionConfig } from '../../lib/emotions';
 
 const formatTimeSince = (dateInput: any): string => {
     if (!dateInput) return '';
@@ -66,10 +49,6 @@ export const AlterWeatherBar: React.FC = () => {
         return () => unsubscribe();
     }, [user, alters]);
 
-    const getEmotionConfig = (emotionType: EmotionType) => {
-        return EMOTION_CONFIG.find(e => e.type === emotionType);
-    };
-
     const handleEmotionPress = (alterName: string, emotion: Emotion) => {
         const emotionsList = emotion.emotions && emotion.emotions.length > 0 ? emotion.emotions : [emotion.emotion];
 
@@ -106,17 +85,33 @@ export const AlterWeatherBar: React.FC = () => {
                     const emotion = alterEmotions[alter.id];
                     const emotionsList = emotion.emotions && emotion.emotions.length > 0 ? emotion.emotions : [emotion.emotion];
 
-                    // Display up to 2 emojis to keep it compact, or all if short
-                    const displayEmojis = emotionsList.slice(0, 3).map(e => getEmotionConfig(e)?.emoji).filter(Boolean).join('');
+                    // Display up to 2 icons to keep it compact
+                    const displayEmotions = emotionsList.slice(0, 2);
                     const mainConfig = getEmotionConfig(emotionsList[0]);
 
                     return (
                         <TouchableOpacity
                             key={alter.id}
-                            style={[styles.weatherItem, { borderColor: mainConfig?.color || colors.border }]}
+                            style={[
+                                styles.weatherItem,
+                                { borderColor: mainConfig?.color || colors.border }
+                            ]}
                             onPress={() => handleEmotionPress(alter.name, emotion)}
                         >
-                            <Text style={styles.emoji}>{displayEmojis || '❔'}</Text>
+                            <View style={styles.emotionsRow}>
+                                {displayEmotions.map((e, idx) => {
+                                    const config = getEmotionConfig(e);
+                                    if (!config) return null;
+                                    return (
+                                        <Ionicons
+                                            key={idx}
+                                            name={config.icon}
+                                            size={14}
+                                            color={config.color}
+                                        />
+                                    );
+                                })}
+                            </View>
                             <Text style={styles.alterName} numberOfLines={1}>{alter.name}</Text>
                         </TouchableOpacity>
                     );
@@ -160,6 +155,11 @@ const styles = StyleSheet.create({
         backgroundColor: colors.backgroundCard,
         borderWidth: 2,
         gap: 4,
+    },
+    emotionsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 2,
     },
     emoji: {
         fontSize: 16,

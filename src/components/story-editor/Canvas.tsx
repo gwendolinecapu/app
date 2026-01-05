@@ -3,6 +3,7 @@ import { View, StyleSheet, Image, Text, useWindowDimensions } from 'react-native
 import { DraggableItem } from './DraggableItem';
 import { colors } from '../../lib/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { triggerHaptic } from '../../lib/haptics';
 
 export interface EditorLayer {
@@ -16,32 +17,39 @@ export interface EditorLayer {
 interface CanvasProps {
     layers: EditorLayer[];
     backgroundColor?: string;
+    backgroundGradient?: [string, string, ...string[]];
     backgroundImage?: string;
     onDeleteLayer?: (id: string) => void;
 }
 
-export const Canvas = React.forwardRef<View, CanvasProps>(({ layers, backgroundColor, backgroundImage, onDeleteLayer }, ref) => {
+export const Canvas = React.forwardRef<View, CanvasProps>(({ layers, backgroundColor, backgroundGradient, backgroundImage, onDeleteLayer }, ref) => {
     const [isDragging, setIsDragging] = useState(false);
-    const { height } = useWindowDimensions();
+    const { width, height } = useWindowDimensions();
 
     return (
         <View ref={ref} style={[styles.canvas, { backgroundColor: backgroundColor || colors.background }]} collapsable={false}>
+            {backgroundGradient && (
+                <LinearGradient colors={backgroundGradient} style={StyleSheet.absoluteFill} />
+            )}
             {backgroundImage && (
                 <Image source={{ uri: backgroundImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
             )}
             {layers.map(layer => (
                 <DraggableItem
                     key={layer.id}
-                    initialX={100}
-                    initialY={200}
+                    initialX={width / 2 - (layer.type === 'image' ? 150 : 100)}
+                    initialY={height / 2 - (layer.type === 'image' ? 150 : 25)}
                     onDragStart={() => {
                         setIsDragging(true);
                         triggerHaptic.selection();
                     }}
                     onDragEnd={(x, y) => {
                         setIsDragging(false);
-                        // Check if in trash zone (bottom 120px)
-                        if (y > height - 150) {
+                        const itemHeight = layer.type === 'image' ? 300 : 50;
+                        const centerY = y + itemHeight / 2;
+
+                        // Check if center of item reached the bottom zone
+                        if (centerY > height - 200) {
                             triggerHaptic.warning();
                             onDeleteLayer?.(layer.id);
                         }

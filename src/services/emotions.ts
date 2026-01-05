@@ -158,12 +158,20 @@ export const EmotionService = {
     /**
      * Récupère l'historique des émotions avec filtre de période
      */
-    getEmotionsHistory: async (alterId: string, days: number = 30): Promise<Emotion[]> => {
+    getEmotionsHistory: async (alterId: string, daysOrStartDate: number | Date = 30, endDate?: Date): Promise<Emotion[]> => {
         if (!auth.currentUser) return [];
 
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - days);
+        let startDate: Date;
+        let finalEndDate = endDate || new Date();
+
+        if (daysOrStartDate instanceof Date) {
+            startDate = daysOrStartDate;
+        } else {
+            startDate = new Date();
+            startDate.setDate(startDate.getDate() - daysOrStartDate);
+        }
         startDate.setHours(0, 0, 0, 0);
+        finalEndDate.setHours(23, 59, 59, 999);
 
         const q = query(
             collection(db, 'emotions'),
@@ -182,7 +190,7 @@ export const EmotionService = {
             const createdAt = (e.created_at as any)?.seconds
                 ? new Date((e.created_at as any).seconds * 1000)
                 : new Date(e.created_at);
-            return createdAt >= startDate;
+            return createdAt >= startDate && createdAt <= finalEndDate;
         }).sort((a, b) => {
             const timeA = (a.created_at as any)?.seconds || new Date(a.created_at).getTime() / 1000;
             const timeB = (b.created_at as any)?.seconds || new Date(b.created_at).getTime() / 1000;
@@ -194,16 +202,30 @@ export const EmotionService = {
      * Calcule la tendance émotionnelle (points par jour pour LineChart)
      * Retourne une liste de { date, value, count } où value = intensité moyenne pondérée par valence
      */
-    getEmotionsTrend: async function (alterId: string, days: number = 7): Promise<{ date: string; value: number; count: number }[]> {
-        const emotions = await this.getEmotionsHistory(alterId, days);
+    getEmotionsTrend: async function (alterId: string, daysOrStartDate: number | Date = 7, endDate?: Date): Promise<{ date: string; value: number; count: number }[]> {
+        const emotions = await this.getEmotionsHistory(alterId, daysOrStartDate, endDate);
+
+        let startDate: Date;
+        let finalEndDate = endDate || new Date();
+
+        if (daysOrStartDate instanceof Date) {
+            startDate = daysOrStartDate;
+        } else {
+            startDate = new Date();
+            startDate.setDate(startDate.getDate() - (daysOrStartDate - 1));
+        }
+        startDate.setHours(0, 0, 0, 0);
+        finalEndDate.setHours(23, 59, 59, 999);
+
+        const days = Math.ceil((finalEndDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 
         // Grouper par jour
         const dailyMap = new Map<string, { total: number; count: number }>();
 
         // Initialiser tous les jours
-        for (let i = days - 1; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
+        for (let i = 0; i < days; i++) {
+            const d = new Date(startDate);
+            d.setDate(d.getDate() + i);
             const key = d.toISOString().split('T')[0]; // YYYY-MM-DD
             dailyMap.set(key, { total: 0, count: 0 });
         }
@@ -245,8 +267,8 @@ export const EmotionService = {
     /**
      * Distribution des émotions par type (pour PieChart)
      */
-    getEmotionsDistribution: async function (alterId: string, days: number = 30): Promise<{ type: EmotionType; label: string; count: number; percentage: number }[]> {
-        const emotions = await this.getEmotionsHistory(alterId, days);
+    getEmotionsDistribution: async function (alterId: string, daysOrStartDate: number | Date = 30, endDate?: Date): Promise<{ type: EmotionType; label: string; count: number; percentage: number }[]> {
+        const emotions = await this.getEmotionsHistory(alterId, daysOrStartDate, endDate);
 
         const EMOTION_LABELS_MAP = await import('../types').then(m => m.EMOTION_LABELS);
 
@@ -288,20 +310,36 @@ export const EmotionService = {
     /**
      * Calcule l'intensité moyenne sur une période avec comparaison période précédente
      */
-    getMoodAverage: async function (alterId: string, days: number = 7): Promise<{ average: number; trend: 'up' | 'down' | 'stable'; previousAverage: number }> {
+    getMoodAverage: async function (alterId: string, daysOrStartDate: number | Date = 7, endDate?: Date): Promise<{ average: number; trend: 'up' | 'down' | 'stable'; previousAverage: number }> {
         // Période actuelle
-        const currentEmotions = await this.getEmotionsHistory(alterId, days);
+        const currentEmotions = await this.getEmotionsHistory(alterId, daysOrStartDate, endDate);
 
-        // Période précédente (on double les jours et filtre la première moitié)
-        const allEmotions = await this.getEmotionsHistory(alterId, days * 2);
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - days);
+        let startDate: Date;
+        let finalEndDate = endDate || new Date();
 
-        const previousEmotions = allEmotions.filter(e => {
+        if (daysOrStartDate instanceof Date) {
+            startDate = daysOrStartDate;
+        } else {
+            startDate = new Date();
+            startDate.setDate(startDate.getDate() - daysOrStartDate);
+        }
+
+        const days = Math.ceil((finalEndDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+
+        // Période précédente
+        const prevStartDate = new Date(startDate);
+        prevStartDate.setDate(prevStartDate.getDate() - days);
+
+        const totalDays = days * 2;
+        const fetchedAllEmotions = await this.getEmotionsHistory(alterId, totalDays, finalEndDate);
+
+        const cutoffDate = startDate;
+
+        const previousEmotions = fetchedAllEmotions.filter(e => {
             const createdAt = (e.created_at as any)?.seconds
                 ? new Date((e.created_at as any).seconds * 1000)
                 : new Date(e.created_at);
-            return createdAt < cutoffDate;
+            return createdAt < cutoffDate && createdAt >= prevStartDate;
         });
 
         // Calcul moyennes
@@ -405,13 +443,13 @@ export const EmotionService = {
     /**
      * Statistiques récapitulatives pour l'onglet Résumé
      */
-    getSummaryStats: async function (alterId: string, days: number = 7): Promise<{
+    getSummaryStats: async function (alterId: string, daysOrStartDate: number | Date = 7, endDate?: Date): Promise<{
         totalEntries: number;
         avgIntensity: number;
         dominantEmotion: EmotionType | null;
         moodScore: number;
     }> {
-        const emotions = await this.getEmotionsHistory(alterId, days);
+        const emotions = await this.getEmotionsHistory(alterId, daysOrStartDate, endDate);
 
         if (emotions.length === 0) {
             return { totalEntries: 0, avgIntensity: 0, dominantEmotion: null, moodScore: 50 };

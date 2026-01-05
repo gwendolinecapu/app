@@ -25,6 +25,7 @@ import { Alter } from '../../../src/types';
 import { alterColors, freeAlterColors, premiumAlterColors, colors, spacing, borderRadius, typography } from '../../../src/lib/theme';
 import PremiumService from '../../../src/services/PremiumService';
 import { useAuth } from '../../../src/contexts/AuthContext';
+import { getFrameStyle } from '../../../src/lib/cosmetics';
 
 export default function EditAlterProfileScreen() {
     const { alterId } = useLocalSearchParams<{ alterId: string }>();
@@ -249,21 +250,60 @@ export default function EditAlterProfileScreen() {
                 </View>
 
                 {/* Avatar Section (Part of Identity visually) */}
-                <View style={styles.avatarSection}>
-                    <TouchableOpacity onPress={pickImage} style={[styles.avatarContainer, { borderColor: color }]}>
-                        {avatarUrl ? (
-                            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
-                        ) : (
-                            <View style={[styles.avatarPlaceholder, { backgroundColor: color }]}>
-                                <Text style={styles.avatarPlaceholderText}>
-                                    {name.charAt(0).toUpperCase()}
-                                </Text>
-                            </View>
-                        )}
-                        <View style={styles.editIconBadge}>
-                            <Ionicons name="camera" size={14} color="white" />
-                        </View>
-                    </TouchableOpacity>
+                <View style={[styles.avatarSection]}>
+                    {(() => {
+                        const frameId = initialAlter?.equipped_items?.frame;
+                        const frameStyle = getFrameStyle(frameId, 100);
+
+                        return (
+                            <TouchableOpacity
+                                onPress={pickImage}
+                                style={[
+                                    styles.avatarContainer,
+                                    { borderColor: color },
+                                    frameStyle.containerStyle,
+                                    frameStyle.imageSource ? { borderWidth: 0, backgroundColor: 'transparent' } : undefined
+                                ]}
+                            >
+                                {avatarUrl ? (
+                                    <Image
+                                        source={{ uri: avatarUrl }}
+                                        style={[styles.avatar, frameStyle.imageStyle as any]}
+                                    />
+                                ) : (
+                                    <View style={[
+                                        styles.avatarPlaceholder,
+                                        { backgroundColor: color },
+                                        frameStyle.imageStyle as any
+                                    ]}>
+                                        <Text style={styles.avatarPlaceholderText}>
+                                            {name.charAt(0).toUpperCase()}
+                                        </Text>
+                                    </View>
+                                )}
+
+                                {/* Static Frame Overlay for specific frames if needed */}
+                                {frameStyle.imageSource && (
+                                    <Image
+                                        source={frameStyle.imageSource}
+                                        style={{
+                                            position: 'absolute',
+                                            width: 110,
+                                            height: 110,
+                                            zIndex: 10,
+                                            resizeMode: 'contain',
+                                            top: -5,
+                                            left: -5
+                                        }}
+                                    />
+                                )}
+
+                                <View style={styles.editIconBadge}>
+                                    <Ionicons name="camera" size={14} color="white" />
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    })()}
                     <TouchableOpacity onPress={pickImage}>
                         <Text style={styles.changePhotoText}>Changer de photo</Text>
                     </TouchableOpacity>
@@ -569,7 +609,6 @@ const styles = StyleSheet.create({
     avatarContainer: {
         width: 100,
         height: 100,
-        borderRadius: 50,
         borderWidth: 3,
         marginBottom: spacing.sm,
         position: 'relative',
@@ -577,12 +616,10 @@ const styles = StyleSheet.create({
     avatar: {
         width: '100%',
         height: '100%',
-        borderRadius: 48,
     },
     avatarPlaceholder: {
         width: '100%',
         height: '100%',
-        borderRadius: 48,
         justifyContent: 'center',
         alignItems: 'center',
     },

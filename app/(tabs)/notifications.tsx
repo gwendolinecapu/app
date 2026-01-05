@@ -163,7 +163,6 @@ export default function NotificationsScreen() {
             const q = query(
                 collection(db, 'notifications'),
                 where('targetSystemId', '==', user.uid),
-                where('recipientId', 'in', recipientIds),
                 orderBy('created_at', 'desc'),
                 limit(50)
             );
@@ -180,6 +179,7 @@ export default function NotificationsScreen() {
                 loadedNotifications.push({
                     id: docSnapshot.id,
                     ...data,
+                    isRead: data.read || false,
                     timestamp: data.created_at?.toDate() || new Date()
                 } as Notification);
             }

@@ -76,7 +76,7 @@ export const FriendService = {
             },
             senderId: senderId, // Important for UI enrichment
             read: false,
-            createdAt: serverTimestamp()
+            created_at: serverTimestamp()
         });
     },
 
@@ -101,6 +101,17 @@ export const FriendService = {
         // 1. Update request status
 
         await updateDoc(reqRef, { status: 'accepted' });
+
+        // Mark related notification as read
+        const qNotif = query(
+            collection(db, 'notifications'),
+            where('data.requestId', '==', requestId),
+            where('read', '==', false)
+        );
+        const notifSnap = await getDocs(qNotif);
+        notifSnap.forEach(async (notifDoc) => {
+            await updateDoc(notifDoc.ref, { read: true });
+        });
 
 
         // 2. Create bilateral friendship
@@ -163,7 +174,7 @@ export const FriendService = {
                 },
                 senderId: receiverId, // Important for UI enrichment
                 read: false,
-                createdAt: serverTimestamp()
+                created_at: serverTimestamp()
             });
         }
 
@@ -193,6 +204,17 @@ export const FriendService = {
     rejectRequest: async (requestId: string) => {
         const reqRef = doc(db, 'friend_requests', requestId);
         await updateDoc(reqRef, { status: 'rejected' });
+
+        // Also mark related notification as read
+        const qNotif = query(
+            collection(db, 'notifications'),
+            where('data.requestId', '==', requestId),
+            where('read', '==', false)
+        );
+        const notifSnap = await getDocs(qNotif);
+        notifSnap.forEach(async (notifDoc) => {
+            await updateDoc(notifDoc.ref, { read: true });
+        });
     },
 
     /**

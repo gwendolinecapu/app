@@ -10,6 +10,7 @@ interface DraggableItemProps {
     initialX?: number;
     initialY?: number;
     style?: ViewStyle;
+    snapToGrid?: boolean;
     onDragStart?: () => void;
     onDragEnd?: (x: number, y: number) => void;
     onScaleEnd?: (scale: number) => void;
@@ -23,6 +24,7 @@ export function DraggableItem({
     initialX = 0,
     initialY = 0,
     style,
+    snapToGrid = false,
     onDragStart,
     onDragEnd,
     onScaleEnd,
@@ -38,7 +40,7 @@ export function DraggableItem({
     const savedScale = useSharedValue(initialScale);
     const savedRotate = useSharedValue(initialRotation);
 
-    // Sync shared values when props change (especially for remote updates)
+    // Sync shared values when props change
     React.useEffect(() => {
         translateX.value = initialX;
         translateY.value = initialY;
@@ -65,9 +67,20 @@ export function DraggableItem({
             translateY.value = savedTranslateY.value + e.translationY;
         })
         .onEnd(() => {
-            savedTranslateX.value = translateX.value;
-            savedTranslateY.value = translateY.value;
-            if (onDragEnd) runOnJS(onDragEnd)(translateX.value, translateY.value);
+            let finalX = translateX.value;
+            let finalY = translateY.value;
+
+            if (snapToGrid) {
+                const GRID_SIZE = 20;
+                finalX = Math.round(finalX / GRID_SIZE) * GRID_SIZE;
+                finalY = Math.round(finalY / GRID_SIZE) * GRID_SIZE;
+                translateX.value = finalX;
+                translateY.value = finalY;
+            }
+
+            savedTranslateX.value = finalX;
+            savedTranslateY.value = finalY;
+            if (onDragEnd) runOnJS(onDragEnd)(finalX, finalY);
         });
 
     const pinchGesture = Gesture.Pinch()
@@ -84,8 +97,14 @@ export function DraggableItem({
             rotate.value = savedRotate.value + e.rotation;
         })
         .onEnd(() => {
-            savedRotate.value = rotate.value;
-            if (onRotateEnd) runOnJS(onRotateEnd)(rotate.value);
+            let finalRotation = rotate.value;
+            // Optional: Snap rotation to 45 degrees
+            // const SNAP_DEG = Math.PI / 4;
+            // finalRotation = Math.round(finalRotation / SNAP_DEG) * SNAP_DEG;
+            // rotate.value = finalRotation;
+
+            savedRotate.value = finalRotation;
+            if (onRotateEnd) runOnJS(onRotateEnd)(finalRotation);
         });
 
     const composed = Gesture.Simultaneous(panGesture, pinchGesture, rotationGesture);

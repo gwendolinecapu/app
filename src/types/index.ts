@@ -401,6 +401,7 @@ export interface Story {
     author_id: string;        // Alter ID
     author_name: string;      // Denormalized
     author_avatar?: string;
+    author_frame?: string;    // Frame ID (e.g., 'frame_tropical')
     system_id: string;        // System ID owner
     media_url: string;
     media_type: 'image' | 'video';
@@ -413,6 +414,7 @@ export interface StoryGroup {
     authorId: string;
     authorName: string;
     authorAvatar?: string;
+    authorFrame?: string;
     stories: Story[];
     hasUnviewed: boolean;
 }

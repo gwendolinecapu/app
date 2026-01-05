@@ -89,6 +89,7 @@ export default function CreateStoryScreen() {
                 authorId: currentAlter.id,
                 authorName: currentAlter.name,
                 authorAvatar: currentAlter.avatar || currentAlter.avatar_url,
+                authorFrame: currentAlter.equipped_items?.frame,
                 systemId: user.uid,
                 mediaUrl: downloadUrl,
                 mediaType: selectedMedia.type,

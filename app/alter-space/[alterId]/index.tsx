@@ -231,23 +231,10 @@ export default function AlterSpaceScreen() {
                             themeColors={themeColors}
                             ListHeaderComponent={
                                 <>
-                                    <View style={styles.feedHeaderContainer}>
-                                        <ProfileHeader
-                                            alter={alter}
-                                            loading={loading}
-                                            isOwner={isOwner}
-                                            stats={{ posts: posts.length, followers: friendCount, following: followingCount }}
-                                            friendStatus={friendStatus}
-                                            onFriendAction={handleFriendAction}
-                                            onFollowersPress={() => setShowFollowersModal(true)}
-                                            onFollowingPress={() => setShowFollowingModal(true)}
-                                            themeColors={themeColors}
-                                            onAvatarPress={() => router.push({ pathname: '/story/view', params: { authorId: alter.id } })}
-                                        />
-                                    </View>
                                     <StoriesBar
                                         friendIds={friendIds}
                                         onStoryPress={(authorId) => router.push({ pathname: '/story/view', params: { authorId } })}
+                                        themeColors={themeColors}
                                     />
                                 </>
                             }

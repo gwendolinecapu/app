@@ -32,7 +32,7 @@ import { SystemControlBar } from '../../src/components/dashboard/SystemControlBa
 import { SystemMenuModal } from '../../src/components/dashboard/SystemMenuModal';
 import { AddAlterModal } from '../../src/components/dashboard/AddAlterModal';
 import { DashboardGrid, GridItem } from '../../src/components/dashboard/DashboardGrid';
-import { StoryList } from '../../src/components/stories/StoryList';
+
 import { Alter } from '../../src/types';
 
 const CONTAINER_PADDING = 16;
@@ -221,7 +221,7 @@ export default function Dashboard() {
                             onModeChange={setSelectionMode}
                             hasSelection={selectedAlters.length > 0}
                         />
-                        <StoryList />
+
                         <View style={{ height: 16 }} />
                     </View>
                 }

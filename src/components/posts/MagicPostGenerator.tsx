@@ -19,9 +19,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { functions, storage } from '../../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+// import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads'; // REMOVED: Crash fix
+import AdMediationService from '../../services/AdMediationService';
+import CreditService from '../../services/CreditService'; // Added
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { Alter } from '../../types';
 import { SketchCanvas } from '../shared/SketchCanvas';
+import { MagicalLoadingView } from '../shared/MagicalLoadingView';
+import { AI_COSTS, REWARD_AD_AMOUNT } from '../../services/MonetizationTypes';
 
 interface MagicPostGeneratorProps {
     visible: boolean;
@@ -31,15 +36,7 @@ interface MagicPostGeneratorProps {
     activeAlterId?: string;
 }
 
-type QualityTier = 'eco' | 'mid' | 'high';
-
-import { AI_COSTS } from '../../services/MonetizationTypes';
-
-const QUALITY_INFO = {
-    eco: { name: 'Éco', cost: AI_COSTS.GEN_ECO, desc: 'Rapide & Efficace.', model: 'Gemini 2.5 Flash + Imagen 3' },
-    mid: { name: 'Standard', cost: AI_COSTS.GEN_STANDARD, desc: 'Équilibré.', model: 'Nano Banana 2.5 Flash' },
-    high: { name: 'Pro', cost: AI_COSTS.GEN_PRO, desc: 'Haute fidélité.', model: 'Nano Banana 3 Pro' }
-};
+// Helper for Ads - Removed direct instance
 
 export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
     visible,
@@ -54,14 +51,61 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
     const [selectedAlterId, setSelectedAlterId] = useState<string>(
         (activeAlterId && magicAlters.find(a => a.id === activeAlterId)) ? activeAlterId : (magicAlters[0]?.id || '')
     );
+    const selectedAlter = alters.find(a => a.id === selectedAlterId);
+
+    // UI State
     const [prompt, setPrompt] = useState('');
-    const [quality, setQuality] = useState<QualityTier>('mid');
-    const [style, setStyle] = useState('Cinematic'); // New: Style state
+    const [imageCount, setImageCount] = useState<1 | 3>(1); // Batch Gen count
+    const [style, setStyle] = useState('Cinematic');
     const [sceneImageUri, setSceneImageUri] = useState<string | null>(null);
-    const [poseImageUri, setPoseImageUri] = useState<string | null>(null); // New: Pose state
-    const [isDrawing, setIsDrawing] = useState(false); // New: Drawing mode state
+    const [poseImageUri, setPoseImageUri] = useState<string | null>(null);
+    const [isDrawing, setIsDrawing] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+
+    // Results
+    const [generatedImages, setGeneratedImages] = useState<string[]>([]); // Array for batch
+    const [selectedResultIndex, setSelectedResultIndex] = useState(0);
+
+    // Ads
+    // const [adLoaded, setAdLoaded] = useState(false); // Managed by Service
+
+    React.useEffect(() => {
+        // Init ads service if needed (idempotent)
+        AdMediationService.initialize();
+    }, []);
+
+    const showRewardAd = async () => {
+        // Check availability
+        if (!AdMediationService.canWatchRewardAd()) {
+            return Alert.alert("Limite atteinte", "Vous avez atteint votre limite quotidienne de publicités.");
+        }
+
+        // Check if alter is selected for credit attribution
+        if (!selectedAlterId) {
+            return Alert.alert("Erreur", "Aucun alter sélectionné pour recevoir les crédits.");
+        }
+
+        try {
+            const result = await AdMediationService.showRewardedAd();
+
+            if (result.completed) {
+                // Grant credits via CreditService
+                await CreditService.claimRewardAd(selectedAlterId);
+
+                Alert.alert("Récompense reçue !", `Vous avez gagné ${REWARD_AD_AMOUNT} crédits pour ${selectedAlter?.name || 'votre alter'}.`);
+            } else {
+                if (result.network === 'admob' && result.rewardAmount === 0) {
+                    // Ad failed or closed early - Do nothing or show generic error if needed
+                } else {
+                    Alert.alert("Vidéo interrompue", "Regardez la vidéo jusqu'au bout pour recevoir la récompense.");
+                }
+            }
+        } catch (e) {
+            console.error(e);
+            Alert.alert("Erreur", "Impossible de lancer la publicité.");
+        }
+    };
+
 
     // Helpers
     const getBlobFromUri = async (uri: string): Promise<Blob> => {
@@ -101,22 +145,27 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
         if (!selectedAlterId) return Alert.alert("Erreur", "Sélectionnez un alter avec ADN Visuel.");
         if (!prompt && !sceneImageUri) return Alert.alert("Erreur", "Décrivez la scène ou ajoutez une image.");
 
+        const cost = imageCount === 3 ? AI_COSTS.MAGIC_POST_BATCH : AI_COSTS.MAGIC_POST;
+        if ((selectedAlter?.credits || 0) < cost) {
+            return Alert.alert("Crédits insuffisants", "Regardez une publicité ou rechargez vos crédits dans la boutique.");
+        }
+
         setIsGenerating(true);
         try {
             let uploadedSceneUrl = undefined;
-            if (sceneImageUri) {
-                // Upload scene/body reference
+            if (sceneImageUri && !sceneImageUri.startsWith('http')) { // Only upload if local
                 const blob = await getBlobFromUri(sceneImageUri) as any;
                 const path = `magic_uploads/${selectedAlterId}/${Date.now()}_scene.jpg`;
                 const sRef = ref(storage, path);
                 await uploadBytes(sRef, blob);
                 uploadedSceneUrl = await getDownloadURL(sRef);
                 blob.close && blob.close();
+            } else if (sceneImageUri) {
+                uploadedSceneUrl = sceneImageUri; // Use existing URL (Modify mode)
             }
 
             let uploadedPoseUrl = undefined;
             if (poseImageUri) {
-                // Upload pose reference
                 const blob = await getBlobFromUri(poseImageUri) as any;
                 const path = `magic_uploads/${selectedAlterId}/${Date.now()}_pose.jpg`;
                 const sRef = ref(storage, path);
@@ -129,15 +178,18 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
             const result: any = await generateMagicPost({
                 alterId: selectedAlterId,
                 prompt: prompt,
-                quality: quality,
-                style, // New
+                imageCount: imageCount, // Pass count
+                style,
                 sceneImageUrl: uploadedSceneUrl,
-                poseImageUrl: uploadedPoseUrl, // New
+                poseImageUrl: uploadedPoseUrl,
                 isBodySwap: !!sceneImageUri
             });
 
-            if (result.data.success && result.data.imageUrl) {
-                setGeneratedImage(result.data.imageUrl);
+            if (result.data.success && (result.data.images || result.data.imageUrl)) {
+                // Support both legacy single 'imageUrl' and new 'images' array
+                const images = result.data.images || [result.data.imageUrl];
+                setGeneratedImages(images);
+                setSelectedResultIndex(0);
             } else {
                 throw new Error(result.data.error || "Génération échouée");
             }
@@ -151,17 +203,18 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
     };
 
     const handleConfirm = () => {
-        if (generatedImage) {
-            onSuccess(generatedImage);
+        if (generatedImages[selectedResultIndex]) {
+            onSuccess(generatedImages[selectedResultIndex]);
             reset();
         }
     };
 
     const reset = () => {
-        setGeneratedImage(null);
+        setGeneratedImages([]);
         setPrompt('');
         setSceneImageUri(null);
-        // Don't close here, caller handles close
+        setPoseImageUri(null);
+        setImageCount(1);
     };
 
     // If no alters have DNA
@@ -173,7 +226,7 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
                         <Ionicons name="alert-circle" size={48} color={colors.textSecondary} />
                         <Text style={styles.modalTitle}>Rituel Requis</Text>
                         <Text style={styles.modalText}>
-                            Aucun de vos alters ne possède d&apos;ADN Visuel. Effectuez le &quot;Rituel de Naissance&quot; dans l&apos;édition de profil d&apos;un alter pour activer la Magie IA.
+                            Aucun de vos alters ne possède d'ADN Visuel. Effectuez le "Rituel de Naissance" dans l'édition de profil d'un alter pour activer la Magie IA.
                         </Text>
                         <TouchableOpacity style={styles.closeButton} onPress={onClose}>
                             <Text style={styles.closeButtonText}>Compris</Text>
@@ -184,45 +237,114 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
         );
     }
 
+    const currentCost = imageCount === 3 ? AI_COSTS.MAGIC_POST_BATCH : AI_COSTS.MAGIC_POST;
+
     return (
         <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.container}
             >
+                {/* Header */}
                 <View style={styles.header}>
-                    <Text style={styles.headerTitle}>Magie IA ✨</Text>
-                    <TouchableOpacity onPress={onClose}>
-                        <Ionicons name="close" size={28} color={colors.text} />
+                    <TouchableOpacity onPress={onClose} style={styles.iconButton}>
+                        <Ionicons name="close" size={24} color={colors.text} />
                     </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Magic Post</Text>
+
+                    {/* Credit Balance & Ad */}
+                    <View style={styles.headerRight}>
+                        <TouchableOpacity onPress={showRewardAd} style={styles.adButton}>
+                            <Ionicons name="play-circle" size={16} color="white" />
+                            <Text style={styles.adButtonText}>+5</Text>
+                        </TouchableOpacity>
+                        <View style={styles.creditBadge}>
+                            <Ionicons name="diamond" size={14} color={colors.primary} />
+                            <Text style={styles.creditText}>{selectedAlter?.credits || 0}</Text>
+                        </View>
+                    </View>
                 </View>
 
                 <ScrollView contentContainerStyle={styles.content}>
 
-                    {/* RESULT PREVIEW */}
-                    {generatedImage ? (
+                    {/* RESULT PREVIEW MODE */}
+                    {generatedImages.length > 0 ? (
                         <View style={styles.resultContainer}>
-                            <Image source={{ uri: generatedImage }} style={styles.resultImage} />
-                            <View style={styles.resultActions}>
-                                <TouchableOpacity style={styles.retryButton} onPress={() => setGeneratedImage(null)}>
-                                    <Ionicons name="refresh" size={20} color={colors.text} />
-                                    <Text style={styles.retryText}>Refaire</Text>
+                            <Image
+                                source={{ uri: generatedImages[selectedResultIndex] }}
+                                style={styles.resultImage}
+                            />
+
+                            {/* Batch Selection Dots */}
+                            {generatedImages.length > 1 && (
+                                <View style={styles.batchDots}>
+                                    {generatedImages.map((_, idx) => (
+                                        <TouchableOpacity
+                                            key={idx}
+                                            onPress={() => setSelectedResultIndex(idx)}
+                                            style={[
+                                                styles.batchDot,
+                                                selectedResultIndex === idx && styles.batchDotActive
+                                            ]}
+                                        />
+                                    ))}
+                                </View>
+                            )}
+
+                            <View style={styles.actionRow}>
+                                <TouchableOpacity
+                                    style={[styles.actionButton, styles.secondaryAction]}
+                                    onPress={() => setGeneratedImages([])}
+                                >
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                        <Ionicons name="trash-outline" size={18} color={colors.text} />
+                                        <Text style={styles.actionTextSecondary}>Jeter</Text>
+                                    </View>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
-                                    <Ionicons name="checkmark" size={20} color="white" />
-                                    <Text style={styles.confirmText}>Utiliser ce post</Text>
+
+                                <TouchableOpacity
+                                    style={styles.actionButton}
+                                    onPress={() => {
+                                        onSuccess(generatedImages[selectedResultIndex]);
+                                        reset();
+                                    }}
+                                >
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                        <Ionicons name="checkmark-circle" size={18} color="white" />
+                                        <Text style={styles.actionText}>Poster</Text>
+                                    </View>
                                 </TouchableOpacity>
                             </View>
+
+                            <TouchableOpacity
+                                style={styles.modifyButton}
+                                onPress={() => {
+                                    // "Modify" Mode: Use result as scene image
+                                    setSceneImageUri(generatedImages[selectedResultIndex]);
+                                    setGeneratedImages([]); // Go back to input
+                                }}
+                            >
+                                <Ionicons name="color-wand" size={16} color={colors.primary} />
+                                <Text style={styles.modifyButtonText}>
+                                    Modifier cette version
+                                </Text>
+                            </TouchableOpacity>
+
                         </View>
                     ) : (
                         <>
+                            {/* --- INPUT FORM --- */}
+
                             {/* 1. SELECT ALTER */}
-                            <Text style={styles.label}>Alter (Source ADN)</Text>
+                            <Text style={styles.label}>Qui poste ?</Text>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.alterList}>
                                 {magicAlters.map(alter => (
                                     <TouchableOpacity
                                         key={alter.id}
-                                        style={[styles.alterChip, selectedAlterId === alter.id && styles.alterChipSelected]}
+                                        style={[
+                                            styles.alterChip,
+                                            selectedAlterId === alter.id && styles.alterChipSelected
+                                        ]}
                                         onPress={() => setSelectedAlterId(alter.id)}
                                     >
                                         <Image
@@ -236,25 +358,29 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
                                 ))}
                             </ScrollView>
 
-                            {/* 2. QUALITY TIER */}
-                            <Text style={styles.label}>Qualité & Coût</Text>
+                            {/* 2. IMAGE COUNT (BATCH) */}
+                            <Text style={styles.label}>Quantité</Text>
                             <View style={styles.qualityContainer}>
-                                {(['eco', 'mid', 'high'] as QualityTier[]).map(q => (
-                                    <TouchableOpacity
-                                        key={q}
-                                        style={[styles.qualityOption, quality === q && styles.qualityOptionSelected]}
-                                        onPress={() => setQuality(q)}
-                                    >
-                                        <Text style={[styles.qName, quality === q && { color: colors.primary }]}>
-                                            {QUALITY_INFO[q].name}
-                                        </Text>
-                                        <Text style={styles.qCost}>{QUALITY_INFO[q].cost} 💎</Text>
-                                        <Text style={styles.qDesc}>{QUALITY_INFO[q].desc}</Text>
-                                    </TouchableOpacity>
-                                ))}
+                                <TouchableOpacity
+                                    style={[styles.qualityOption, imageCount === 1 && styles.qualityOptionSelected]}
+                                    onPress={() => setImageCount(1)}
+                                >
+                                    <Ionicons name="image" size={20} color={imageCount === 1 ? colors.primary : colors.textSecondary} style={{ marginBottom: 4 }} />
+                                    <Text style={[styles.qName, imageCount === 1 && { color: colors.primary }]}>Unique</Text>
+                                    <Text style={styles.qCost}>{AI_COSTS.MAGIC_POST} Crédits</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={[styles.qualityOption, imageCount === 3 && styles.qualityOptionSelected]}
+                                    onPress={() => setImageCount(3)}
+                                >
+                                    <Ionicons name="images" size={20} color={imageCount === 3 ? colors.primary : colors.textSecondary} style={{ marginBottom: 4 }} />
+                                    <Text style={[styles.qName, imageCount === 3 && { color: colors.primary }]}>Batch (x3)</Text>
+                                    <Text style={styles.qCost}>{AI_COSTS.MAGIC_POST_BATCH} Crédits</Text>
+                                </TouchableOpacity>
                             </View>
 
-                            {/* 2.5 STYLE / VIBE (New) */}
+                            {/* 3. STYLE */}
                             <Text style={styles.label}>Style Artistique</Text>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }}>
                                 {['Cinematic', 'Anime', 'Painting', 'Cyberpunk', 'Polaroid'].map(s => (
@@ -273,7 +399,7 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
                                 ))}
                             </ScrollView>
 
-                            {/* 3. SCENE & POSE */}
+                            {/* 4. REFERENCES */}
                             <Text style={styles.label}>Références (Optionnel)</Text>
 
                             {/* Scene / Body Swap */}
@@ -321,11 +447,11 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
                                 </View>
                             )}
 
-                            {/* 4. PROMPT */}
+                            {/* 5. PROMPT */}
                             <Text style={styles.label}>Description de la Scène</Text>
                             <TextInput
                                 style={styles.input}
-                                placeholder="Ex: En train de boire un café à Paris... (Laissez vide si Body Swap seul)"
+                                placeholder="Ex: En train de boire un café à Paris..."
                                 placeholderTextColor={colors.textMuted}
                                 value={prompt}
                                 onChangeText={setPrompt}
@@ -348,7 +474,7 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
                                         <>
                                             <Ionicons name="sparkles" size={20} color="white" style={{ marginRight: 8 }} />
                                             <Text style={styles.generateButtonText}>
-                                                Invoquer ({QUALITY_INFO[quality].cost} Crédits)
+                                                Invoquer ({currentCost} Crédits)
                                             </Text>
                                         </>
                                     )}
@@ -373,6 +499,12 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
                     }}
                 />
             </Modal>
+
+            <MagicalLoadingView
+                visible={isGenerating}
+                message="Tissage du Post..."
+                subMessage={imageCount === 3 ? "Génération de 3 variantes..." : "Veuillez patienter..."}
+            />
         </Modal>
     );
 };
@@ -393,6 +525,22 @@ const styles = StyleSheet.create({
     headerTitle: {
         ...typography.h3,
     },
+    headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    iconButton: { padding: 4 },
+    adButton: {
+        flexDirection: 'row', alignItems: 'center',
+        backgroundColor: '#f39c12', paddingVertical: 6, paddingHorizontal: 12,
+        borderRadius: 20
+    },
+    adButtonText: { color: 'white', fontWeight: 'bold', fontSize: 12, marginLeft: 4 },
+    creditBadge: {
+        flexDirection: 'row', alignItems: 'center',
+        backgroundColor: colors.backgroundLight,
+        paddingVertical: 6, paddingHorizontal: 12,
+        borderRadius: 20, borderWidth: 1, borderColor: colors.border
+    },
+    creditText: { fontWeight: 'bold', marginLeft: 6, color: colors.primary },
+
     content: {
         padding: spacing.lg,
         paddingBottom: 50,
@@ -407,13 +555,6 @@ const styles = StyleSheet.create({
         color: colors.textSecondary,
         marginBottom: spacing.sm,
     },
-    // Modal Alert
-    centeredView: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
-    modalView: { width: '80%', backgroundColor: colors.backgroundCard, borderRadius: 20, padding: 35, alignItems: 'center', elevation: 5 },
-    modalTitle: { ...typography.h3, marginTop: 15, marginBottom: 10 },
-    modalText: { textAlign: 'center', color: colors.textSecondary, marginBottom: 20 },
-    closeButton: { backgroundColor: colors.primary, borderRadius: 20, padding: 10, paddingHorizontal: 20 },
-    closeButtonText: { color: 'white', fontWeight: 'bold' },
 
     // Components
     alterList: { maxHeight: 70, marginBottom: spacing.xs },
@@ -431,33 +572,29 @@ const styles = StyleSheet.create({
 
     qualityContainer: { flexDirection: 'row', gap: 10 },
     qualityOption: {
-        flex: 1, padding: 10,
+        flex: 1, padding: 15, alignItems: 'center',
         backgroundColor: colors.backgroundCard,
         borderRadius: borderRadius.md,
         borderWidth: 1, borderColor: colors.border
     },
     qualityOptionSelected: { borderColor: colors.primary, backgroundColor: 'rgba(var(--primary-rgb), 0.05)' },
-    qName: { fontWeight: 'bold', fontSize: 13, marginBottom: 2 },
-    qCost: { fontSize: 12, color: colors.secondary, fontWeight: '800', marginBottom: 4 },
-    qDesc: { fontSize: 10, color: colors.textSecondary, lineHeight: 12 },
+    qName: { fontWeight: 'bold', fontSize: 14, marginBottom: 2, color: colors.text },
+    qCost: { fontSize: 12, color: colors.textSecondary, fontWeight: '600', marginBottom: 4 },
 
-    imagePicker: {
-        height: 120, // Reduced
-        backgroundColor: colors.backgroundCard,
-        borderRadius: borderRadius.lg, overflow: 'hidden',
-        justifyContent: 'center', alignItems: 'center',
-        borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed'
-    },
-    removeImagesButton: {
-        position: 'absolute', top: 5, right: 5,
-        backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 15
-    },
     styleChip: {
-        paddingHorizontal: 16, paddingVertical: 8,
+        paddingVertical: 8, paddingHorizontal: 16,
         borderRadius: 20, borderWidth: 1, borderColor: colors.border,
         marginRight: 8, backgroundColor: colors.backgroundCard
     },
     styleChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+
+    imagePicker: {
+        borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed',
+        borderRadius: borderRadius.md, height: 140,
+        justifyContent: 'center', alignItems: 'center', backgroundColor: colors.backgroundLight,
+        marginBottom: spacing.md, overflow: 'hidden'
+    },
+    removeImagesButton: { position: 'absolute', top: 5, right: 5 },
     previewScene: { width: '100%', height: '100%', resizeMode: 'cover' },
     uploadPlaceholder: { alignItems: 'center' },
     uploadText: { marginTop: 8, color: colors.textSecondary, fontSize: 12 },
@@ -478,11 +615,39 @@ const styles = StyleSheet.create({
     generateButtonText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
 
     // Result
-    resultContainer: { alignItems: 'center' },
-    resultImage: { width: '100%', aspectRatio: 1, borderRadius: borderRadius.lg, marginBottom: spacing.lg },
-    resultActions: { flexDirection: 'row', gap: spacing.md, width: '100%' },
-    retryButton: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: 15, backgroundColor: colors.backgroundCard, borderRadius: borderRadius.md },
-    retryText: { marginLeft: 8, fontWeight: '600', color: colors.text },
-    confirmButton: { flex: 2, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: 15, backgroundColor: colors.success, borderRadius: borderRadius.md },
-    confirmText: { marginLeft: 8, fontWeight: 'bold', color: 'white' }
+    resultContainer: { alignItems: 'center', width: '100%' },
+    resultImage: { width: '100%', aspectRatio: 1, borderRadius: borderRadius.lg, marginBottom: spacing.md },
+
+    batchDots: { flexDirection: 'row', gap: 8, marginBottom: 20 },
+    batchDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border },
+    batchDotActive: { backgroundColor: colors.primary, width: 20 },
+
+    actionRow: { flexDirection: 'row', width: '100%', gap: 10 },
+    actionButton: {
+        flex: 1, padding: 16, borderRadius: 12,
+        justifyContent: 'center', alignItems: 'center',
+        backgroundColor: colors.primary,
+        ...Platform.select({
+            ios: { shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
+            android: { elevation: 4 }
+        })
+    },
+    secondaryAction: {
+        backgroundColor: colors.backgroundCard,
+        borderWidth: 1, borderColor: colors.border,
+        shadowOpacity: 0
+    },
+    actionText: { color: 'white', fontWeight: 'bold' },
+    actionTextSecondary: { color: colors.text, fontWeight: '600' },
+
+    modifyButton: { flexDirection: 'row', alignItems: 'center', padding: 10, marginTop: 10 },
+    modifyButtonText: { color: colors.primary, fontWeight: '600', marginLeft: 6 },
+
+    // Modal
+    centeredView: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
+    modalView: { width: '80%', backgroundColor: colors.backgroundCard, borderRadius: 20, padding: 35, alignItems: 'center', elevation: 5 },
+    modalTitle: { ...typography.h3, marginTop: 15, marginBottom: 10 },
+    modalText: { textAlign: 'center', color: colors.textSecondary, marginBottom: 20 },
+    closeButton: { backgroundColor: colors.primary, borderRadius: 20, padding: 10, paddingHorizontal: 20 },
+    closeButtonText: { color: 'white', fontWeight: 'bold' },
 });

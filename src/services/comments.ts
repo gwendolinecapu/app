@@ -132,74 +132,28 @@ export async function fetchComments(postId: string, limitCount: number = 20): Pr
 
     const snapshot = await getDocs(q);
 
+    // Optimization: We rely on denormalized author data stored in the comment document
+    // to avoid N+1 reads (fetching author profile for every comment).
+    // This dramatically reduces Firestore reads and improves performance.
     const comments = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
             id: doc.id,
             post_id: postId,
             author_id: data.author_id,
-            author_name: data.author_name,
+            author_name: data.author_name || 'Utilisateur inconnu',
             author_avatar: data.author_avatar,
             content: data.content,
             created_at: data.created_at instanceof Timestamp
                 ? data.created_at.toDate().toISOString()
-                : data.created_at,
+                : (data.created_at || new Date().toISOString()),
             parent_id: data.parent_id,
             reply_to_author_name: data.reply_to_author_name,
             reply_to_author_id: data.reply_to_author_id,
         };
     });
 
-    return await _enrichCommentsWithAuthors(comments);
-}
-
-/**
- * Enrichit les commentaires avec les données d'auteur les plus récentes
- */
-async function _enrichCommentsWithAuthors(comments: Comment[]): Promise<Comment[]> {
-    if (comments.length === 0) return comments;
-
-    const authorIds = new Set(comments.map(c => c.author_id));
-    const authorsMap = new Map<string, any>();
-
-    await Promise.all(Array.from(authorIds).map(async (id) => {
-        try {
-            // Check if it's an alter
-            const alterDoc = await getDoc(doc(db, 'alters', id));
-            if (alterDoc.exists()) {
-                authorsMap.set(id, { ...alterDoc.data(), type: 'alter' });
-                return;
-            }
-            // Check if it's a system
-            const systemDoc = await getDoc(doc(db, 'systems', id));
-            if (systemDoc.exists()) {
-                authorsMap.set(id, { ...systemDoc.data(), type: 'system' });
-            }
-        } catch (e) {
-            console.warn(`Failed to fetch author ${id}`, e);
-        }
-    }));
-
-    return comments.map(comment => {
-        const author = authorsMap.get(comment.author_id);
-        if (author) {
-            const resolvedName = author.type === 'alter'
-                ? author.name
-                : (author.username || author.name || 'Utilisateur');
-
-            // Even if resolvedName is "Système" (user set it?), it is better than the fallback.
-            // But if the user explicitly wants to avoid "Système" from the fallback:
-            const finalName = resolvedName || comment.author_name;
-
-            return {
-                ...comment,
-                author_name: finalName === 'Système' && author.username ? author.username : finalName,
-                author_avatar: (author.type === 'alter' ? (author.avatar || author.avatar_url) : author.avatar_url) || comment.author_avatar,
-                system_id: author.type === 'system' ? author.id : (author.system_id || author.userId || (author as any).systemId),
-            };
-        }
-        return comment;
-    });
+    return comments;
 }
 
 /**

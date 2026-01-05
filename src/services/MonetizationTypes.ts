@@ -119,39 +119,52 @@ export type CreditTransactionType =
     | 'purchase_lootbox' // Achat Loot Box
     | 'ai_generation';   // Génération IA
 
-/** Transaction de crédits */
-export interface CreditTransaction {
-    id: string;
-    userId: string;
-    amount: number;           // Positif = gain, négatif = dépense
-    type: CreditTransactionType;
-    description?: string;
-    itemId?: string;          // ID de l'item acheté si applicable
-    timestamp: number;
-}
+// ==================== CONFIGURATION PUBS ====================
+
+/** Configuration de la fréquence des pubs */
+export const AD_CONFIG = {
+    // Fréquence pub native dans le feed (1 pub tous les X posts)
+    NATIVE_AD_FREQUENCY: 5,
+
+    // Délai minimum entre 2 interstitiels (secondes)
+    INTERSTITIAL_COOLDOWN: 120,
+
+    // Max reward ads par jour
+    MAX_REWARD_ADS_PER_DAY: 10,
+
+    // Reward ads pour 7j sans pub
+    REWARD_ADS_FOR_AD_FREE: 3,
+
+    // Reward ads pour 7j premium
+    REWARD_ADS_FOR_PREMIUM: 15,
+
+    // Durée trial en jours
+    TRIAL_DURATION_DAYS: 14,
+
+    // Durée offerte après trial (1x)
+    FREE_MONTH_DAYS: 30,
+} as const;
+
+// ==================== CREDITS & COSTS ====================
+
+export const REWARD_AD_AMOUNT = 10; // Crédits gagnés par pub regardée (Updated)
+export const LOOT_BOX_PRICE = 30; // Coût d'une Loot Box
 
 /** Configuration des gains de crédits */
 export const CREDIT_REWARDS = {
     DAILY_LOGIN_FREE: 10,
     DAILY_LOGIN_PREMIUM: 25,
-    REWARD_AD: 5, // Met à jour selon la tokenomics (0.015€ = 15 credits value, user gets 1/3)
+    REWARD_AD: REWARD_AD_AMOUNT,
     STREAK_7_DAYS: 100,
     STREAK_30_DAYS: 500,
 } as const;
 
 /** Coûts des fonctionnalités IA */
 export const AI_COSTS = {
-    // 2026 Pricing: Gemini 1.5 Pro cost ~$0.005. Price 50 Credits ($0.05).
-    RITUAL: 50,
-
-    // Generation Tiers (Imagen 4 / 3)
-    // Eco ($0.02 cost) -> 60 Credits ($0.06)
-    // Std ($0.04 cost) -> 120 Credits ($0.12)
-    // Pro ($0.06 cost) -> 180 Credits ($0.18)
-    GEN_ECO: 60,
-    GEN_STANDARD: 120,
-    GEN_PRO: 180,
-} as const;
+    RITUAL: 50,    // Coût fixe pour un rituel de naissance
+    MAGIC_POST: 10, // Coût par image générée (Standard High Quality)
+    MAGIC_POST_BATCH: 25, // Coût pour 3 images (Discount: 5 crédits offerts !)
+};
 
 // ==================== BOUTIQUE ====================
 
@@ -164,7 +177,8 @@ export type ShopItemType =
     | 'theme'           // Thème d'application
     | 'frame'           // Cadre d'avatar
     | 'bubble'          // Bulle de chat
-    | 'bundle';         // Pack groupé (thème + cadre + bulle)
+    | 'bundle'          // Pack groupé (thème + cadre + bulle)
+    | 'lootbox';        // Boîte mystère
 
 /** Produit en boutique */
 export interface ShopItem {
@@ -257,6 +271,16 @@ export const PREMIUM_PACKS: ShopItem[] = [
 
 /** Items achetables avec crédits */
 export const CREDIT_ITEMS: ShopItem[] = [
+    // Loot Box
+    {
+        id: 'lootbox_standard',
+        type: 'lootbox',
+        name: 'Coffre Mystère',
+        description: 'Gagnez des items rares ou des crédits !',
+        priceCredits: LOOT_BOX_PRICE,
+        rarity: 'common',
+        featured: true,
+    },
     // Sans pub
     {
         id: 'ad_free_1d',
@@ -274,14 +298,6 @@ export const CREDIT_ITEMS: ShopItem[] = [
         priceCredits: 300,
         duration: 7,
         featured: true,
-    },
-    {
-        id: 'ad_free_30d',
-        type: 'ad_free',
-        name: '30 Jours sans pub',
-        description: 'Un mois complet',
-        priceCredits: 1000,
-        duration: 30,
     },
     // Premium temporaire
     {
@@ -312,73 +328,73 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         id: 'theme_default',
         type: 'theme',
         name: 'Classique',
-        description: 'Le thème par défaut de l\'application.',
+        description: 'Le thème par défaut.',
         priceCredits: 0,
+        rarity: 'common',
         preview: '#1a1a2e',
     },
     {
         id: 'theme_ocean',
         type: 'theme',
         name: 'Océan',
-        description: 'Bleu profond comme les abysses.',
-        priceCredits: 50,
+        description: 'Bleu profond.',
+        priceCredits: 1,
+        rarity: 'common',
         preview: '#0077b6',
     },
     {
         id: 'theme_forest',
         type: 'theme',
         name: 'Forêt',
-        description: 'Vert naturel et apaisant.',
-        priceCredits: 50,
+        description: 'Vert naturel.',
+        priceCredits: 1,
+        rarity: 'common',
         preview: '#2d6a4f',
-    },
-    {
-        id: 'theme_sunset',
-        type: 'theme',
-        name: 'Coucher de soleil',
-        description: 'Tons chauds orangés.',
-        priceCredits: 75,
-        preview: '#e85d04',
-    },
-    {
-        id: 'theme_lavender',
-        type: 'theme',
-        name: 'Lavande',
-        description: 'Violet doux et relaxant.',
-        priceCredits: 75,
-        preview: '#9d4edd',
-    },
-    {
-        id: 'theme_cyberpunk',
-        type: 'theme',
-        name: 'Cyberpunk',
-        description: 'Néons et haute technologie.',
-        priceCredits: 150,
-        preview: '#ff00ff',
-        isPremium: true,
     },
     {
         id: 'theme_midnight',
         type: 'theme',
         name: 'Minuit',
-        description: 'Noir profond étoilé.',
-        priceCredits: 100,
+        description: 'Noir profond.',
+        priceCredits: 1,
+        rarity: 'common',
         preview: '#0d1b2a',
     },
     {
         id: 'theme_cherry',
         type: 'theme',
         name: 'Cerisier',
-        description: 'Rose délicat du printemps.',
-        priceCredits: 100,
+        description: 'Rose délicat.',
+        priceCredits: 1,
+        rarity: 'common',
         preview: '#ff758f',
+    },
+    {
+        id: 'theme_cyberpunk',
+        type: 'theme',
+        name: 'Cyberpunk',
+        description: 'Néons et haute technologie.',
+        priceCredits: 10,
+        rarity: 'rare',
+        preview: '#ff00ff',
+        isPremium: true,
+    },
+    {
+        id: 'theme_cafe_cosy',
+        type: 'theme',
+        name: 'Café Cosy',
+        description: 'Ambiance chaleureuse.',
+        priceCredits: 10,
+        rarity: 'rare',
+        preview: '#8D6E63',
     },
     {
         id: 'theme_anim_aurora',
         type: 'theme',
         name: 'Aurore Boréale',
-        description: 'Lueurs nordiques vivantes.',
-        priceCredits: 300,
+        description: 'Lueurs nordiques animées.',
+        priceCredits: 50,
+        rarity: 'epic',
         preview: '#00ff9d',
         isPremium: true,
         featured: true,
@@ -389,7 +405,8 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         type: 'theme',
         name: 'Cosmos',
         description: 'Voyage interstellaire animé.',
-        priceCredits: 350,
+        priceCredits: 50,
+        rarity: 'epic',
         preview: '#4b0082',
         isPremium: true,
         isAnimated: true,
@@ -398,319 +415,282 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         id: 'theme_winter',
         type: 'theme',
         name: 'Hiver Éternel',
-        description: 'Ambiance hivernale avec chutes de neige animées.',
-        priceCredits: 500,
+        description: 'Chutes de neige animées.',
+        priceCredits: 250,
+        rarity: 'legendary',
         preview: '#a5f3fc',
         isPremium: true,
         featured: true,
         isAnimated: true,
     },
     {
-        id: 'theme_cafe_cosy',
-        type: 'theme',
-        name: 'Café Cosy',
-        description: 'Tons bruns chaleureux, ambiance café réconfortante.',
-        priceCredits: 200,
-        preview: '#8D6E63',
-        isPremium: false,
-    },
-    {
         id: 'theme_pink_cute',
         type: 'theme',
         name: 'Pink Cute',
-        description: 'Douceur pastel et ambiance kawaii.',
-        priceCredits: 2000,
+        description: 'Douceur pastel.',
+        priceCredits: 250,
+        rarity: 'legendary',
         preview: '#FFB7C5',
-        isPremium: false,
     },
+    // MYTHIC THEMES (1500)
     {
         id: 'theme_cute_mint',
         type: 'theme',
         name: 'Mint Cute',
         description: 'Fraîcheur menthe douce.',
-        priceCredits: 5000,
+        priceCredits: 1500,
         rarity: 'mythic',
         preview: '#B4F8C8',
-        isPremium: false,
     },
     {
         id: 'theme_cute_sky',
         type: 'theme',
         name: 'Sky Cute',
         description: 'Douceur céleste.',
-        priceCredits: 5000,
+        priceCredits: 1500,
         rarity: 'mythic',
         preview: '#A0E7E5',
-        isPremium: false,
     },
     {
         id: 'theme_cute_lavender',
         type: 'theme',
         name: 'Lavender Cute',
         description: 'Sérénité lavande.',
-        priceCredits: 5000,
+        priceCredits: 1500,
         rarity: 'mythic',
         preview: '#E6E6FA',
-        isPremium: false,
     },
     {
         id: 'theme_cute_peach',
         type: 'theme',
         name: 'Peach Cute',
         description: 'Pêche sucrée.',
-        priceCredits: 5000,
+        priceCredits: 1500,
         rarity: 'mythic',
         preview: '#FFDAB9',
-        isPremium: false,
     },
     {
         id: 'theme_cute_lemon',
         type: 'theme',
         name: 'Lemon Cute',
         description: 'Zeste de citron doux.',
-        priceCredits: 5000,
+        priceCredits: 1500,
         rarity: 'mythic',
         preview: '#FFFACD',
-        isPremium: false,
     },
     {
         id: 'theme_cute_aqua',
         type: 'theme',
         name: 'Aqua Cute',
         description: 'Lagon pastel.',
-        priceCredits: 5000,
+        priceCredits: 1500,
         rarity: 'mythic',
         preview: '#E0FFFF',
-        isPremium: false,
     },
     {
         id: 'theme_cute_cream',
         type: 'theme',
         name: 'Cream Cute',
         description: 'Douceur crème.',
-        priceCredits: 5000,
+        priceCredits: 1500,
         rarity: 'mythic',
         preview: '#FDF5E6',
-        isPremium: false,
     },
     {
         id: 'theme_cute_coral',
         type: 'theme',
         name: 'Coral Cute',
         description: 'Récif pastel.',
-        priceCredits: 5000,
+        priceCredits: 1500,
         rarity: 'mythic',
         preview: '#FFB7B2',
-        isPremium: false,
     },
 
     // ========== CADRES ==========
     {
-        id: 'frame_tropical',
-        type: 'frame',
-        name: 'Tropical',
-        description: 'Ambiance vacances et cocotiers (Animé).',
-        priceCredits: 300,
-        preview: '#4ade80',
-        icon: 'leaf-outline',
-        isPremium: false,
-        isAnimated: true,
-    },
-    {
         id: 'frame_default',
         type: 'frame',
         name: 'Simple',
-        description: 'Cadre basique et élégant.',
+        description: 'Cadre basique.',
         priceCredits: 0,
+        rarity: 'common',
         preview: '#6b7280',
         icon: 'ellipse-outline',
-    },
-    {
-        id: 'frame_double',
-        type: 'frame',
-        name: 'Double',
-        description: 'Double bordure raffinée.',
-        priceCredits: 75,
-        preview: '#8b5cf6',
-        icon: 'radio-button-off-outline',
     },
     {
         id: 'frame_square',
         type: 'frame',
         name: 'Carré',
-        description: 'Forme carrée moderne.',
-        priceCredits: 50,
+        description: 'Forme moderne.',
+        priceCredits: 1,
+        rarity: 'common',
         preview: '#3b82f6',
         icon: 'square-outline',
+    },
+    {
+        id: 'frame_double',
+        type: 'frame',
+        name: 'Double',
+        description: 'Double bordure.',
+        priceCredits: 1,
+        rarity: 'common',
+        preview: '#8b5cf6',
+        icon: 'radio-button-off-outline',
+    },
+    {
+        id: 'frame_rainbow',
+        type: 'frame',
+        name: 'Arc-en-ciel',
+        description: 'Toutes les couleurs.',
+        priceCredits: 10,
+        rarity: 'rare',
+        preview: '#ff6b6b',
+        icon: 'color-palette-outline',
     },
     {
         id: 'frame_neon',
         type: 'frame',
         name: 'Néon',
         description: 'Lueur fluorescente.',
-        priceCredits: 150,
+        priceCredits: 10,
+        rarity: 'rare',
         preview: '#00ff00',
         icon: 'sunny-outline',
         isPremium: true,
     },
     {
+        id: 'frame_bamboo_sanctuary',
+        type: 'frame',
+        name: 'Bambou',
+        description: 'Sérénité zen.',
+        priceCredits: 10,
+        rarity: 'rare',
+        preview: '#84cc16',
+        icon: 'leaf-outline',
+    },
+    {
         id: 'frame_gold',
         type: 'frame',
         name: 'Or',
-        description: 'Bordure dorée prestigieuse.',
-        priceCredits: 200,
+        description: 'Bordure dorée.',
+        priceCredits: 50,
+        rarity: 'epic',
         preview: '#ffd700',
         icon: 'star-outline',
         isPremium: true,
     },
     {
-        id: 'frame_rainbow',
+        id: 'frame_pirate_wreck',
         type: 'frame',
-        name: 'Arc-en-ciel',
-        description: 'Toutes les couleurs réunies.',
-        priceCredits: 175,
-        preview: '#ff6b6b',
-        icon: 'color-palette-outline',
+        name: 'Pirate',
+        description: 'Trésors engloutis.',
+        priceCredits: 50,
+        rarity: 'epic',
+        preview: '#78350f',
+        icon: 'skull-outline',
+    },
+    {
+        id: 'frame_biolum_lagoon',
+        type: 'frame',
+        name: 'Lagon',
+        description: 'Bioluminescence.',
+        priceCredits: 50,
+        rarity: 'epic',
+        preview: '#0ea5e9',
+        icon: 'water-outline',
         isPremium: true,
     },
     {
-        id: 'frame_anim_galaxy',
+        id: 'frame_enchanted_forest',
         type: 'frame',
-        name: 'Galaxie',
-        description: 'Rotation cosmique animée.',
-        priceCredits: 400,
-        preview: '#8b5cf6',
-        icon: 'planet-outline',
+        name: 'Féerique',
+        description: 'Style Cottagecore.',
+        priceCredits: 50,
+        rarity: 'epic',
+        preview: '#d946ef',
+        icon: 'rose-outline',
         isPremium: true,
-        featured: true,
+    },
+    {
+        id: 'frame_arctic_winter',
+        type: 'frame',
+        name: 'Arctique',
+        description: 'Glace éternelle.',
+        priceCredits: 50,
+        rarity: 'epic',
+        preview: '#bae6fd',
+        icon: 'snow-outline',
+        isPremium: true,
+    },
+    {
+        id: 'frame_tropical',
+        type: 'frame',
+        name: 'Tropical',
+        description: 'Vacances animées.',
+        priceCredits: 50,
+        rarity: 'epic',
+        preview: '#4ade80',
+        icon: 'leaf-outline',
+        isAnimated: true,
     },
     {
         id: 'frame_flames',
         type: 'frame',
         name: 'Flammes',
-        description: 'Bordure enflammée (Animé).',
+        description: 'Feu animé.',
         priceCredits: 250,
+        rarity: 'legendary',
         preview: '#ff4500',
         icon: 'flame-outline',
         isPremium: true,
         isAnimated: true,
     },
     {
+        id: 'frame_nature_mystic',
+        type: 'frame',
+        name: 'Mystique',
+        description: 'Forêt enchantée animée.',
+        priceCredits: 250,
+        rarity: 'legendary',
+        preview: '#2d6a4f',
+        icon: 'leaf-outline',
+        isAnimated: true,
+        featured: true,
+    },
+    {
+        id: 'frame_anim_galaxy',
+        type: 'frame',
+        name: 'Galaxie',
+        description: 'Rotation cosmique.',
+        priceCredits: 250,
+        rarity: 'legendary',
+        preview: '#8b5cf6',
+        icon: 'planet-outline',
+        isPremium: true,
+        featured: true,
+    },
+    {
         id: 'frame_anim_sakura',
         type: 'frame',
-        name: 'Pétales de Cerisier',
-        description: 'Un cadre élégant avec des pétales de sakura qui tombent gracieusement.',
-        priceCredits: 800,
+        name: 'Sakura',
+        description: 'Pétales animés premium.',
+        priceCredits: 1500,
+        rarity: 'mythic',
         preview: '#FFB7C5',
         icon: 'flower-outline',
         isPremium: true,
         isAnimated: true,
         featured: true,
     },
-    {
-        id: 'frame_nature_mystic',
-        type: 'frame',
-        name: 'Forêt Mystique',
-        description: 'Cadre enchanté avec spores lumineuses (Animé).',
-        priceCredits: 350,
-        preview: '#2d6a4f',
-        icon: 'leaf-outline',
-        isPremium: false,
-        isAnimated: true,
-        featured: true,
-    },
-    // New Frames
-    {
-        id: 'frame_biolum_lagoon',
-        type: 'frame',
-        name: 'Lagon Nocturne',
-        description: 'Bioluminescence mystique.',
-        priceCredits: 400,
-        preview: '#0ea5e9',
-        icon: 'water-outline',
-        isPremium: true,
-    },
-    {
-        id: 'frame_pirate_wreck',
-        type: 'frame',
-        name: 'Épave Pirate',
-        description: 'Trésors engloutis et bois flotté.',
-        priceCredits: 350,
-        preview: '#78350f',
-        icon: 'skull-outline',
-        isPremium: false,
-    },
-    {
-        id: 'frame_coral_reef',
-        type: 'frame',
-        name: 'Récif Corallien',
-        description: 'Couleurs vibrantes sous-marines.',
-        priceCredits: 350,
-        preview: '#f43f5e',
-        icon: 'fish-outline',
-        isPremium: false,
-    },
-    {
-        id: 'frame_jungle_ruins',
-        type: 'frame',
-        name: 'Ruines Jungle',
-        description: 'Mystères des anciens.',
-        priceCredits: 400,
-        preview: '#15803d',
-        icon: 'leaf-outline',
-        isPremium: false,
-    },
-
-    {
-        id: 'frame_bamboo_sanctuary',
-        type: 'frame',
-        name: 'Sanctuaire Bambou',
-        description: 'Sérénité zen.',
-        priceCredits: 300,
-        preview: '#84cc16',
-        icon: 'leaf-outline',
-        isPremium: false,
-    },
-    {
-        id: 'frame_enchanted_forest',
-        type: 'frame',
-        name: 'Forêt Enchantée',
-        description: 'Style Cottagecore féerique.',
-        priceCredits: 400,
-        preview: '#d946ef',
-        icon: 'rose-outline',
-        isPremium: true,
-    },
-
-    {
-        id: 'frame_crystal_cavern',
-        type: 'frame',
-        name: 'Caverne Cristal',
-        description: 'Éclats précieux souterrains.',
-        priceCredits: 500,
-        preview: '#8b5cf6',
-        icon: 'diamond-outline',
-        isPremium: true,
-    },
-    {
-        id: 'frame_arctic_winter',
-        type: 'frame',
-        name: 'Hiver Arctique',
-        description: 'Glace éternelle et givre.',
-        priceCredits: 450,
-        preview: '#bae6fd',
-        icon: 'snow-outline',
-        isPremium: true,
-    },
-
 
     // ========== BULLES ==========
     {
         id: 'bubble_default',
         type: 'bubble',
         name: 'Classique',
-        description: 'Bulle de chat standard.',
+        description: 'Bulle standard.',
         priceCredits: 0,
+        rarity: 'common',
         preview: '#6366f1',
         icon: 'chatbubble-outline',
     },
@@ -718,35 +698,39 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         id: 'bubble_round',
         type: 'bubble',
         name: 'Ronde',
-        description: 'Formes arrondies douces.',
-        priceCredits: 50,
+        description: 'Arrondie.',
+        priceCredits: 1,
+        rarity: 'common',
         preview: '#22c55e',
         icon: 'chatbubble-ellipses-outline',
-    },
-    {
-        id: 'bubble_square',
-        type: 'bubble',
-        name: 'Carrée',
-        description: 'Angles nets et modernes.',
-        priceCredits: 50,
-        preview: '#ef4444',
-        icon: 'chatbox-outline',
     },
     {
         id: 'bubble_cloud',
         type: 'bubble',
         name: 'Nuage',
-        description: 'Comme dans les BD.',
-        priceCredits: 75,
+        description: 'Style BD.',
+        priceCredits: 1,
+        rarity: 'common',
         preview: '#f59e0b',
         icon: 'cloud-outline',
+    },
+    {
+        id: 'bubble_pixel',
+        type: 'bubble',
+        name: 'Pixel',
+        description: 'Style Rétro.',
+        priceCredits: 1,
+        rarity: 'common',
+        preview: '#84cc16',
+        icon: 'grid-outline',
     },
     {
         id: 'bubble_gradient',
         type: 'bubble',
         name: 'Dégradé',
-        description: 'Couleurs qui se fondent.',
-        priceCredits: 125,
+        description: 'Couleurs fondues.',
+        priceCredits: 10,
+        rarity: 'rare',
         preview: '#ec4899',
         icon: 'color-wand-outline',
         isPremium: true,
@@ -755,29 +739,12 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         id: 'bubble_glass',
         type: 'bubble',
         name: 'Verre',
-        description: 'Effet glassmorphism.',
-        priceCredits: 150,
+        description: 'Glassmorphism.',
+        priceCredits: 10,
+        rarity: 'rare',
         preview: '#06b6d4',
         icon: 'cube-outline',
         isPremium: true,
-    },
-    {
-        id: 'bubble_pixel',
-        type: 'bubble',
-        name: 'Pixel',
-        description: 'Style rétro 8-bits.',
-        priceCredits: 100,
-        preview: '#84cc16',
-        icon: 'grid-outline',
-    },
-    {
-        id: 'bubble_comic',
-        type: 'bubble',
-        name: 'BD',
-        description: 'Style bande dessinée.',
-        priceCredits: 100,
-        preview: '#fbbf24',
-        icon: 'newspaper-outline',
     },
 ];
 
@@ -823,32 +790,6 @@ export const DECORATION_PRICES: Record<DecorationRarity, number> = {
     legendary: 1000,
     mythic: 2000,
 };
-
-// ==================== CONFIGURATION PUBS ====================
-
-/** Configuration de la fréquence des pubs */
-export const AD_CONFIG = {
-    // Fréquence pub native dans le feed (1 pub tous les X posts)
-    NATIVE_AD_FREQUENCY: 5,
-
-    // Délai minimum entre 2 interstitiels (secondes)
-    INTERSTITIAL_COOLDOWN: 120,
-
-    // Max reward ads par jour
-    MAX_REWARD_ADS_PER_DAY: 10,
-
-    // Reward ads pour 7j sans pub
-    REWARD_ADS_FOR_AD_FREE: 3,
-
-    // Reward ads pour 7j premium
-    REWARD_ADS_FOR_PREMIUM: 15,
-
-    // Durée trial en jours
-    TRIAL_DURATION_DAYS: 14,
-
-    // Durée offerte après trial (1x)
-    FREE_MONTH_DAYS: 30,
-} as const;
 
 // ==================== EXPORTS ====================
 

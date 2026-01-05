@@ -271,6 +271,24 @@
                     "order": "DESCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "stories",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "system_id",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "expires_at",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "created_at",
+                    "order": "DESCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []

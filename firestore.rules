@@ -451,6 +451,21 @@ service cloud.firestore {
     }
 
     // ============================================
+    // Inner World Collections
+    // ============================================
+    match /inner_worlds/{worldId} {
+      allow read: if isAuthenticated() && (resource.data.system_id == request.auth.uid || resource.data.systemId == request.auth.uid);
+      allow create: if isAuthenticated() && (request.resource.data.system_id == request.auth.uid || request.resource.data.systemId == request.auth.uid);
+      allow update, delete: if isAuthenticated() && (resource.data.system_id == request.auth.uid || resource.data.systemId == request.auth.uid);
+    }
+
+    match /inner_world_shapes/{shapeId} {
+      allow read: if isAuthenticated() && (resource.data.system_id == request.auth.uid || resource.data.systemId == request.auth.uid);
+      allow create: if isAuthenticated() && (request.resource.data.system_id == request.auth.uid || request.resource.data.systemId == request.auth.uid);
+      allow update, delete: if isAuthenticated() && (resource.data.system_id == request.auth.uid || resource.data.systemId == request.auth.uid);
+    }
+
+    // ============================================
     // FCM Tokens Collection
     // ============================================
     match /fcm_tokens/{tokenId} {

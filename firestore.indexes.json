@@ -307,6 +307,42 @@
                     "order": "DESCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "inner_worlds",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "system_id",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "alter_id",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "updated_at",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "inner_world_shapes",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "system_id",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "world_id",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "created_at",
+                    "order": "ASCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []

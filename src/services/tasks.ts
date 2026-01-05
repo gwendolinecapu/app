@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Task } from '../types';
+import CreditService from './CreditService';
 
 export const TaskService = {
     /**
@@ -27,6 +28,11 @@ export const TaskService = {
                 // S'assurer que les valeurs optionnelles sont null si undefined
                 assigned_to: taskData.assigned_to || null,
                 due_date: taskData.due_date || null,
+                category: taskData.category || 'general',
+                recurrence: taskData.recurrence || 'none',
+                visibility: taskData.visibility || 'public',
+                reward_claimed: false,
+                xp_reward: 5 // Default XP/Credit reward
             });
             return docRef.id;
         } catch (error) {
@@ -72,13 +78,70 @@ export const TaskService = {
 
     /**
      * Marquer une tâche comme complétée/non-complétée
+     * Gère aussi la récompense (+5 crédits) et la récurrence
      */
-    async toggleTaskCompletion(taskId: string, isCompleted: boolean): Promise<void> {
+    async toggleTaskCompletion(taskId: string, isCompleted: boolean, taskData?: Task): Promise<{ rewardEarned: boolean }> {
         const taskRef = doc(db, 'tasks', taskId);
-        await updateDoc(taskRef, {
+
+        let updates: any = {
             is_completed: isCompleted,
             completed_at: isCompleted ? new Date().toISOString() : null
-        });
+        };
+
+        // Gestion de la récompense
+        let rewardEarned = false;
+        if (isCompleted && taskData && !taskData.reward_claimed) {
+            const rewardAmount = taskData.xp_reward || 5;
+
+            // Attribuer les crédits à l'alter assigné -> sinon à l'utilisateur (system) ?
+            // Pour l'instant on privilégie l'alter.
+            if (taskData.assigned_to) {
+                await CreditService.addCredits(
+                    taskData.assigned_to,
+                    rewardAmount,
+                    'task_completion',
+                    `Tâche: ${taskData.title}`
+                );
+                updates.reward_claimed = true;
+                rewardEarned = true;
+            }
+        }
+
+        // Gestion de la récurrence si on complète la tâche
+        if (isCompleted && taskData?.recurrence && taskData.recurrence !== 'none') {
+            await this.handleRecurrence(taskData);
+        }
+
+        await updateDoc(taskRef, updates);
+        return { rewardEarned };
+    },
+
+    /**
+     * Gère la création de la prochaine occurrence
+     */
+    async handleRecurrence(task: Task) {
+        try {
+            const nextDate = new Date();
+            if (task.recurrence === 'daily') {
+                nextDate.setDate(nextDate.getDate() + 1);
+            } else if (task.recurrence === 'weekly') {
+                nextDate.setDate(nextDate.getDate() + 7);
+            }
+
+            // Créer la nouvelle tâche
+            await addDoc(collection(db, 'tasks'), {
+                ...task,
+                id: undefined, // Let Firestore generate new ID
+                created_at: new Date().toISOString(),
+                is_completed: false,
+                completed_at: null,
+                reward_claimed: false,
+                due_date: nextDate.toISOString(),
+                // On garde la même récurrence pour perpétuer le cycle
+            });
+        } catch (e) {
+            console.error("Failed to create recurring task", e);
+        }
     },
 
     /**

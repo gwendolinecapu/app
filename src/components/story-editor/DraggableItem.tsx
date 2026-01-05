@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, ViewStyle } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { useSharedValue, useAnimatedStyle, runOnJS } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, runOnJS, SharedValue } from 'react-native-reanimated';
 
 interface DraggableItemProps {
     children: React.ReactNode;
@@ -10,24 +10,30 @@ interface DraggableItemProps {
     initialX?: number;
     initialY?: number;
     style?: ViewStyle;
+    snapToGrid?: boolean;
+    dragEnabled?: boolean;
+    canvasScale?: SharedValue<number>;
     onDragStart?: () => void;
     onDragEnd?: (x: number, y: number) => void;
     onScaleEnd?: (scale: number) => void;
     onRotateEnd?: (rotation: number) => void;
 }
 
-export function DraggableItem({
+export const DraggableItem: React.FC<DraggableItemProps> = ({
     children,
     initialScale = 1,
     initialRotation = 0,
     initialX = 0,
     initialY = 0,
     style,
+    snapToGrid = false,
+    dragEnabled = true,
+    canvasScale,
     onDragStart,
     onDragEnd,
     onScaleEnd,
     onRotateEnd
-}: DraggableItemProps) {
+}) => {
     const translateX = useSharedValue(initialX);
     const translateY = useSharedValue(initialY);
     const scale = useSharedValue(initialScale);
@@ -38,7 +44,7 @@ export function DraggableItem({
     const savedScale = useSharedValue(initialScale);
     const savedRotate = useSharedValue(initialRotation);
 
-    // Sync shared values when props change (especially for remote updates)
+    // Sync shared values when props change
     React.useEffect(() => {
         translateX.value = initialX;
         translateY.value = initialY;
@@ -57,17 +63,32 @@ export function DraggableItem({
     }, [initialRotation]);
 
     const panGesture = Gesture.Pan()
+        .enabled(dragEnabled)
+        .activeOffsetX([-10, 10])
+        .activeOffsetY([-10, 10])
         .onStart(() => {
             if (onDragStart) runOnJS(onDragStart)();
         })
         .onUpdate((e) => {
-            translateX.value = savedTranslateX.value + e.translationX;
-            translateY.value = savedTranslateY.value + e.translationY;
+            const currentZoom = canvasScale ? canvasScale.value : 1;
+            translateX.value = savedTranslateX.value + e.translationX / currentZoom;
+            translateY.value = savedTranslateY.value + e.translationY / currentZoom;
         })
         .onEnd(() => {
-            savedTranslateX.value = translateX.value;
-            savedTranslateY.value = translateY.value;
-            if (onDragEnd) runOnJS(onDragEnd)(translateX.value, translateY.value);
+            let finalX = translateX.value;
+            let finalY = translateY.value;
+
+            if (snapToGrid) {
+                const GRID_SIZE = 20;
+                finalX = Math.round(finalX / GRID_SIZE) * GRID_SIZE;
+                finalY = Math.round(finalY / GRID_SIZE) * GRID_SIZE;
+                translateX.value = finalX;
+                translateY.value = finalY;
+            }
+
+            savedTranslateX.value = finalX;
+            savedTranslateY.value = finalY;
+            if (onDragEnd) runOnJS(onDragEnd)(finalX, finalY);
         });
 
     const pinchGesture = Gesture.Pinch()
@@ -84,8 +105,14 @@ export function DraggableItem({
             rotate.value = savedRotate.value + e.rotation;
         })
         .onEnd(() => {
-            savedRotate.value = rotate.value;
-            if (onRotateEnd) runOnJS(onRotateEnd)(rotate.value);
+            let finalRotation = rotate.value;
+            // Optional: Snap rotation to 45 degrees
+            // const SNAP_DEG = Math.PI / 4;
+            // finalRotation = Math.round(finalRotation / SNAP_DEG) * SNAP_DEG;
+            // rotate.value = finalRotation;
+
+            savedRotate.value = finalRotation;
+            if (onRotateEnd) runOnJS(onRotateEnd)(finalRotation);
         });
 
     const composed = Gesture.Simultaneous(panGesture, pinchGesture, rotationGesture);

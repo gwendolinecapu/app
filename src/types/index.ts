@@ -454,7 +454,7 @@ export interface InnerWorldShape {
     rotation: number;
     name: string;
     image_url?: string;
-    icon?: string; // Icon name (Ionicons) or sticker ID
+    icon?: string | null; // Icon name (Ionicons) or sticker ID
     emotion?: EmotionType;
     intention?: string;
     color?: string;

@@ -297,9 +297,9 @@ export default function AlterSpaceScreen() {
                                     <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
                                 </TouchableOpacity>
 
-                                <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('emotions')}>
-                                    <Ionicons name="heart-outline" size={24} color={activeColor} style={{ marginRight: 15 }} />
-                                    <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>Émotions</Text>
+                                <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname: '/inner-world', params: { alterId: alter.id } })}>
+                                    <Ionicons name="planet-outline" size={24} color={activeColor} style={{ marginRight: 15 }} />
+                                    <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>Inner World</Text>
                                     <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
                                 </TouchableOpacity>
 

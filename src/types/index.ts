@@ -419,3 +419,34 @@ export interface StoryGroup {
     hasUnviewed: boolean;
 }
 
+
+// ============================================
+// Inner World (Phase 13)
+// ============================================
+
+export interface InnerWorld {
+    id: string;
+    system_id: string;
+    alter_id: string;
+    name: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export type ShapeType = 'rectangle' | 'l-shape' | 'irregular' | 'organic';
+
+export interface InnerWorldShape {
+    id: string;
+    world_id: string;
+    type: ShapeType;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rotation: number;
+    name: string;
+    image_url?: string;
+    emotion?: EmotionType;
+    intention?: string;
+    created_at: string;
+}

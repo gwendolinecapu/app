@@ -287,7 +287,6 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
             return {
                 containerStyle: {
                     borderWidth: 3,
-                    borderColor: '#3b82f6',
                     padding: 2,
                     borderRadius: 12, // Carré arrondi
                 },

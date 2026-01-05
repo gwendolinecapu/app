@@ -90,7 +90,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
 
         const q = query(
             collection(db, 'notifications'),
-            where('recipientId', '==', auth.currentUser.uid),
+            where('targetSystemId', '==', auth.currentUser.uid),
             where('read', '==', false)
         );
 

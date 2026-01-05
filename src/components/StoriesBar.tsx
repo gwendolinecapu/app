@@ -208,10 +208,9 @@ export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors }: Storie
                             return (
                                 <View style={[
                                     styles.viewedRing,
+                                    { borderColor: currentAlter?.color || themeColors?.primary || colors.primary },
                                     // Remove default styling if we have a special frame
                                     frameId ? frameStyle.containerStyle : {},
-                                    // If no frame is equipped, restrict to theme default (use PRIMARY for visibility)
-                                    !frameId && themeColors ? { borderColor: themeColors.primary } : {},
                                     // Handle image frames (transparent container)
                                     isImageFrame ? { borderWidth: 0, backgroundColor: 'transparent' } : {},
                                 ]}>
@@ -263,7 +262,7 @@ export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors }: Storie
                                     source={{ uri: author.authorAvatar }}
                                     style={[
                                         { width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2 },
-                                        frameStyle.imageStyle
+                                        frameStyle.imageStyle as any
                                     ]}
                                 />
                             ) : (

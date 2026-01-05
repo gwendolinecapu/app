@@ -268,11 +268,12 @@ export default function InnerWorldEditorScreen() {
     const isSelected = (shape: InnerWorldShape) => selectedShape?.id === shape.id;
 
     // Resize Handle Component defined once
-    const ResizeHandle = ({ onResizeStart, onResize, onResizeEnd, position }: {
+    const ResizeHandle = ({ onResizeStart, onResize, onResizeEnd, position, style: propStyle }: {
         onResizeStart: () => void,
         onResize: (dx: number, dy: number) => void,
         onResizeEnd: () => void,
-        position: 'bottom-right'
+        position?: 'bottom-right',
+        style?: any
     }) => {
         const pan = Gesture.Pan()
             .onStart(() => {
@@ -285,7 +286,7 @@ export default function InnerWorldEditorScreen() {
                 runOnJS(onResizeEnd)();
             });
 
-        const style: any = {
+        const defaultStyle: any = {
             borderColor: activeColor,
             bottom: -15,
             right: -15,
@@ -301,12 +302,51 @@ export default function InnerWorldEditorScreen() {
 
         return (
             <GestureDetector gesture={pan}>
-                <View style={[styles.resizeHandle, style]} >
+                <View style={[styles.resizeHandle, defaultStyle, propStyle]} >
                     <Ionicons name="expand" size={16} color={activeColor} />
                 </View>
             </GestureDetector>
         );
     };
+
+    // State for Board Zoom/Pan
+    const boardScale = useSharedValue(1);
+    const savedBoardScale = useSharedValue(1);
+    const boardTx = useSharedValue(0);
+    const boardTy = useSharedValue(0);
+    const savedBoardTx = useSharedValue(0);
+    const savedBoardTy = useSharedValue(0);
+
+    const boardPan = Gesture.Pan()
+        .averageTouches(true)
+        .minPointers(2)
+        .maxPointers(2)
+        .onUpdate((e) => {
+            boardTx.value = savedBoardTx.value + e.translationX;
+            boardTy.value = savedBoardTy.value + e.translationY;
+        })
+        .onEnd(() => {
+            savedBoardTx.value = boardTx.value;
+            savedBoardTy.value = boardTy.value;
+        });
+
+    const boardPinch = Gesture.Pinch()
+        .onUpdate((e) => {
+            boardScale.value = Math.max(0.5, Math.min(4, savedBoardScale.value * e.scale));
+        })
+        .onEnd(() => {
+            savedBoardScale.value = boardScale.value;
+        });
+
+    const boardGesture = Gesture.Simultaneous(boardPan, boardPinch);
+
+    const boardAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [
+            { translateX: boardTx.value },
+            { translateY: boardTy.value },
+            { scale: boardScale.value }
+        ]
+    }));
 
     const renderShape = (shape: InnerWorldShape) => {
         let borderRadiusValue = 4;
@@ -328,6 +368,8 @@ export default function InnerWorldEditorScreen() {
                 initialScale={1}
                 initialRotation={shape.rotation}
                 snapToGrid={showGrid}
+                dragEnabled={!isResizing}
+                canvasScale={boardScale}
                 onDragStart={() => {
                     if (isResizing) return;
                 }}
@@ -335,77 +377,85 @@ export default function InnerWorldEditorScreen() {
                 onScaleEnd={(s: number) => handleUpdateShape(shape.id, { width: 100 * s, height: 100 * s })}
                 onRotateEnd={(r: number) => handleUpdateShape(shape.id, { rotation: r })}
             >
-                <TouchableOpacity
-                    onPress={() => handleSelectShape(shape)}
-                    onLongPress={() => handleOpenEdit(shape)}
-                    activeOpacity={0.8}
-                    disabled={isResizing}
-                >
-                    <View style={[
-                        styles.shapeBase,
-                        {
-                            width: width,
-                            height: height,
-                            borderRadius: shape.border_radius || borderRadiusValue,
-                            backgroundColor: isSticker && !isShapeSelected ? 'transparent' : (shape.color || 'white'),
-                            borderColor: isShapeSelected ? activeColor : (isSticker ? 'transparent' : (activeColor + '40')),
-                            borderWidth: isShapeSelected ? 3 : 2,
-                        }
-                    ]}>
-                        {isShapeSelected && (
-                            <ResizeHandle
-                                position="bottom-right"
-                                onResizeStart={() => setIsResizing(true)}
-                                onResize={(dx, dy) => {
-                                    let newWidth = Math.max(40, shape.width + dx);
-                                    let newHeight = Math.max(40, shape.height + dy);
-
-                                    if (showGrid) {
-                                        newWidth = Math.round(newWidth / 20) * 20;
-                                        newHeight = Math.round(newHeight / 20) * 20;
-                                    }
-                                    setTempDimensions({ id: shape.id, width: newWidth, height: newHeight });
-                                }}
-                                onResizeEnd={() => {
-                                    setIsResizing(false);
-                                    if (tempDimensions) {
-                                        handleUpdateShape(shape.id, { width: tempDimensions.width, height: tempDimensions.height });
-                                        setTempDimensions(null);
-                                    }
-                                }}
-                            />
-                        )}
-                        {shape.image_url ? (
-                            <Image source={{ uri: shape.image_url }} style={styles.shapeImage} />
-                        ) : shape.icon ? (
-                            <View style={styles.shapeContent}>
-                                {shape.icon.length <= 4 && !shape.icon.includes('-') && !['home', 'school', 'business', 'cart', 'medkit', 'library', 'leaf', 'water', 'sunny', 'rose', 'planet', 'flag', 'car', 'boat', 'balloon', 'megaphone'].includes(shape.icon) ? (
-                                    <Text style={{ fontSize: Math.min(width, height) * 0.7 }}>
-                                        {shape.icon}
-                                    </Text>
-                                ) : (
-                                    <Ionicons
-                                        name={shape.icon as any}
-                                        size={Math.min(width, height) * 0.8}
-                                        color={shape.color && shape.color !== 'white' ? 'white' : activeColor}
-                                    />
-                                )}
-                                {shape.name ? <Text style={styles.shapeLabel} numberOfLines={1}>{shape.name}</Text> : null}
-                            </View>
-                        ) : (
-                            <View style={styles.shapeContent}>
-                                <Text style={styles.shapeLabel} numberOfLines={2}>{shape.name}</Text>
-                                {shape.emotion && (
-                                    <View style={[styles.emotionBadge, { backgroundColor: activeColor }]}>
-                                        <Text style={styles.emotionEmoji}>
-                                            {EMOTION_EMOJIS[shape.emotion] || '✨'}
+                <View style={{ width, height }}>
+                    <TouchableOpacity
+                        onPress={() => handleSelectShape(shape)}
+                        onLongPress={() => handleOpenEdit(shape)}
+                        activeOpacity={0.8}
+                        disabled={isResizing}
+                        style={{ flex: 1 }}
+                    >
+                        <View style={[
+                            styles.shapeBase,
+                            {
+                                width: '100%',
+                                height: '100%',
+                                borderRadius: shape.border_radius || borderRadiusValue,
+                                backgroundColor: isSticker && !isShapeSelected ? 'transparent' : (shape.color || 'white'),
+                                borderColor: isShapeSelected ? activeColor : (isSticker ? 'transparent' : (activeColor + '40')),
+                                borderWidth: isShapeSelected ? 3 : 2,
+                            }
+                        ]}>
+                            {shape.image_url ? (
+                                <Image source={{ uri: shape.image_url }} style={styles.shapeImage} />
+                            ) : shape.icon ? (
+                                <View style={styles.shapeContent}>
+                                    {shape.icon.length <= 4 && !shape.icon.includes('-') && !['home', 'school', 'business', 'cart', 'medkit', 'library', 'leaf', 'water', 'sunny', 'rose', 'planet', 'flag', 'car', 'boat', 'balloon', 'megaphone'].includes(shape.icon) ? (
+                                        <Text style={{ fontSize: Math.min(width, height) * 0.7 }}>
+                                            {shape.icon}
                                         </Text>
-                                    </View>
-                                )}
-                            </View>
-                        )}
-                    </View>
-                </TouchableOpacity>
+                                    ) : (
+                                        <Ionicons
+                                            name={shape.icon as any}
+                                            size={Math.min(width, height) * 0.8}
+                                            color={shape.color && shape.color !== 'white' ? 'white' : activeColor}
+                                        />
+                                    )}
+                                    {shape.name ? <Text style={styles.shapeLabel} numberOfLines={1}>{shape.name}</Text> : null}
+                                </View>
+                            ) : (
+                                <View style={styles.shapeContent}>
+                                    <Text style={styles.shapeLabel} numberOfLines={2}>{shape.name}</Text>
+                                    {shape.emotion && (
+                                        <View style={[styles.emotionBadge, { backgroundColor: activeColor }]}>
+                                            <Text style={styles.emotionEmoji}>
+                                                {EMOTION_EMOJIS[shape.emotion] || '✨'}
+                                            </Text>
+                                        </View>
+                                    )}
+                                </View>
+                            )}
+                        </View>
+                    </TouchableOpacity>
+                    {isShapeSelected && (
+                        <ResizeHandle
+                            style={{ position: 'absolute', bottom: -10, right: -10, zIndex: 100 }}
+                            onResizeStart={() => setIsResizing(true)}
+                            onResize={(dx, dy) => {
+                                // Important: Divide delta by scale
+                                const currentScale = boardScale.value;
+                                const scaledDx = dx / currentScale;
+                                const scaledDy = dy / currentScale;
+
+                                let newWidth = Math.max(40, shape.width + scaledDx);
+                                let newHeight = Math.max(40, shape.height + scaledDy);
+
+                                if (showGrid) {
+                                    newWidth = Math.round(newWidth / 20) * 20;
+                                    newHeight = Math.round(newHeight / 20) * 20;
+                                }
+                                setTempDimensions({ id: shape.id, width: newWidth, height: newHeight });
+                            }}
+                            onResizeEnd={() => {
+                                setIsResizing(false);
+                                if (tempDimensions) {
+                                    handleUpdateShape(shape.id, { width: tempDimensions.width, height: tempDimensions.height });
+                                    setTempDimensions(null);
+                                }
+                            }}
+                        />
+                    )}
+                </View>
             </DraggableItem>
         );
     };
@@ -510,69 +560,71 @@ export default function InnerWorldEditorScreen() {
                 )}
 
                 {/* Canvas */}
-                <View
-                    style={[styles.canvas, { backgroundColor: worldBackgroundColor }]}
-                    onLayout={(e) => {
-                        const { width, height } = e.nativeEvent.layout;
-                        setCanvasLayout({ width, height });
-                    }}
-                >
-                    {/* Grid Background Pattern */}
-                    {showGrid && (
-                        <View style={StyleSheet.absoluteFill}>
-                            <View style={{ width: '100%', height: '100%', opacity: 0.1 }}>
-                                {canvasLayout && Array.from({ length: Math.ceil(canvasLayout.width / 20) }).map((_, i) => (
-                                    <View
-                                        key={`v-${i}`}
-                                        style={{
-                                            position: 'absolute',
-                                            left: i * 20,
-                                            top: 0,
-                                            bottom: 0,
-                                            width: 1,
-                                            backgroundColor: '#000'
-                                        }}
-                                    />
-                                ))}
-                                {canvasLayout && Array.from({ length: Math.ceil(canvasLayout.height / 20) }).map((_, i) => (
-                                    <View
-                                        key={`h-${i}`}
-                                        style={{
-                                            position: 'absolute',
-                                            top: i * 20,
-                                            left: 0,
-                                            right: 0,
-                                            height: 1,
-                                            backgroundColor: '#000'
-                                        }}
-                                    />
-                                ))}
+                <GestureDetector gesture={boardGesture}>
+                    <Animated.View
+                        style={[styles.canvas, { backgroundColor: worldBackgroundColor }, boardAnimatedStyle]}
+                        onLayout={(e) => {
+                            const { width, height } = e.nativeEvent.layout;
+                            setCanvasLayout({ width, height });
+                        }}
+                    >
+                        {/* Grid Background Pattern */}
+                        {showGrid && (
+                            <View style={StyleSheet.absoluteFill}>
+                                <View style={{ width: '100%', height: '100%', opacity: 0.1 }}>
+                                    {canvasLayout && Array.from({ length: Math.ceil(canvasLayout.width / 20) }).map((_, i) => (
+                                        <View
+                                            key={`v-${i}`}
+                                            style={{
+                                                position: 'absolute',
+                                                left: i * 20,
+                                                top: 0,
+                                                bottom: 0,
+                                                width: 1,
+                                                backgroundColor: '#000'
+                                            }}
+                                        />
+                                    ))}
+                                    {canvasLayout && Array.from({ length: Math.ceil(canvasLayout.height / 20) }).map((_, i) => (
+                                        <View
+                                            key={`h-${i}`}
+                                            style={{
+                                                position: 'absolute',
+                                                top: i * 20,
+                                                left: 0,
+                                                right: 0,
+                                                height: 1,
+                                                backgroundColor: '#000'
+                                            }}
+                                        />
+                                    ))}
+                                </View>
                             </View>
-                        </View>
-                    )}
+                        )}
 
-                    {loading ? (
-                        <View style={styles.centerContainer}>
-                            <ActivityIndicator color={activeColor} size="large" />
-                        </View>
-                    ) : error ? (
-                        <View style={styles.centerContainer}>
-                            <Ionicons name="alert-circle-outline" size={48} color={colors.textMuted} />
-                            <Text style={[styles.errorText, { color: colors.textSecondary }]}>{error}</Text>
-                            <TouchableOpacity
-                                style={[styles.retryButton, { backgroundColor: activeColor }]}
-                                onPress={() => {
-                                    setLoading(true);
-                                    setRetryTrigger(prev => prev + 1);
-                                }}
-                            >
-                                <Text style={styles.retryText}>Réessayer</Text>
-                            </TouchableOpacity>
-                        </View>
-                    ) : (
-                        shapes.map(renderShape)
-                    )}
-                </View>
+                        {loading ? (
+                            <View style={styles.centerContainer}>
+                                <ActivityIndicator color={activeColor} size="large" />
+                            </View>
+                        ) : error ? (
+                            <View style={styles.centerContainer}>
+                                <Ionicons name="alert-circle-outline" size={48} color={colors.textMuted} />
+                                <Text style={[styles.errorText, { color: colors.textSecondary }]}>{error}</Text>
+                                <TouchableOpacity
+                                    style={[styles.retryButton, { backgroundColor: activeColor }]}
+                                    onPress={() => {
+                                        setLoading(true);
+                                        setRetryTrigger(prev => prev + 1);
+                                    }}
+                                >
+                                    <Text style={styles.retryText}>Réessayer</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            shapes.map(renderShape)
+                        )}
+                    </Animated.View>
+                </GestureDetector>
 
                 {/* Floating Action Button */}
                 {/* Bottom Toolbar - Sims Style */}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, ViewStyle } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { useSharedValue, useAnimatedStyle, runOnJS } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, runOnJS, SharedValue } from 'react-native-reanimated';
 
 interface DraggableItemProps {
     children: React.ReactNode;
@@ -11,13 +11,15 @@ interface DraggableItemProps {
     initialY?: number;
     style?: ViewStyle;
     snapToGrid?: boolean;
+    dragEnabled?: boolean;
+    canvasScale?: SharedValue<number>;
     onDragStart?: () => void;
     onDragEnd?: (x: number, y: number) => void;
     onScaleEnd?: (scale: number) => void;
     onRotateEnd?: (rotation: number) => void;
 }
 
-export function DraggableItem({
+export const DraggableItem: React.FC<DraggableItemProps> = ({
     children,
     initialScale = 1,
     initialRotation = 0,
@@ -25,11 +27,13 @@ export function DraggableItem({
     initialY = 0,
     style,
     snapToGrid = false,
+    dragEnabled = true,
+    canvasScale,
     onDragStart,
     onDragEnd,
     onScaleEnd,
     onRotateEnd
-}: DraggableItemProps) {
+}) => {
     const translateX = useSharedValue(initialX);
     const translateY = useSharedValue(initialY);
     const scale = useSharedValue(initialScale);
@@ -59,12 +63,16 @@ export function DraggableItem({
     }, [initialRotation]);
 
     const panGesture = Gesture.Pan()
+        .enabled(dragEnabled)
+        .activeOffsetX([-10, 10])
+        .activeOffsetY([-10, 10])
         .onStart(() => {
             if (onDragStart) runOnJS(onDragStart)();
         })
         .onUpdate((e) => {
-            translateX.value = savedTranslateX.value + e.translationX;
-            translateY.value = savedTranslateY.value + e.translationY;
+            const currentZoom = canvasScale ? canvasScale.value : 1;
+            translateX.value = savedTranslateX.value + e.translationX / currentZoom;
+            translateY.value = savedTranslateY.value + e.translationY / currentZoom;
         })
         .onEnd(() => {
             let finalX = translateX.value;

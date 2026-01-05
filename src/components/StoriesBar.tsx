@@ -12,7 +12,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { colors, spacing, typography } from '../lib/theme';
-import { StoriesService, Story } from '../services/stories';
+import { StoriesService } from '../services/stories';
+import { Story } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { triggerHaptic } from '../lib/haptics';
 

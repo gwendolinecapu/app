@@ -40,7 +40,7 @@ export default function CreatePostScreen() {
     const { play: playSuccessAnimation } = useSuccessAnimation();
     const [postType, setPostType] = useState<PostType>('text');
     const [content, setContent] = useState('');
-    const [mediaUri, setMediaUri] = useState<string | null>(null);
+    const [mediaUris, setMediaUris] = useState<string[]>([]); // Changed to array
     const [audioUri, setAudioUri] = useState<string | null>(null);
 
     const [loading, setLoading] = useState(false);
@@ -69,7 +69,7 @@ export default function CreatePostScreen() {
         if (isDraftLoaded) {
             saveDraft();
         }
-    }, [content, mediaUri, audioUri, postType, isDraftLoaded]);
+    }, [content, mediaUris, audioUri, postType, isDraftLoaded]);
 
     // Load suggestions on mount
     useEffect(() => {
@@ -119,12 +119,6 @@ export default function CreatePostScreen() {
     const handleTextChange = (text: string) => {
         setContent(text);
 
-        // Detect if we are typing a mention
-        // Look for @ followed by characters at the end or before cursor
-        // For simplicity, check the word at cursor position (needs generic cursor tracking, but text change gives whole text)
-        // Let's use a simple regex on the whole text relative to the last @ if it looks active.
-
-        // Simplest: Check last word
         const lastWord = text.split(/\s+/).pop();
         if (lastWord && lastWord.startsWith('@')) {
             const query = lastWord.substring(1).toLowerCase();
@@ -143,25 +137,11 @@ export default function CreatePostScreen() {
     };
 
     const handleMentionSelect = (item: MentionSuggestion) => {
-        // Replace the last @query with @Name
         const lastIndex = content.lastIndexOf('@' + mentionQuery);
         if (lastIndex !== -1) {
             const prefix = content.substring(0, lastIndex);
-            // We use the item.name for the mention text. 
-            // In RichText we expect @Name. If name has spaces, RichText needs to handle it.
-            // Our RichText previously assumed simple alphanumeric.
-            // For robustness, let's use a "handle" style if possible, or just Name and ensure RichText is smart.
-            // User requested "Instagram style", so usually clickable handles.
-            // Let's use the Name, but replace spaces with underscores or just expect RichText to handle it later?
-            // "getAlterByName" searched for exact name match.
-            // If name is "John Doe", mention is "@JohnDoe"?
-            // Let's use the item.name directly effectively.
-
-            // To ensure it works with our existing "getMatchByName" (which strips @), 
-            // we should probably insert the exact name that can be found.
 
             const mentionText = `@${item.name}`;
-            // Better: use the *exact* name so lookup works.
 
             const newContent = prefix + mentionText + ' ';
             setContent(newContent);
@@ -180,7 +160,7 @@ export default function CreatePostScreen() {
             if (draftJson) {
                 const draft = JSON.parse(draftJson);
                 // Check if draft has meaningful content
-                if (draft.content || draft.mediaUri || draft.audioUri) {
+                if (draft.content || (draft.mediaUris && draft.mediaUris.length > 0) || draft.audioUri) {
                     Alert.alert(
                         'Brouillon trouvé',
                         'Voulez-vous reprendre votre dernier post ?',
@@ -197,7 +177,7 @@ export default function CreatePostScreen() {
                                 text: 'Oui',
                                 onPress: () => {
                                     setContent(draft.content || '');
-                                    setMediaUri(draft.mediaUri || null);
+                                    setMediaUris(draft.mediaUris || []);
                                     setAudioUri(draft.audioUri || null);
                                     setPostType(draft.postType || 'text');
                                     setIsDraftLoaded(true);
@@ -217,12 +197,12 @@ export default function CreatePostScreen() {
 
     const saveDraft = async () => {
         try {
-            if (!content && !mediaUri && !audioUri) {
+            if (!content && mediaUris.length === 0 && !audioUri) {
                 return;
             }
             const draft = {
                 content,
-                mediaUri,
+                mediaUris,
                 audioUri,
                 postType,
                 timestamp: Date.now(),
@@ -257,23 +237,58 @@ export default function CreatePostScreen() {
         // If we switch to photo/video, clear audio
         setAudioUri(null);
 
-        let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: type === 'photo' ? ImagePicker.MediaTypeOptions.Images : ImagePicker.MediaTypeOptions.Videos,
-            allowsEditing: false, // Disabled to support GIFs and original aspect ratios
-            quality: 0.8, // Basic compression
-        });
+        // If clicking same type, we append? No, standard behavior is usually new selection or append
+        // Let's assume append for photos, replace for video (since we usually do 1 video)
 
-        if (!result.canceled) {
-            setMediaUri(result.assets[0].uri);
-            setPostType(type);
+        if (type === 'video') {
+            // For video, single selection for now to keep it simple
+            let result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+                allowsEditing: false,
+                quality: 0.8,
+            });
+            if (!result.canceled) {
+                setMediaUris([result.assets[0].uri]); // Video replaces everything
+                setPostType('video');
+            }
+        } else {
+            // For photos, allow multiple
+            let result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsMultipleSelection: true, // Enable multiple
+                selectionLimit: 10,
+                quality: 0.8,
+            });
+
+            if (!result.canceled) {
+                const newUris = result.assets.map(a => a.uri);
+                if (postType === 'photo') {
+                    // Append if already photos
+                    setMediaUris(prev => [...prev, ...newUris]);
+                } else {
+                    // Replace if was text or video
+                    setMediaUris(newUris);
+                }
+                setPostType('photo');
+            }
         }
+    };
+
+    const removeMedia = (index: number) => {
+        setMediaUris(prev => {
+            const updated = prev.filter((_, i) => i !== index);
+            if (updated.length === 0 && postType === 'photo') {
+                setPostType('text'); // Revert to text if no photos left
+            }
+            return updated;
+        });
     };
 
     const handleVoiceRecording = (uri: string | null) => {
         if (uri) {
             setAudioUri(uri);
             // Clear other media
-            setMediaUri(null);
+            setMediaUris([]);
         } else {
             setAudioUri(null);
         }
@@ -282,7 +297,7 @@ export default function CreatePostScreen() {
     const handlePost = async () => {
         const trimmedContent = content.trim();
 
-        if (!trimmedContent && !mediaUri && !audioUri) {
+        if (!trimmedContent && mediaUris.length === 0 && !audioUri) {
             Alert.alert('Erreur', 'Ajoutez du contenu à votre post !');
             return;
         }
@@ -306,16 +321,26 @@ export default function CreatePostScreen() {
 
         setLoading(true);
         try {
-            let mediaUrl = undefined;
+            let uploadedUrls: string[] = [];
+            let mainMediaUrl = undefined;
 
-            if (mediaUri) {
+            if (mediaUris.length > 0) {
                 if (postType === 'video') {
-                    mediaUrl = await PostService.uploadVideo(mediaUri, system.id);
+                    // Single video
+                    const url = await PostService.uploadVideo(mediaUris[0], system.id);
+                    uploadedUrls = [url];
+                    mainMediaUrl = url;
                 } else {
-                    mediaUrl = await PostService.uploadImage(mediaUri, system.id);
+                    // Photos
+                    // Upload all in parallel
+                    uploadedUrls = await Promise.all(
+                        mediaUris.map(uri => PostService.uploadImage(uri, system.id))
+                    );
+                    mainMediaUrl = uploadedUrls[0]; // First one is main
                 }
             } else if (audioUri) {
-                mediaUrl = await PostService.uploadAudio(audioUri, system.id);
+                const url = await PostService.uploadAudio(audioUri, system.id);
+                mainMediaUrl = url;
             }
 
             // Construct post data based on activeFront
@@ -326,9 +351,12 @@ export default function CreatePostScreen() {
                 author_type: activeFront.type,
             };
 
-            // Ajouter media_url seulement si elle existe
-            if (mediaUrl) {
-                postData.media_url = mediaUrl;
+            // Add media
+            if (uploadedUrls.length > 0) {
+                postData.media_urls = uploadedUrls;
+                postData.media_url = uploadedUrls[0]; // Backward compatibility
+            } else if (mainMediaUrl) {
+                postData.media_url = mainMediaUrl; // For audio
             }
 
             if (activeFront.type === 'single' && activeFront.alters.length > 0) {
@@ -365,7 +393,7 @@ export default function CreatePostScreen() {
 
 
     const handleMagicSuccess = (imageUri: string) => {
-        setMediaUri(imageUri);
+        setMediaUris([imageUri]);
         setPostType('photo');
         setShowMagicModal(false);
     };
@@ -392,7 +420,7 @@ export default function CreatePostScreen() {
                     style={[styles.typeButton, postType === 'text' && styles.typeButtonActive]}
                     onPress={() => {
                         setPostType('text');
-                        setMediaUri(null);
+                        setMediaUris([]);
                         setAudioUri(null);
                     }}
                 >
@@ -420,7 +448,7 @@ export default function CreatePostScreen() {
                     style={[styles.typeButton, postType === 'audio' && styles.typeButtonActive]}
                     onPress={() => {
                         setPostType('audio');
-                        setMediaUri(null);
+                        setMediaUris([]);
                     }}
                 >
                     <Ionicons name="mic" size={20} color={postType === 'audio' ? colors.primary : colors.textSecondary} />
@@ -442,11 +470,11 @@ export default function CreatePostScreen() {
                 <Text style={[styles.headerTitle, themeColors && { color: themeColors.text }]}>Nouveau post</Text>
                 <TouchableOpacity
                     onPress={handlePost}
-                    disabled={loading || (!content.trim() && !mediaUri && !audioUri)}
+                    disabled={loading || (!content.trim() && mediaUris.length === 0 && !audioUri)}
                 >
                     <LinearGradient
                         colors={
-                            (content.trim() || mediaUri || audioUri)
+                            (content.trim() || mediaUris.length > 0 || audioUri)
                                 ? [colors.gradientStart, colors.gradientEnd]
                                 : [colors.textMuted, colors.textMuted]
                         }
@@ -495,7 +523,7 @@ export default function CreatePostScreen() {
 
                 <View style={styles.contentContainer}>
                     {/* Voice Note Recorder Section */}
-                    {postType === 'audio' && !mediaUri && (
+                    {postType === 'audio' && mediaUris.length === 0 && (
                         <View style={styles.recorderContainer}>
                             <VoiceNoteRecorder
                                 onRecordingComplete={handleVoiceRecording}
@@ -528,23 +556,40 @@ export default function CreatePostScreen() {
                         maxLength={500}
                     />
 
-                    {mediaUri && (
-                        <View style={styles.mediaPreview}>
-                            {postType === 'video' ? (
-                                <VideoPlayer uri={mediaUri} autoPlay={false} />
-                            ) : (
-                                <Image source={{ uri: mediaUri }} style={styles.mediaImage} />
-                            )}
-
-                            <TouchableOpacity
-                                style={styles.removeMedia}
-                                onPress={() => {
-                                    setMediaUri(null);
-                                    setPostType('text');
-                                }}
+                    {/* Multi-Image Preview */}
+                    {mediaUris.length > 0 && (
+                        <View style={styles.mediaPreviewContainer}>
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={{ gap: 10, paddingRight: 20 }}
                             >
-                                <Ionicons name="close-circle" size={24} color={colors.text} />
-                            </TouchableOpacity>
+                                {mediaUris.map((uri, index) => (
+                                    <View key={index} style={styles.previewItem}>
+                                        {postType === 'video' ? (
+                                            <VideoPlayer uri={uri} autoPlay={false} />
+                                        ) : (
+                                            <Image source={{ uri }} style={styles.mediaImage} />
+                                        )}
+                                        <TouchableOpacity
+                                            style={styles.removeMedia}
+                                            onPress={() => removeMedia(index)}
+                                        >
+                                            <Ionicons name="close-circle" size={24} color={colors.error} />
+                                        </TouchableOpacity>
+                                    </View>
+                                ))}
+                                {postType === 'photo' && mediaUris.length < 10 && (
+                                    <TouchableOpacity
+                                        style={styles.addMoreButton}
+                                        onPress={() => pickMedia('photo')}
+                                    >
+                                        <Ionicons name="add" size={32} color={colors.textSecondary} />
+                                        <Text style={styles.addMoreText}>Ajouter</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </ScrollView>
+                            <Text style={styles.imageCountText}>{mediaUris.length} média(s)</Text>
                         </View>
                     )}
                 </View>
@@ -693,9 +738,13 @@ const styles = StyleSheet.create({
         marginBottom: spacing.md,
         marginTop: spacing.md,
     },
-    mediaPreview: {
+    mediaPreviewContainer: {
         width: '100%',
-        height: 300,
+        height: 220,
+    },
+    previewItem: {
+        width: 200,
+        height: 200,
         borderRadius: borderRadius.lg,
         overflow: 'hidden',
         position: 'relative',
@@ -706,17 +755,48 @@ const styles = StyleSheet.create({
         height: '100%',
         resizeMode: 'cover',
     },
+    addMoreButton: {
+        width: 100,
+        height: 200,
+        borderRadius: borderRadius.lg,
+        borderWidth: 2,
+        borderColor: colors.border,
+        borderStyle: 'dashed',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    addMoreText: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        marginTop: 4
+    },
+    imageCountText: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        marginTop: 8,
+        textAlign: 'right'
+    },
     audioPreview: {
         marginBottom: spacing.md,
         position: 'relative',
     },
     removeMedia: {
         position: 'absolute',
-        top: spacing.md,
-        right: spacing.md,
-        backgroundColor: 'rgba(255,255,255,0.8)',
+        top: 8,
+        right: 8,
+        backgroundColor: 'rgba(255,255,255,0.9)',
         borderRadius: 12,
+        width: 24,
+        height: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
         zIndex: 10,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 1.41,
+        elevation: 2,
     },
     videoBadge: {
         position: 'absolute',

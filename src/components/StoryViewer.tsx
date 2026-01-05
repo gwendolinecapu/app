@@ -13,7 +13,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Video, ResizeMode } from 'expo-av';
-import { Story, StoriesService } from '../services/stories';
+import { StoriesService } from '../services/stories';
+import { Story } from '../types';
 import { colors, spacing, typography } from '../lib/theme';
 import { timeAgo } from '../lib/date';
 import { useAuth } from '../contexts/AuthContext';

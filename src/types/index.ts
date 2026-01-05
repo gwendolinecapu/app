@@ -392,3 +392,28 @@ export interface PublicProfile {
     updated_at: string;
 }
 
+// ============================================
+// Sprint 5: Stories (Instagram-like)
+// ============================================
+
+export interface Story {
+    id: string;
+    author_id: string;        // Alter ID
+    author_name: string;      // Denormalized
+    author_avatar?: string;
+    system_id: string;        // System ID owner
+    media_url: string;
+    media_type: 'image' | 'video';
+    created_at: string;
+    expires_at: string;       // 24h after created_at
+    viewers: string[];        // IDs of users who viewed
+}
+
+export interface StoryGroup {
+    authorId: string;
+    authorName: string;
+    authorAvatar?: string;
+    stories: Story[];
+    hasUnviewed: boolean;
+}
+

@@ -1,7 +1,7 @@
 
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
-import { AIJobStartRequest, AIJob } from "../interfaces/IAIJob";
+import { AIJobStartRequest } from "../interfaces/IAIJob";
 import { JobsService } from "../services/JobsService";
 import { BillingUtils } from "../../utils/billing";
 import { COSTS } from "../constants";

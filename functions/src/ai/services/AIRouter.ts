@@ -55,7 +55,7 @@ export class AIRouter {
     }
 
     async generateImage(prompt: string, options?: any): Promise<RouterResult<Buffer[]>> {
-        const primaryKey = AIConfig.image.default;
+        const primaryKey = options?.provider || AIConfig.image.default;
         const fallbackKey = AIConfig.image.fallback;
 
         try {

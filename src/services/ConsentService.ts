@@ -1,21 +1,28 @@
 import { Platform } from 'react-native';
-import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 
 let AdsConsent: any;
 let AdsConsentStatus: any;
+let requestTrackingPermissionsAsync: any;
 
 try {
-    const mobileAds = require('react-native-google-mobile-ads');
-    AdsConsent = mobileAds.AdsConsent;
-    AdsConsentStatus = mobileAds.AdsConsentStatus;
+    if (Platform.OS !== 'web') {
+        const mobileAds = require('react-native-google-mobile-ads');
+        AdsConsent = mobileAds.AdsConsent;
+        AdsConsentStatus = mobileAds.AdsConsentStatus;
+
+        requestTrackingPermissionsAsync = require('expo-tracking-transparency').requestTrackingPermissionsAsync;
+    } else {
+        throw new Error("Web platform");
+    }
 } catch (e) {
-    console.warn('[ConsentService] Google Mobile Ads native module not found. Consent features will be disabled.');
+    console.warn('[ConsentService] Native modules not found (web or dev client). Consent features will be disabled.');
     AdsConsent = {
         requestInfoUpdate: async () => ({ isConsentFormAvailable: false, status: 'UNKNOWN' }),
         loadAndShowConsentFormIfRequired: async () => ({ status: 'UNKNOWN' }),
         showPrivacyOptionsForm: async () => ({ status: 'UNKNOWN' }),
     };
     AdsConsentStatus = { REQUIRED: 'REQUIRED' };
+    requestTrackingPermissionsAsync = async () => ({ status: 'granted' });
 }
 
 class ConsentService {

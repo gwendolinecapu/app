@@ -15,6 +15,7 @@ import { SakuraFrame } from '../effects/SakuraPetals';
 import { TropicalFrame } from '../effects/TropicalLeaves';
 import { FlameFrame } from '../effects/FlameFrame';
 import { NatureMysticFrame } from '../effects/NatureMysticFrame';
+import { StoryHighlights } from '../stories/StoryHighlights';
 
 const ROLE_DEFINITIONS: Record<string, string> = {
     'host': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
@@ -361,20 +362,22 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                     </>
                 )}
             </View>
+
+            {/* HIGHLIGHTS SECTION */}
+            <StoryHighlights
+                authorId={alter.id}
+                isOwner={isOwner}
+            />
+
         </View >
     );
 };
 
 const styles = StyleSheet.create({
     container: {
-        paddingHorizontal: spacing.lg,
-        paddingTop: spacing.md,
-        paddingBottom: spacing.lg,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
-        // backgroundColor: colors.background, // Let container decide or transparent
-        // For consistent look with AlterSpaceScreen theme:
-        backgroundColor: 'transparent',
+        padding: spacing.md,
+        backgroundColor: colors.background, // or transparent if managed by parent
+        paddingBottom: 0,
     },
     topSection: {
         flexDirection: 'row',

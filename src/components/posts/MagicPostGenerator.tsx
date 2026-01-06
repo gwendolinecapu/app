@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -21,13 +21,12 @@ import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 // import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads'; // REMOVED: Crash fix
 import AdMediationService from '../../services/AdMediationService';
-import CreditService from '../../services/CreditService';
+import CreditService from '../../services/CreditService'; // Added
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { Alter } from '../../types';
 import { SketchCanvas } from '../shared/SketchCanvas';
 import { MagicalLoadingView } from '../shared/MagicalLoadingView';
 import { AI_COSTS, REWARD_AD_AMOUNT } from '../../services/MonetizationTypes';
-import { useAIJob } from '../../hooks/useAIJob';
 
 interface MagicPostGeneratorProps {
     visible: boolean;
@@ -36,6 +35,8 @@ interface MagicPostGeneratorProps {
     alters: Alter[];
     activeAlterId?: string;
 }
+
+// Helper for Ads - Removed direct instance
 
 export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
     visible,
@@ -59,49 +60,45 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
     const [sceneImageUri, setSceneImageUri] = useState<string | null>(null);
     const [poseImageUri, setPoseImageUri] = useState<string | null>(null);
     const [isDrawing, setIsDrawing] = useState(false);
-
-    // Job State
-    const [jobId, setJobId] = useState<string | null>(null);
-    const { job, loading, error: jobError } = useAIJob(jobId);
+    const [isGenerating, setIsGenerating] = useState(false);
 
     // Results
     const [generatedImages, setGeneratedImages] = useState<string[]>([]); // Array for batch
     const [selectedResultIndex, setSelectedResultIndex] = useState(0);
 
+    // Ads
+    // const [adLoaded, setAdLoaded] = useState(false); // Managed by Service
+
     React.useEffect(() => {
+        // Init ads service if needed (idempotent)
         AdMediationService.initialize();
     }, []);
 
-    // Job Listener
-    useEffect(() => {
-        if (job) {
-            if (job.status === 'succeeded' && job.result) {
-                const result = job.result;
-                const images = result.images || [result.imageUrl];
-                setGeneratedImages(images);
-                setSelectedResultIndex(0);
-                setJobId(null);
-            } else if (job.status === 'failed') {
-                setJobId(null);
-                Alert.alert("Échec de la magie", job.error?.message || "Une erreur inconnue est survenue.");
-            }
-        }
-    }, [job]);
-
     const showRewardAd = async () => {
+        // Check availability
         if (!AdMediationService.canWatchRewardAd()) {
             return Alert.alert("Limite atteinte", "Vous avez atteint votre limite quotidienne de publicités.");
         }
+
+        // Check if alter is selected for credit attribution
         if (!selectedAlterId) {
-            return Alert.alert("Erreur", "Aucun alter sélectionné.");
+            return Alert.alert("Erreur", "Aucun alter sélectionné pour recevoir les crédits.");
         }
+
         try {
             const result = await AdMediationService.showRewardedAd();
+
             if (result.completed) {
+                // Grant credits via CreditService
                 await CreditService.claimRewardAd(selectedAlterId);
+
                 Alert.alert("Récompense reçue !", `Vous avez gagné ${REWARD_AD_AMOUNT} crédits pour ${selectedAlter?.name || 'votre alter'}.`);
-            } else if (result.network !== 'admob' || result.rewardAmount !== 0) {
-                Alert.alert("Vidéo interrompue", "Regardez la vidéo jusqu'au bout pour recevoir la récompense.");
+            } else {
+                if (result.network === 'admob' && result.rewardAmount === 0) {
+                    // Ad failed or closed early - Do nothing or show generic error if needed
+                } else {
+                    Alert.alert("Vidéo interrompue", "Regardez la vidéo jusqu'au bout pour recevoir la récompense.");
+                }
             }
         } catch (e) {
             console.error(e);
@@ -153,9 +150,10 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
             return Alert.alert("Crédits insuffisants", "Regardez une publicité ou rechargez vos crédits dans la boutique.");
         }
 
+        setIsGenerating(true);
         try {
             let uploadedSceneUrl = undefined;
-            if (sceneImageUri && !sceneImageUri.startsWith('http')) {
+            if (sceneImageUri && !sceneImageUri.startsWith('http')) { // Only upload if local
                 const blob = await getBlobFromUri(sceneImageUri) as any;
                 const path = `magic_uploads/${selectedAlterId}/${Date.now()}_scene.jpg`;
                 const sRef = ref(storage, path);
@@ -163,7 +161,7 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
                 uploadedSceneUrl = await getDownloadURL(sRef);
                 blob.close && blob.close();
             } else if (sceneImageUri) {
-                uploadedSceneUrl = sceneImageUri;
+                uploadedSceneUrl = sceneImageUri; // Use existing URL (Modify mode)
             }
 
             let uploadedPoseUrl = undefined;
@@ -176,29 +174,31 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
                 blob.close && blob.close();
             }
 
-            const startAIJob = httpsCallable(functions, 'startAIJob');
-            const result: any = await startAIJob({
-                type: 'magic_post',
-                params: {
-                    alterId: selectedAlterId,
-                    prompt: prompt,
-                    imageCount: imageCount,
-                    style,
-                    sceneImageUrl: uploadedSceneUrl,
-                    poseImageUrl: uploadedPoseUrl,
-                    isBodySwap: !!sceneImageUri
-                }
+            const generateMagicPost = httpsCallable(functions, 'generateMagicPost');
+            const result: any = await generateMagicPost({
+                alterId: selectedAlterId,
+                prompt: prompt,
+                imageCount: imageCount, // Pass count
+                style,
+                sceneImageUrl: uploadedSceneUrl,
+                poseImageUrl: uploadedPoseUrl,
+                isBodySwap: !!sceneImageUri
             });
 
-            if (result.data.success && result.data.jobId) {
-                setJobId(result.data.jobId);
+            if (result.data.success && (result.data.images || result.data.imageUrl)) {
+                // Support both legacy single 'imageUrl' and new 'images' array
+                const images = result.data.images || [result.data.imageUrl];
+                setGeneratedImages(images);
+                setSelectedResultIndex(0);
             } else {
-                throw new Error("Impossible de démarrer la tâche IA.");
+                throw new Error(result.data.error || "Génération échouée");
             }
 
         } catch (err: any) {
             console.error("Magic Gen Error:", err);
             Alert.alert("Erreur", err.message || "Impossible de générer l'image.");
+        } finally {
+            setIsGenerating(false);
         }
     };
 
@@ -215,7 +215,6 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
         setSceneImageUri(null);
         setPoseImageUri(null);
         setImageCount(1);
-        setJobId(null);
     };
 
     // If no alters have DNA
@@ -462,14 +461,14 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
                             {/* GENERATE BUTTON */}
                             <TouchableOpacity
                                 onPress={handleGenerate}
-                                disabled={loading || (!prompt && !sceneImageUri)}
+                                disabled={isGenerating || (!prompt && !sceneImageUri)}
                                 style={{ marginTop: spacing.xl }}
                             >
                                 <LinearGradient
                                     colors={(!prompt && !sceneImageUri) ? [colors.textMuted, colors.textMuted] : [colors.secondary, colors.primary]}
                                     style={styles.generateButton}
                                 >
-                                    {loading ? (
+                                    {isGenerating ? (
                                         <ActivityIndicator color="white" />
                                     ) : (
                                         <>
@@ -502,10 +501,9 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
             </Modal>
 
             <MagicalLoadingView
-                visible={loading}
-                message={job?.progress?.stage ? `Étape : ${job.progress.stage}` : "Tissage du Post..."}
+                visible={isGenerating}
+                message="Tissage du Post..."
                 subMessage={imageCount === 3 ? "Génération de 3 variantes..." : "Veuillez patienter..."}
-                progress={job?.progress?.percent ? job.progress.percent / 100 : undefined}
             />
         </Modal>
     );

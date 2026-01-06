@@ -14,7 +14,7 @@ interface Props {
 }
 
 export const SystemFriendSelector = ({ visible, onClose, currentAlterId, themeColors }: Props) => {
-    const { alters, refreshAlters } = useAuth();
+    const { alters, refreshAlters, user } = useAuth();
     const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
     const [statuses, setStatuses] = useState<Record<string, string>>({});
 

@@ -142,11 +142,17 @@ class AdMediationService {
             // Initialiser le consentement (GDPR / UMP)
             // Cela affichera le formulaire si nécessaire
             try {
-                const ConsentService = require('./ConsentService').default;
-                await ConsentService.requestConsent();
-                console.log('[AdMediation] Consent flow completed');
+                // Check if AdMob valid IDs are configured, else skip to prevent UMP crash
+                if (!AD_CONFIG_KEYS.ADMOB_APP_ID_IOS.startsWith('ca-app-pub-') || AD_CONFIG_KEYS.ADMOB_APP_ID_IOS.includes('YOUR_')) {
+                    console.log('[AdMediation] AdMob ID not configured. Skipping Consent Flow.');
+                } else {
+                    const ConsentService = require('./ConsentService').default;
+                    await ConsentService.requestConsent();
+                    console.log('[AdMediation] Consent flow completed');
+                }
             } catch (consentError) {
-                console.warn('[AdMediation] Consent flow warning:', consentError);
+                // Warning only - don't block app init
+                console.warn('[AdMediation] Consent flow skipped or failed:', consentError);
             }
 
             // Initialiser Google Mobile Ads (skip in Expo Go where mobileAds is null)

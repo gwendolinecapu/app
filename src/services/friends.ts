@@ -123,9 +123,8 @@ export const FriendService = {
             where('read', '==', false)
         );
         const notifSnap = await getDocs(qNotif);
-        notifSnap.forEach(async (notifDoc) => {
-            await updateDoc(notifDoc.ref, { read: true });
-        });
+        const updatePromises = notifSnap.docs.map(doc => updateDoc(doc.ref, { read: true }));
+        await Promise.all(updatePromises);
 
 
         // 2. Create bilateral friendship
@@ -152,32 +151,63 @@ export const FriendService = {
         });
 
 
-        // 3. Notify the sender (THEM) that we accepted
-
+        // 3. Notify the SENDER that we accepted
         let targetSystemId = senderSystemId;
 
-        // If still no system ID, we can't create a compliant notification
+        // Fallback: If systemId is missing in the request (old requests), fetch from sender alter
         if (!targetSystemId) {
-            console.error("Could not find system ID for sender", senderId);
+            console.warn("Friend request missing systemId, fetching from sender alter...");
+            const senderDoc = await getDoc(doc(db, 'alters', senderId));
+            if (senderDoc.exists()) {
+                const senderData = senderDoc.data();
+                targetSystemId = senderData.userId || senderData.systemId || senderData.system_id;
+            }
         }
 
-        // 3. Notify the sender (THEM) that we accepted
         if (targetSystemId) {
+            let senderName = 'Votre ami';
+            // Try to resolve our name for the notification
+            try {
+                const receiverDoc = await getDoc(doc(db, 'alters', receiverId));
+                if (receiverDoc.exists()) {
+                    senderName = receiverDoc.data().name;
+                }
+            } catch (e) { }
+
             await addDoc(collection(db, 'notifications'), {
-                recipientId: senderId, // The alter receiving the notification (sender of request)
-                targetSystemId: targetSystemId, // The system receiving the notification (for security rules)
+                recipientId: senderId, // The sender of the request
+                targetSystemId: targetSystemId,
                 type: 'friend_request_accepted',
                 title: 'Demande acceptée',
-                message: 'Votre demande d\'ami a été acceptée.',
+                message: `${senderName} a accepté votre demande d'ami.`,
+                subtitle: 'Nouveau contact',
                 data: {
-                    alterId: receiverId, // The alter who accepted (us)
-                    friendId: senderId, // The alter who sent (them)
+                    alterId: receiverId, // The one who accepted (us)
+                    friendId: senderId,
                 },
-                senderId: receiverId, // Important for UI enrichment
+                senderId: receiverId,
                 read: false,
                 created_at: serverTimestamp()
             });
         }
+
+        // 4. Notify the RECEIVER (Us) - "Vous êtes maintenant amis"
+        // This puts a confirmation in our own notification list
+        await addDoc(collection(db, 'notifications'), {
+            recipientId: receiverId, // Us
+            targetSystemId: currentSystemId,
+            type: 'friend_new', // New type or reuse accepted
+            title: 'Nouvel ami',
+            message: `Vous êtes maintenant amis avec cet alter.`,
+            subtitle: 'Connexion établie',
+            data: {
+                alterId: senderId, // The new friend
+                friendId: receiverId,
+            },
+            senderId: senderId, // Them
+            read: false,
+            created_at: serverTimestamp()
+        });
 
     },
 
@@ -216,6 +246,19 @@ export const FriendService = {
         notifSnap.forEach(async (notifDoc) => {
             await updateDoc(notifDoc.ref, { read: true });
         });
+    },
+
+    /**
+     * Check if ANY alter in the current system is friends with the target system (System-wide friendship)
+     */
+    isSystemFriend: async (mySystemId: string, targetSystemId: string): Promise<boolean> => {
+        const q = query(
+            collection(db, 'friendships'),
+            where('systemId', '==', mySystemId),
+            where('friendSystemId', '==', targetSystemId)
+        );
+        const snapshot = await getDocs(q);
+        return !snapshot.empty;
     },
 
     /**

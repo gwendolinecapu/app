@@ -34,17 +34,10 @@ export default function StoryViewScreen() {
                 if (currentAlter && currentAlter.id === authorId) isOwner = true;
                 if (user.uid === authorId) isOwner = true;
 
-                // If not owner, check friendship
                 if (!isOwner) {
-                    if (!currentAlter) {
-                        // Must be in an alter context to view stories usually?
-                        // If system admin, maybe allowed? But typical flow is via alter.
-                        // Let's assume strictness: need active alter or fail.
-                        router.back();
-                        return;
-                    }
-
-                    const status = await FriendService.checkStatus(currentAlter.id, authorId);
+                    // Start of Strict Friendship Check
+                    // User requested strict Alter-Alter friendship.
+                    const status = await FriendService.checkStatus(currentAlter?.id || '', authorId);
                     if (status !== 'friends') {
                         Alert.alert("Accès refusé", "Cette story est visible uniquement par les amis.");
                         router.back();

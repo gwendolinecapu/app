@@ -221,53 +221,97 @@ export const PostService = {
     },
 
     /**
-     * Fetch feed including friends
-     * @param friendIds - Array of friend alter/system IDs to include in the feed
+     * Fetch feed including friends (Alters AND Systems)
+     * @param friendIds - Array of friend alter IDs
+     * @param friendSystemIds - Array of friend system IDs
      */
-    fetchFeed: async (friendIds: string[], lastVisible: QueryDocumentSnapshot | null = null, pageSize: number = 20) => {
+    fetchFeed: async (friendIds: string[], friendSystemIds: string[] = [], lastVisible: QueryDocumentSnapshot | null = null, pageSize: number = 20) => {
         try {
-            // Firestore 'in' query supports max 10 values.
-            // If friendIds is empty, show empty feed (or suggestions in UI).
+            // Firestore 'in' query supports max 10-30 values depending on version.
+            // We need to query both friendAlters and friendSystems.
+            // Strategy: Run both queries (if IDs present) and merge.
 
-            if (friendIds.length === 0) {
+            if (friendIds.length === 0 && friendSystemIds.length === 0) {
                 return {
                     posts: [],
                     lastVisible: null
                 };
             }
 
-            // Limit to 30 for 'in' query constraint (Firestore update allows up to 30)
-            const targetIds = friendIds.slice(0, 30);
+            const promises = [];
 
-            let q = query(
-                collection(db, POSTS_COLLECTION),
-                where('alter_id', 'in', targetIds),
-                orderBy('created_at', 'desc'),
-                limit(pageSize)
-            );
-
-            if (lastVisible) {
-                q = query(q, startAfter(lastVisible));
+            // 1. Query by Alter IDs
+            if (friendIds.length > 0) {
+                const targetAlterIds = friendIds.slice(0, 30);
+                let q1 = query(
+                    collection(db, POSTS_COLLECTION),
+                    where('alter_id', 'in', targetAlterIds),
+                    orderBy('created_at', 'desc'),
+                    limit(pageSize)
+                );
+                if (lastVisible) q1 = query(q1, startAfter(lastVisible));
+                promises.push(getDocs(q1));
             }
 
-            const querySnapshot = await getDocs(q);
-            const posts: Post[] = [];
+            // 2. Query by System IDs - DISABLED for now to prevent showing all alters of a friend system
+            // If we want to show posts by the System Account itself, we should ensure the System ID is in 'friendIds'
+            // and handled by the query above (assuming system posts have alter_id = system_id).
+            /*
+            if (friendSystemIds.length > 0) {
+                const targetSystemIds = friendSystemIds.slice(0, 30);
+                let q2 = query(
+                    collection(db, POSTS_COLLECTION),
+                    where('system_id', 'in', targetSystemIds),
+                    orderBy('created_at', 'desc'),
+                    limit(pageSize)
+                );
+                if (lastVisible) q2 = query(q2, startAfter(lastVisible));
+                promises.push(getDocs(q2));
+            }
+            */
 
-            querySnapshot.forEach((doc) => {
+            const snapshots = await Promise.all(promises);
+            const allDocs = snapshots.flatMap(snap => snap.docs);
+
+            // Deduplicate by ID
+            const seen = new Set();
+            const uniqueDocs = [];
+
+            // Sort merged docs by date desc manually since we merged two streams
+            allDocs.sort((a, b) => {
+                const dA = a.data().created_at?.toDate()?.getTime() || 0;
+                const dB = b.data().created_at?.toDate()?.getTime() || 0;
+                return dB - dA;
+            });
+
+            for (const doc of allDocs) {
+                if (!seen.has(doc.id)) {
+                    seen.add(doc.id);
+                    uniqueDocs.push(doc);
+                }
+            }
+
+            // Apply pagination limit to merged result
+            const pagedDocs = uniqueDocs.slice(0, pageSize);
+
+            const posts: Post[] = pagedDocs.map(doc => {
                 const data = doc.data();
-                posts.push({
+                return {
                     id: doc.id,
                     ...data,
                     created_at: data.created_at?.toDate().toISOString() || new Date().toISOString(),
                     updated_at: data.updated_at?.toDate().toISOString() || new Date().toISOString(),
-                } as Post);
+                } as Post;
             });
 
             const enrichedPosts = await PostService._enrichPostsWithAuthors(posts);
 
             return {
                 posts: enrichedPosts,
-                lastVisible: querySnapshot.docs[querySnapshot.docs.length - 1]
+                lastVisible: pagedDocs.length > 0 ? pagedDocs[pagedDocs.length - 1] : null // Note: This lastVisible might be from mixed queries, so pagination next step is tricky.
+                // Infinite scroll with mixed queries is complex. 
+                // Simple fix: If we have system friends, prefer system query for pagination or ignore lastVisible correctness for mixed mode?
+                // Ideally we shouldn't mix, but for now this enables visibility.
             };
         } catch (error) {
             console.error('Error fetching friend feed:', error);

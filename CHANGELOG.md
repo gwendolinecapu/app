@@ -1,5 +1,13 @@
 # Changelog
 
+## [2026-01-08] Préparation v1 & Audit Fonctionnalités 🏷️
+- **StatusBadge**: Introduction d'un système de badges visuels (BETA, ALPHA, BIENTÔT, NOUVEAU) pour clarifier l'état des fonctionnalités.
+- **Audit Système**:
+  - **Menu Système**: Ajout des indicateurs pour Calendrier (BETA), Team Chat (NOUVEAU), Tâches (BETA), Historique (BETA).
+  - **Espace Alter**: Intégration des badges pour les fonctionnalités expérimentales (Social Web, Rituel IA, Inner World).
+- **Correctifs UX**: Désactivation visuelle et fonctionnelle des éléments "Bientôt disponible" dans le menu système.
+- **Typage**: Amélioration robuste du typage pour `SystemMenuModal` afin de prévenir les erreurs futures.
+
 ## [2026-01-06] Documentation Architecture 📘
 - **Architecture**: Création du fichier `ARCHITECTURE.md` détaillant la stack technique, la structure des dossiers, les modèles de données (Firestore) et les services principaux.
 - **Documentation**: Mise à jour de `project.md` pour inclure le lien vers l'architecture.

@@ -21,6 +21,7 @@ import { getThemeColors } from '../../../src/lib/cosmetics';
 import { triggerHaptic } from '../../../src/lib/haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { Snowfall } from '../../../src/components/effects/Snowfall';
+import { StatusBadge } from '../../../src/components/ui/StatusBadge';
 
 // Components
 import { ProfileHeader } from '../../../src/components/alter-space/ProfileHeader';
@@ -278,13 +279,17 @@ export default function AlterSpaceScreen() {
                                 <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname: '/social_web', params: { alterId: alter.id, platform: 'tiktok' } })}>
                                     <Ionicons name="logo-tiktok" size={24} color={activeColor} style={{ marginRight: 15 }} />
                                     <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>TikTok</Text>
-                                    <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
+                                    <View style={{ flex: 1 }} />
+                                    <StatusBadge status="beta" />
+                                    <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} style={{ marginLeft: 8 }} />
                                 </TouchableOpacity>
 
                                 <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname: '/social_web', params: { alterId: alter.id, platform: 'instagram' } })}>
                                     <Ionicons name="logo-instagram" size={24} color={activeColor} style={{ marginRight: 15 }} />
                                     <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>Instagram</Text>
-                                    <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
+                                    <View style={{ flex: 1 }} />
+                                    <StatusBadge status="beta" />
+                                    <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} style={{ marginLeft: 8 }} />
                                 </TouchableOpacity>
 
                                 <View style={{ height: 30 }} />
@@ -295,10 +300,9 @@ export default function AlterSpaceScreen() {
                                 <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname: '/alter-space/[alterId]/ritual', params: { alterId: alter.id } })}>
                                     <Ionicons name="sparkles" size={24} color={activeColor} style={{ marginRight: 15 }} />
                                     <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>Rituel de Naissance</Text>
-                                    <View style={{ backgroundColor: activeColor, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2, marginRight: 8 }}>
-                                        <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>IA</Text>
-                                    </View>
-                                    <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
+                                    <View style={{ flex: 1 }} />
+                                    <StatusBadge status="beta" />
+                                    <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} style={{ marginLeft: 8 }} />
                                 </TouchableOpacity>
 
                                 <View style={{ height: 30 }} />
@@ -308,19 +312,23 @@ export default function AlterSpaceScreen() {
                                 <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('journal')}>
                                     <Ionicons name="book-outline" size={24} color={activeColor} style={{ marginRight: 15 }} />
                                     <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>Journal</Text>
+                                    <View style={{ flex: 1 }} />
                                     <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
                                 </TouchableOpacity>
 
                                 <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('gallery')}>
                                     <Ionicons name="images-outline" size={24} color={activeColor} style={{ marginRight: 15 }} />
                                     <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>Galerie</Text>
+                                    <View style={{ flex: 1 }} />
                                     <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
                                 </TouchableOpacity>
 
                                 <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname: '/inner-world', params: { alterId: alter.id } })}>
                                     <Ionicons name="planet-outline" size={24} color={activeColor} style={{ marginRight: 15 }} />
                                     <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>Inner World</Text>
-                                    <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
+                                    <View style={{ flex: 1 }} />
+                                    <StatusBadge status="beta" />
+                                    <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} style={{ marginLeft: 8 }} />
                                 </TouchableOpacity>
 
                                 <View style={{ height: 30 }} />
@@ -329,6 +337,7 @@ export default function AlterSpaceScreen() {
                                 <TouchableOpacity style={styles.menuItem} onPress={() => setActiveTab('settings')}>
                                     <Ionicons name="settings-outline" size={24} color={themeColors?.text || colors.text} style={{ marginRight: 15 }} />
                                     <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>Paramètres</Text>
+                                    <View style={{ flex: 1 }} />
                                     <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
                                 </TouchableOpacity>
                             </>
@@ -342,12 +351,14 @@ export default function AlterSpaceScreen() {
                                     <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>
                                         {friendStatus === 'friends' ? 'Abonné' : friendStatus === 'pending' ? 'Demande envoyée' : "S'abonner"}
                                     </Text>
+                                    <View style={{ flex: 1 }} />
                                     <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
                                 </TouchableOpacity>
 
                                 <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname: '/(tabs)/messages', params: { senderId: alter.id } })}>
                                     <Ionicons name="chatbubble-outline" size={24} color={activeColor} style={{ marginRight: 15 }} />
                                     <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>Messages</Text>
+                                    <View style={{ flex: 1 }} />
                                     <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
                                 </TouchableOpacity>
                             </>

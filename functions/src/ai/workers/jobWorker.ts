@@ -1,20 +1,20 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
 import { JobsService } from "../services/JobsService";
-import { GeminiProvider } from "../providers/GeminiProvider";
-import { BytePlusProvider } from "../providers/BytePlusProvider";
+// import { GeminiProvider } from "../providers/GeminiProvider"; // Unused
+// import { BytePlusProvider } from "../providers/BytePlusProvider"; // Unused
 import { AIWorkflows } from "../services/AIWorkflows";
 import { AIJob } from "../interfaces/IAIJob";
 import { BillingUtils } from "../../utils/billing";
 
 // Secrets
-const SECRETS = ["GOOGLE_AI_API_KEY", "BYTEPLUS_API_KEY"];
+const SECRETS = ["GOOGLE_AI_API_KEY", "BYTEPLUS_API_KEY", "OPENAI_API_KEY"];
 
 export const processAIJob = functions.runWith({
     secrets: SECRETS, // Ensure these are set in Firebase
     timeoutSeconds: 540, // 9 mins max
     memory: "1GB"
-}).firestore.document('ai_jobs/{jobId}').onWrite(async (change, context) => {
+}).firestore.document('ai_jobs/{jobId}').onWrite(async (change: functions.Change<functions.firestore.DocumentSnapshot>, context: functions.EventContext) => {
     // 1. Check if document exists (not delete)
     if (!change.after.exists) return;
 

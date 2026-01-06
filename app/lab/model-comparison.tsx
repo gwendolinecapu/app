@@ -1,11 +1,13 @@
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, ActivityIndicator, Alert, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, ActivityIndicator, Alert, StyleSheet, FlatList } from 'react-native';
 import { Stack } from 'expo-router';
 import { httpsCallable } from 'firebase/functions';
-import { functions } from '../../src/lib/firebase';
+import { functions, storage } from '../../src/lib/firebase';
+import * as ImagePicker from 'expo-image-picker';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { BlurView } from 'expo-blur';
-// Removed SystemControlBar as it was unused and causing lint error
+import { Ionicons } from '@expo/vector-icons';
 
 interface ModelResult {
     name: string;
@@ -17,8 +19,51 @@ interface ModelResult {
 
 export default function ModelComparisonScreen() {
     const [prompt, setPrompt] = useState('A futuristic alter ego in a neon city, 8k realism');
+    const [refImages, setRefImages] = useState<string[]>([]);
+    const [manualUrl, setManualUrl] = useState('');
+    const [uploading, setUploading] = useState(false);
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState<ModelResult[]>([]);
+
+    const addManualUrl = () => {
+        if (manualUrl && manualUrl.startsWith('http')) {
+            setRefImages(prev => [...prev, manualUrl]);
+            setManualUrl('');
+        }
+    };
+
+    const pickAndUploadImages = async () => {
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsMultipleSelection: true,
+            quality: 0.8,
+        });
+
+        if (!result.canceled) {
+            setUploading(true);
+            try {
+                const newUrls: string[] = [];
+                for (const asset of result.assets) {
+                    const response = await fetch(asset.uri);
+                    const blob = await response.blob();
+                    const filename = asset.fileName || `upload_${Date.now()}.jpg`;
+                    const storageRef = ref(storage, `temp/lab/${Date.now()}_${filename}`);
+                    await uploadBytes(storageRef, blob);
+                    const url = await getDownloadURL(storageRef);
+                    newUrls.push(url);
+                }
+                setRefImages(prev => [...prev, ...newUrls]);
+            } catch (e: any) {
+                Alert.alert("Upload Failed", e.message);
+            } finally {
+                setUploading(false);
+            }
+        }
+    };
+
+    const removeImage = (url: string) => {
+        setRefImages(prev => prev.filter(u => u !== url));
+    };
 
     const runComparison = async () => {
         if (!prompt.trim()) return;
@@ -27,9 +72,11 @@ export default function ModelComparisonScreen() {
 
         try {
             const fn = httpsCallable(functions, 'compareAIModels');
-            // Pass isDev: true to bypass basic ID check if needed, depending on how I implemented the guard
-            // But assuming logged in user is authorized or I am testing with my admin account
-            const resp = await fn({ prompt, isDev: true });
+            const payload: any = { prompt, isDev: true };
+            if (refImages.length > 0) {
+                payload.referenceImageUrls = refImages;
+            }
+            const resp = await fn(payload);
             const data = resp.data as { results: ModelResult[] };
             setResults(data.results);
         } catch (err: any) {
@@ -57,11 +104,54 @@ export default function ModelComparisonScreen() {
                         value={prompt}
                         onChangeText={setPrompt}
                         placeholderTextColor="#666"
+                        placeholder="Describe the image..."
                     />
+
+                    <Text style={[styles.label, { marginTop: 16 }]}>Reference Images (Optional)</Text>
+
+                    {/* Manual Input Fallback */}
+                    <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                        <TextInput
+                            style={[styles.input, { flex: 1, minHeight: 40, marginBottom: 0 }]}
+                            value={manualUrl}
+                            onChangeText={setManualUrl}
+                            placeholder="Paste URL here..."
+                            placeholderTextColor="#666"
+                            autoCapitalize="none"
+                            keyboardType="url"
+                        />
+                        <TouchableOpacity
+                            style={[styles.miniBtn, !manualUrl && styles.buttonDisabled]}
+                            onPress={addManualUrl}
+                            disabled={!manualUrl}
+                        >
+                            <Ionicons name="arrow-forward" size={20} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
+
+                    <ScrollView horizontal style={styles.refList} contentContainerStyle={{ gap: 8 }}>
+                        {refImages.map((url, idx) => (
+                            <View key={idx} style={styles.refImageContainer}>
+                                <Image source={{ uri: url }} style={styles.refImageThumbnail} />
+                                <TouchableOpacity style={styles.removeBtn} onPress={() => removeImage(url)}>
+                                    <Ionicons name="close-circle" size={20} color="#fff" />
+                                </TouchableOpacity>
+                            </View>
+                        ))}
+                        <TouchableOpacity style={styles.addBtn} onPress={pickAndUploadImages} disabled={uploading}>
+                            {uploading ? <ActivityIndicator color="#aaa" /> : (
+                                <>
+                                    <Ionicons name="image" size={24} color="#aaa" />
+                                    <Text style={{ color: '#aaa', fontSize: 10, marginTop: 4 }}>Upload</Text>
+                                </>
+                            )}
+                        </TouchableOpacity>
+                    </ScrollView>
+
                     <TouchableOpacity
-                        style={[styles.button, loading && styles.buttonDisabled]}
+                        style={[styles.button, (loading || uploading) && styles.buttonDisabled]}
                         onPress={runComparison}
-                        disabled={loading}
+                        disabled={loading || uploading}
                     >
                         {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Run Benchmark</Text>}
                     </TouchableOpacity>
@@ -140,6 +230,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#007AFF',
         padding: 16,
         borderRadius: 8,
+        marginTop: 24,
         alignItems: 'center',
     },
     buttonDisabled: {
@@ -187,5 +278,48 @@ const styles = StyleSheet.create({
         color: '#ff6b6b',
         padding: 20,
         textAlign: 'center',
+    },
+    refList: {
+        flexDirection: 'row',
+        height: 80,
+    },
+    refImageContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 8,
+        overflow: 'hidden',
+        backgroundColor: '#333',
+        marginRight: 8,
+        position: 'relative',
+    },
+    refImageThumbnail: {
+        width: '100%',
+        height: '100%',
+    },
+    removeBtn: {
+        position: 'absolute',
+        top: 2,
+        right: 2,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        borderRadius: 10,
+    },
+    addBtn: {
+        width: 80,
+        height: 80,
+        borderRadius: 8,
+        backgroundColor: '#222',
+        borderWidth: 1,
+        borderColor: '#444',
+        borderStyle: 'dashed',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    miniBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 8,
+        backgroundColor: '#007AFF',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 });

@@ -56,10 +56,32 @@ export const AIWorkflows = {
         // 2. Ref Sheet (Image Gen)
         const refSheetPrompt = PromptService.getRitualRefSheetPrompt(visualDescription);
 
-        const refSheetRes = await router.generateImage(refSheetPrompt, {
+        // Map specific model override if provided
+        let genOptions: any = {
             referenceImages: imagesBase64,
             width: 2048, height: 2048
-        });
+        };
+
+        if (params.model) {
+            if (params.model === 'gpt-1.5-low') {
+                genOptions.provider = 'openai';
+                genOptions.quality = 'eco';
+            } else if (params.model === 'gpt-1.5-mid') {
+                genOptions.provider = 'openai';
+                genOptions.quality = 'std';
+            } else if (params.model === 'gpt-1.5-high') {
+                genOptions.provider = 'openai';
+                genOptions.quality = 'high';
+            } else if (params.model === 'seedream-4.5') {
+                genOptions.provider = 'byteplus';
+                genOptions.model = 'seedream-4-5-251128';
+            } else if (params.model === 'seedream-4.0') {
+                genOptions.provider = 'byteplus';
+                genOptions.model = 'seedream-4-0-250828';
+            }
+        }
+
+        const refSheetRes = await router.generateImage(refSheetPrompt, genOptions);
         const refSheetBuffers = refSheetRes.result;
 
         await checkCancelled(jobId);
@@ -101,7 +123,7 @@ export const AIWorkflows = {
         const charDesc = alterData?.visual_dna?.description || alterData?.name || "A character";
 
         // 2. Enhance Prompt
-        const enhancementPrompt = PromptService.getMagicPromptExpansion(prompt, charDesc, selectedStyle);
+        const enhancementPrompt = PromptService.getMagicPromptExpansion(prompt!, charDesc, selectedStyle); // prompt is required in MagicPostRequest but verify
         const magicRes = await router.generateText(enhancementPrompt);
         const magicPrompt = magicRes.result;
 

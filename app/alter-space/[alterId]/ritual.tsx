@@ -120,24 +120,32 @@ export default function RitualScreen() {
         }
     };
 
+    const [selectedModel, setSelectedModel] = useState<string>('gpt-1.5-mid');
+
+    // Available models for testing
+    const MODEL_OPTIONS = [
+        { id: 'gpt-1.5-low', name: 'GPT 1.5 Eco', desc: 'Rapide & Économique (10Cr)', cost: 10 },
+        { id: 'gpt-1.5-mid', name: 'GPT 1.5 Standard', desc: 'Équilibré (50Cr)', cost: 50 },
+        { id: 'gpt-1.5-high', name: 'GPT 1.5 High', desc: 'Haute Fidélité (80Cr)', cost: 80 },
+        { id: 'seedream-4.5', name: 'Seedream 4.5', desc: 'Réalisme Avancé (60Cr)', cost: 60 },
+        { id: 'seedream-4.0', name: 'Seedream 4.0', desc: 'Version Stable (50Cr)', cost: 50 },
+    ];
+
     const confirmRitual = () => {
         if (selectedImages.length === 0) return;
 
+        // Show selection model
         Alert.alert(
-            "Commencer le Rituel ?",
-            `Cette offrande (${selectedImages.length} images) coûte ${AI_COSTS.RITUAL} Crédits. L'Oracle va analyser votre alter en détail.`,
-            [
-                { text: "Annuler", style: "cancel" },
-                {
-                    text: `Offrir (${AI_COSTS.RITUAL} Crédits)`,
-                    style: 'default',
-                    onPress: processRitual
-                }
-            ]
+            "Configuration du Rituel",
+            "Choisissez l'Oracle pour cette incarnation :",
+            MODEL_OPTIONS.map(m => ({
+                text: `${m.name} (${m.cost} Cr)`,
+                onPress: () => processRitual(m.id)
+            })).concat([{ text: "Annuler", style: "cancel", onPress: () => { } } as any])
         );
     };
 
-    const processRitual = async () => {
+    const processRitual = async (modelId: string = 'gpt-1.5-mid') => {
         setUploading(true);
         triggerHaptic.selection();
 
@@ -166,7 +174,11 @@ export default function RitualScreen() {
             const startAIJob = httpsCallable(functions, 'startAIJob');
             const response: any = await startAIJob({
                 type: 'ritual',
-                params: { alterId, referenceImageUrls: uploadedUrls }
+                params: {
+                    alterId,
+                    referenceImageUrls: uploadedUrls,
+                    model: modelId // Pass selected model
+                }
             });
 
             if (response.data.success && response.data.jobId) {

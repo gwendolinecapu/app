@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
-import { COSTS } from "../constants";
+// import { COSTS } from "../constants"; // Removed unused import
 import { BillingUtils } from "../../utils/billing";
 
 export const retryAIJob = functions.runWith({
@@ -20,7 +20,7 @@ export const retryAIJob = functions.runWith({
         if (!jobDoc.exists) throw new functions.https.HttpsError('not-found', 'Job not found');
 
         const job = jobDoc.data()!;
-        if (job.userId !== context.auth.uid) {
+        if (job.userId !== context.auth!.uid) {
             throw new functions.https.HttpsError('permission-denied', 'Not your job');
         }
 

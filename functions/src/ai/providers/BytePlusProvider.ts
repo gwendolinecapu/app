@@ -16,7 +16,7 @@ export class BytePlusProvider implements IImageProvider {
         const size = `${width}x${height}`;
 
         const payload: any = {
-            model: this.model,
+            model: options?.model || this.model,
             prompt: prompt,
             response_format: "b64_json",
             size: size,

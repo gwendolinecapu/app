@@ -6,6 +6,7 @@ export interface ImageGenerationOptions {
     referenceImages?: string[]; // Base64 or URLs
     referenceStrength?: number;
     quality?: 'eco' | 'std' | 'high'; // Added for model comparison
+    model?: string;
 }
 
 export interface IImageProvider {

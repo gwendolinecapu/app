@@ -19,7 +19,7 @@ export default function LoginScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const { signIn } = useAuth();
+    const { signIn, signInWithGoogle } = useAuth();
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -103,6 +103,30 @@ export default function LoginScreen() {
                         <Text style={styles.buttonText}>
                             {loading ? 'Connexion...' : 'Se connecter'}
                         </Text>
+                    </TouchableOpacity>
+
+
+                    <View style={styles.dividerContainer}>
+                        <View style={styles.divider} />
+                        <Text style={styles.dividerText}>OU</Text>
+                        <View style={styles.divider} />
+                    </View>
+
+                    <TouchableOpacity
+                        style={[styles.button, styles.googleButton]}
+                        onPress={async () => {
+                            setLoading(true);
+                            const { error } = await signInWithGoogle();
+                            setLoading(false);
+                            if (error) {
+                                Alert.alert("Erreur Google", error.message);
+                            } else {
+                                router.replace('/(tabs)/dashboard');
+                            }
+                        }}
+                        disabled={loading}
+                    >
+                        <Text style={[styles.buttonText, styles.googleButtonText]}>Continuer avec Google</Text>
                     </TouchableOpacity>
 
                     <View style={styles.footer}>
@@ -192,5 +216,29 @@ const styles = StyleSheet.create({
         ...typography.bodySmall,
         color: colors.primary,
         fontWeight: 'bold',
+    },
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: spacing.md,
+    },
+    divider: {
+        flex: 1,
+        height: 1,
+        backgroundColor: colors.border,
+    },
+    dividerText: {
+        ...typography.bodySmall,
+        color: colors.textSecondary,
+        marginHorizontal: spacing.md,
+    },
+    googleButton: {
+        backgroundColor: colors.backgroundLight,
+        borderWidth: 1,
+        borderColor: colors.border,
+        marginTop: 0,
+    },
+    googleButtonText: {
+        color: colors.text,
     },
 });

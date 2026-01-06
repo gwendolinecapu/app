@@ -13,7 +13,10 @@
   - Vérification du consentement au démarrage (avant l'initialisation des pubs).
   - Bouton "Paramètres de confidentialité (GDPR)" ajouté dans les réglages.
   - Configuration `delayAppMeasurementInit` pour la conformité stricte.
-- **Correctifs Compilation**:
+- **Google Sign-In**: Ajout de la connexion et inscription via Google (Web & Mobile).
+  - Intégration de `@react-native-google-signin/google-signin`.
+  - Boutons "Continuer avec Google" sur les écrans de connexion/inscription.
+  - Service d'authentification unifié via `AuthContext`.
   - Résolution des erreurs de type dans `SystemTasks.tsx` et `CreditService.ts`.
   - Fix de l'export manquant `CreditTransaction`.
 - **Conformité & iOS 100%**:

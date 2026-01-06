@@ -120,6 +120,17 @@ export type CreditTransactionType =
     | 'ai_generation'    // Génération IA
     | 'task_completion'; // Complétion de tâche
 
+/** Structure d'une transaction de crédits */
+export interface CreditTransaction {
+    id: string;
+    userId: string;
+    amount: number;
+    type: CreditTransactionType;
+    description?: string;
+    itemId?: string; // ID de l'item acheté si applicable
+    timestamp: number;
+}
+
 // ==================== CONFIGURATION PUBS ====================
 
 /** Configuration de la fréquence des pubs */

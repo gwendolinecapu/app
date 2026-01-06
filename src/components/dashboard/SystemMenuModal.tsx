@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { triggerHaptic } from '../../lib/haptics';
 import { router } from 'expo-router';
+import { StatusBadge } from '../ui/StatusBadge';
 
 interface SystemMenuModalProps {
     visible: boolean;
@@ -12,11 +13,23 @@ interface SystemMenuModalProps {
     hasSelection: boolean;
 }
 
-const MENU_ITEMS = [
-    { id: 'calendar', label: 'Calendrier', description: 'RDV & Agenda', icon: 'calendar', color: '#6a11cb', route: '/calendar' },
-    { id: 'team', label: 'Team', description: 'Chat & Discussions', icon: 'people', color: colors.secondary, route: '/messages' },
-    { id: 'tasks', label: 'Tâches', description: 'Liste partagée', icon: 'list', color: colors.success, route: '/tasks' },
-    { id: 'history', label: 'Historique', description: 'Stats & Fronts', icon: 'stats-chart', color: colors.warning, route: '/history' },
+import { StatusType } from '../ui/StatusBadge';
+
+interface MenuItem {
+    id: string;
+    label: string;
+    description: string;
+    icon: string;
+    color: string;
+    route: string;
+    status?: StatusType;
+}
+
+const MENU_ITEMS: MenuItem[] = [
+    { id: 'calendar', label: 'Calendrier', description: 'RDV & Agenda', icon: 'calendar', color: '#6a11cb', route: '/calendar', status: 'beta' },
+    { id: 'team', label: 'Team', description: 'Chat & Discussions', icon: 'people', color: colors.secondary, route: '/team-chat', status: 'new' }, // Corrected route
+    { id: 'tasks', label: 'Tâches', description: 'Liste partagée', icon: 'list', color: colors.success, route: '/tasks', status: 'beta' },
+    { id: 'history', label: 'Historique', description: 'Stats & Fronts', icon: 'stats-chart', color: colors.warning, route: '/history', status: 'beta' },
     { id: 'help', label: 'Aide & SOS', description: 'Support système', icon: 'help-circle', color: colors.error, route: '/help' },
 ];
 
@@ -50,21 +63,34 @@ export const SystemMenuModal: React.FC<SystemMenuModalProps> = ({ visible, onClo
                             return (
                                 <TouchableOpacity
                                     key={item.id}
-                                    style={styles.gridItem}
+                                    style={[
+                                        styles.gridItem,
+                                        item.status === 'coming-soon' && styles.gridItemDisabled
+                                    ]}
                                     onPress={() => {
-                                        handleNavigation(item.route);
+                                        if (item.status !== 'coming-soon') {
+                                            handleNavigation(item.route);
+                                        }
                                     }}
-                                    activeOpacity={0.7}
+                                    activeOpacity={item.status === 'coming-soon' ? 1 : 0.7}
                                 >
                                     <View style={[styles.iconBg, { backgroundColor: `${item.color}20` }]}>
                                         <Ionicons
                                             name={item.icon as any}
                                             size={28}
-                                            color={item.color}
+                                            color={item.status === 'coming-soon' ? colors.textMuted : item.color}
                                         />
                                     </View>
                                     <View style={styles.itemTextContainer}>
-                                        <Text style={styles.itemLabel}>{item.label}</Text>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4, marginBottom: 2 }}>
+                                            <Text style={[
+                                                styles.itemLabel,
+                                                item.status === 'coming-soon' && styles.itemTextDisabled
+                                            ]}>
+                                                {item.label}
+                                            </Text>
+                                            {item.status && <StatusBadge status={item.status as any} />}
+                                        </View>
                                         <Text style={styles.itemDescription}>
                                             {item.description}
                                         </Text>

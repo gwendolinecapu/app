@@ -1,5 +1,6 @@
 import { AdsConsent, AdsConsentStatus } from 'react-native-google-mobile-ads';
 import { Platform } from 'react-native';
+import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 
 class ConsentService {
     private static instance: ConsentService;
@@ -31,6 +32,14 @@ class ConsentService {
                 console.log('[ConsentService] Consent form shown, status:', status);
             } else {
                 console.log('[ConsentService] Consent form not required or not available, status:', consentInfo.status);
+            }
+
+            // 3. (iOS Only) Explicitly request App Tracking Transparency (ATT) permission
+            // This is "Fail-Safe": if UMP didn't show it, we show it. 
+            // If UMP showed it, this returns the status immediately without a second prompt.
+            if (Platform.OS === 'ios') {
+                const { status: trackingStatus } = await requestTrackingPermissionsAsync();
+                console.log('[ConsentService] iOS ATT Status:', trackingStatus);
             }
 
             this.initialized = true;

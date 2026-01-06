@@ -463,3 +463,36 @@ export interface InnerWorldShape {
     linked_world_id?: string; // ID of the inner world contained in this shape
     created_at: string;
 }
+
+// ============================================
+// AI Job System
+// ============================================
+
+export interface AIJob {
+    id: string;
+    userId: string;
+    type: 'ritual' | 'magic_post' | 'chat';
+    status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+    progress?: {
+        percent: number;
+        stage: string;
+    };
+    result?: any;
+    error?: {
+        code: string;
+        message: string;
+        details?: string;
+    };
+    params: any;
+    metadata?: {
+        costEstimate?: number;
+        provider?: string;
+        model?: string;
+        attempts?: number;
+        maxAttempts?: number;
+        providerUsed?: any;
+        fallbackUsed?: boolean;
+    };
+    createdAt: any;
+    updatedAt: any;
+}

@@ -14,7 +14,8 @@ import { retryAIJob } from "./ai/api/retryAIJob";
 admin.initializeApp();
 
 // Export Cloud Functions
-export { processAIJob, startAIJob, cancelAIJob, retryAIJob };
+import { compareAIModels } from "./ai/api/compareAIModels";
+export { processAIJob, startAIJob, cancelAIJob, retryAIJob, compareAIModels };
 
 // --- Configuration ---
 const SECRETS = ["GOOGLE_AI_API_KEY", "BYTEPLUS_API_KEY"];

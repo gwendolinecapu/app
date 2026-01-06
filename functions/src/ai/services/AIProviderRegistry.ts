@@ -1,0 +1,95 @@
+import { GeminiProvider } from '../providers/GeminiProvider';
+import { BytePlusProvider } from '../providers/BytePlusProvider';
+import { OpenAIProvider } from '../providers/OpenAIProvider';
+
+export const AIConfig = {
+    llm: {
+        default: "gemini_flash",
+        fallback: "gemini_pro"
+    },
+    image: {
+        default: "seedream",
+        fallback: "seedream" // No other provider yet
+    },
+    models: {
+        "gemini_flash": {
+            provider: "gemini",
+            modelName: "gemini-1.5-flash",
+            apiKeyEnv: "GOOGLE_AI_API_KEY"
+        },
+        "gemini_pro": {
+            provider: "gemini",
+            modelName: "gemini-1.5-pro",
+            apiKeyEnv: "GOOGLE_AI_API_KEY"
+        },
+        "seedream": {
+            provider: "byteplus",
+            modelName: "seedream-4-5-251128",
+            apiKeyEnv: "BYTEPLUS_API_KEY"
+        },
+        "openai": {
+            provider: "openai",
+            modelName: "dall-e-3",
+            apiKeyEnv: "OPENAI_API_KEY"
+        }
+    }
+};
+
+export class AIProviderRegistry {
+    private static instance: AIProviderRegistry;
+    private providers: Map<string, any>;
+
+    constructor() {
+        this.providers = new Map();
+    }
+
+    static getInstance() {
+        if (!AIProviderRegistry.instance) {
+            AIProviderRegistry.instance = new AIProviderRegistry();
+        }
+        return AIProviderRegistry.instance;
+    }
+
+    getLLM(configKey: string) {
+        if (this.providers.has(configKey))
+            return this.providers.get(configKey);
+        const config = (AIConfig.models as any)[configKey];
+        if (!config)
+            throw new Error(`Model config not found: ${configKey}`);
+        const apiKey = process.env[config.apiKeyEnv];
+        if (!apiKey)
+            throw new Error(`Missing API Key: ${config.apiKeyEnv}`);
+        let provider;
+        if (config.provider === 'gemini') {
+            provider = new GeminiProvider(apiKey, config.modelName);
+        }
+        else {
+            throw new Error(`Unknown LLM provider type: ${config.provider}`);
+        }
+        this.providers.set(configKey, provider);
+        return provider;
+    }
+
+    getImageGen(configKey: string) {
+        if (this.providers.has(configKey))
+            return this.providers.get(configKey);
+        const config = (AIConfig.models as any)[configKey];
+        if (!config)
+            throw new Error(`Model config not found: ${configKey}`);
+        const apiKey = process.env[config.apiKeyEnv];
+        if (!apiKey)
+            throw new Error(`Missing API Key: ${config.apiKeyEnv}`);
+        let provider;
+        if (config.provider === 'byteplus') {
+            provider = new BytePlusProvider(apiKey, config.modelName);
+        }
+        else if (config.provider === 'openai') {
+            provider = new OpenAIProvider(apiKey, config.modelName);
+        }
+        else {
+            throw new Error(`Unknown Image provider type: ${config.provider}`);
+        }
+        this.providers.set(configKey, provider);
+        return provider;
+    }
+}

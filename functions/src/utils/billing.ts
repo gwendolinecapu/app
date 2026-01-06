@@ -2,10 +2,9 @@
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
 
-const db = admin.firestore();
-
 export class BillingUtils {
     static async chargeCredits(alterId: string, amount: number, description: string) {
+        const db = admin.firestore();
         const alterRef = db.collection('alters').doc(alterId);
         await db.runTransaction(async (t) => {
             const doc = await t.get(alterRef);
@@ -28,6 +27,7 @@ export class BillingUtils {
     }
 
     static async refundCredits(alterId: string, amount: number, description: string) {
+        const db = admin.firestore();
         const alterRef = db.collection('alters').doc(alterId);
         await db.runTransaction(async (t) => {
             const doc = await t.get(alterRef);

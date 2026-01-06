@@ -14,9 +14,11 @@ interface FollowListModalProps {
     userIds: string[];
     onClose: () => void;
     themeColors?: ThemeColors | null;
+    /** Callback to clean up missing/deleted users found during fetch */
+    onSync?: (missingIds: string[], duplicateIds: string[]) => void;
 }
 
-export const FollowListModal: React.FC<FollowListModalProps> = ({ visible, title, userIds, onClose, themeColors }) => {
+export const FollowListModal: React.FC<FollowListModalProps> = ({ visible, title, userIds, onClose, themeColors, onSync }) => {
     const [data, setData] = React.useState<Alter[]>([]);
     const [loading, setLoading] = React.useState(false);
 
@@ -33,9 +35,31 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({ visible, title
             console.log('[FollowListModal] Loading users for IDs:', userIds);
             setLoading(true);
             const { AlterService } = await import('../../services/alters');
-            const users = await AlterService.getAlters(userIds);
+
+            // Deduplicate for fetching
+            const uniqueIds = Array.from(new Set(userIds));
+            const users = await AlterService.getAlters(uniqueIds);
+
             console.log('[FollowListModal] Fetched users:', users);
             setData(users);
+
+            // Detect and handle missing users (ghosts) AND duplicates
+            if (onSync) {
+                const foundIds = new Set(users.map(u => u.id));
+                const missingIds = uniqueIds.filter(id => !foundIds.has(id));
+
+                // Find duplicates in original array
+                const seen = new Set();
+                const duplicateIds = userIds.filter(item => {
+                    const k = item;
+                    return seen.has(k) ? true : (seen.add(k), false);
+                });
+
+                if (missingIds.length > 0 || duplicateIds.length > 0) {
+                    console.log('[FollowListModal] Found issues, triggering sync. Missing:', missingIds, 'Duplicates:', duplicateIds);
+                    onSync(missingIds, duplicateIds);
+                }
+            }
         } catch (e) {
             console.error(e);
         } finally {

@@ -167,13 +167,14 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
             setRawPosts(prev => prev.map(post => {
                 if (post.id === postId) {
                     const likes = post.likes || [];
-                    const isLiked = likes.includes(user.uid);
+                    const actorId = currentAlter?.id || user.uid;
+                    const isLiked = likes.includes(actorId);
 
                     return {
                         ...post,
                         likes: isLiked
-                            ? likes.filter(id => id !== user.uid)
-                            : [...likes, user.uid]
+                            ? likes.filter(id => id !== actorId)
+                            : [...likes, actorId]
                     };
                 }
                 return post;
@@ -225,7 +226,7 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
                 onLike={handleLike}
                 onComment={handleComment}
                 onAuthorPress={handleAuthorPress}
-                currentUserId={user?.uid}
+                currentUserId={currentAlter?.id || user?.uid}
                 themeColors={themeColors}
             />
         );

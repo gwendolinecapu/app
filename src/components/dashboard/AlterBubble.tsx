@@ -93,7 +93,7 @@ const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
     // Compute selected style manually since we need dynamic color
     const selectedStyle = isSelected ? {
         borderColor: primaryColor,
-        borderWidth: 3,
+        borderWidth: 5,
         transform: [{ scale: 1.05 }]
     } : {};
 
@@ -107,7 +107,11 @@ const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
             <View style={[
                 styles.bubble,
                 dynamicStyles.bubble,
-                { backgroundColor: alter.color },
+                {
+                    backgroundColor: alter.color,
+                    borderColor: alter.color,
+                    borderWidth: 3
+                },
                 selectedStyle
             ]}>
                 {alter.avatar_url ? (

@@ -431,15 +431,16 @@ export const PostService = {
             if (postSnap.exists()) {
                 const post = postSnap.data() as Post;
                 const likes = post.likes || [];
-                const hasLiked = likes.includes(userId);
+                const actorId = alterId || userId;
+                const hasLiked = likes.includes(actorId);
 
                 if (hasLiked) {
                     await updateDoc(postRef, {
-                        likes: arrayRemove(userId)
+                        likes: arrayRemove(actorId)
                     });
                 } else {
                     await updateDoc(postRef, {
-                        likes: arrayUnion(userId)
+                        likes: arrayUnion(actorId)
                     });
 
                     // Create notification if the liker is not the post owner

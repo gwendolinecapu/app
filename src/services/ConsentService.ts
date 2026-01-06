@@ -60,7 +60,7 @@ class ConsentService {
 
             this.initialized = true;
         } catch (error) {
-            console.error('[ConsentService] Failed to request consent:', error);
+            console.warn('[ConsentService] Failed to request consent (non-critical):', error);
             // Non-blocking error, allow app to proceed
         }
     }

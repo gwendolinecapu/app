@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, FlatList, StyleSheet, ActivityIndicator, Text, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, FlatList, StyleSheet, ActivityIndicator, Text, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { FriendService } from '../services/friends';
@@ -145,8 +145,10 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
             setLastVisible(response.lastVisible);
             setHasMore(response.posts.length > 0);
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error loading posts:', error);
+            // [DEBUG] Show error to user to identify Indexing issues
+            // Alert.alert('Debug Feed', `Erreur chargement: ${error.message}`);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -340,7 +342,7 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
                         title="Rien à voir ici !"
                         message={
                             type === 'friends'
-                                ? "Suivez d'autres systèmes pour voir leurs posts ici."
+                                ? "Suivez d'autres systèmes pour voir leurs posts ici.\n(Tirez vers le bas pour rafraîchir)"
                                 : type === 'system'
                                     ? "Ce système n'a pas encore posté."
                                     : "Aucun post public pour le moment."

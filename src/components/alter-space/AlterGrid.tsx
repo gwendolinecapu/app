@@ -202,10 +202,16 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
                             item.media_url.endsWith('.webm')
                         );
 
+                        // Pass context for scrolling logic
+                        // Only for grid view (authored posts)
+                        const contextParams = activeTab === 'grid' && alterId
+                            ? `?context=alter&contextId=${alterId}`
+                            : '';
+
                         if (isVideo) {
-                            router.push(`/post/video/${item.id}` as any);
+                            router.push(`/post/video/${item.id}${contextParams}` as any);
                         } else {
-                            router.push(`/post/${item.id}`);
+                            router.push(`/post/${item.id}${contextParams}`);
                         }
                     }}
                 >

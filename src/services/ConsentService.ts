@@ -1,6 +1,22 @@
-import { AdsConsent, AdsConsentStatus } from 'react-native-google-mobile-ads';
 import { Platform } from 'react-native';
 import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
+
+let AdsConsent: any;
+let AdsConsentStatus: any;
+
+try {
+    const mobileAds = require('react-native-google-mobile-ads');
+    AdsConsent = mobileAds.AdsConsent;
+    AdsConsentStatus = mobileAds.AdsConsentStatus;
+} catch (e) {
+    console.warn('[ConsentService] Google Mobile Ads native module not found. Consent features will be disabled.');
+    AdsConsent = {
+        requestInfoUpdate: async () => ({ isConsentFormAvailable: false, status: 'UNKNOWN' }),
+        loadAndShowConsentFormIfRequired: async () => ({ status: 'UNKNOWN' }),
+        showPrivacyOptionsForm: async () => ({ status: 'UNKNOWN' }),
+    };
+    AdsConsentStatus = { REQUIRED: 'REQUIRED' };
+}
 
 class ConsentService {
     private static instance: ConsentService;

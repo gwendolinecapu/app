@@ -384,10 +384,9 @@ export default function RitualScreen() {
                                 colors={[primaryColor, accentColor]}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 1 }}
-                                style={styles.confirmGradient}
                             >
-                                <Text style={styles.confirmText}>Commencer le Rituel ({AI_COSTS.RITUAL} Crédits)</Text>
-                                <Ionicons name="flame" size={24} color="white" style={{ marginLeft: 8 }} />
+                                <Text style={styles.confirmText}>Configurer le Rituel...</Text>
+                                <Ionicons name="options" size={24} color="white" style={{ marginLeft: 8 }} />
                             </LinearGradient>
                         </TouchableOpacity>
                     )

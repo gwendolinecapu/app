@@ -64,19 +64,6 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 const functions = getFunctions(app, 'us-central1');
 
-// Connect to emulator in DEV mode
-if (__DEV__) {
-    const { connectFunctionsEmulator } = require('firebase/functions');
-    // Use '10.0.2.2' for Android Emulator to reach localhost, otherwise 'localhost'
-    const cleanHost = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-    try {
-        connectFunctionsEmulator(functions, cleanHost, 5001);
-        console.log(`🔌 Connected to Functions Emulator at ${cleanHost}:5001`);
-    } catch (e) {
-        // Ignore if already connected
-    }
-}
-
 // Enable Persistence (Firestore)
 enableIndexedDbPersistence(db).catch((err) => {
     if (err.code === 'failed-precondition') {

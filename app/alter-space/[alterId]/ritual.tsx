@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -30,20 +30,13 @@ import { useAuth } from '../../../src/contexts/AuthContext';
 import { MagicalLoadingView } from '../../../src/components/shared/MagicalLoadingView';
 import { AI_COSTS } from '../../../src/services/MonetizationTypes';
 import { triggerHaptic } from '../../../src/lib/haptics';
-import { useAIJob } from '../../../src/hooks/useAIJob';
 
 const { width } = Dimensions.get('window');
 
 export default function RitualScreen() {
     const { alterId } = useLocalSearchParams<{ alterId: string }>();
     const { alter, refresh } = useAlterData(alterId);
-
-    // Upload state managed locally, Job state via hook
-    const [uploading, setUploading] = useState(false);
-
-    const [jobId, setJobId] = useState<string | null>(null);
-    const { job, loading: jobLoading, error: jobError } = useAIJob(jobId);
-
+    const [loading, setLoading] = useState(false);
     const [resultData, setResultData] = useState<{ visualDescription?: string; refSheetUrl?: string } | null>(null);
     const [selectedImages, setSelectedImages] = useState<ImagePicker.ImagePickerAsset[]>([]);
     const [imageModalVisible, setImageModalVisible] = useState(false);
@@ -56,35 +49,6 @@ export default function RitualScreen() {
     const themeColors = getThemeColors(alter?.equipped_items?.theme);
     const primaryColor = themeColors?.primary || colors.primary;
     const accentColor = '#A855F7'; // Mystical purple default
-
-    // Job Effect
-    useEffect(() => {
-        if (job) {
-            if (job.status === 'succeeded' && job.result) {
-                // Success Handling
-                triggerHaptic.success();
-                setSelectedImages([]);
-                setResultData({
-                    visualDescription: job.result.visualDescription,
-                    refSheetUrl: job.result.refSheetUrl
-                });
-                refresh(); // Background refresh
-                setJobId(null); // Stop listening
-
-                Alert.alert(
-                    "Rituel Accompli ✨",
-                    `L'ADN Visuel de ${alter?.name} a été extrait.`,
-                    [{ text: "Voir le résultat", onPress: () => { } }]
-                );
-            } else if (job.status === 'failed') {
-                // Error Handling
-                triggerHaptic.error();
-                Alert.alert("Le Rituel a échoué", job.error?.message || "Une pertubation magique est survenue.");
-                setJobId(null);
-            }
-        }
-    }, [job]);
-
 
     const getBlobFromUri = async (uri: string) => {
         return new Promise((resolve, reject) => {
@@ -120,33 +84,25 @@ export default function RitualScreen() {
         }
     };
 
-    const [selectedModel, setSelectedModel] = useState<string>('gpt-1.5-mid');
-
-    // Available models for testing
-    const MODEL_OPTIONS = [
-        { id: 'gpt-1.5-low', name: 'GPT 1.5 Eco', desc: 'Rapide & Économique (10Cr)', cost: 10 },
-        { id: 'gpt-1.5-mid', name: 'GPT 1.5 Standard', desc: 'Équilibré (50Cr)', cost: 50 },
-        { id: 'gpt-1.5-high', name: 'GPT 1.5 High', desc: 'Haute Fidélité (80Cr)', cost: 80 },
-        { id: 'seedream-4.5', name: 'Seedream 4.5', desc: 'Réalisme Avancé (60Cr)', cost: 60 },
-        { id: 'seedream-4.0', name: 'Seedream 4.0', desc: 'Version Stable (50Cr)', cost: 50 },
-    ];
-
     const confirmRitual = () => {
         if (selectedImages.length === 0) return;
 
-        // Show selection model
         Alert.alert(
-            "Configuration du Rituel",
-            "Choisissez l'Oracle pour cette incarnation :",
-            MODEL_OPTIONS.map(m => ({
-                text: `${m.name} (${m.cost} Cr)`,
-                onPress: () => processRitual(m.id)
-            })).concat([{ text: "Annuler", style: "cancel", onPress: () => { } } as any])
+            "Commencer le Rituel ?",
+            `Cette offrande (${selectedImages.length} images) coûte ${AI_COSTS.RITUAL} Crédits. L'Oracle va analyser votre alter en détail.`,
+            [
+                { text: "Annuler", style: "cancel" },
+                {
+                    text: `Offrir (${AI_COSTS.RITUAL} Crédits)`,
+                    style: 'default',
+                    onPress: processRitual
+                }
+            ]
         );
     };
 
-    const processRitual = async (modelId: string = 'gpt-1.5-mid') => {
-        setUploading(true);
+    const processRitual = async () => {
+        setLoading(true);
         triggerHaptic.selection();
 
         try {
@@ -170,34 +126,36 @@ export default function RitualScreen() {
                 blob.close && blob.close();
             }
 
-            // 2. Call startAIJob
-            const startAIJob = httpsCallable(functions, 'startAIJob');
-            const response: any = await startAIJob({
-                type: 'ritual',
-                params: {
-                    alterId,
-                    referenceImageUrls: uploadedUrls,
-                    model: modelId // Pass selected model
-                }
-            });
+            // 2. Call Cloud Function
+            const performBirthRitual = httpsCallable(functions, 'performBirthRitual', { timeout: 540000 }); // 9 mins timeout
+            const response = await performBirthRitual({ alterId, referenceImageUrls: uploadedUrls });
+            const data = response.data as any;
 
-            if (response.data.success && response.data.jobId) {
-                setJobId(response.data.jobId);
+            if (data.success) {
+                triggerHaptic.success();
+                setSelectedImages([]); // Clear selection on success
+                setResultData({
+                    visualDescription: data.visualDescription,
+                    refSheetUrl: data.refSheetUrl
+                });
+                await refresh(); // Background refresh
+                Alert.alert(
+                    "Rituel Accompli ✨",
+                    `L'ADN Visuel de ${alter?.name} a été extrait.`,
+                    [{ text: "Voir le résultat", onPress: () => { } }]
+                );
             } else {
-                throw new Error("Impossible de démarrer le rituel.");
+                throw new Error("Le rituel n'a pas renvoyé de succès.");
             }
 
         } catch (err: any) {
             console.error("Ritual failed:", err);
             triggerHaptic.error();
-            Alert.alert("Le Rituel a échoué", err.message || "Impossible de lancer le rituel.");
+            Alert.alert("Le Rituel a échoué", err.message || "Une pertubation magique est survenue.");
         } finally {
-            setUploading(false); // Upload done, now job is running (or failed to start)
+            setLoading(false);
         }
     };
-
-    // Combined loading state
-    const isLoading = uploading || jobLoading || (!!jobId);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -230,9 +188,13 @@ export default function RitualScreen() {
 
                 <Text style={styles.sectionTitle}>Offrandes ({selectedImages.length}/5)</Text>
 
+                {/* 1. Loading State */}
+                {/* 1. Loading State - REPLACED BY OVERLAY */}
+                {/* {loading && (...)} */}
+
                 {/* 2. Success State (Ritual Done) */}
                 {
-                    !isLoading && isRitualComplete && selectedImages.length === 0 && (
+                    !loading && isRitualComplete && selectedImages.length === 0 && (
                         <View style={styles.successContent}>
                             <View style={styles.successHeader}>
                                 <Ionicons name="checkmark-circle" size={48} color={primaryColor} />
@@ -321,7 +283,7 @@ export default function RitualScreen() {
 
                 {/* 3. Preview State (User has selected images, either for first time or redo) */}
                 {
-                    !isLoading && selectedImages.length > 0 && (
+                    !loading && selectedImages.length > 0 && (
                         <View style={styles.previewContainer}>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.previewScroll}>
                                 {selectedImages.map((asset, index) => (
@@ -357,7 +319,7 @@ export default function RitualScreen() {
 
                 {/* 4. Empty/Upload State (Not ready, no selection) */}
                 {
-                    !isLoading && !alter?.visual_dna?.is_ready && selectedImages.length === 0 && (
+                    !loading && !alter?.visual_dna?.is_ready && selectedImages.length === 0 && (
                         <TouchableOpacity
                             style={[styles.dropZone, { borderColor: primaryColor }]}
                             onPress={pickImages}
@@ -371,22 +333,23 @@ export default function RitualScreen() {
 
                 {/* Confirm Button */}
                 {
-                    !isLoading && selectedImages.length > 0 && (
+                    !loading && selectedImages.length > 0 && (
                         <TouchableOpacity
                             style={[
                                 styles.confirmButton,
                                 { backgroundColor: primaryColor } // Fallback if gradient fails, but we use gradient inside
                             ]}
                             onPress={confirmRitual}
-                            disabled={isLoading}
+                            disabled={loading}
                         >
                             <LinearGradient
                                 colors={[primaryColor, accentColor]}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 1 }}
+                                style={styles.confirmGradient}
                             >
-                                <Text style={styles.confirmText}>Configurer le Rituel...</Text>
-                                <Ionicons name="options" size={24} color="white" style={{ marginLeft: 8 }} />
+                                <Text style={styles.confirmText}>Commencer le Rituel ({AI_COSTS.RITUAL} Crédits)</Text>
+                                <Ionicons name="flame" size={24} color="white" style={{ marginLeft: 8 }} />
                             </LinearGradient>
                         </TouchableOpacity>
                     )
@@ -394,10 +357,9 @@ export default function RitualScreen() {
             </ScrollView >
             {/* Awesome Loading Screen */}
             <MagicalLoadingView
-                visible={isLoading}
-                message={uploading ? "Offrande en cours..." : (job?.progress?.stage ? `Incantation : ${job.progress.stage}` : "Incantation en cours...")}
-                subMessage={uploading ? "Transmission des images..." : (job?.progress?.percent ? "L'Oracle analyse..." : "Analyse de l'ADN Visuel...")}
-                progress={job?.progress?.percent ? job.progress.percent / 100 : undefined}
+                visible={loading}
+                message="Incantation en cours..."
+                subMessage="Analyse de l'ADN Visuel..."
             />
         </SafeAreaView >
     );

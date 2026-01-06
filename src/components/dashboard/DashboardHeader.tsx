@@ -20,6 +20,8 @@ interface DashboardHeaderProps {
     hasSelection: boolean;
 }
 
+import { InnerWorldCard } from './InnerWorldCard';
+
 /**
  * DashboardHeader - Handles greeting, universal search, and system modes.
  * Mode Switcher allows toggling between 'Solo' (single tap) and 'Co-Front' (multi-select).
@@ -49,6 +51,9 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
             {/* Alter Weather Bar - Emotion indicators */}
             <AlterWeatherBar />
+
+            {/* Inner World Entry Card - Just below Emotions */}
+            <InnerWorldCard />
 
             {/* Mode Switcher */}
             <View style={styles.modeSwitchContainer}>

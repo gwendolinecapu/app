@@ -66,12 +66,15 @@ export const AIWorkflows = {
             if (params.model === 'gpt-1.5-low') {
                 genOptions.provider = 'openai';
                 genOptions.quality = 'eco';
+                genOptions.model = 'gpt-image-1.5';
             } else if (params.model === 'gpt-1.5-mid') {
                 genOptions.provider = 'openai';
                 genOptions.quality = 'std';
+                genOptions.model = 'gpt-image-1.5';
             } else if (params.model === 'gpt-1.5-high') {
                 genOptions.provider = 'openai';
                 genOptions.quality = 'high';
+                genOptions.model = 'gpt-image-1.5';
             } else if (params.model === 'seedream-4.5') {
                 genOptions.provider = 'byteplus';
                 genOptions.model = 'seedream-4-5-251128';

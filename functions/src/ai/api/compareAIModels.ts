@@ -3,7 +3,7 @@ import * as admin from "firebase-admin";
 import { BytePlusProvider } from "../providers/BytePlusProvider";
 import { OpenAIProvider } from "../providers/OpenAIProvider";
 
-const SECRETS = ["GOOGLE_AI_API_KEY", "BYTEPLUS_API_KEY"];
+const SECRETS = ["GOOGLE_AI_API_KEY", "BYTEPLUS_API_KEY", "OPENAI_API_KEY"];
 
 export const compareAIModels = functions.runWith({
     secrets: SECRETS,

@@ -2,6 +2,7 @@ import { ILLMProvider } from "../interfaces/ILLMProvider";
 import { IImageProvider } from "../interfaces/IImageProvider";
 import { GeminiProvider } from "../providers/GeminiProvider";
 import { BytePlusProvider } from "../providers/BytePlusProvider";
+import { OpenAIProvider } from "../providers/OpenAIProvider";
 
 export interface AIProviderConfig {
     llm: {
@@ -45,6 +46,11 @@ export const AIConfig: AIProviderConfig = {
             provider: "byteplus",
             modelName: "seedream-4-5-251128",
             apiKeyEnv: "BYTEPLUS_API_KEY"
+        },
+        "openai": {
+            provider: "openai",
+            modelName: "dall-e-3", // Default, specific model passed in options overrides this
+            apiKeyEnv: "OPENAI_API_KEY"
         }
     }
 };
@@ -94,6 +100,8 @@ export class AIProviderRegistry {
         let provider: IImageProvider;
         if (config.provider === 'byteplus') {
             provider = new BytePlusProvider(apiKey, config.modelName);
+        } else if (config.provider === 'openai') {
+            provider = new OpenAIProvider(apiKey, config.modelName);
         } else {
             throw new Error(`Unknown Image provider type: ${config.provider}`);
         }

@@ -8,7 +8,7 @@ import { AIJob } from "../interfaces/IAIJob";
 import { BillingUtils } from "../../utils/billing";
 
 // Secrets
-const SECRETS = ["GOOGLE_AI_API_KEY", "BYTEPLUS_API_KEY"];
+const SECRETS = ["GOOGLE_AI_API_KEY", "BYTEPLUS_API_KEY", "OPENAI_API_KEY"];
 
 export const processAIJob = functions.runWith({
     secrets: SECRETS, // Ensure these are set in Firebase

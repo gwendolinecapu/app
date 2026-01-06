@@ -8,7 +8,7 @@ import { COSTS } from "../constants";
 
 // The unified entry point for creating AI jobs safely
 export const startAIJob = functions.runWith({
-    secrets: ["GOOGLE_AI_API_KEY", "BYTEPLUS_API_KEY"],
+    secrets: ["GOOGLE_AI_API_KEY", "BYTEPLUS_API_KEY", "OPENAI_API_KEY"],
     timeoutSeconds: 60,
     memory: "256MB"
     // @ts-ignore
@@ -38,8 +38,14 @@ export const startAIJob = functions.runWith({
     switch (type) {
         case 'ritual':
             if (!params.alterId || !params.referenceImageUrls) throw new functions.https.HttpsError('invalid-argument', 'Missing params');
-            cost = COSTS.RITUAL;
-            description = "Rituel de Naissance";
+
+            // Dynamic Cost Calculation based on Model
+            if (params.model === 'gpt-1.5-low') cost = 10;
+            else if (params.model === 'gpt-1.5-high') cost = 80;
+            else if (params.model === 'seedream-4.5') cost = 60;
+            else cost = 50; // Default (gpt-1.5-mid, seedream-4.0)
+
+            description = `Rituel de Naissance (${params.model || 'Standard'})`;
             break;
 
         case 'magic_post':

@@ -20,6 +20,35 @@ import * as Clipboard from 'expo-clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
+import ConsentService from '../../src/services/ConsentService';
+
+const PrivacySettingsButton = () => {
+    const [isVisible, setIsVisible] = React.useState(false);
+
+    React.useEffect(() => {
+        ConsentService.isPrivacyOptionsRequired().then(setIsVisible);
+    }, []);
+
+    if (!isVisible) return null;
+
+    return (
+        <TouchableOpacity
+            style={styles.item}
+            onPress={() => ConsentService.showPrivacyOptions()}
+            activeOpacity={0.7}
+        >
+            <View style={styles.itemLeft}>
+                <View style={styles.iconContainer}>
+                    <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} />
+                </View>
+                <Text style={styles.itemLabel}>Paramètres de confidentialité (GDPR)</Text>
+            </View>
+            <View style={styles.itemRight}>
+                <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+            </View>
+        </TouchableOpacity>
+    );
+};
 
 export default function SettingsScreen() {
     const { signOut, system, toggleBiometric, isBiometricEnabled } = useAuth();
@@ -176,6 +205,7 @@ export default function SettingsScreen() {
                 <View style={styles.section}>
                     {renderSettingItem("Modifier le Système", "create-outline", () => router.push('/settings/edit-system' as any))}
                     {renderSettingItem("Sécurité et données", "lock-closed-outline", () => router.push('/settings/security' as any))}
+                    <PrivacySettingsButton />
                 </View>
 
                 {/* App Settings */}

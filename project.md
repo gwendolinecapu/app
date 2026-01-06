@@ -1,5 +1,7 @@
 # Plural Connect - Documentation du Projet
 
+> 📘 **Voir [ARCHITECTURE.md](file:///Users/leo/plural-connect/ARCHITECTURE.md) pour la documentation technique complète.**
+
 ## Terminologie / Lexique
 
 Pour éviter toute confusion entre les différentes parties de l'application, nous utilisons les termes suivants :

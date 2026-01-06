@@ -27,7 +27,7 @@ interface PostCardProps {
     onLike: (postId: string) => void;
     onComment?: (postId: string) => void;
     onShare?: (postId: string) => void;
-    onAuthorPress?: (authorId: string, systemId?: string) => void;
+    onAuthorPress?: (authorId: string, type: 'alter' | 'system') => void;
     currentUserId?: string;
     onDelete?: (postId: string) => void;
     showAuthor?: boolean;
@@ -79,9 +79,11 @@ export const PostCard = React.memo(({ post, onLike, onComment, onShare, onAuthor
     };
 
     const handleAuthorPress = () => {
-        if (onAuthorPress && (post.author_id || post.alter_id)) {
+        if (onAuthorPress) {
             triggerHaptic.selection();
-            onAuthorPress(post.author_id || post.alter_id || '', post.system_id);
+            const type = post.alter_id ? 'alter' : 'system';
+            const id = post.alter_id || post.system_id;
+            onAuthorPress(id, type);
         }
     };
 

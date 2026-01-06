@@ -93,8 +93,7 @@ const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
     // Compute selected style manually since we need dynamic color
     const selectedStyle = isSelected ? {
         borderColor: primaryColor,
-        borderWidth: 5,
-        transform: [{ scale: 1.05 }]
+        borderWidth: 6,
     } : {};
 
     return (
@@ -110,7 +109,7 @@ const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
                 {
                     backgroundColor: alter.color,
                     borderColor: alter.color,
-                    borderWidth: 3
+                    borderWidth: 4
                 },
                 selectedStyle
             ]}>

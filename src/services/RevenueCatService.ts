@@ -5,7 +5,7 @@ import Purchases, {
     LOG_LEVEL
 } from 'react-native-purchases';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
-import { Platform } from 'react-native';
+import { Platform, LogBox } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 
 // API Key provided by user (test key for now)
@@ -67,7 +67,13 @@ class RevenueCatService {
         }
 
         try {
-            Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
+            // Purchases.setLogLevel(LOG_LEVEL.VERBOSE); // Too noisy
+            LogBox.ignoreLogs([
+                /\[RevenueCat\].*Configuration is not valid/,
+                /\[RevenueCat\].*credentials issue/,
+                /\[RevenueCat\].*ProductEntitlementMapping/,
+                /\[RevenueCat\].*Error fetching offerings/
+            ]);
 
             try {
                 if (Platform.OS === 'ios') {

@@ -24,8 +24,8 @@ const RECURRENCE = [
 ];
 
 export const SystemTasks = () => {
-    const { user } = useAuth();
-    const { alters } = useAlterData(); // Hook to get alters list
+    const { user, alters } = useAuth();
+    // const { alters } = useAlterData(); // Removed incorrect hook usage
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [newTask, setNewTask] = useState('');
@@ -131,7 +131,7 @@ export const SystemTasks = () => {
 
     const getAssigneeName = (id: string | null) => {
         if (!id) return "Système";
-        const alt = alters.find(a => a.id === id);
+        const alt = alters.find((a: Alter) => a.id === id);
         return alt ? alt.name : "Inconnu";
     };
 
@@ -233,7 +233,7 @@ export const SystemTasks = () => {
                             >
                                 <Text style={[styles.chipText, selectedAssignee === null && styles.chipTextActive]}>Système</Text>
                             </TouchableOpacity>
-                            {alters.map(alter => (
+                            {alters.map((alter: Alter) => (
                                 <TouchableOpacity
                                     key={alter.id}
                                     style={[styles.chip, selectedAssignee === alter.id && styles.chipActive]}

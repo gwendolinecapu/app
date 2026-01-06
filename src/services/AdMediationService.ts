@@ -139,6 +139,16 @@ class AdMediationService {
             await this.loadState();
             this.checkDailyReset();
 
+            // Initialiser le consentement (GDPR / UMP)
+            // Cela affichera le formulaire si nécessaire
+            try {
+                const ConsentService = require('./ConsentService').default;
+                await ConsentService.requestConsent();
+                console.log('[AdMediation] Consent flow completed');
+            } catch (consentError) {
+                console.warn('[AdMediation] Consent flow warning:', consentError);
+            }
+
             // Initialiser Google Mobile Ads (skip in Expo Go where mobileAds is null)
             if (mobileAds) {
                 await mobileAds().initialize();

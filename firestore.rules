@@ -341,7 +341,14 @@ service cloud.firestore {
       // Update: ONLY receiver can update (to accept/reject)
       // IDs must remain unchanged
       allow update: if isAuthenticated() && 
-        (resource.data.receiverSystemId == request.auth.uid || resource.data.receiverId == request.auth.uid) &&
+        (
+          resource.data.receiverSystemId == request.auth.uid || 
+          resource.data.receiverId == request.auth.uid ||
+          // Robust check: verify if receiverId (alter) belongs to auth user
+          get(/databases/$(database)/documents/alters/$(resource.data.receiverId)).data.systemId == request.auth.uid ||
+          get(/databases/$(database)/documents/alters/$(resource.data.receiverId)).data.userId == request.auth.uid ||
+          get(/databases/$(database)/documents/alters/$(resource.data.receiverId)).data.system_id == request.auth.uid
+        ) &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']) &&
         request.resource.data.status in ['accepted', 'rejected'];
       

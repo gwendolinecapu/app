@@ -214,7 +214,18 @@ export default function AlterSpaceScreen() {
                                     onFollowersPress={() => setShowFollowersModal(true)}
                                     onFollowingPress={() => setShowFollowingModal(true)}
                                     themeColors={themeColors}
-                                    onAvatarPress={() => router.push({ pathname: '/story/view', params: { authorId: alter.id } })}
+                                    onAvatarPress={() => {
+                                        if (isOwner || friendStatus === 'friends') {
+                                            router.push({ pathname: '/story/view', params: { authorId: alter.id } });
+                                        } else {
+                                            if (Platform.OS === 'ios') {
+                                                Alert.alert("Privé", "Vous devez être ami pour voir la story.");
+                                            } else {
+                                                // Android standard toast or alert
+                                                Alert.alert("Accès refusé", "Seuls les amis peuvent voir les stories.");
+                                            }
+                                        }
+                                    }}
                                 />
                             }
                             alterId={alter.id}

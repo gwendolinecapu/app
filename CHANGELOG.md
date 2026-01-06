@@ -1,5 +1,22 @@
 # Changelog
 
+## [2026-01-06] Optimisation StoryViewer & Performance 🚀
+- **StoryViewer**: Refactoring complet pour performance et stabilité.
+  - **Single Modal**: Unification de l'affichage (Story/Ad) dans un seul Modal pour éliminer le clignotement.
+  - **Native Driver**: Tentative d'optimisation via Native Driver (finalement ajusté pour compatibilité visuelle).
+  - **Typage Strict**: Amélioration des types et de la logique de file d'attente (Ads injection).
+  - **UX**: Fluidité accrue lors de la navigation entre stories et publicités.
+
+## [2026-01-06] Google UMP & Correctifs 🛡️
+- **GDPR Consent**: Intégration complète du SDK Google UMP pour la gestion du consentement.
+  - Service `ConsentService` pour gérer les formulaires et les requêtes.
+  - Vérification du consentement au démarrage (avant l'initialisation des pubs).
+  - Bouton "Paramètres de confidentialité (GDPR)" ajouté dans les réglages.
+  - Configuration `delayAppMeasurementInit` pour la conformité stricte.
+- **Correctifs Compilation**:
+  - Résolution des erreurs de type dans `SystemTasks.tsx` et `CreditService.ts`.
+  - Fix de l'export manquant `CreditTransaction`.
+
 ## [2026-01-05] Amélioration du Système de Tâches & Pubs Natives 📋📈
 - **Gamification Tâches**: Compléter une tâche rapporte maintenant **+5 Crédits** (ou XP personnalisé) à l'alter assigné.
 - **Tâches Récurrentes**: Les tâches quotidiennes/hebdomadaires se régénèrent automatiquement après complétion.

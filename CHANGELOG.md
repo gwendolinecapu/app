@@ -1,5 +1,9 @@
 # Changelog
 
+## [2026-01-06] Documentation Architecture 📘
+- **Architecture**: Création du fichier `ARCHITECTURE.md` détaillant la stack technique, la structure des dossiers, les modèles de données (Firestore) et les services principaux.
+- **Documentation**: Mise à jour de `project.md` pour inclure le lien vers l'architecture.
+
 ## [2026-01-06] Optimisation StoryViewer & Performance 🚀
 - **StoryViewer**: Refactoring complet pour performance et stabilité.
   - **Single Modal**: Unification de l'affichage (Story/Ad) dans un seul Modal pour éliminer le clignotement.

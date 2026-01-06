@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { BlurView } from 'expo-blur';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, TextInput, Image } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, FlatList, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, TextInput, Image, Dimensions, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,140 +16,22 @@ import { timeAgo } from '../../src/lib/date';
 import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
 import { getThemeColors } from '../../src/lib/cosmetics';
 
-export default function PostDetailScreen() {
-    const { id } = useLocalSearchParams<{ id: string }>();
-    const { user, system, loading: authLoading, currentAlter } = useAuth();
-    const insets = useSafeAreaInsets();
-    const [post, setPost] = useState<Post | null>(null);
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+
+interface PostItemProps {
+    post: Post;
+    currentUserId?: string;
+    onLike: (post: Post) => void;
+    onDelete: (postId: string) => void;
+    onAuthorPress: (item: any) => void;
+    active: boolean;
+}
+
+const PostItem = React.memo(({ post, currentUserId, onLike, onDelete, onAuthorPress, active }: PostItemProps) => {
     const [comments, setComments] = useState<Comment[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [commentText, setCommentText] = useState('');
-    const [submittingComment, setSubmittingComment] = useState(false);
+    const [loadingComments, setLoadingComments] = useState(false);
 
-    const headerHeight = 60 + (insets.top || 0);
-
-    useEffect(() => {
-        if (authLoading) return;
-
-        if (id && user) {
-            fetchPostData();
-        } else if (!user && !authLoading) {
-            // User not authenticated
-            setLoading(false);
-            // Optionally redirect or show error
-        }
-    }, [id, user, authLoading]);
-
-    const fetchPostData = async () => {
-        try {
-            setLoading(true);
-            const postData = await PostService.getPostById(id!);
-            if (postData) {
-                setPost(postData);
-                const commentsData = await CommentService.fetchComments(id!);
-                setComments(commentsData);
-            } else {
-                console.error(`Post with ID ${id} not found.`);
-                Alert.alert('Erreur', 'Publication non trouvée');
-                router.back();
-            }
-        } catch (error: any) {
-            console.error('Error fetching post data:', error);
-            console.error('DEBUG: Post ID:', id);
-            console.error('DEBUG: Error code:', error.code);
-            console.error('DEBUG: Error message:', error.message);
-            Alert.alert('Erreur', 'Impossible de charger la publication: ' + (error.message || 'Erreur inconnue'));
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleLike = async () => {
-        if (!post || !user) return;
-        try {
-            await PostService.toggleLike(post.id, user.uid, currentAlter?.id);
-            // Local update for immediate feedback
-            const isLiked = post.likes?.includes(user.uid);
-            const newLikes = isLiked
-                ? post.likes.filter(l => l !== user.uid)
-                : [...(post.likes || []), user.uid];
-
-            setPost({ ...post, likes: newLikes });
-        } catch (error) {
-            console.error('Error liking post:', error);
-        }
-    };
-
-    const handleAddComment = async () => {
-        if (!commentText.trim() || !user || !post) return;
-
-        try {
-            setSubmittingComment(true);
-            const authorName = currentAlter?.name || system?.username || 'Utilisateur';
-            const authorAvatar = currentAlter?.avatar || currentAlter?.avatar_url || system?.avatar_url || undefined;
-            const authorId = currentAlter?.id || user.uid;
-
-            await CommentService.addComment({
-                postId: post.id,
-                authorId: authorId,
-                authorName: authorName,
-                authorAvatar: authorAvatar,
-                content: commentText.trim()
-            });
-            setCommentText('');
-            // Refresh comments
-            const commentsData = await CommentService.fetchComments(post.id);
-            setComments(commentsData);
-            setPost({ ...post, comments_count: (post.comments_count || 0) + 1 });
-            triggerHaptic.success();
-        } catch (error) {
-            console.error('Error adding comment:', error);
-            Alert.alert('Erreur', 'Impossible d\'ajouter le commentaire');
-        } finally {
-            setSubmittingComment(false);
-        }
-    };
-
-    const handleDelete = async (postId: string) => {
-        try {
-            if (!post) return;
-            // Optimistic update prevention or loading state?
-            // Deletion is critical, so we wait.
-            await PostService.deletePost(postId);
-            triggerHaptic.success();
-            router.back();
-            Alert.alert('Succès', 'Publication supprimée');
-        } catch (error) {
-            console.error('Error deleting post:', error);
-            Alert.alert('Erreur', 'Impossible de supprimer la publication');
-        }
-    };
-
-    if (loading) {
-        return (
-            <SafeAreaView style={styles.container}>
-                <View style={[styles.header, { paddingTop: 16 }]}>
-                    <AnimatedPressable onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={28} color={colors.text} />
-                    </AnimatedPressable>
-                    <Text style={styles.headerTitle}>Publications</Text>
-                    <View style={{ width: 40 }} />
-                </View>
-                <ScrollView contentContainerStyle={styles.content}>
-                    <SkeletonFeed />
-                    <View style={{ padding: 16 }}>
-                        <Skeleton shape="text" width={100} height={20} style={{ marginBottom: 16 }} />
-                        <SkeletonFeed />
-                    </View>
-                </ScrollView>
-            </SafeAreaView>
-        );
-    }
-
-    if (!post) return null;
-
-
-    // Derive theme colors from post author
+    // Theme colors for this specific post author
     const themeColors = post?.alter?.equipped_items?.theme
         ? getThemeColors(post.alter.equipped_items.theme)
         : post?.alter?.color
@@ -163,108 +45,276 @@ export default function PostDetailScreen() {
             }
             : null;
 
-    const handleAuthorPress = (item: any) => {
-        if (item.author_id.includes('-') || item.author_id.length > 20) {
-            router.push(`/alter-space/${item.author_id}`);
-        } else {
-            const targetId = item.system_id || item.author_id;
-            router.push(`/system-profile/${targetId}`);
+    useEffect(() => {
+        if (active) {
+            loadComments();
+        }
+    }, [active, post.id]);
+
+    const loadComments = async () => {
+        try {
+            setLoadingComments(true);
+            const data = await CommentService.fetchComments(post.id);
+            setComments(data);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingComments(false);
         }
     };
 
     return (
+        <View style={[styles.postContainer, { minHeight: SCREEN_HEIGHT * 0.7 }]}>
+            <PostCard
+                post={post}
+                onLike={() => onLike(post)}
+                onDelete={() => onDelete(post.id)}
+                currentUserId={currentUserId}
+                showAuthor={true}
+                themeColors={themeColors}
+                onAuthorPress={onAuthorPress}
+                isDetailView={true}
+            />
+            {/* Comments simplified for list view */}
+            <View style={styles.commentsPreview}>
+                <Text style={[styles.commentsTitle, themeColors && { color: themeColors.text }]}>
+                    Commentaires ({comments.length})
+                </Text>
+                {comments.slice(0, 3).map(c => (
+                    <View key={c.id} style={styles.miniComment}>
+                        <Text style={[styles.miniCommentAuthor, themeColors && { color: themeColors.text }]}>{c.author_name}: </Text>
+                        <Text style={[styles.miniCommentContent, themeColors && { color: themeColors.textSecondary }]} numberOfLines={2}>{c.content}</Text>
+                    </View>
+                ))}
+                {comments.length > 3 && (
+                    <Text style={[styles.viewMore, themeColors && { color: themeColors.textSecondary }]}>
+                        Voir les {comments.length - 3} autres commentaires...
+                    </Text>
+                )}
+                {comments.length === 0 && (
+                    <Text style={[styles.noComments, themeColors && { color: themeColors.textSecondary }]}>Pas encore de commentaires</Text>
+                )}
+            </View>
+        </View>
+    );
+});
+
+
+export default function PostDetailScreen() {
+    const params = useLocalSearchParams();
+    const id = typeof params.id === 'string' ? params.id : params.id?.[0];
+    const context = typeof params.context === 'string' ? params.context : undefined; // alter, system
+    const contextId = typeof params.contextId === 'string' ? params.contextId : undefined;
+
+    const { user, system, currentAlter } = useAuth();
+    const insets = useSafeAreaInsets();
+
+    const [posts, setPosts] = useState<Post[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [initialIndex, setInitialIndex] = useState(0);
+
+    // Comment input state (global for the screen, attached to visible post)
+    const [visiblePostIndex, setVisiblePostIndex] = useState(0);
+    const [commentText, setCommentText] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+
+    const flatListRef = useRef<FlatList>(null);
+    const [scrolledToInitial, setScrolledToInitial] = useState(false);
+
+    useEffect(() => {
+        fetchPosts();
+    }, [id, context, contextId]);
+
+    const fetchPosts = async () => {
+        try {
+            setLoading(true);
+            let fetchedPosts: Post[] = [];
+
+            if (context === 'alter' && contextId) {
+                const res = await PostService.fetchPostsByAlter(contextId, null, 50); // Fetch more for scrolling
+                fetchedPosts = res.posts;
+            } else if (context === 'system' && contextId) {
+                const res = await PostService.fetchPosts(contextId, null, 50);
+                fetchedPosts = res.posts.filter(p => p.system_id === contextId);
+            } else {
+                // Default: just fetch the single post if no context
+                if (id) {
+                    const singlePost = await PostService.getPostById(id);
+                    if (singlePost) fetchedPosts = [singlePost];
+                }
+            }
+
+            // If empty (shouldn't happen if ID exists), try fetching the specific ID at least
+            if (fetchedPosts.length === 0 && id) {
+                const singlePost = await PostService.getPostById(id);
+                if (singlePost) fetchedPosts = [singlePost];
+            }
+
+            setPosts(fetchedPosts);
+
+            // Find index of the clicked post
+            const index = fetchedPosts.findIndex(p => p.id === id);
+            if (index !== -1) {
+                setInitialIndex(index);
+                setVisiblePostIndex(index);
+            }
+        } catch (error) {
+            console.error('Error fetching posts for detail:', error);
+            Alert.alert('Erreur', 'Impossible de charger les publications');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: any[] }) => {
+        if (viewableItems.length > 0) {
+            setVisiblePostIndex(viewableItems[0].index || 0);
+        }
+    }, []);
+
+    const handleLike = async (post: Post) => {
+        if (!user) return;
+        try {
+            await PostService.toggleLike(post.id, user.uid, currentAlter?.id);
+            // Optimistic update
+            setPosts(prev => prev.map(p => {
+                if (p.id === post.id) {
+                    const isLiked = p.likes?.includes(user.uid);
+                    return {
+                        ...p,
+                        likes: isLiked ? p.likes.filter(l => l !== user.uid) : [...(p.likes || []), user.uid]
+                    };
+                }
+                return p;
+            }));
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const handleDelete = async (postId: string) => {
+        // Implement delete logic (remove from list)
+        try {
+            await PostService.deletePost(postId);
+            setPosts(prev => prev.filter(p => p.id !== postId));
+            if (posts.length <= 1) router.back();
+        } catch (e) { Alert.alert('Erreur', "Suppression impossible"); }
+    };
+
+    const handleAddComment = async () => {
+        const targetPost = posts[visiblePostIndex];
+        if (!targetPost || !commentText.trim() || !user) return;
+
+        try {
+            setSubmitting(true);
+            const authorName = currentAlter?.name || system?.username || 'Utilisateur';
+            const authorAvatar = currentAlter?.avatar || currentAlter?.avatar_url || system?.avatar_url || undefined;
+            const authorId = currentAlter?.id || user.uid;
+
+            await CommentService.addComment({
+                postId: targetPost.id,
+                authorId: authorId,
+                authorName: authorName,
+                authorAvatar: authorAvatar,
+                content: commentText.trim()
+            });
+
+            setCommentText('');
+            triggerHaptic.success();
+            // Force refresh of current item? We need to clear cache or trigger reload in child
+            // For now UI feedback suffices, child fetches on mount/active
+        } catch (error) {
+            console.error(error);
+            Alert.alert("Erreur", "Commentaire non envoyé");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    // Dynamic styles for header based on current visible post
+    const currentPost = posts[visiblePostIndex];
+    const currentTheme = currentPost?.alter?.equipped_items?.theme
+        ? getThemeColors(currentPost.alter.equipped_items.theme)
+        : currentPost?.alter?.color
+            ? { text: colors.text, border: currentPost.alter.color, background: colors.background }
+            : null;
+
+    if (loading) return (
+        <SafeAreaView style={styles.container}>
+            <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 50 }} />
+        </SafeAreaView>
+    );
+
+    return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={[styles.container, themeColors && { backgroundColor: themeColors.background }]}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+            style={[styles.container, currentTheme && { backgroundColor: currentTheme.background }]}
         >
-            <Stack.Screen options={{ headerShown: false }} />
-
             <BlurView
                 intensity={80}
                 tint="dark"
                 style={[
                     styles.headerAbsolute,
-                    { paddingTop: insets.top || 16, height: headerHeight },
-                    themeColors && { borderBottomColor: themeColors.border }
+                    { paddingTop: insets.top || 16, height: 60 + (insets.top || 0) },
+                    currentTheme && { borderBottomColor: currentTheme.border }
                 ]}
             >
                 <AnimatedPressable onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={28} color={themeColors?.text || colors.text} />
+                    <Ionicons name="chevron-back" size={28} color={currentTheme?.text || colors.text} />
                 </AnimatedPressable>
-                <Text style={[styles.headerTitle, themeColors && { color: themeColors.text }]}>Publications</Text>
-                <View style={{ width: 40 }} />
+                <Text style={[styles.headerTitle, currentTheme && { color: currentTheme?.text }]}>Publications</Text>
             </BlurView>
 
-            <ScrollView contentContainerStyle={[styles.content, { paddingTop: headerHeight }]}>
-                <PostCard
-                    post={post}
-                    onLike={handleLike}
-                    onDelete={handleDelete}
-                    currentUserId={user?.uid}
-                    showAuthor={true}
-                    themeColors={themeColors}
-                />
+            <FlatList
+                ref={flatListRef}
+                data={posts}
+                keyExtractor={item => item.id}
+                renderItem={({ item, index }) => (
+                    <View style={{ paddingTop: index === 0 ? 80 + (insets.top || 0) : 20, paddingBottom: 40 }}>
+                        <PostItem
+                            post={item}
+                            currentUserId={user?.uid}
+                            onLike={handleLike}
+                            onDelete={handleDelete}
+                            onAuthorPress={(a) => {
+                                const targetId = a.system_id || a.author_id;
+                                if (targetId && !targetId.includes('-')) router.push(`/profile/${targetId}`);
+                                else if (a.author_id) router.push(`/alter-space/${a.author_id}`);
+                            }}
+                            active={index === visiblePostIndex}
+                        />
+                    </View>
+                )}
+                onViewableItemsChanged={handleViewableItemsChanged}
+                viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
+                showsVerticalScrollIndicator={false}
+                initialScrollIndex={initialIndex}
+                onScrollToIndexFailed={info => {
+                    const wait = new Promise(resolve => setTimeout(resolve, 500));
+                    wait.then(() => {
+                        flatListRef.current?.scrollToIndex({ index: initialIndex, animated: false });
+                    });
+                }}
+            />
 
-                {/* Comments Section */}
-                <View style={styles.commentsContainer}>
-                    <Text style={styles.commentsTitle}>Commentaires</Text>
-                    {comments.length === 0 ? (
-                        <Text style={styles.noComments}>Aucun commentaire pour le moment.</Text>
-                    ) : (
-                        comments.map((comment) => (
-                            <View key={comment.id} style={styles.commentItem}>
-                                <View style={styles.commentHeader}>
-                                    <TouchableOpacity onPress={() => handleAuthorPress(comment)}>
-                                        <Text style={styles.commentAuthor}>{comment.author_name || 'Anonyme'}</Text>
-                                    </TouchableOpacity>
-                                    <Text style={styles.commentDate}>
-                                        {timeAgo(comment.created_at)}
-                                    </Text>
-                                </View>
-                                <Text style={styles.commentContent}>{comment.content}</Text>
-                            </View>
-                        ))
-                    )}
-                </View>
-            </ScrollView>
-
-            {/* Post a Comment Bar */}
+            {/* Sticky Comment Bar */}
             <View style={[
                 styles.inputContainer,
                 { paddingBottom: Math.max(insets.bottom, 12) },
-                themeColors && { backgroundColor: themeColors.backgroundCard, borderTopColor: themeColors.border }
+                currentTheme && { backgroundColor: currentTheme.border + '20', borderTopColor: currentTheme.border }
             ]}>
                 <TextInput
-                    style={[
-                        styles.input,
-                        themeColors && { backgroundColor: themeColors.background, color: themeColors.text }
-                    ]}
-                    placeholder="Ajouter un commentaire..."
-                    placeholderTextColor={themeColors ? themeColors.textSecondary : colors.textMuted}
+                    style={[styles.input, currentTheme && { color: currentTheme.text, backgroundColor: colors.background }]}
+                    placeholder={`Commenter en tant que ${currentAlter?.name || system?.username}...`}
+                    placeholderTextColor={colors.textMuted}
                     value={commentText}
                     onChangeText={setCommentText}
-                    multiline
                 />
-                <AnimatedPressable
-                    onPress={handleAddComment}
-                    disabled={!commentText.trim() || submittingComment}
-                    style={styles.sendButton}
-                >
-                    {submittingComment ? (
-                        <ActivityIndicator size="small" color={themeColors?.primary || colors.primary} />
-                    ) : (
-                        <Text style={[
-                            styles.sendText,
-                            (!commentText.trim() || submittingComment) ?
-                                { color: themeColors ? themeColors.textSecondary : colors.textMuted } :
-                                { color: themeColors ? themeColors.primary : colors.primary }
-                        ]}>
-                            Publier
-                        </Text>
-                    )}
-                </AnimatedPressable>
+                <TouchableOpacity onPress={handleAddComment} disabled={submitting}>
+                    <Ionicons name="send" size={24} color={currentTheme?.primary || colors.primary} />
+                </TouchableOpacity>
             </View>
+
         </KeyboardAvoidingView>
     );
 }
@@ -274,93 +324,38 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
     },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: colors.background,
-    },
     headerAbsolute: {
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
-        zIndex: 10,
+        zIndex: 100,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.1)',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingBottom: 16,
         paddingHorizontal: 16,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
-        backgroundColor: colors.background,
     },
     backButton: {
-        padding: 4,
+        padding: 8,
     },
     headerTitle: {
-        fontSize: 16,
-        fontWeight: '700',
+        ...typography.h3,
+        flex: 1,
+        textAlign: 'center',
+        marginRight: 40,
         color: colors.text,
     },
-    content: {
-        paddingBottom: 150,
-    },
-    commentsContainer: {
-        padding: 16,
-    },
-    commentsTitle: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: colors.text,
-        marginBottom: 16,
-    },
-    noComments: {
-        fontSize: 14,
-        color: colors.textSecondary,
-        fontStyle: 'italic',
-    },
-    commentItem: {
-        marginBottom: 16,
-    },
-    commentHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 4,
-    },
-    commentAuthor: {
-        fontSize: 13,
-        fontWeight: '700',
-        color: colors.text,
-    },
-    commentDate: {
-        fontSize: 11,
-        color: colors.textMuted,
-    },
-    commentContent: {
-        fontSize: 14,
-        color: colors.text,
-        lineHeight: 18,
+    postContainer: {
+        paddingHorizontal: 0,
     },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 12,
+        padding: 16,
         borderTopWidth: 1,
         borderTopColor: colors.border,
         backgroundColor: colors.backgroundCard,
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
     },
     input: {
         flex: 1,
@@ -368,16 +363,43 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         paddingHorizontal: 16,
         paddingVertical: 8,
-        marginRight: 12,
+        marginRight: 10,
         color: colors.text,
-        maxHeight: 100,
     },
-    sendButton: {
-        paddingVertical: 8,
+    commentsPreview: {
+        paddingHorizontal: 16,
+        marginTop: 10,
     },
-    sendText: {
-        color: colors.primary,
-        fontWeight: '700',
-        fontSize: 14,
+    commentsTitle: {
+        ...typography.bodySmall,
+        fontWeight: 'bold',
+        marginBottom: 8,
+        color: colors.textSecondary,
     },
+    miniComment: {
+        flexDirection: 'row',
+        marginBottom: 4,
+        marginRight: 10
+    },
+    miniCommentAuthor: {
+        ...typography.caption,
+        fontWeight: 'bold',
+        color: colors.text,
+    },
+    miniCommentContent: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        flex: 1,
+    },
+    viewMore: {
+        ...typography.caption,
+        color: colors.textMuted,
+        marginTop: 4,
+        fontStyle: 'italic',
+    },
+    noComments: {
+        ...typography.caption,
+        color: colors.textMuted,
+        fontStyle: 'italic',
+    }
 });

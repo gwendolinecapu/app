@@ -138,6 +138,47 @@ export const PostService = {
     },
 
     /**
+     * Fetch posts created by a specific alter
+     */
+    fetchPostsByAlter: async (alterId: string, lastVisible: QueryDocumentSnapshot | null = null, pageSize: number = 20) => {
+        try {
+            let q = query(
+                collection(db, POSTS_COLLECTION),
+                where('alter_id', '==', alterId),
+                orderBy('created_at', 'desc'),
+                limit(pageSize)
+            );
+
+            if (lastVisible) {
+                q = query(q, startAfter(lastVisible));
+            }
+
+            const querySnapshot = await getDocs(q);
+            const posts: Post[] = [];
+
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                posts.push({
+                    id: doc.id,
+                    ...data,
+                    created_at: data.created_at?.toDate().toISOString() || new Date().toISOString(),
+                    updated_at: data.updated_at?.toDate().toISOString() || new Date().toISOString(),
+                } as Post);
+            });
+
+            const enrichedPosts = await PostService._enrichPostsWithAuthors(posts);
+
+            return {
+                posts: enrichedPosts,
+                lastVisible: querySnapshot.docs[querySnapshot.docs.length - 1]
+            };
+        } catch (error) {
+            console.error('Error fetching alter posts:', error);
+            throw error;
+        }
+    },
+
+    /**
      * Fetch posts for a specific system (or global feed if we implemented that)
      * currently fetching all posts for the system to show in their feed
      */

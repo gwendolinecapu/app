@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, SafeAreaView, Dimensions, ScrollView, Platform } from 'react-native';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text, SafeAreaView, Dimensions, ScrollView, Platform, FlatList, Alert } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Video, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,103 +7,67 @@ import { PostService } from '../../../src/services/posts';
 import { Post } from '../../../src/types';
 import { colors, spacing, typography } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/contexts/AuthContext';
-import { FrontIndicator } from '../../../src/components/ui/ActiveFrontBadge';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
 
-export default function FullPageVideoScreen() {
-    const { id } = useLocalSearchParams();
-    const { user } = useAuth();
-    const [post, setPost] = useState<Post | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [isMuted, setIsMuted] = useState(false);
-    const [isPlaying, setIsPlaying] = useState(true);
+// Helper to check if a post is a video
+const isPostVideo = (post: Post) => {
+    return post.media_url && (
+        post.media_url.endsWith('.mp4') ||
+        post.media_url.endsWith('.mov') ||
+        post.media_url.endsWith('.avi') ||
+        post.media_url.endsWith('.webm')
+    );
+};
+
+interface VideoItemProps {
+    post: Post;
+    active: boolean;
+    user: any;
+    onLike: (post: Post) => void;
+    onToggleMute: () => void;
+    isMuted: boolean;
+}
+
+const VideoItem = React.memo(({ post, active, user, onLike, onToggleMute, isMuted }: VideoItemProps) => {
+    const videoRef = useRef<Video>(null);
+    const [isPlaying, setIsPlaying] = useState(active);
 
     useEffect(() => {
-        loadPost();
-    }, [id]);
-
-    const loadPost = async () => {
-        if (!id) return;
-        try {
-            const data = await PostService.getPostById(id as string);
-            setPost(data);
-        } catch (error) {
-            console.error('Error loading video post:', error);
-        } finally {
-            setLoading(false);
+        setIsPlaying(active);
+        if (active) {
+            videoRef.current?.playAsync();
+        } else {
+            videoRef.current?.pauseAsync();
         }
-    };
-
-    const handleLike = async () => {
-        if (!post || !user) return;
-        // Optimistic update
-        const isLiked = post.likes?.includes(user.uid);
-        const newLikes = isLiked
-            ? post.likes?.filter(uid => uid !== user.uid)
-            : [...(post.likes || []), user.uid];
-
-        setPost({ ...post, likes: newLikes });
-
-        try {
-            await PostService.toggleLike(post.id, user.uid);
-        } catch (error) {
-            console.error(error);
-            // Revert on error would go here
-        }
-    };
-
-    if (loading) {
-        return (
-            <View style={styles.loadingContainer}>
-                <Text style={{ color: 'white' }}>Chargement...</Text>
-            </View>
-        );
-    }
-
-    if (!post || !post.media_url) {
-        return (
-            <View style={styles.loadingContainer}>
-                <Text style={{ color: 'white' }}>Vidéo introuvable</Text>
-                <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-                    <Ionicons name="close" size={32} color="white" />
-                </TouchableOpacity>
-            </View>
-        );
-    }
+    }, [active]);
 
     const isLiked = user && post.likes?.includes(user.uid);
 
     return (
         <View style={styles.container}>
             <Video
+                ref={videoRef}
                 source={{ uri: post.media_url }}
                 style={styles.video}
-                resizeMode={ResizeMode.COVER} // Full screen vertical feel
-                shouldPlay={isPlaying}
+                resizeMode={ResizeMode.COVER}
+                shouldPlay={active} // Only play if active item
                 isMuted={isMuted}
                 isLooping
             />
 
-            {/* Overlay Gradient for readability */}
+            {/* Overlay Gradient */}
             <LinearGradient
                 colors={['rgba(0,0,0,0.3)', 'transparent', 'rgba(0,0,0,0.6)']}
                 style={StyleSheet.absoluteFillObject}
                 pointerEvents="none"
             />
 
-            {/* Top Bar */}
-            <SafeAreaView style={styles.topBar}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="chevron-down" size={32} color="white" />
-                </TouchableOpacity>
-            </SafeAreaView>
-
             {/* Right Side Actions */}
             <View style={styles.rightActions}>
-                <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
+                <TouchableOpacity style={styles.actionButton} onPress={() => onLike(post)}>
                     <Ionicons name={isLiked ? "heart" : "heart-outline"} size={35} color={isLiked ? colors.error : "white"} />
                     <Text style={styles.actionText}>{post.likes?.length || 0}</Text>
                 </TouchableOpacity>
@@ -113,7 +77,7 @@ export default function FullPageVideoScreen() {
                     <Text style={styles.actionText}>{post.comments_count || 0}</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.actionButton} onPress={() => setIsMuted(!isMuted)}>
+                <TouchableOpacity style={styles.actionButton} onPress={onToggleMute}>
                     <Ionicons name={isMuted ? "volume-mute" : "volume-high"} size={32} color="white" />
                 </TouchableOpacity>
             </View>
@@ -141,11 +105,150 @@ export default function FullPageVideoScreen() {
             </View>
         </View>
     );
+});
+
+export default function FullPageVideoScreen() {
+    const params = useLocalSearchParams();
+    const id = typeof params.id === 'string' ? params.id : params.id?.[0];
+    const context = typeof params.context === 'string' ? params.context : undefined;
+    const contextId = typeof params.contextId === 'string' ? params.contextId : undefined;
+
+    const { user } = useAuth();
+    const [posts, setPosts] = useState<Post[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [activeIndex, setActiveIndex] = useState(0);
+    const [isMuted, setIsMuted] = useState(false);
+
+    useEffect(() => {
+        fetchPosts();
+    }, [id, context, contextId]);
+
+    const fetchPosts = async () => {
+        try {
+            setLoading(true);
+            let fetchedPosts: Post[] = [];
+
+            if (context === 'alter' && contextId) {
+                const res = await PostService.fetchPostsByAlter(contextId, null, 50);
+                fetchedPosts = res.posts;
+            } else if (context === 'system' && contextId) {
+                const res = await PostService.fetchPosts(contextId, null, 50);
+                fetchedPosts = res.posts.filter(p => p.system_id === contextId);
+            } else {
+                if (id) {
+                    const singlePost = await PostService.getPostById(id);
+                    if (singlePost) fetchedPosts = [singlePost];
+                }
+            }
+
+            // Filter only videos for this "Reels" view
+            const videoPosts = fetchedPosts.filter(isPostVideo);
+
+            // Safety: if clicked post isn't in fetched list (pagination?) or was filtered out (unlikely if clicked from grid),
+            // ensure it's added.
+            if (id && !videoPosts.find(p => p.id === id)) {
+                const singlePost = await PostService.getPostById(id);
+                if (singlePost && isPostVideo(singlePost)) {
+                    videoPosts.push(singlePost);
+                    // Sort again? or just put it at top?
+                    // Better to just have it.
+                }
+            }
+
+            setPosts(videoPosts);
+
+            const index = videoPosts.findIndex(p => p.id === id);
+            if (index !== -1) {
+                setActiveIndex(index);
+            }
+        } catch (error) {
+            console.error('Error loading video posts:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: any[] }) => {
+        if (viewableItems.length > 0) {
+            setActiveIndex(viewableItems[0].index || 0);
+        }
+    }, []);
+
+    const handleLike = async (post: Post) => {
+        if (!user) return;
+        // Optimistic update
+        setPosts(prev => prev.map(p => {
+            if (p.id === post.id) {
+                const isLiked = p.likes?.includes(user.uid);
+                return {
+                    ...p,
+                    likes: isLiked ? p.likes.filter(l => l !== user.uid) : [...(p.likes || []), user.uid]
+                };
+            }
+            return p;
+        }));
+
+        try {
+            await PostService.toggleLike(post.id, user.uid);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    if (loading && posts.length === 0) {
+        return (
+            <View style={styles.loadingContainer}>
+                <Text style={{ color: 'white' }}>Chargement...</Text>
+            </View>
+        );
+    }
+
+    return (
+        <View style={styles.mainContainer}>
+            <FlatList
+                data={posts}
+                pagingEnabled
+                keyExtractor={item => item.id}
+                renderItem={({ item, index }) => (
+                    <View style={{ width, height }}>
+                        <VideoItem
+                            post={item}
+                            active={index === activeIndex}
+                            user={user}
+                            onLike={handleLike}
+                            onToggleMute={() => setIsMuted(!isMuted)}
+                            isMuted={isMuted}
+                        />
+                    </View>
+                )}
+                onViewableItemsChanged={handleViewableItemsChanged}
+                viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
+                showsVerticalScrollIndicator={false}
+                initialScrollIndex={activeIndex}
+                getItemLayout={(data, index) => (
+                    { length: height, offset: height * index, index }
+                )}
+                onScrollToIndexFailed={() => { }} // Silent fail or retry
+            />
+
+            {/* Top Bar - Fixed */}
+            <SafeAreaView style={styles.topBar}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <Ionicons name="chevron-down" size={32} color="white" />
+                </TouchableOpacity>
+            </SafeAreaView>
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
-    container: {
+    mainContainer: {
         flex: 1,
+        backgroundColor: 'black',
+    },
+    container: {
+        width: width,
+        height: height,
         backgroundColor: 'black',
     },
     loadingContainer: {
@@ -164,19 +267,16 @@ const styles = StyleSheet.create({
         top: 0,
         left: 0,
         right: 0,
-        zIndex: 10,
         paddingHorizontal: 20,
+        // zIndex handled by order? no, flatlist is below.
     },
     backButton: {
         padding: 10,
     },
-    closeButton: {
-        marginTop: 20,
-    },
     rightActions: {
         position: 'absolute',
         right: 16,
-        bottom: 100,
+        bottom: 150, // Higher to avoid overlap
         alignItems: 'center',
         gap: 20,
     },
@@ -194,11 +294,10 @@ const styles = StyleSheet.create({
     },
     bottomInfo: {
         position: 'absolute',
-        bottom: 0,
+        bottom: 50, // Above bottom nav line
         left: 0,
-        right: 80, // Leave space for right actions
+        right: 80,
         padding: 20,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 20,
     },
     authorRow: {
         flexDirection: 'row',

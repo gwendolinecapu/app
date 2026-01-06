@@ -598,6 +598,17 @@ export default function NotificationsScreen() {
                     </Text>
                 </View>
 
+                {/* Right Side Media/Action */}
+
+                {/* Fallback for text posts liked */}
+                {item.type === 'like' && !hasMedia && item.subtitle && item.subtitle !== 'Publication' && (
+                    <TouchableOpacity onPress={handlePress}>
+                        <View style={[styles.notificationMedia, { backgroundColor: backgroundColor, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center' }]}>
+                            <Ionicons name="text" size={20} color={colors.textSecondary} />
+                        </View>
+                    </TouchableOpacity>
+                )}
+
                 {/* Right Side: Media or Follow Button */}
                 {hasMedia && item.mediaUrl ? (
                     <TouchableOpacity onPress={handlePress}>

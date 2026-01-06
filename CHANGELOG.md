@@ -16,6 +16,10 @@
 - **Correctifs Compilation**:
   - Résolution des erreurs de type dans `SystemTasks.tsx` et `CreditService.ts`.
   - Fix de l'export manquant `CreditTransaction`.
+- **Conformité & iOS 100%**:
+  - Ajout explicite de la demande `AppTrackingTransparency` (ATT) pour iOS 14+.
+  - Installation de `expo-tracking-transparency` pour gérer les permissions natives.
+  - Sécurisation du flux d'initialisation (Fail-Open safe).
 
 ## [2026-01-05] Amélioration du Système de Tâches & Pubs Natives 📋📈
 - **Gamification Tâches**: Compléter une tâche rapporte maintenant **+5 Crédits** (ou XP personnalisé) à l'alter assigné.

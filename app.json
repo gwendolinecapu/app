@@ -123,7 +123,8 @@
         {
           "photosPermission": "L'accès à vos photos est nécessaire pour les ajouter à la galerie de l'alter."
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin"
     ],
     "experiments": {
       "typedRoutes": true

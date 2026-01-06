@@ -59,6 +59,7 @@ interface AuthContextType {
     currentAlter: Alter | null;
     isBiometricEnabled: boolean;
     toggleBiometric: () => Promise<void>;
+    signInWithGoogle: () => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -248,10 +249,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const signInWithGoogle = async () => {
+        try {
+            const GoogleAuthService = require('../services/GoogleAuthService').default;
+            const userCredential = await GoogleAuthService.signIn();
+
+            // If new user, we might want to create system data, but onAuthStateChanged handles it mostly.
+            // However, onAuthStateChanged logic for creating system (lines 95-110) relies on email extraction.
+            // It should work fine for Google users too.
+
+            return { error: null };
+        } catch (error: any) {
+            return { error };
+        }
+    };
+
     const signOut = async () => {
         try {
             if (user) {
                 await FrontingService.stopActiveSessions(user.uid);
+            }
+            try {
+                const GoogleAuthService = require('../services/GoogleAuthService').default;
+                await GoogleAuthService.signOut();
+            } catch (e) {
+                // Ignore if not signed in with Google
             }
             await firebaseSignOut(auth);
         } catch (error) {
@@ -446,7 +468,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 updateHeadspace,
                 currentAlter: activeFront.alters[0] || null,
                 isBiometricEnabled,
-                toggleBiometric
+                toggleBiometric,
+                signInWithGoogle
             }}
         >
             {children}

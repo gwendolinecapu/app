@@ -8,12 +8,14 @@ interface MagicalLoadingViewProps {
     visible: boolean;
     message?: string;
     subMessage?: string;
+    progress?: number;
 }
 
 export const MagicalLoadingView: React.FC<MagicalLoadingViewProps> = ({
     visible,
     message = "Incantation en cours...",
-    subMessage = "La magie opère..."
+    subMessage = "La magie opère...",
+    progress
 }) => {
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -51,7 +53,15 @@ export const MagicalLoadingView: React.FC<MagicalLoadingViewProps> = ({
                 </View>
 
                 <Text style={styles.message}>{message}</Text>
-                <Text style={styles.subMessage}>{subMessage}</Text>
+                <Text style={styles.subMessage}>
+                    {subMessage} {progress !== undefined ? `(${Math.round(progress * 100)}%)` : ''}
+                </Text>
+
+                {progress !== undefined && (
+                    <View style={styles.progressTrack}>
+                        <View style={[styles.progressBar, { width: `${Math.min(100, Math.max(0, progress * 100))}%` }]} />
+                    </View>
+                )}
             </View>
         </Animated.View>
     );
@@ -98,5 +108,18 @@ const styles = StyleSheet.create({
         color: colors.textSecondary,
         textAlign: 'center',
         opacity: 0.8,
+    },
+    progressTrack: {
+        width: '100%',
+        height: 6,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 3,
+        marginTop: spacing.md,
+        overflow: 'hidden',
+    },
+    progressBar: {
+        height: '100%',
+        backgroundColor: colors.primary,
+        borderRadius: 3,
     },
 });

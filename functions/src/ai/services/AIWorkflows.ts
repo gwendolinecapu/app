@@ -1,10 +1,7 @@
-
 import * as admin from "firebase-admin";
 import { AIJob } from "../interfaces/IAIJob";
-import { ILLMProvider } from "../interfaces/ILLMProvider";
-import { IImageProvider } from "../interfaces/IImageProvider";
 import { PromptService } from "./PromptService";
-import { STYLES } from "../constants";
+import { AIRouter } from "./AIRouter";
 
 // Helper to download image
 async function downloadImageAsBase64(url: string): Promise<string> {
@@ -30,24 +27,42 @@ async function uploadImage(buffer: Buffer, path: string): Promise<string> {
     return file.publicUrl();
 }
 
+// Helper to check for cancellation
+async function checkCancelled(jobId: string) {
+    const doc = await admin.firestore().collection('ai_jobs').doc(jobId).get();
+    if (doc.data()?.status === 'cancelled') throw new Error("Job Cancelled");
+}
+
 export const AIWorkflows = {
-    async performRitual(job: AIJob, llm: ILLMProvider, imageGen: IImageProvider): Promise<any> {
-        const { alterId, referenceImageUrls } = job.params;
+    async performRitual(job: AIJob): Promise<any> {
+        const router = new AIRouter();
+        const { id: jobId, params } = job;
+        const { alterId, referenceImageUrls } = params;
         if (!alterId || !referenceImageUrls) throw new Error("Missing params");
+
+        await checkCancelled(jobId);
 
         // 1. Analyze (Vision)
         const imagesBase64 = await Promise.all((referenceImageUrls as string[]).map(downloadImageAsBase64));
+        await checkCancelled(jobId);
+
         const analysisPrompt = PromptService.getRitualAnalysisPrompt();
 
-        const visualDescription = await llm.analyzeImage(imagesBase64[0], analysisPrompt);
+        // Use Router
+        const analysisRes = await router.analyzeImage(imagesBase64[0], analysisPrompt);
+        const visualDescription = analysisRes.result;
+        await checkCancelled(jobId);
 
         // 2. Ref Sheet (Image Gen)
         const refSheetPrompt = PromptService.getRitualRefSheetPrompt(visualDescription);
 
-        const refSheetBuffers = await imageGen.generateInfoImage(refSheetPrompt, {
+        const refSheetRes = await router.generateImage(refSheetPrompt, {
             referenceImages: imagesBase64,
             width: 2048, height: 2048
         });
+        const refSheetBuffers = refSheetRes.result;
+
+        await checkCancelled(jobId);
 
         const refSheetUrl = await uploadImage(refSheetBuffers[0], `alters/${alterId}/visual_dna/ref_sheet_${Date.now()}.png`);
 
@@ -58,13 +73,27 @@ export const AIWorkflows = {
             'visual_dna.updated_at': admin.firestore.FieldValue.serverTimestamp()
         });
 
-        return { visualDescription, refSheetUrl };
+        return {
+            visualDescription,
+            refSheetUrl,
+            metadata: {
+                providerUsed: {
+                    analysis: analysisRes.providerUsed,
+                    generation: refSheetRes.providerUsed
+                },
+                fallbackUsed: analysisRes.fallbackUsed || refSheetRes.fallbackUsed
+            }
+        };
     },
 
-    async performMagicPost(job: AIJob, llm: ILLMProvider, imageGen: IImageProvider): Promise<any> {
-        const { alterId, prompt, style, imageCount, sceneImageUrl, poseImageUrl } = job.params;
+    async performMagicPost(job: AIJob): Promise<any> {
+        const router = new AIRouter();
+        const { id: jobId, params } = job;
+        const { alterId, prompt, style, imageCount, sceneImageUrl, poseImageUrl } = params;
         const count = imageCount || 1;
         const selectedStyle = style || "Cinematic";
+
+        await checkCancelled(jobId);
 
         // 1. Get Alter Context
         const alterDoc = await admin.firestore().collection('alters').doc(alterId!).get();
@@ -73,23 +102,36 @@ export const AIWorkflows = {
 
         // 2. Enhance Prompt
         const enhancementPrompt = PromptService.getMagicPromptExpansion(prompt, charDesc, selectedStyle);
-        const magicPrompt = await llm.generateText(enhancementPrompt);
+        const magicRes = await router.generateText(enhancementPrompt);
+        const magicPrompt = magicRes.result;
+
+        await checkCancelled(jobId);
 
         // 3. Prepare References
         const references: string[] = [];
         if (sceneImageUrl) references.push(await downloadImageAsBase64(sceneImageUrl));
         if (poseImageUrl) references.push(await downloadImageAsBase64(poseImageUrl));
+        await checkCancelled(jobId);
 
         // 4. Generate
+        // Note: Router generates one batch usually, but let's loop if needed or pass count
+        // Our interfaces said 'count' in options.
+        // Assuming router/provider handles options.count if supported, OR we do parallel calls.
+
+        // Let's do optimized parallel calls via Router
         const promises = Array.from({ length: count }).map(() =>
-            imageGen.generateInfoImage(magicPrompt, {
+            router.generateImage(magicPrompt, {
                 referenceImages: references,
                 style: selectedStyle
             })
         );
 
         const results = await Promise.all(promises);
-        const allBuffers: Buffer[] = results.flatMap(r => r);
+        await checkCancelled(jobId);
+
+        const allBuffers: Buffer[] = results.flatMap(r => r.result);
+        const providersUsed = results.map(r => r.providerUsed);
+        const fallbackUsed = results.some(r => r.fallbackUsed) || magicRes.fallbackUsed;
 
         // 5. Upload
         const uploadPromises = allBuffers.map((buf, idx) =>
@@ -97,13 +139,32 @@ export const AIWorkflows = {
         );
         const imageUrls = await Promise.all(uploadPromises);
 
-        return { images: imageUrls, magicPrompt };
+        return {
+            images: imageUrls,
+            magicPrompt,
+            metadata: {
+                providerUsed: {
+                    prompt: magicRes.providerUsed,
+                    generation: [...new Set(providersUsed)]
+                },
+                fallbackUsed
+            }
+        };
     },
 
-    async performChat(job: AIJob, llm: ILLMProvider): Promise<any> {
+    async performChat(job: AIJob): Promise<any> {
+        const router = new AIRouter();
         const { messages, context } = job.params;
         const systemPrompt = PromptService.getChatSystemPrompt(context?.traits, context?.recentSummary);
-        const response = await llm.chat(messages, { systemInstruction: systemPrompt });
-        return { message: response };
+
+        const res = await router.chat(messages, { systemInstruction: systemPrompt });
+
+        return {
+            message: res.result,
+            metadata: {
+                providerUsed: res.providerUsed,
+                fallbackUsed: res.fallbackUsed
+            }
+        };
     }
 }

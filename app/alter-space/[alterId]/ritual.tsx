@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -30,13 +30,20 @@ import { useAuth } from '../../../src/contexts/AuthContext';
 import { MagicalLoadingView } from '../../../src/components/shared/MagicalLoadingView';
 import { AI_COSTS } from '../../../src/services/MonetizationTypes';
 import { triggerHaptic } from '../../../src/lib/haptics';
+import { useAIJob } from '../../../src/hooks/useAIJob';
 
 const { width } = Dimensions.get('window');
 
 export default function RitualScreen() {
     const { alterId } = useLocalSearchParams<{ alterId: string }>();
     const { alter, refresh } = useAlterData(alterId);
-    const [loading, setLoading] = useState(false);
+
+    // Upload state managed locally, Job state via hook
+    const [uploading, setUploading] = useState(false);
+
+    const [jobId, setJobId] = useState<string | null>(null);
+    const { job, loading: jobLoading, error: jobError } = useAIJob(jobId);
+
     const [resultData, setResultData] = useState<{ visualDescription?: string; refSheetUrl?: string } | null>(null);
     const [selectedImages, setSelectedImages] = useState<ImagePicker.ImagePickerAsset[]>([]);
     const [imageModalVisible, setImageModalVisible] = useState(false);
@@ -49,6 +56,35 @@ export default function RitualScreen() {
     const themeColors = getThemeColors(alter?.equipped_items?.theme);
     const primaryColor = themeColors?.primary || colors.primary;
     const accentColor = '#A855F7'; // Mystical purple default
+
+    // Job Effect
+    useEffect(() => {
+        if (job) {
+            if (job.status === 'succeeded' && job.result) {
+                // Success Handling
+                triggerHaptic.success();
+                setSelectedImages([]);
+                setResultData({
+                    visualDescription: job.result.visualDescription,
+                    refSheetUrl: job.result.refSheetUrl
+                });
+                refresh(); // Background refresh
+                setJobId(null); // Stop listening
+
+                Alert.alert(
+                    "Rituel Accompli ✨",
+                    `L'ADN Visuel de ${alter?.name} a été extrait.`,
+                    [{ text: "Voir le résultat", onPress: () => { } }]
+                );
+            } else if (job.status === 'failed') {
+                // Error Handling
+                triggerHaptic.error();
+                Alert.alert("Le Rituel a échoué", job.error?.message || "Une pertubation magique est survenue.");
+                setJobId(null);
+            }
+        }
+    }, [job]);
+
 
     const getBlobFromUri = async (uri: string) => {
         return new Promise((resolve, reject) => {
@@ -102,7 +138,7 @@ export default function RitualScreen() {
     };
 
     const processRitual = async () => {
-        setLoading(true);
+        setUploading(true);
         triggerHaptic.selection();
 
         try {
@@ -126,36 +162,30 @@ export default function RitualScreen() {
                 blob.close && blob.close();
             }
 
-            // 2. Call Cloud Function
-            const performBirthRitual = httpsCallable(functions, 'performBirthRitual', { timeout: 540000 }); // 9 mins timeout
-            const response = await performBirthRitual({ alterId, referenceImageUrls: uploadedUrls });
-            const data = response.data as any;
+            // 2. Call startAIJob
+            const startAIJob = httpsCallable(functions, 'startAIJob');
+            const response: any = await startAIJob({
+                type: 'ritual',
+                params: { alterId, referenceImageUrls: uploadedUrls }
+            });
 
-            if (data.success) {
-                triggerHaptic.success();
-                setSelectedImages([]); // Clear selection on success
-                setResultData({
-                    visualDescription: data.visualDescription,
-                    refSheetUrl: data.refSheetUrl
-                });
-                await refresh(); // Background refresh
-                Alert.alert(
-                    "Rituel Accompli ✨",
-                    `L'ADN Visuel de ${alter?.name} a été extrait.`,
-                    [{ text: "Voir le résultat", onPress: () => { } }]
-                );
+            if (response.data.success && response.data.jobId) {
+                setJobId(response.data.jobId);
             } else {
-                throw new Error("Le rituel n'a pas renvoyé de succès.");
+                throw new Error("Impossible de démarrer le rituel.");
             }
 
         } catch (err: any) {
             console.error("Ritual failed:", err);
             triggerHaptic.error();
-            Alert.alert("Le Rituel a échoué", err.message || "Une pertubation magique est survenue.");
+            Alert.alert("Le Rituel a échoué", err.message || "Impossible de lancer le rituel.");
         } finally {
-            setLoading(false);
+            setUploading(false); // Upload done, now job is running (or failed to start)
         }
     };
+
+    // Combined loading state
+    const isLoading = uploading || jobLoading || (!!jobId);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -188,13 +218,9 @@ export default function RitualScreen() {
 
                 <Text style={styles.sectionTitle}>Offrandes ({selectedImages.length}/5)</Text>
 
-                {/* 1. Loading State */}
-                {/* 1. Loading State - REPLACED BY OVERLAY */}
-                {/* {loading && (...)} */}
-
                 {/* 2. Success State (Ritual Done) */}
                 {
-                    !loading && isRitualComplete && selectedImages.length === 0 && (
+                    !isLoading && isRitualComplete && selectedImages.length === 0 && (
                         <View style={styles.successContent}>
                             <View style={styles.successHeader}>
                                 <Ionicons name="checkmark-circle" size={48} color={primaryColor} />
@@ -283,7 +309,7 @@ export default function RitualScreen() {
 
                 {/* 3. Preview State (User has selected images, either for first time or redo) */}
                 {
-                    !loading && selectedImages.length > 0 && (
+                    !isLoading && selectedImages.length > 0 && (
                         <View style={styles.previewContainer}>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.previewScroll}>
                                 {selectedImages.map((asset, index) => (
@@ -319,7 +345,7 @@ export default function RitualScreen() {
 
                 {/* 4. Empty/Upload State (Not ready, no selection) */}
                 {
-                    !loading && !alter?.visual_dna?.is_ready && selectedImages.length === 0 && (
+                    !isLoading && !alter?.visual_dna?.is_ready && selectedImages.length === 0 && (
                         <TouchableOpacity
                             style={[styles.dropZone, { borderColor: primaryColor }]}
                             onPress={pickImages}
@@ -333,14 +359,14 @@ export default function RitualScreen() {
 
                 {/* Confirm Button */}
                 {
-                    !loading && selectedImages.length > 0 && (
+                    !isLoading && selectedImages.length > 0 && (
                         <TouchableOpacity
                             style={[
                                 styles.confirmButton,
                                 { backgroundColor: primaryColor } // Fallback if gradient fails, but we use gradient inside
                             ]}
                             onPress={confirmRitual}
-                            disabled={loading}
+                            disabled={isLoading}
                         >
                             <LinearGradient
                                 colors={[primaryColor, accentColor]}
@@ -357,9 +383,10 @@ export default function RitualScreen() {
             </ScrollView >
             {/* Awesome Loading Screen */}
             <MagicalLoadingView
-                visible={loading}
-                message="Incantation en cours..."
-                subMessage="Analyse de l'ADN Visuel..."
+                visible={isLoading}
+                message={uploading ? "Offrande en cours..." : (job?.progress?.stage ? `Incantation : ${job.progress.stage}` : "Incantation en cours...")}
+                subMessage={uploading ? "Transmission des images..." : (job?.progress?.percent ? "L'Oracle analyse..." : "Analyse de l'ADN Visuel...")}
+                progress={job?.progress?.percent ? job.progress.percent / 100 : undefined}
             />
         </SafeAreaView >
     );

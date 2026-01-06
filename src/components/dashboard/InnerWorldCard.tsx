@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '700',
         color: '#1D3557',
-        fontFamily: typography.fontFamily,
+        color: '#1D3557',
     },
     subtitle: {
         fontSize: 12,

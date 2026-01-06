@@ -349,7 +349,8 @@ export const FriendService = {
             // Removed systemId check to allow reading any alter's friendships (assuming public/rules allow)
         );
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(d => d.data().friendId as string).filter(id => !!id);
+        const ids = snapshot.docs.map(d => d.data().friendId as string).filter(id => !!id);
+        return Array.from(new Set(ids));
     },
 
     /**
@@ -383,7 +384,8 @@ export const FriendService = {
             // Removed friendSystemId check to count ALL followers, not just those from my system
         );
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(d => d.data().alterId as string).filter(id => !!id);
+        const ids = snapshot.docs.map(d => d.data().alterId as string).filter(id => !!id);
+        return Array.from(new Set(ids));
     },
 
     /**
@@ -453,5 +455,37 @@ export const FriendService = {
         const snapshot = await getDocs(q);
         const systemIds = new Set(snapshot.docs.map(d => d.data().friendSystemId as string));
         return Array.from(systemIds).filter(id => id);
+    },
+
+    /**
+     * Remove duplicate friendship entries (keeps the oldest one)
+     */
+    deduplicateConnection: async (alterId: string, friendId: string) => {
+        // Query duplicates where I am alterId and they are friendId
+        const q1 = query(
+            collection(db, 'friendships'),
+            where('alterId', '==', alterId),
+            where('friendId', '==', friendId)
+        );
+        const snap1 = await getDocs(q1);
+        if (snap1.size > 1) {
+            console.log(`[FriendService] Found ${snap1.size} connections for ${alterId}->${friendId}. Cleaning up.`);
+            // Sort by creation time (if available) or insertion order. 
+            // We just keep the first one and delete the rest.
+            const docs = snap1.docs;
+            const toDelete = docs.slice(1);
+            try {
+                await Promise.all(toDelete.map(d => deleteDoc(d.ref)));
+                console.log(`[FriendService] Successfully cleaned up ${toDelete.length} duplicates.`);
+            } catch (e) {
+                console.warn(`[FriendService] Failed to delete duplicates for ${alterId}->${friendId} (likely permission issue):`, e);
+            }
+        }
+
+        // We should also check the reverse direction if we want to be thorough, 
+        // but typically 'followers' list comes from one direction queries.
+        // For 'Following' list (getFriends): alterId=Me, friendId=Them
+        // For 'Followers' list (getFollowing): friendId=Me, alterId=Them (in DB schema)
+        // The modal passes the IDs. logic should handle direction based on context.
     }
 };

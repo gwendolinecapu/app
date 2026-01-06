@@ -475,20 +475,65 @@ export default function AlterSpaceScreen() {
             )}
 
             {/* Modals */}
-            {/* Modals */}
             <FollowListModal
                 visible={showFollowersModal}
                 title="Abonnés"
                 userIds={friendIds}
                 onClose={() => setShowFollowersModal(false)}
                 themeColors={themeColors}
+                onSync={async (missingIds, duplicateIds) => {
+                    try {
+                        if (!alter) return;
+                        console.log('Cleaning up followers issues. Missing:', missingIds, 'Duplicates:', duplicateIds);
+
+                        // Ghosts: remove completely
+                        if (missingIds.length > 0) {
+                            await Promise.all(missingIds.map(id => FriendService.removeFriend(alter.id, id)));
+                        }
+
+                        // Duplicates: remove extra connections
+                        // For "Followers" list: I am 'friendId' (followee), they are 'alterId' (follower)
+                        // The 'friendIds' array passed here contains the IDs of people following me.
+                        // So we check duplicates where alterId=THEM, friendId=ME.
+                        if (duplicateIds && duplicateIds.length > 0) {
+                            await Promise.all(duplicateIds.map(otherId => FriendService.deduplicateConnection(otherId, alter.id)));
+                        }
+
+                        refresh();
+                    } catch (e) {
+                        console.error('Error in followers sync:', e);
+                    }
+                }}
             />
             <FollowListModal
                 visible={showFollowingModal}
-                title="Suivis"
+                title="Abonnements"
                 userIds={followingIds}
                 onClose={() => setShowFollowingModal(false)}
                 themeColors={themeColors}
+                onSync={async (missingIds, duplicateIds) => {
+                    try {
+                        if (!alter) return;
+                        console.log('Cleaning up following issues. Missing:', missingIds, 'Duplicates:', duplicateIds);
+
+                        // Ghosts
+                        if (missingIds.length > 0) {
+                            await Promise.all(missingIds.map(id => FriendService.removeFriend(alter.id, id)));
+                        }
+
+                        // Duplicates
+                        // For "Following" list: I am 'alterId' (follower), they are 'friendId' (followee)
+                        // The 'followingIds' array contains IDs of people I follow.
+                        // So we check duplicates where alterId=ME, friendId=THEM.
+                        if (duplicateIds && duplicateIds.length > 0) {
+                            await Promise.all(duplicateIds.map(otherId => FriendService.deduplicateConnection(alter.id, otherId)));
+                        }
+
+                        refresh();
+                    } catch (e) {
+                        console.error('Error in following sync:', e);
+                    }
+                }}
             />
 
             {/* Effects */}

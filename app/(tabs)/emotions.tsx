@@ -18,7 +18,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { db } from '../../src/lib/firebase';
-import { collection, addDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import {
     Emotion,
@@ -66,19 +66,20 @@ export default function EmotionsScreen() {
         }
     }, [currentAlter]);
 
-    // Récupérer les émotions récentes (7 derniers jours)
+    // Récupérer l'historique des émotions (Max 7 entrées ou 24h)
     const fetchRecentEmotions = async () => {
         if (!currentAlter) return;
 
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const oneDayAgo = new Date();
+        oneDayAgo.setHours(oneDayAgo.getHours() - 24);
 
         try {
             const q = query(
                 collection(db, 'emotions'),
                 where('alter_id', '==', currentAlter.id),
-                where('created_at', '>=', sevenDaysAgo.toISOString()),
-                orderBy('created_at', 'desc')
+                where('created_at', '>=', oneDayAgo.toISOString()),
+                orderBy('created_at', 'desc'),
+                limit(20) // Fetch a bit more to be safe, but we display 7
             );
 
             const querySnapshot = await getDocs(q);
@@ -88,7 +89,9 @@ export default function EmotionsScreen() {
             });
 
             if (data) {
-                setRecentEmotions(data);
+                // Apply the "Max 7" rule
+                setRecentEmotions(data.slice(0, 7));
+
                 // Vérifier si une émotion a été enregistrée aujourd'hui
                 const today = new Date().toDateString();
                 const todaysEntry = data.find(e =>
@@ -309,11 +312,11 @@ export default function EmotionsScreen() {
 
                     {recentEmotions.length === 0 ? (
                         <Text style={[styles.noHistory, { color: textSecondaryColor }]}>
-                            Aucune émotion enregistrée cette semaine
+                            Aucune émotion ces dernières 24h
                         </Text>
                     ) : (
                         <View style={styles.historyList}>
-                            {recentEmotions.slice(0, 5).map((emotion) => (
+                            {recentEmotions.map((emotion) => (
                                 <View key={emotion.id} style={[styles.historyItem, { backgroundColor: cardColor }]}>
                                     <Text style={styles.historyEmoji}>
                                         {emotion.emotions

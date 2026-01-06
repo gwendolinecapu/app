@@ -58,21 +58,30 @@ class RevenueCatService {
 
         // Basic validation - check for placeholder or empty strings
         const apiKey = Platform.OS === 'ios' ? API_KEYS.ios : API_KEYS.android;
-        if (!apiKey || apiKey === '' || apiKey.includes('YOUR_')) {
+        // API keys are usually long (around 30+ chars). Trivial keys cause SDK errors.
+        if (!apiKey || apiKey === '' || apiKey.includes('YOUR_') || apiKey.length < 20) {
             console.log('[RevenueCat] Invalid or placeholder API key found. Skipping initialization.');
             this.initialized = true;
+            this.configured = false;
             return;
         }
 
         try {
             Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
 
-            if (Platform.OS === 'ios') {
-                Purchases.configure({ apiKey: API_KEYS.ios });
-                this.configured = true;
-            } else if (Platform.OS === 'android') {
-                Purchases.configure({ apiKey: API_KEYS.android });
-                this.configured = true;
+            try {
+                if (Platform.OS === 'ios') {
+                    Purchases.configure({ apiKey: API_KEYS.ios });
+                    this.configured = true;
+                } else if (Platform.OS === 'android') {
+                    Purchases.configure({ apiKey: API_KEYS.android });
+                    this.configured = true;
+                }
+            } catch (configError) {
+                console.warn('[RevenueCat] Configuration failed (check API Key):', configError);
+                this.configured = false;
+                this.initialized = true;
+                return;
             }
 
             if (this.configured && userId) {

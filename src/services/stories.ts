@@ -12,10 +12,11 @@ import {
     Timestamp,
     updateDoc,
     arrayUnion,
+    arrayRemove,
     documentId,
 } from 'firebase/firestore';
 
-import { Story } from '../types';
+import { Story, StoryHighlight } from '../types';
 
 // =====================================================
 // STORIES SERVICE
@@ -250,6 +251,99 @@ export const fetchAuthorsDecorations = async (authorIds: string[]): Promise<Reco
     }
 };
 
+// =====================================================
+// HIGHLIGHTS (STORIES À LA UNE)
+// =====================================================
+
+/**
+ * Crée une nouvelle collection à la une (Highlight)
+ */
+export async function createHighlight(
+    systemId: string,
+    title: string,
+    coverImageUrl: string,
+    storyIds: string[],
+    alterId?: string
+): Promise<StoryHighlight> {
+    const highlightsRef = collection(db, 'story_highlights');
+    const now = new Date().toISOString();
+
+    const docData = {
+        system_id: systemId,
+        alter_id: alterId || null,
+        title,
+        cover_image_url: coverImageUrl,
+        story_ids: storyIds,
+        created_at: serverTimestamp(),
+        updated_at: serverTimestamp(),
+    };
+
+    const docRef = await addDoc(highlightsRef, docData);
+
+    return {
+        id: docRef.id,
+        system_id: systemId,
+        alter_id: alterId,
+        title,
+        cover_image_url: coverImageUrl,
+        story_ids: storyIds,
+        created_at: now,
+        updated_at: now,
+    };
+}
+
+/**
+ * Récupère les highlights d'un auteur (alter)
+ */
+export async function fetchHighlights(authorId: string): Promise<StoryHighlight[]> {
+    const highlightsRef = collection(db, 'story_highlights');
+    const q = query(
+        highlightsRef,
+        where('alter_id', '==', authorId),
+        orderBy('created_at', 'desc')
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            created_at: data.created_at?.toDate?.()?.toISOString() || new Date().toISOString(),
+            updated_at: data.updated_at?.toDate?.()?.toISOString() || new Date().toISOString(),
+        } as StoryHighlight;
+    });
+}
+
+/**
+ * Ajoute une story à un highlight
+ */
+export async function addStoryToHighlight(highlightId: string, storyId: string): Promise<void> {
+    const ref = doc(db, 'story_highlights', highlightId);
+    await updateDoc(ref, {
+        story_ids: arrayUnion(storyId),
+        updated_at: serverTimestamp()
+    });
+}
+
+/**
+ * Retire une story d'un highlight
+ */
+export async function removeStoryFromHighlight(highlightId: string, storyId: string): Promise<void> {
+    const ref = doc(db, 'story_highlights', highlightId);
+    await updateDoc(ref, {
+        story_ids: arrayRemove(storyId),
+        updated_at: serverTimestamp()
+    });
+}
+
+/**
+ * Supprime un highlight complet
+ */
+export async function deleteHighlight(highlightId: string): Promise<void> {
+    await deleteDoc(doc(db, 'story_highlights', highlightId));
+}
+
 export const StoriesService = {
     createStory,
     fetchActiveStories,
@@ -258,4 +352,10 @@ export const StoriesService = {
     deleteStory,
     groupStoriesByAuthor,
     fetchAuthorsDecorations,
+    // Highlights
+    createHighlight,
+    fetchHighlights,
+    addStoryToHighlight,
+    removeStoryFromHighlight,
+    deleteHighlight,
 };

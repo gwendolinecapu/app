@@ -322,9 +322,42 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
 
                             <View style={styles.headerActions}>
                                 {user && (currentItem.data.author_id === user.uid || currentItem.data.system_id === user.uid) && (
-                                    <TouchableOpacity onPress={() => handleDelete(currentItem.data.id)} style={styles.iconButton}>
-                                        <Ionicons name="trash-outline" size={24} color="white" />
-                                    </TouchableOpacity>
+                                    <>
+                                        <TouchableOpacity
+                                            onPress={() => {
+                                                progressAnim.stopAnimation();
+                                                Alert.alert(
+                                                    "À la une",
+                                                    "Ajouter cette story aux éléments à la une ?",
+                                                    [
+                                                        {
+                                                            text: "Annuler", style: "cancel", onPress: () => {
+                                                                if (currentItem?.type === 'story' && currentItem.data.media_type === 'image') {
+                                                                    startProgress();
+                                                                }
+                                                            }
+                                                        },
+                                                        {
+                                                            text: "Ajouter",
+                                                            onPress: async () => {
+                                                                // TODO: Open Highlights selection modal
+                                                                // For MVP, just create a new one or add to "Highlights" generic
+                                                                // Ideally we navigate to a selection screen
+                                                                // But since we are in a Modal, we should probably toggle another state
+                                                                Alert.alert("Bientôt", "La sélection des albums arrive !");
+                                                            }
+                                                        }
+                                                    ]
+                                                );
+                                            }}
+                                            style={styles.iconButton}
+                                        >
+                                            <Ionicons name="heart-outline" size={24} color="white" />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity onPress={() => handleDelete(currentItem.data.id)} style={styles.iconButton}>
+                                            <Ionicons name="trash-outline" size={24} color="white" />
+                                        </TouchableOpacity>
+                                    </>
                                 )}
                                 <TouchableOpacity onPress={onClose} style={styles.iconButton}>
                                     <Ionicons name="close" size={28} color="white" />

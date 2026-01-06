@@ -465,6 +465,21 @@ export interface InnerWorldShape {
 }
 
 // ============================================
+// Sprint 5 Extension: Story Highlights
+// ============================================
+
+export interface StoryHighlight {
+    id: string;
+    system_id: string;
+    alter_id?: string; // Optional if system-wide, but usually tied to author
+    title: string;
+    cover_image_url: string; // Usually the first story's image or custom
+    story_ids: string[]; // List of story IDs included
+    created_at: string;
+    updated_at: string;
+}
+
+// ============================================
 // AI Job System
 // ============================================
 

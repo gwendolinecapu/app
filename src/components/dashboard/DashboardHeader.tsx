@@ -4,6 +4,7 @@ import { AnimatedPressable } from '../ui/AnimatedPressable';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../lib/theme';
 import { LayoutAnimation, Platform, UIManager } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -20,7 +21,7 @@ interface DashboardHeaderProps {
     hasSelection: boolean;
 }
 
-import { InnerWorldCard } from './InnerWorldCard';
+
 
 /**
  * DashboardHeader - Handles greeting, universal search, and system modes.
@@ -33,6 +34,8 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     onModeChange,
     hasSelection,
 }) => {
+    const insets = useSafeAreaInsets(); // Added for insets
+
     React.useEffect(() => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     }, [hasSelection]);
@@ -51,9 +54,6 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
             {/* Alter Weather Bar - Emotion indicators */}
             <AlterWeatherBar />
-
-            {/* Inner World Entry Card - Just below Emotions */}
-            <InnerWorldCard />
 
             {/* Mode Switcher */}
             <View style={styles.modeSwitchContainer}>

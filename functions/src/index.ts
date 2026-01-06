@@ -16,6 +16,7 @@ admin.initializeApp();
 // Export Cloud Functions
 import { compareAIModels } from "./ai/api/compareAIModels";
 export { processAIJob, startAIJob, cancelAIJob, retryAIJob, compareAIModels };
+// Forced reload for secrets update
 
 // --- Configuration ---
 const SECRETS = ["GOOGLE_AI_API_KEY", "BYTEPLUS_API_KEY"];

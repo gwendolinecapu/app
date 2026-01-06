@@ -32,7 +32,7 @@ import { timeAgo } from '../../src/lib/date';
 import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
 
 // Types pour les différentes notifications
-type NotificationType = 'friend_request' | 'follow' | 'like' | 'comment' | 'mention' | 'system' | 'friend_request_accepted' | 'FRIEND_REQUEST_ACCEPTED';
+type NotificationType = 'friend_request' | 'follow' | 'like' | 'comment' | 'mention' | 'system' | 'friend_request_accepted' | 'FRIEND_REQUEST_ACCEPTED' | 'friend_new';
 
 interface Notification {
     id: string;
@@ -175,9 +175,6 @@ export default function NotificationsScreen() {
 
             // Charger les notifications
             // [DEBUG] REVERT TEMPORAIRE POUR TESTER
-            // 2. Query with strict composite index (targetSystemId + recipientId + created_at)
-            // This requires the index: targetSystemId ASC, recipientId ASC, created_at DESC
-            const recipientIds = Array.from(new Set([currentAlter.id, user.uid]));
             const q = query(
                 collection(db, 'notifications'),
                 where('targetSystemId', '==', user.uid),
@@ -192,14 +189,21 @@ export default function NotificationsScreen() {
             const loadedNotifications: Notification[] = [];
             for (const docSnapshot of querySnapshot.docs) {
                 const data = docSnapshot.data();
-                // console.log('[Notifications] Doc data:', JSON.stringify(data));
 
-                loadedNotifications.push({
-                    id: docSnapshot.id,
-                    ...data,
-                    isRead: data.read || false,
-                    timestamp: data.created_at?.toDate() || new Date()
-                } as Notification);
+                // FILTER: Only include if recipient matches current alter
+                // If recipientId is missing, assume it's for everyone or check targetSystemId
+                const isForMe = data.recipientId === currentAlter.id ||
+                    data.recipientId === user.uid ||
+                    (!data.recipientId && data.targetSystemId === user.uid);
+
+                if (isForMe) {
+                    loadedNotifications.push({
+                        id: docSnapshot.id,
+                        ...data,
+                        isRead: data.read || false,
+                        timestamp: data.created_at?.toDate() || new Date()
+                    } as Notification);
+                }
             }
 
             // Enrich Notifications that are missing actor info OR have generic placeholder OR are missing avatar
@@ -370,8 +374,11 @@ export default function NotificationsScreen() {
             triggerHaptic.success();
             await FriendService.acceptRequest(requestId);
             loadData();
-        } catch (error) {
+        } catch (error: any) {
             console.error('[Notifications] Error accepting request:', error);
+            console.error('Error Code:', error.code);
+            console.error('Error Message:', error.message);
+            Alert.alert('Erreur', `Impossible d'accepter la demande: ${error.message}`);
             triggerHaptic.error();
         }
     };
@@ -579,12 +586,13 @@ export default function NotificationsScreen() {
                             {item.type === 'follow' && " a commencé à vous suivre."}
                             {item.type === 'mention' && " vous a mentionné."}
                             {item.type === 'friend_request' && " vous a envoyé une demande d'ami."}
+                            {item.type === 'friend_new' && " est maintenant ami(e) avec vous."}
                             {(item.type === 'friend_request_accepted' || item.type === 'FRIEND_REQUEST_ACCEPTED') && (
                                 item.senderId === currentAlter?.id
                                     ? `Vous avez accepté la demande d'ami${item.targetName ? ` de ${item.targetName}` : ''}.`
                                     : " a accepté votre demande d'ami."
                             )}
-                            {!['like', 'comment', 'follow', 'mention', 'friend_request', 'friend_request_accepted', 'FRIEND_REQUEST_ACCEPTED'].includes(item.type) && " : Nouvelle notification"}
+                            {!['like', 'comment', 'follow', 'mention', 'friend_request', 'friend_request_accepted', 'FRIEND_REQUEST_ACCEPTED', 'friend_new'].includes(item.type) && " : Nouvelle notification"}
                         </Text>
                         <Text style={[styles.timeText, { color: textSecondaryColor }]}> {time_ago}</Text>
                     </Text>

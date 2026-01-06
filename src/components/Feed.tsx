@@ -114,11 +114,16 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
             if (type === 'friends' && alterId) {
                 // Fetch friend alter IDs (specific friends only)
                 const friendIds = await FriendService.getFriends(alterId);
+                console.log('[Feed] Debug: Friend IDs for', alterId, '->', friendIds);
 
-                // Fetch feed based on Alter IDs (Strict mode: only showing posts from friends we explicitly follow)
+                // Fetch friend system IDs (system-wide friends)
+                const friendSystemIds = await FriendService.getAllSystemFriendSystemIds(user?.uid || '');
+
+                // Fetch feed based on Alter IDs AND System IDs
                 const targetIds = [...friendIds];
 
-                response = await PostService.fetchFeed(targetIds, refresh ? null : lastVisible);
+                response = await PostService.fetchFeed(targetIds, friendSystemIds, refresh ? null : lastVisible);
+                console.log('[Feed] Debug: Fetch response count:', response.posts.length);
             } else if (type === 'global') {
                 response = await PostService.fetchGlobalFeed(refresh ? null : lastVisible);
             } else {

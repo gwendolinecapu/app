@@ -56,27 +56,41 @@ class RevenueCatService {
             return;
         }
 
+        // Basic validation - check for placeholder or empty strings
+        const apiKey = Platform.OS === 'ios' ? API_KEYS.ios : API_KEYS.android;
+        if (!apiKey || apiKey === '' || apiKey.includes('YOUR_')) {
+            console.log('[RevenueCat] Invalid or placeholder API key found. Skipping initialization.');
+            this.initialized = true;
+            return;
+        }
+
         try {
             Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
 
             if (Platform.OS === 'ios') {
-                if (API_KEYS.ios) {
-                    Purchases.configure({ apiKey: API_KEYS.ios });
-                    this.configured = true;
-                }
+                Purchases.configure({ apiKey: API_KEYS.ios });
+                this.configured = true;
             } else if (Platform.OS === 'android') {
-                if (API_KEYS.android) {
-                    Purchases.configure({ apiKey: API_KEYS.android });
-                    this.configured = true;
-                }
+                Purchases.configure({ apiKey: API_KEYS.android });
+                this.configured = true;
             }
 
             if (this.configured && userId) {
-                await Purchases.logIn(userId);
+                // Try to login, catch if key is invalid despite check
+                try {
+                    await Purchases.logIn(userId);
+                } catch (loginError: any) {
+                    // Start soft handling
+                    console.warn('[RevenueCat] Login failed during init (check API Key):', loginError.message);
+                    // If invalid credentials, de-configure
+                    if (loginError.message?.includes('credentials') || loginError.message?.includes('Invalid API Key')) {
+                        this.configured = false;
+                    }
+                }
             }
 
             this.initialized = true;
-        } catch (error) {
+        } catch (error: any) {
             console.warn('[RevenueCat] Initialization failed (likely running in Expo Go without native code). Safe to ignore in dev.', error);
             // Mark as initialized but NOT configured to prevent repeated failed attempts in loop
             this.initialized = true;

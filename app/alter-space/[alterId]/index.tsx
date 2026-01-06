@@ -78,9 +78,18 @@ export default function AlterSpaceScreen() {
     // Check relationship status
     useFocusEffect(
         useCallback(() => {
-            if (alterId && currentAlter && alterId !== currentAlter.id) {
-                FriendService.checkStatus(currentAlter.id, alterId).then(setFriendStatus).catch(console.error);
-            }
+            const check = async () => {
+                if (alterId && currentAlter && alterId !== currentAlter.id) {
+                    try {
+                        const status = await FriendService.checkStatus(currentAlter.id, alterId);
+                        // Strict check: No fallback to System Friend
+                        setFriendStatus(status);
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+            };
+            check();
         }, [alterId, currentAlter])
     );
 

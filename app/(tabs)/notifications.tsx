@@ -115,8 +115,16 @@ export default function NotificationsScreen() {
                 ...individualResults.flat()
             ];
 
+            // Filter relevant requests for CURRENT ALTER only
+            // logic: show if receiverId is Me OR (receiverId is UserUID [legacy system request] AND I am Host/Admin?)
+            // For now, let's show requests explicitly for Me OR generic System requests (userId)
+            const relevantRequests = allRequests.filter(req =>
+                req.receiverId === currentAlter.id ||
+                req.receiverId === user.uid
+            );
+
             // Deduplicate by ID
-            const uniqueRequests = Array.from(new Map(allRequests.map(item => [item.id, item])).values());
+            const uniqueRequests = Array.from(new Map(relevantRequests.map(item => [item.id, item])).values());
 
             // Helper to fetch keys
             const getSenderInfo = async (senderId: string) => {
@@ -143,7 +151,17 @@ export default function NotificationsScreen() {
             // Use Promise.all to enrich requests parallel
             const enrichedRequests = await Promise.all(uniqueRequests.map(async (req) => {
                 const info = await getSenderInfo(req.senderId);
-                return { ...req, senderName: info.name, senderAvatar: info.avatar };
+
+                // Also get Receiver Name (my alter)
+                let receiverName = 'Vous';
+                const myAlter = alters.find(a => a.id === req.receiverId);
+                if (myAlter) {
+                    receiverName = myAlter.name;
+                } else if (req.receiverId === user.uid) {
+                    receiverName = 'Système';
+                }
+
+                return { ...req, senderName: info.name, senderAvatar: info.avatar, receiverName };
             }));
 
             // Sort by date descending
@@ -438,7 +456,9 @@ export default function NotificationsScreen() {
                 <View style={styles.requestContent}>
                     <Text style={[styles.requestTitle, { color: textColor }]}>{senderName}</Text>
                     <Text style={[styles.requestSubtitle, { color: textSecondaryColor }]}>
-                        {isAccepted ? "Demande acceptée" : "Veut être ton ami"}
+                        {isAccepted
+                            ? `Ami avec ${(item as any).receiverName || 'vous'}`
+                            : `Pour : ${(item as any).receiverName || 'vous'}`}
                     </Text>
                 </View>
                 <View style={styles.requestActions}>

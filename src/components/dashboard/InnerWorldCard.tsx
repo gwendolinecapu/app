@@ -79,7 +79,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '700',
         color: '#1D3557',
-        fontFamily: typography.fontFamily,
     },
     subtitle: {
         fontSize: 12,

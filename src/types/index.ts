@@ -441,7 +441,7 @@ export interface InnerWorld {
     updated_at: string;
 }
 
-export type ShapeType = 'rectangle' | 'l-shape' | 'irregular' | 'organic' | 'custom' | 'building' | 'nature' | 'transport' | 'furniture';
+export type ShapeType = 'rectangle' | 'l-shape' | 'irregular' | 'organic' | 'custom' | 'building' | 'nature' | 'transport' | 'furniture' | 'text';
 
 export interface InnerWorldShape {
     id: string;
@@ -459,6 +459,7 @@ export interface InnerWorldShape {
     intention?: string;
     color?: string;
     border_radius?: number;
+    fontSize?: number;
     linked_world_id?: string; // ID of the inner world contained in this shape
     created_at: string;
 }

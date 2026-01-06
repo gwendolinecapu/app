@@ -92,11 +92,25 @@ export const FriendService = {
         const data = reqSnap.data() as any;
 
 
-        const { senderId, receiverId, systemId: senderSystemId } = data as { senderId: string, receiverId: string, systemId: string };
+        let { senderId, receiverId, systemId: senderSystemId } = data as { senderId: string, receiverId: string, systemId: string };
         const currentSystemId = auth.currentUser?.uid;
 
-
         if (!currentSystemId) throw new Error('Not authenticated');
+
+        // FALLBACK: If systemId is missing in the request (old requests), fetch from sender alter
+        if (!senderSystemId) {
+            console.warn("Friend request missing systemId, fetching from sender alter...");
+            const senderDoc = await getDoc(doc(db, 'alters', senderId));
+            if (senderDoc.exists()) {
+                const senderData = senderDoc.data();
+                senderSystemId = senderData.userId || senderData.systemId || senderData.system_id;
+            }
+        }
+
+        if (!senderSystemId) {
+            console.error("Critical: Could not resolve senderSystemId. Friendship creation will fail.");
+            throw new Error("Could not resolve sender system ID");
+        }
 
         // 1. Update request status
 
@@ -142,22 +156,9 @@ export const FriendService = {
 
         let targetSystemId = senderSystemId;
 
-        // Fallback: If systemId is missing in the request (old requests), fetch from sender alter
-        if (!targetSystemId) {
-            console.warn("Friend request missing systemId, fetching from sender alter...");
-            const senderDoc = await getDoc(doc(db, 'alters', senderId));
-            if (senderDoc.exists()) {
-                const senderData = senderDoc.data();
-                targetSystemId = senderData.userId || senderData.systemId || senderData.system_id;
-            }
-        }
-
         // If still no system ID, we can't create a compliant notification
         if (!targetSystemId) {
             console.error("Could not find system ID for sender", senderId);
-            // Proceed without notification or with best effort? 
-            // Best effort: use senderId as recipient, but rules might block read if not system owner.
-            // We'll try anyway, but log error.
         }
 
         // 3. Notify the sender (THEM) that we accepted

@@ -1,242 +1,172 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    FlatList,
-    Alert,
-    Modal,
-    TextInput,
-    ActivityIndicator,
-    RefreshControl
-} from 'react-native';
-import { useLocalSearchParams, useRouter, router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, Image, Dimensions } from 'react-native';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { InnerWorldService } from '../../src/services/InnerWorldService';
-import { InnerWorld, InnerWorldShape } from '../../src/types';
-import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
-import { getThemeColors } from '../../src/lib/cosmetics';
+import { InnerWorld } from '../../src/types';
+import { colors, spacing, borderRadius } from '../../src/lib/theme';
 import { triggerHaptic } from '../../src/lib/haptics';
-import { LinearGradient } from 'expo-linear-gradient';
 
-export default function InnerWorldListScreen() {
-    const { alterId } = useLocalSearchParams<{ alterId: string }>();
-    const { currentAlter, user } = useAuth();
+const { width } = Dimensions.get('window');
+
+const BG_THEMES = [
+    { id: 'paper', color: '#F8F9FA', label: 'Papier Blanc' },
+    { id: 'night', color: '#1A1B26', label: 'Nuit Douce' },
+    { id: 'pastel_blue', color: '#E3F2FD', label: 'Ciel' },
+    { id: 'pastel_green', color: '#F1F8E9', label: 'Nature' },
+    { id: 'pastel_pink', color: '#FCE4EC', label: 'Rêve' },
+    { id: 'sunset', color: '#FFF3E0', label: 'Aurore' },
+];
+
+export default function InnerWorldHome() {
+    const { user, currentAlter } = useAuth();
     const router = useRouter();
-
     const [worlds, setWorlds] = useState<InnerWorld[]>([]);
     const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [modalVisible, setModalVisible] = useState(false);
+    const [createModalVisible, setCreateModalVisible] = useState(false);
+
+    // Create State
     const [newWorldName, setNewWorldName] = useState('');
-    const [creating, setCreating] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    const themeColors = currentAlter?.equipped_items?.theme
-        ? getThemeColors(currentAlter.equipped_items.theme)
-        : null;
-
-    const activeColor = themeColors?.primary || colors.primary;
-    const backgroundColor = themeColors?.background || colors.background;
-    const textColor = themeColors?.text || colors.text;
-
-    const loadWorlds = useCallback(async () => {
-        if (!alterId || !user) return;
-        try {
-            setError(null);
-            const data = await InnerWorldService.fetchWorlds(alterId, user.uid);
-            setWorlds(data);
-        } catch (error: any) {
-            console.error('Error loading worlds:', error);
-            if (error.code === 'failed-precondition') {
-                setError('Indexation en cours... Veuillez patienter quelques minutes.');
-            } else {
-                setError('Erreur lors du chargement des mondes.');
-            }
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    }, [alterId, user]);
+    const [selectedTheme, setSelectedTheme] = useState(BG_THEMES[0]);
 
     useEffect(() => {
-        loadWorlds();
-    }, [loadWorlds]);
-
-    const handleCreateWorld = async () => {
-        if (!newWorldName.trim() || !user || !alterId) return;
-
-        setCreating(true);
-        try {
-            const worldId = await InnerWorldService.createWorld({
-                name: newWorldName.trim(),
-                system_id: user.uid,
-                alter_id: alterId,
-            });
-            setModalVisible(false);
-            setNewWorldName('');
-            triggerHaptic.success();
-            // Navigate to editor
-            router.push(`/inner-world/${worldId}`);
+        if (user && currentAlter) {
             loadWorlds();
-        } catch (error) {
-            console.error('Error creating world:', error);
-            Alert.alert('Erreur', 'Impossible de créer le monde intérieur.');
+        }
+    }, [user, currentAlter]);
+
+    const loadWorlds = async () => {
+        if (!user || !currentAlter) return;
+        setLoading(true);
+        try {
+            const data = await InnerWorldService.fetchWorlds(currentAlter.id, user.uid);
+            setWorlds(data);
+        } catch (e) {
+            console.error(e);
         } finally {
-            setCreating(false);
+            setLoading(false);
         }
     };
 
-    const handleDeleteWorld = (worldId: string, name: string) => {
-        Alert.alert(
-            'Supprimer le monde',
-            `Voulez-vous vraiment supprimer "${name}" ?`,
-            [
-                { text: 'Annuler', style: 'cancel' },
-                {
-                    text: 'Supprimer',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await InnerWorldService.deleteWorld(worldId);
-                            setWorlds(prev => prev.filter(w => w.id !== worldId));
-                            triggerHaptic.selection();
-                        } catch (error) {
-                            console.error('Error deleting world:', error);
-                        }
-                    }
-                }
-            ]
-        );
+    const handleCreateWorld = async () => {
+        if (!newWorldName.trim() || !user || !currentAlter) return;
+
+        try {
+            const id = await InnerWorldService.createWorld({
+                system_id: user.uid,
+                alter_id: currentAlter.id,
+                name: newWorldName.trim(),
+                background_color: selectedTheme.color,
+                description: selectedTheme.id, // Storing theme ID in description for now or extra field
+            });
+            setCreateModalVisible(false);
+            setNewWorldName('');
+            triggerHaptic.success();
+            // Go to new world
+            router.push(`/inner-world/${id}`);
+        } catch (e) {
+            console.error(e);
+        }
     };
 
-    const renderWorldItem = ({ item }: { item: InnerWorld }) => (
-        <TouchableOpacity
-            style={[styles.worldCard, { backgroundColor: themeColors?.backgroundCard || colors.surface }]}
-            onPress={() => router.push(`/inner-world/${item.id}`)}
-        >
-            <View style={styles.worldIconContainer}>
-                <LinearGradient
-                    colors={[activeColor, activeColor + '80']}
-                    style={styles.worldGradient}
-                >
-                    <Ionicons name="planet" size={30} color="white" />
-                </LinearGradient>
-            </View>
-            <View style={styles.worldInfo}>
-                <Text style={[styles.worldName, { color: textColor }]}>{item.name}</Text>
-                <Text style={styles.worldDate}>
-                    Mis à jour le {new Date(item.updated_at).toLocaleDateString('fr-FR')}
-                </Text>
-            </View>
-            <TouchableOpacity onPress={() => handleDeleteWorld(item.id, item.name)} style={styles.deleteButton}>
-                <Ionicons name="trash-outline" size={20} color={colors.error} />
-            </TouchableOpacity>
-        </TouchableOpacity>
-    );
-
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor }]}>
+        <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={28} color={textColor} />
+                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                    <Ionicons name="arrow-back" size={24} color="#333" />
                 </TouchableOpacity>
-                <Text style={[styles.title, { color: textColor }]}>Inner Worlds</Text>
-                <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.addButton}>
-                    <Ionicons name="add" size={30} color={activeColor} />
-                </TouchableOpacity>
+                <Text style={styles.title}>Mes Mondes</Text>
+                <View style={{ width: 40 }} />
             </View>
 
-            {loading ? (
-                <View style={styles.center}>
-                    <ActivityIndicator size="large" color={activeColor} />
-                </View>
-            ) : error ? (
-                <View style={styles.center}>
-                    <Ionicons name="alert-circle-outline" size={60} color={colors.textMuted} />
-                    <Text style={[styles.errorText, { color: textColor }]}>{error}</Text>
-                    <TouchableOpacity
-                        style={[styles.retryButton, { backgroundColor: activeColor }]}
-                        onPress={() => {
-                            setLoading(true);
-                            loadWorlds();
-                        }}
-                    >
-                        <Text style={styles.retryText}>Réessayer</Text>
-                    </TouchableOpacity>
-                </View>
-            ) : (
-                <FlatList
-                    data={worlds}
-                    renderItem={renderWorldItem}
-                    keyExtractor={item => item.id}
-                    contentContainerStyle={styles.list}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={() => {
-                                setRefreshing(true);
-                                loadWorlds();
-                            }}
-                            tintColor={activeColor}
-                        />
-                    }
-                    ListEmptyComponent={
-                        <View style={styles.emptyContainer}>
-                            <Ionicons name="planet-outline" size={80} color={colors.textMuted} />
-                            <Text style={styles.emptyText}>Aucun monde intérieur trouvé.</Text>
-                            <TouchableOpacity
-                                style={[styles.createButton, { backgroundColor: activeColor }]}
-                                onPress={() => setModalVisible(true)}
-                            >
-                                <Text style={styles.createButtonText}>Créer mon premier monde</Text>
-                            </TouchableOpacity>
-                        </View>
-                    }
-                />
-            )}
+            <ScrollView contentContainerStyle={styles.grid}>
+                {/* Create New Card */}
+                <TouchableOpacity
+                    style={styles.createCard}
+                    onPress={() => setCreateModalVisible(true)}
+                >
+                    <View style={styles.createIcon}>
+                        <Ionicons name="add" size={32} color={colors.primary} />
+                    </View>
+                    <Text style={styles.createLabel}>Nouveau Monde</Text>
+                </TouchableOpacity>
 
-            <Modal
-                visible={modalVisible}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setModalVisible(false)}
-            >
+                {/* World Cards */}
+                {worlds.map(world => (
+                    <TouchableOpacity
+                        key={world.id}
+                        style={[styles.worldCard, { backgroundColor: world.background_color || '#FFF' }]}
+                        onPress={() => router.push(`/inner-world/${world.id}`)}
+                    >
+                        <View style={styles.cardContent}>
+                            <Text style={[styles.worldName, { color: world.background_color === '#1A1B26' ? 'white' : '#333' }]}>
+                                {world.name}
+                            </Text>
+                            <Text style={[styles.worldDate, { color: world.background_color === '#1A1B26' ? '#BBB' : '#888' }]}>
+                                Modifié le {new Date(world.updated_at).toLocaleDateString()}
+                            </Text>
+                        </View>
+                        <Ionicons
+                            name="chevron-forward"
+                            size={20}
+                            color={world.background_color === '#1A1B26' ? 'white' : '#CCC'}
+                            style={{ opacity: 0.5 }}
+                        />
+                    </TouchableOpacity>
+                ))}
+            </ScrollView>
+
+            {/* Create Modal */}
+            <Modal visible={createModalVisible} animationType="slide" transparent>
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { backgroundColor: themeColors?.backgroundCard || colors.surface }]}>
-                        <Text style={[styles.modalTitle, { color: textColor }]}>Nouveau Monde Intérieur</Text>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Créer un Monde</Text>
+
+                        <Text style={styles.label}>Nom du monde</Text>
                         <TextInput
-                            style={[styles.input, { color: textColor, borderColor: colors.border }]}
-                            placeholder="Nom du monde (ex: Le Refuge)"
-                            placeholderTextColor={colors.textMuted}
+                            style={styles.input}
+                            placeholder="Mon Refuge, Le Jardin..."
                             value={newWorldName}
                             onChangeText={setNewWorldName}
                             autoFocus
                         />
+
+                        <Text style={styles.label}>Ambiance</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.themeList}>
+                            {BG_THEMES.map(theme => (
+                                <TouchableOpacity
+                                    key={theme.id}
+                                    style={[
+                                        styles.themeOption,
+                                        { backgroundColor: theme.color },
+                                        selectedTheme.id === theme.id && styles.themeSelected
+                                    ]}
+                                    onPress={() => {
+                                        setSelectedTheme(theme);
+                                        triggerHaptic.selection();
+                                    }}
+                                >
+                                    {selectedTheme.id === theme.id && (
+                                        <Ionicons name="checkmark" size={16} color={theme.id === 'night' ? 'white' : 'black'} />
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                        <Text style={styles.themeLabel}>{selectedTheme.label}</Text>
+
                         <View style={styles.modalActions}>
-                            <TouchableOpacity
-                                style={styles.modalCancel}
-                                onPress={() => {
-                                    setModalVisible(false);
-                                    setNewWorldName('');
-                                }}
-                            >
-                                <Text style={styles.modalCancelText}>Annuler</Text>
+                            <TouchableOpacity style={styles.cancelBtn} onPress={() => setCreateModalVisible(false)}>
+                                <Text style={styles.cancelText}>Annuler</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.modalSubmit, { backgroundColor: activeColor }]}
+                                style={[styles.saveBtn, !newWorldName && { opacity: 0.5 }]}
                                 onPress={handleCreateWorld}
-                                disabled={creating || !newWorldName.trim()}
+                                disabled={!newWorldName}
                             >
-                                {creating ? (
-                                    <ActivityIndicator size="small" color="white" />
-                                ) : (
-                                    <Text style={styles.modalSubmitText}>Créer</Text>
-                                )}
+                                <Text style={styles.saveText}>Créer</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -247,161 +177,62 @@ export default function InnerWorldListScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
+    container: { flex: 1, backgroundColor: '#FAFAFA' },
     header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: spacing.md,
-        height: 60,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        paddingHorizontal: 16, paddingVertical: 12,
     },
-    backButton: {
-        padding: spacing.xs,
+    backBtn: { padding: 8, borderRadius: 20, backgroundColor: '#F0F0F0' },
+    title: { fontSize: 20, fontWeight: '700', color: '#333' },
+
+    grid: { padding: 16, gap: 16 },
+
+    createCard: {
+        flexDirection: 'row', alignItems: 'center',
+        padding: 20, borderRadius: 16,
+        backgroundColor: '#FFF',
+        borderWidth: 2, borderColor: '#F0F0F0', borderStyle: 'dashed',
     },
-    title: {
-        ...typography.h2,
-        fontWeight: 'bold',
+    createIcon: {
+        width: 48, height: 48, borderRadius: 24,
+        backgroundColor: '#E3F2FD', justifyContent: 'center', alignItems: 'center',
+        marginRight: 16,
     },
-    addButton: {
-        padding: spacing.xs,
-    },
-    list: {
-        padding: spacing.md,
-    },
+    createLabel: { fontSize: 16, fontWeight: '600', color: colors.primary },
+
     worldCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: spacing.md,
-        borderRadius: borderRadius.lg,
-        marginBottom: spacing.md,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        padding: 24, borderRadius: 20,
+        shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
     },
-    worldIconContainer: {
-        marginRight: spacing.md,
-    },
-    worldGradient: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    worldInfo: {
-        flex: 1,
-    },
-    worldName: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 4,
-    },
-    worldDate: {
-        fontSize: 12,
-        color: colors.textMuted,
-    },
-    deleteButton: {
-        padding: spacing.sm,
-    },
-    center: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    emptyContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: 100,
-    },
-    emptyText: {
-        fontSize: 16,
-        color: colors.textMuted,
-        marginTop: spacing.md,
-        marginBottom: spacing.lg,
-    },
-    createButton: {
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.full,
-    },
-    createButtonText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
+    cardContent: { flex: 1 },
+    worldName: { fontSize: 18, fontWeight: '700', marginBottom: 4 },
+    worldDate: { fontSize: 12 },
+
     modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        padding: spacing.xl,
+        flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end',
     },
     modalContent: {
-        borderRadius: borderRadius.xl,
-        padding: spacing.xl,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 10,
-        elevation: 5,
+        backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24,
+        padding: 24,
     },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: spacing.lg,
-        textAlign: 'center',
-    },
+    modalTitle: { fontSize: 20, fontWeight: '700', marginBottom: 24, textAlign: 'center' },
+    label: { fontSize: 14, fontWeight: '600', marginBottom: 8, color: '#666' },
     input: {
-        borderWidth: 1,
-        borderRadius: borderRadius.md,
-        padding: spacing.md,
-        fontSize: 16,
-        marginBottom: spacing.xl,
+        backgroundColor: '#F5F5F5', padding: 16, borderRadius: 12, fontSize: 16, marginBottom: 24,
     },
-    modalActions: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        gap: spacing.md,
+    themeList: { flexDirection: 'row', marginBottom: 8 },
+    themeOption: {
+        width: 48, height: 48, borderRadius: 24, marginRight: 12,
+        borderWidth: 1, borderColor: '#DDD',
+        justifyContent: 'center', alignItems: 'center',
     },
-    modalCancel: {
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-    },
-    modalCancelText: {
-        color: colors.textMuted,
-        fontWeight: '600',
-    },
-    modalSubmit: {
-        paddingHorizontal: spacing.xl,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.lg,
-        minWidth: 100,
-        alignItems: 'center',
-    },
-    modalSubmitText: {
-        color: 'white',
-        fontWeight: 'bold',
-    },
-    errorText: {
-        fontSize: 16,
-        textAlign: 'center',
-        marginTop: spacing.md,
-        paddingHorizontal: spacing.xl,
-        color: colors.textSecondary,
-    },
-    retryButton: {
-        marginTop: spacing.lg,
-        paddingHorizontal: spacing.xl,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.full,
-    },
-    retryText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 16,
-    }
+    themeSelected: { borderWidth: 3, borderColor: colors.primary },
+    themeLabel: { fontSize: 14, color: '#888', textAlign: 'center', marginBottom: 32 },
+
+    modalActions: { flexDirection: 'row', gap: 16 },
+    cancelBtn: { flex: 1, padding: 16, alignItems: 'center', borderRadius: 12, backgroundColor: '#F5F5F5' },
+    cancelText: { fontWeight: '600', color: '#666' },
+    saveBtn: { flex: 1, padding: 16, alignItems: 'center', borderRadius: 12, backgroundColor: colors.primary },
+    saveText: { fontWeight: '600', color: 'white' },
 });

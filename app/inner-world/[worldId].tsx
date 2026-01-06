@@ -1,477 +1,375 @@
-import * as React from 'react';
-import { useState, useEffect, useRef } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Image,
-    ScrollView,
-    Dimensions,
-    ActivityIndicator,
-    Alert,
-} from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, ScrollView, Modal, TextInput, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { GestureHandlerRootView, Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, {
-    useSharedValue,
-    useAnimatedStyle,
-    runOnJS,
-} from 'react-native-reanimated';
-import { useAuth } from '../../src/contexts/AuthContext';
+import { colors, spacing, borderRadius } from '../../src/lib/theme';
 import { InnerWorldService } from '../../src/services/InnerWorldService';
-import { InnerWorldShape } from '../../src/types';
-import { colors } from '../../src/lib/theme';
+import { InnerWorldShape, InnerWorld } from '../../src/types';
+import { useAuth } from '../../src/contexts/AuthContext';
 import { triggerHaptic } from '../../src/lib/haptics';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const TILE_SIZE = 40;
-const CANVAS_SIZE = 2000; // Size of the drawable area
+// Constants
+const INITIAL_SCALE = 1;
+const CANVAS_SIZE = 5000; // Infinite canvas conceptual size
+const STICKER_CATEGORIES = [
+    { id: 'nature', label: 'Nature', icon: 'leaf-outline' },
+    { id: 'places', label: 'Lieux', icon: 'home-outline' },
+    { id: 'objects', label: 'Objets', icon: 'cube-outline' },
+    { id: 'symbols', label: 'Symboles', icon: 'heart-outline' }
+];
 
-// Assets
-const TEXTURE_ASSETS: Record<string, any> = {
-    'ground_grass': require('../../assets/inner-world/ground_grass.png'),
-    'ground_dirt': require('../../assets/inner-world/ground_dirt.png'),
-    'ground_stone': require('../../assets/inner-world/ground_stone.png'),
-    'ground_sand': require('../../assets/inner-world/ground_sand.png'),
-    'ground_forest': require('../../assets/inner-world/ground_forest.png'),
-    'water_tile': require('../../assets/inner-world/water_tile.png'),
+const STICKERS = {
+    nature: [
+        { id: 'tree_1', emoji: '🌳', label: 'Arbre' },
+        { id: 'flower_1', emoji: '🌸', label: 'Fleur' },
+        { id: 'rock_1', emoji: '🪨', label: 'Rocher' },
+        { id: 'lake_1', emoji: '💧', label: 'Lac' },
+    ],
+    places: [
+        { id: 'house_1', emoji: '🏠', label: 'Maison' },
+        { id: 'castle_1', emoji: '🏰', label: 'Château' },
+        { id: 'tent_1', emoji: '⛺', label: 'Tente' },
+        { id: 'ruin_1', emoji: '🏛️', label: 'Ruines' },
+    ],
+    objects: [
+        { id: 'bed_1', emoji: '🛏️', label: 'Lit' },
+        { id: 'book_1', emoji: '📖', label: 'Livre' },
+        { id: 'lamp_1', emoji: '🛋️', label: 'Canapé' },
+    ],
+    symbols: [
+        { id: 'heart_1', emoji: '❤️', label: 'Amour' },
+        { id: 'star_1', emoji: '⭐', label: 'Espoir' },
+        { id: 'key_1', emoji: '🗝️', label: 'Secret' },
+        { id: 'skull_1', emoji: '💀', label: 'Sombre' },
+    ]
 };
 
-const resolveAsset = (assetString: string | undefined) => {
-    if (!assetString) return null;
-    if (assetString.startsWith('asset:')) {
-        const key = assetString.split(':')[1];
-        return TEXTURE_ASSETS[key] || null;
-    }
-    return { uri: assetString };
-};
-
-const TOOLS = [
-    { id: 'hand', icon: 'hand-right-outline', label: 'Bouger' },
-    { id: 'brush', icon: 'brush-outline', label: 'Peindre' },
-    { id: 'stamp', icon: 'cube-outline', label: 'Objets' },
-    { id: 'erase', icon: 'trash-outline', label: 'Gomme' },
-];
-
-const BRUSHES = [
-    { id: 'ground_grass', label: 'Herbe', color: '#7BC8A4', asset: 'asset:ground_grass' },
-    { id: 'ground_dirt', label: 'Terre', color: '#D4A373', asset: 'asset:ground_dirt' },
-    { id: 'ground_stone', label: 'Pierre', color: '#A8A8A8', asset: 'asset:ground_stone' },
-    { id: 'ground_sand', label: 'Sable', color: '#F4D03F', asset: 'asset:ground_sand' },
-    { id: 'water_tile', label: 'Eau', color: '#90E0EF', asset: 'asset:water_tile' },
-    { id: 'ground_forest', label: 'Forêt', color: '#228B22', asset: 'asset:ground_forest' },
-];
-
-const STAMPS = [
-    {
-        category: 'Nature', items: [
-            { label: 'Arbre', asset: 'tree_green', image: require('../../assets/inner-world/tree_green.png') },
-            { label: 'Rocher', asset: 'rock_large', image: require('../../assets/inner-world/rock_large.png') },
-            { label: 'Buisson', asset: '🌿', isEmoji: true },
-            { label: 'Fleur', asset: '🌻', isEmoji: true },
-        ]
-    },
-    {
-        category: 'Ville', items: [
-            { label: 'Maison', asset: '🏠', isEmoji: true },
-            { label: 'Immeuble', asset: '🏢', isEmoji: true },
-            { label: 'Route', asset: 'road_straight', image: require('../../assets/inner-world/road_straight.png') },
-            { label: 'Virage', asset: 'road_corner', image: require('../../assets/inner-world/road_corner.png') },
-            { label: 'Carrefour', asset: 'road_intersection', image: require('../../assets/inner-world/road_intersection.png') },
-        ]
-    },
-];
-
-export default function InnerWorldMapMaker() {
-    const { worldId } = useLocalSearchParams<{ worldId: string }>();
-    const { user } = useAuth();
+export default function InnerWorldEditor() {
+    const { worldId } = useLocalSearchParams();
     const router = useRouter();
-    const insets = useSafeAreaInsets();
-
+    const { user } = useAuth();
     const [shapes, setShapes] = useState<InnerWorldShape[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [activeTool, setActiveTool] = useState<'hand' | 'brush' | 'stamp' | 'erase'>('hand');
+    const [worldData, setWorldData] = useState<InnerWorld | null>(null);
 
-    // Tool Options
-    const [selectedBrush, setSelectedBrush] = useState(BRUSHES[0]);
-    const [selectedStamp, setSelectedStamp] = useState(STAMPS[0].items[0]);
-    const [globalBg, setGlobalBg] = useState('ground_grass');
+    // UI State
+    const [libraryVisible, setLibraryVisible] = useState(false);
+    const [selectedCategory, setSelectedCategory] = useState('nature');
+    const [activeShape, setActiveShape] = useState<InnerWorldShape | null>(null);
 
     // Camera
-    const cameraX = useSharedValue(0);
-    const cameraY = useSharedValue(0);
-    const cameraScale = useSharedValue(1);
-    const savedX = useSharedValue(0);
-    const savedY = useSharedValue(0);
-    const savedScale = useSharedValue(1);
-
-    // Painting State (Ref to avoid re-renders during gesture)
-    const lastPaintedTile = useRef<string | null>(null);
+    const cameraX = useSharedValue(-CANVAS_SIZE / 2 + Dimensions.get('window').width / 2);
+    const cameraY = useSharedValue(-CANVAS_SIZE / 2 + Dimensions.get('window').height / 2);
+    const scale = useSharedValue(1);
 
     useEffect(() => {
         if (!worldId || !user) return;
+
+        // Fetch world details
+        // Note: Real implementation would fetch world doc. Mocking for now from params/cache could be tricky without store.
+        // Assuming we rely on a separate fetch or pass cached data.
+
+        // Subscribe to shapes
         const unsubscribe = InnerWorldService.subscribeToShapes(
-            worldId,
+            worldId as string,
             user.uid,
-            (data) => {
-                setShapes(data);
-                setLoading(false);
-            },
-            (err) => console.error(err)
+            (newShapes) => setShapes(newShapes)
         );
         return () => unsubscribe();
     }, [worldId, user]);
 
-    // --- Actions ---
-
-    // 1. Paint a tile at (x, y)
-    const paintTile = async (gridX: number, gridY: number) => {
-        if (!user || !worldId) return;
-
-        const tileKey = `${gridX},${gridY}`;
-        if (lastPaintedTile.current === tileKey) return; // Debounce
-        lastPaintedTile.current = tileKey;
-
-        // Check if tile exists
-        const existing = shapes.find(s =>
-            s.type === 'rectangle' &&
-            Math.abs(s.x - (gridX + TILE_SIZE / 2)) < TILE_SIZE / 2 &&
-            Math.abs(s.y - (gridY + TILE_SIZE / 2)) < TILE_SIZE / 2
-        );
-
-        if (existing) {
-            // Update Texture if different
-            if (existing.image_url !== selectedBrush.asset) {
-                // Optimistic UI could go here, but for now just fire
-                InnerWorldService.updateShape(existing.id, worldId, { image_url: selectedBrush.asset });
-                triggerHaptic.selection();
-            }
-        } else {
-            // Create New Tile
-            const newShape: Omit<InnerWorldShape, 'id' | 'created_at'> = {
-                world_id: worldId,
-                type: 'rectangle',
-                x: gridX + TILE_SIZE / 2, // Center
-                y: gridY + TILE_SIZE / 2,
-                width: TILE_SIZE,
-                height: TILE_SIZE,
-                rotation: 0,
-                name: selectedBrush.label,
-                image_url: selectedBrush.asset,
-                color: '#fff',
-            };
-            InnerWorldService.addShape(newShape, user.uid);
-            triggerHaptic.selection();
-        }
-    };
-
-    // 2. Place Stamp at (x, y)
-    const placeStamp = async (gridX: number, gridY: number) => {
-        if (!user || !worldId) return;
-
-        const centerX = gridX + TILE_SIZE / 2;
-        const centerY = gridY + TILE_SIZE / 2;
-
-        const newShape: Omit<InnerWorldShape, 'id' | 'created_at'> = {
-            world_id: worldId,
-            type: selectedStamp.category === 'Ville' && !selectedStamp.isEmoji ? 'road' : 'nature', // Simplified types
-            x: centerX,
-            y: centerY,
-            width: TILE_SIZE,
-            height: TILE_SIZE,
-            rotation: 0,
-            name: selectedStamp.label,
-            icon: selectedStamp.isEmoji ? selectedStamp.asset : (selectedStamp.asset.startsWith('road') ? selectedStamp.asset : null),
-            image_url: !selectedStamp.isEmoji && !selectedStamp.asset.startsWith('road') ? `asset:${selectedStamp.asset}` : null,
-            // Simple logic: if it's an image asset we found in local requires but not standard textures, we might need special handling.
-            // For this demo, let's assume 'road' assets are special local requires, Nature are assets.
-        };
-
-        // Refined Logic for Assets
-        if (selectedStamp.image) {
-            // It's a local require. We can't save 'require' so we use the 'asset' key.
-            // Our render function needs to map this key back to the require.
-            newShape.icon = selectedStamp.asset; // Store key in icon
-            newShape.image_url = null;
-        }
-
-        await InnerWorldService.addShape(newShape, user.uid);
-        triggerHaptic.success();
-    };
-
-    // 3. Erase at (x, y)
-    const eraseAt = async (gridX: number, gridY: number) => {
-        if (!worldId) return;
-        const centerX = gridX + TILE_SIZE / 2;
-        const centerY = gridY + TILE_SIZE / 2;
-
-        // Find topmost item
-        const target = shapes.find(s =>
-            Math.abs(s.x - centerX) < (s.width || TILE_SIZE) / 2 &&
-            Math.abs(s.y - centerY) < (s.height || TILE_SIZE) / 2
-        );
-
-        if (target) {
-            await InnerWorldService.deleteShape(target.id, worldId);
-            triggerHaptic.selection();
-        }
-    };
-
-    // --- Gestures ---
-
-    const processGesture = (x: number, y: number, isEnd: boolean = false) => {
-        // Convert screen to world
-        const worldX = (x - SCREEN_WIDTH / 2 - cameraX.value) / cameraScale.value + SCREEN_WIDTH / 2;
-        const worldY = (y - SCREEN_HEIGHT / 2 - cameraY.value) / cameraScale.value + SCREEN_HEIGHT / 2;
-
-        const gridX = Math.floor(worldX / TILE_SIZE) * TILE_SIZE;
-        const gridY = Math.floor(worldY / TILE_SIZE) * TILE_SIZE;
-
-        if (activeTool === 'brush') {
-            paintTile(gridX, gridY);
-        } else if (activeTool === 'erase') {
-            eraseAt(gridX, gridY);
-        } else if (activeTool === 'stamp' && isEnd) {
-            // Stamps only place on Release (Tap)
-            placeStamp(gridX, gridY);
-        }
-    };
-
+    // Gestures
     const panGesture = Gesture.Pan()
-        .minPointers(1)
-        .maxPointers(2)
-        .onStart(() => {
-            lastPaintedTile.current = null;
-        })
-        .onUpdate((e) => {
-            if (activeTool === 'hand') {
-                cameraX.value = savedX.value + e.translationX;
-                cameraY.value = savedY.value + e.translationY;
-            } else {
-                runOnJS(processGesture)(e.absoluteX, e.absoluteY, false);
-            }
-        })
-        .onEnd((e) => {
-            if (activeTool === 'hand') {
-                savedX.value = cameraX.value;
-                savedY.value = cameraY.value;
-            } else {
-                runOnJS(processGesture)(e.absoluteX, e.absoluteY, true);
-            }
+        .onChange((e) => {
+            cameraX.value -= e.changeX / scale.value;
+            cameraY.value -= e.changeY / scale.value;
         });
 
     const pinchGesture = Gesture.Pinch()
-        .onUpdate((e) => {
-            cameraScale.value = Math.max(0.5, Math.min(3, savedScale.value * e.scale));
-        })
-        .onEnd(() => {
-            savedScale.value = cameraScale.value;
+        .onChange((e) => {
+            scale.value *= e.scaleChange;
         });
 
-    // We combine them. If not in hand mode, Pan becomes Drawing.
-    const composedGesture = Gesture.Simultaneous(panGesture, pinchGesture);
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [
-            { translateX: cameraX.value },
-            { translateY: cameraY.value },
-            { scale: cameraScale.value },
+            { scale: scale.value },
+            { translateX: -cameraX.value },
+            { translateY: -cameraY.value },
         ],
     }));
 
-    // --- Render Helpers ---
+    const handleAddSticker = async (sticker: any) => {
+        if (!user || !worldId) return;
 
-    const renderShape = (shape: InnerWorldShape) => {
-        let source = resolveAsset(shape.image_url);
-        // Fallback for local assets stored in 'icon'
-        if (!source && shape.icon && TEXTURE_ASSETS[shape.icon]) {
-            source = TEXTURE_ASSETS[shape.icon];
-        } else if (!source && shape.icon) {
-            // Check stamps for local images
-            for (const cat of STAMPS) {
-                const found = cat.items.find(i => i.asset === shape.icon);
-                if (found && 'image' in found) source = found.image;
-            }
+        const newShape: any = {
+            world_id: worldId,
+            type: 'custom',
+            x: cameraX.value + 100, // Center-ish
+            y: cameraY.value + 100,
+            width: 100,
+            height: 100,
+            rotation: 0,
+            name: sticker.label,
+            icon: sticker.emoji,
+            emotion: 'calm',
+        };
+
+        await InnerWorldService.addShape(newShape, user.uid);
+        setLibraryVisible(false);
+        triggerHaptic.success();
+    };
+
+    const handleShapePress = (shape: InnerWorldShape) => {
+        setActiveShape(shape);
+        triggerHaptic.selection();
+    };
+
+    const handleEnterShape = async () => {
+        if (!activeShape || !worldId || !user) return;
+
+        // If already linked, go there
+        if (activeShape.linked_world_id) {
+            triggerHaptic.selection();
+            router.push(`/inner-world/${activeShape.linked_world_id}`);
+            return;
         }
 
-        return (
-            <View
-                key={shape.id}
-                style={{
-                    position: 'absolute',
-                    left: shape.x - shape.width / 2,
-                    top: shape.y - shape.height / 2,
-                    width: shape.width,
-                    height: shape.height,
-                    zIndex: shape.type === 'rectangle' ? 1 : 10, // Tiles below objects
-                }}
-            >
-                {source ? (
-                    <Image
-                        source={source}
-                        style={{ width: '100%', height: '100%', resizeMode: shape.type === 'rectangle' ? 'repeat' : 'contain' }}
-                    />
-                ) : (
-                    <View style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
-                        <Text style={{ fontSize: 24 }}>{shape.icon || '?'}</Text>
-                    </View>
-                )}
-            </View>
+        // Otherwise prompt to create
+        Alert.alert(
+            `Entrer dans ${activeShape.name}`,
+            "Cet objet ne contient pas encore de monde. Voulez-vous en créer un ?",
+            [
+                { text: "Annuler", style: "cancel" },
+                {
+                    text: "Créer l'intérieur",
+                    onPress: async () => {
+                        try {
+                            // Create new world linked to this user/system
+                            // Note: We might want to inherit access, for now same owner
+                            const newWorldId = await InnerWorldService.createWorld({
+                                system_id: user.uid,
+                                alter_id: activeShape.world_id, // Keep hierarchy owner or current? Let's use current user context if available, or just same system.
+                                // Ideally we need currentAlter here. 
+                                // Let's assume for now we use the same parameters as parent or default.
+                                // We'll update InnerWorldService to be flexible.
+                                name: `Intérieur de ${activeShape.name}`,
+                                background_color: '#F8F9FA'
+                            } as any);
+
+                            // Link it to the shape
+                            await InnerWorldService.updateShape(activeShape.id, worldId as string, {
+                                linked_world_id: newWorldId
+                            });
+
+                            triggerHaptic.success();
+                            router.push(`/inner-world/${newWorldId}`);
+                        } catch (e) {
+                            Alert.alert("Erreur", "Impossible de créer le monde intérieur.");
+                        }
+                    }
+                }
+            ]
         );
     };
 
-    return (
-        <GestureHandlerRootView style={{ flex: 1 }}>
-            <SafeAreaView style={styles.container} edges={['top']}>
+    const handleDeleteShape = async () => {
+        if (!activeShape || !worldId) return;
+        await InnerWorldService.deleteShape(activeShape.id, worldId as string);
+        setActiveShape(null);
+    };
 
-                {/* 1. Header with Global Settings */}
-                <View style={[styles.header, { top: insets.top }]}>
+    return (
+        <GestureHandlerRootView style={styles.container}>
+            <View style={styles.canvasContainer}>
+                <GestureDetector gesture={Gesture.Simultaneous(panGesture, pinchGesture)}>
+                    <Animated.View style={[styles.canvasContent, animatedStyle]}>
+                        {/* Background Grid (Optional, maybe subtle dots) */}
+                        <View style={styles.background} />
+
+                        {shapes.map(shape => (
+                            <TouchableOpacity
+                                key={shape.id}
+                                style={[
+                                    styles.shapeObj,
+                                    {
+                                        left: shape.x,
+                                        top: shape.y,
+                                        width: shape.width,
+                                        height: shape.height,
+                                        transform: [{ rotate: `${shape.rotation}deg` }]
+                                    },
+                                    activeShape?.id === shape.id && styles.selectedShape
+                                ]}
+                                onPress={() => handleShapePress(shape)}
+                                onLongPress={handleEnterShape}
+                            >
+                                <Text style={styles.emoji}>{shape.icon || '❓'}</Text>
+                                {shape.name && <Text style={styles.label}>{shape.name}</Text>}
+                            </TouchableOpacity>
+                        ))}
+                    </Animated.View>
+                </GestureDetector>
+            </View>
+
+            {/* HUD */}
+            <SafeAreaView style={styles.hud} pointerEvents="box-none">
+                <View style={styles.header}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
                         <Ionicons name="arrow-back" size={24} color="#333" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Créateur de Carte</Text>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                        {/* Global BG Picker could go here */}
-                        <TouchableOpacity onPress={() => Alert.alert('Info', 'Dessinez avec le pinceau !')} style={styles.iconBtn}>
-                            <Ionicons name="help-circle-outline" size={24} color="#333" />
+                    <Text style={styles.worldTitle}>Monde</Text>
+                    <View style={styles.iconBtn} />
+                </View>
+
+                <View style={styles.footer}>
+                    <TouchableOpacity
+                        style={styles.addBtn}
+                        onPress={() => setLibraryVisible(true)}
+                    >
+                        <Ionicons name="add" size={32} color="white" />
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
+
+            {/* Context Menu for Selected Shape */}
+            {activeShape && (
+                <View style={styles.contextMenu}>
+                    <Text style={styles.contextTitle}>{activeShape.name}</Text>
+                    <View style={styles.contextActions}>
+                        <TouchableOpacity style={styles.contextBtn} onPress={handleEnterShape}>
+                            <Ionicons name="enter-outline" size={20} color={colors.primary} />
+                            <Text style={styles.contextBtnText}>Entrer</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.contextBtn} onPress={handleDeleteShape}>
+                            <Ionicons name="trash-outline" size={20} color="#FF5252" />
+                            <Text style={[styles.contextBtnText, { color: '#FF5252' }]}>Supprimer</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.closeContextBtn} onPress={() => setActiveShape(null)}>
+                            <Ionicons name="close" size={20} color="#666" />
                         </TouchableOpacity>
                     </View>
                 </View>
+            )}
 
-                {/* 2. World Canvas */}
-                <View style={styles.canvasContainer}>
-                    <GestureDetector gesture={composedGesture}>
-                        <Animated.View style={[styles.world, animatedStyle]}>
-
-                            {/* Global Background */}
-                            <Image
-                                source={TEXTURE_ASSETS[globalBg]}
-                                style={{
-                                    position: 'absolute',
-                                    width: CANVAS_SIZE,
-                                    height: CANVAS_SIZE,
-                                    top: SCREEN_HEIGHT / 2 - CANVAS_SIZE / 2,
-                                    left: SCREEN_WIDTH / 2 - CANVAS_SIZE / 2,
-                                    resizeMode: 'repeat'
-                                }}
-                            />
-
-                            {/* Shapes */}
-                            {shapes.map(renderShape)}
-
-                            {/* Grid Overlay (Optional, faint) */}
-                            <View style={{
-                                position: 'absolute',
-                                width: CANVAS_SIZE, height: CANVAS_SIZE,
-                                top: SCREEN_HEIGHT / 2 - CANVAS_SIZE / 2,
-                                left: SCREEN_WIDTH / 2 - CANVAS_SIZE / 2,
-                                borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)',
-                                userSelect: 'none', pointerEvents: 'none'
-                            }} />
-
-                        </Animated.View>
-                    </GestureDetector>
-                </View>
-
-                {/* 3. Modern HUD */}
-                <View style={styles.hud}>
-
-                    {/* Tool Selector */}
-                    <View style={styles.toolBar}>
-                        {TOOLS.map(tool => (
-                            <TouchableOpacity
-                                key={tool.id}
-                                style={[styles.toolBtn, activeTool === tool.id && styles.activeToolBtn]}
-                                onPress={() => setActiveTool(tool.id as any)}
-                            >
-                                <Ionicons name={tool.icon as any} size={24} color={activeTool === tool.id ? '#FFF' : '#666'} />
-                                <Text style={[styles.toolLabel, activeTool === tool.id && { color: '#FFF' }]}>{tool.label}</Text>
-                            </TouchableOpacity>
-                        ))}
+            {/* Sticker Library Modal */}
+            <Modal visible={libraryVisible} animationType="slide" presentationStyle="pageSheet">
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Bibliothèque</Text>
+                        <TouchableOpacity onPress={() => setLibraryVisible(false)}>
+                            <Text style={styles.closeText}>Fermer</Text>
+                        </TouchableOpacity>
                     </View>
 
-                    {/* Contextual Sub-Menu */}
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.contextMenu} contentContainerStyle={{ paddingHorizontal: 16 }}>
-
-                        {activeTool === 'brush' && BRUSHES.map(brush => (
+                    {/* Categories */}
+                    <ScrollView horizontal style={styles.categories} showsHorizontalScrollIndicator={false}>
+                        {STICKER_CATEGORIES.map(cat => (
                             <TouchableOpacity
-                                key={brush.id}
-                                style={[styles.optionBtn, selectedBrush.id === brush.id && styles.activeOption]}
-                                onPress={() => { setSelectedBrush(brush); setGlobalBg(brush.id); }} // Selecting brush also sets bg? optional
+                                key={cat.id}
+                                style={[styles.catChip, selectedCategory === cat.id && styles.catChipActive]}
+                                onPress={() => setSelectedCategory(cat.id)}
                             >
-                                <Image source={TEXTURE_ASSETS[brush.asset.split(':')[1]]} style={styles.optionImage} />
-                                <Text style={styles.optionLabel}>{brush.label}</Text>
+                                <Ionicons name={cat.icon as any} size={16} color={selectedCategory === cat.id ? 'white' : '#666'} />
+                                <Text style={[styles.catLabel, selectedCategory === cat.id && styles.catLabelActive]}>
+                                    {cat.label}
+                                </Text>
                             </TouchableOpacity>
                         ))}
+                    </ScrollView>
 
-                        {activeTool === 'stamp' && STAMPS.flatMap(cat => cat.items).map((item, i) => (
+                    <ScrollView contentContainerStyle={styles.stickerGrid}>
+                        {(STICKERS as any)[selectedCategory]?.map((sticker: any) => (
                             <TouchableOpacity
-                                key={i}
-                                style={[styles.optionBtn, selectedStamp.label === item.label && styles.activeOption]}
-                                onPress={() => setSelectedStamp(item as any)}
+                                key={sticker.id}
+                                style={styles.stickerItem}
+                                onPress={() => handleAddSticker(sticker)}
                             >
-                                {item.image ? (
-                                    <Image source={item.image} style={styles.optionImage} />
-                                ) : (
-                                    <Text style={{ fontSize: 24 }}>{item.asset}</Text>
-                                )}
+                                <Text style={styles.stickerEmoji}>{sticker.emoji}</Text>
+                                <Text style={styles.stickerLabel}>{sticker.label}</Text>
                             </TouchableOpacity>
                         ))}
-
-                        {(activeTool === 'hand' || activeTool === 'erase') && (
-                            <Text style={styles.hintText}>
-                                {activeTool === 'hand' ? 'Glissez pour vous déplacer dans la carte.' : 'Touchez ou glissez sur des objets pour les supprimer.'}
-                            </Text>
-                        )}
-
                     </ScrollView>
                 </View>
-
-            </SafeAreaView>
+            </Modal>
         </GestureHandlerRootView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#FFF' },
+    container: { flex: 1, backgroundColor: '#F8F9FA' },
+    canvasContainer: { flex: 1, overflow: 'hidden' },
+    canvasContent: { width: CANVAS_SIZE, height: CANVAS_SIZE, backgroundColor: 'transparent' }, // Color handled by World Settings
+    background: { ...StyleSheet.absoluteFillObject }, // Add patterns here if needed
 
+    shapeObj: {
+        position: 'absolute',
+        justifyContent: 'center', alignItems: 'center',
+    },
+    emoji: { fontSize: 64 },
+    label: {
+        position: 'absolute', bottom: -20,
+        backgroundColor: 'rgba(255,255,255,0.8)', paddingHorizontal: 8, borderRadius: 8,
+        fontSize: 12, fontWeight: '600', overflow: 'hidden'
+    },
+    selectedShape: {
+        borderWidth: 2, borderColor: colors.primary, borderRadius: 12, borderStyle: 'dashed'
+    },
+
+    hud: {
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+        justifyContent: 'space-between'
+    },
     header: {
-        position: 'absolute', left: 0, right: 0, zIndex: 50,
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: 16, height: 60,
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        paddingHorizontal: 16, paddingTop: 8,
     },
     iconBtn: {
         width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.9)',
         justifyContent: 'center', alignItems: 'center',
-        shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: 2
+        shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4,
     },
-    headerTitle: { fontSize: 18, fontWeight: '800', color: '#FFF', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 },
+    worldTitle: { fontSize: 18, fontWeight: '700', color: '#333' },
 
-    canvasContainer: { flex: 1, backgroundColor: '#87CEEB', overflow: 'hidden' }, // Sky blue background outside map
-    world: { width: SCREEN_WIDTH, height: SCREEN_HEIGHT },
-
-    hud: {
-        position: 'absolute', bottom: 0, left: 0, right: 0,
-        backgroundColor: '#FFF',
-        borderTopLeftRadius: 24, borderTopRightRadius: 24,
-        paddingBottom: 30,
-        shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 10,
+    footer: {
+        alignItems: 'center', marginBottom: 20,
     },
-    toolBar: {
-        flexDirection: 'row', justifyContent: 'space-around',
-        paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0'
+    addBtn: {
+        width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primary,
+        justifyContent: 'center', alignItems: 'center',
+        shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8,
     },
-    toolBtn: { alignItems: 'center', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 12 },
-    activeToolBtn: { backgroundColor: colors.primary },
-    toolLabel: { fontSize: 12, marginTop: 4, color: '#666', fontWeight: '600' },
 
-    contextMenu: { width: '100%', height: 70, paddingTop: 10 },
-    optionBtn: { alignItems: 'center', marginRight: 16, opacity: 0.6 },
-    activeOption: { opacity: 1, transform: [{ scale: 1.1 }] },
-    optionImage: { width: 40, height: 40, borderRadius: 8, borderWidth: 2, borderColor: '#FFF' },
-    optionLabel: { fontSize: 10, marginTop: 4, textAlign: 'center' },
+    contextMenu: {
+        position: 'absolute', bottom: 100, left: 20, right: 20,
+        backgroundColor: 'white', borderRadius: 16, padding: 16,
+        shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10,
+        elevation: 5,
+    },
+    contextTitle: { fontSize: 16, fontWeight: '700', marginBottom: 12, textAlign: 'center' },
+    contextActions: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
+    contextBtn: { alignItems: 'center', gap: 4 },
+    contextBtnText: { fontSize: 12, fontWeight: '600', color: colors.primary },
+    closeContextBtn: { padding: 8 },
 
-    hintText: { color: '#999', fontSize: 14, fontStyle: 'italic', paddingHorizontal: 20, alignSelf: 'center', marginTop: 10 }
+    // Modal
+    modalContainer: { flex: 1, backgroundColor: '#F9F9F9', paddingTop: 20 },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 20 },
+    modalTitle: { fontSize: 24, fontWeight: 'bold' },
+    closeText: { fontSize: 16, color: colors.primary, fontWeight: '600' },
+    categories: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 20, maxHeight: 40 },
+    catChip: {
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+        backgroundColor: '#EEE', marginRight: 10,
+    },
+    catChipActive: { backgroundColor: colors.primary },
+    catLabel: { fontWeight: '600', color: '#666' },
+    catLabelActive: { color: 'white' },
+
+    stickerGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: 10 },
+    stickerItem: { width: '33%', alignItems: 'center', marginBottom: 24 },
+    stickerEmoji: { fontSize: 48, marginBottom: 8 },
+    stickerLabel: { fontSize: 12, color: '#666' },
 });

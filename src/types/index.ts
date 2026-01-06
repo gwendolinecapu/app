@@ -459,5 +459,6 @@ export interface InnerWorldShape {
     intention?: string;
     color?: string;
     border_radius?: number;
+    linked_world_id?: string; // ID of the inner world contained in this shape
     created_at: string;
 }

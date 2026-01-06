@@ -2,6 +2,10 @@
 
 ## [2026-01-08] Préparation v1 & Audit Fonctionnalités 🏷️
 - **StatusBadge**: Introduction d'un système de badges visuels (BETA, ALPHA, BIENTÔT, NOUVEAU) pour clarifier l'état des fonctionnalités.
+- **Sécurité API**: 
+  - Mise en place d'un **Pre-commit Hook** (`husky`) pour scanner et bloquer les commits contenant des clés API.
+  - Audit et nettoyage des logs (`console.log`) pour éviter les fuites de données.
+  - Refactoring de `functions/index.ts` pour centraliser la gestion des secrets via `AIProviderRegistry` (suppression du code legacy).
 - **Audit Système**:
   - **Menu Système**: Ajout des indicateurs pour Calendrier (BETA), Team Chat (NOUVEAU), Tâches (BETA), Historique (BETA).
   - **Espace Alter**: Intégration des badges pour les fonctionnalités expérimentales (Social Web, Rituel IA, Inner World).

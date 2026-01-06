@@ -1,21 +1,20 @@
-
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
 import { processAIJob } from "./ai/workers/jobWorker";
 import { AIWorkflows } from "./ai/services/AIWorkflows";
-import { GeminiProvider } from "./ai/providers/GeminiProvider";
-import { BytePlusProvider } from "./ai/providers/BytePlusProvider";
 import { AIJob } from "./ai/interfaces/IAIJob";
 import { COSTS } from "./ai/constants";
 import { BillingUtils } from "./utils/billing";
 
 // API
 import { startAIJob } from "./ai/api/startAIJob";
+import { cancelAIJob } from "./ai/api/cancelAIJob";
+import { retryAIJob } from "./ai/api/retryAIJob";
 
 admin.initializeApp();
 
 // Export Cloud Functions
-export { processAIJob, startAIJob };
+export { processAIJob, startAIJob, cancelAIJob, retryAIJob };
 
 // --- Configuration ---
 const SECRETS = ["GOOGLE_AI_API_KEY", "BYTEPLUS_API_KEY"];
@@ -48,18 +47,11 @@ export const performBirthRitual = functions.runWith({
 
     try {
         const { alterId, referenceImageUrls } = data;
-        const googleKey = process.env.GOOGLE_AI_API_KEY;
-        const bytePlusKey = process.env.BYTEPLUS_API_KEY;
-
-        if (!googleKey || !bytePlusKey) throw new Error("Missing Server Config (Keys)");
 
         // 1. Charge
         await BillingUtils.chargeCredits(alterId, COSTS.RITUAL, "Rituel de Naissance");
 
         // 2. Execute directly (Sync)
-        const llm = new GeminiProvider(googleKey, "gemini-1.5-flash");
-        const imageGen = new BytePlusProvider(bytePlusKey);
-
         const mockJob: AIJob = {
             id: 'sync_' + Date.now(),
             userId: context.auth.uid,
@@ -71,7 +63,7 @@ export const performBirthRitual = functions.runWith({
             updatedAt: admin.firestore.Timestamp.now()
         };
 
-        return await AIWorkflows.performRitual(mockJob, llm, imageGen);
+        return await AIWorkflows.performRitual(mockJob);
 
     } catch (e: any) {
         console.error("Ritual Error:", e);
@@ -88,10 +80,6 @@ export const generateMagicPost = functions.runWith({
 
     try {
         const { alterId, imageCount = 1 } = data;
-        const googleKey = process.env.GOOGLE_AI_API_KEY;
-        const bytePlusKey = process.env.BYTEPLUS_API_KEY;
-
-        if (!googleKey || !bytePlusKey) throw new Error("Missing Server Config (Keys)");
 
         // 1. Charge
         let cost = COSTS.POST_STD;
@@ -101,9 +89,6 @@ export const generateMagicPost = functions.runWith({
         await BillingUtils.chargeCredits(alterId, cost, `Magic Post (${imageCount})`);
 
         // 2. Execute directly (Sync)
-        const llm = new GeminiProvider(googleKey, "gemini-1.5-flash");
-        const imageGen = new BytePlusProvider(bytePlusKey);
-
         const mockJob: AIJob = {
             id: 'sync_' + Date.now(),
             userId: context.auth.uid,
@@ -115,7 +100,7 @@ export const generateMagicPost = functions.runWith({
             updatedAt: admin.firestore.Timestamp.now()
         };
 
-        return await AIWorkflows.performMagicPost(mockJob, llm, imageGen);
+        return await AIWorkflows.performMagicPost(mockJob);
 
     } catch (e: any) {
         console.error("Magic Post Error:", e);

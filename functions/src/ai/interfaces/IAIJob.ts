@@ -3,6 +3,11 @@ import { Timestamp } from 'firebase-admin/firestore';
 export type JobType = 'magic_post' | 'ritual' | 'chat' | 'summary';
 export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
 
+export interface AIJobStartRequest {
+    type: JobType;
+    params: any;
+}
+
 export interface AIJob {
     id: string;
     userId: string; // The system/user ID
@@ -40,6 +45,8 @@ export interface AIJob {
         stage: string;
         message?: string;
     };
+    duration?: number; // Execution duration in ms
+    completedAt?: string; // ISO String
 
     metadata: {
         provider: string; // e.g., 'gemini', 'byteplus'

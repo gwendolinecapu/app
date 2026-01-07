@@ -6,9 +6,9 @@ try {
     console.warn('[SocialSessionService] CookieManager native module not found. Session management will be disabled.');
     // Mock implementation to prevent crashes
     CookieManager = {
-        clearAll: async () => { console.log('[MockCookieManager] clearAll'); },
+        clearAll: async () => { },
         get: async () => ({}),
-        set: async () => { console.log('[MockCookieManager] set'); },
+        set: async () => { },
     };
 }
 import { Alter } from '../types';
@@ -31,8 +31,7 @@ export const SocialSessionService = {
             // 2. Find saved session
             const session = alter.social_sessions?.find(s => s.platform === platform);
             if (!session || !session.cookies) {
-                console.log(`[SocialSession] No saved session found for ${alter.name} on ${platform}`);
-                return; // Start fresh
+                return; // Start fresh - no saved session
             }
 
             // 3. Inject cookies
@@ -42,7 +41,6 @@ export const SocialSessionService = {
                 CookieManager.set(domain, c as any)
             );
             await Promise.all(cookiePromises);
-            console.log(`[SocialSession] Restored session for ${alter.name} on ${platform}`);
         } catch (error) {
             console.error('[SocialSession] Error restoring session:', error);
         }
@@ -75,7 +73,6 @@ export const SocialSessionService = {
 
             // 4. Persist to DB
             await AlterService.updateAlter(alterId, { social_sessions: updatedSessions });
-            console.log(`[SocialSession] Saved session for alter ${alterId} on ${platform}`);
         } catch (error) {
             console.error('[SocialSession] Error saving session:', error);
         }

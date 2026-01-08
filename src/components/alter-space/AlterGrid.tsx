@@ -20,6 +20,7 @@ interface AlterGridProps {
     alterName: string;
     themeColors?: ThemeColors | null;
     alterId?: string; // Needed for fetching tagged posts
+    isPrivate?: boolean;
 }
 
 
@@ -31,7 +32,8 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
     listHeaderComponent,
     alterName,
     themeColors,
-    alterId
+    alterId,
+    isPrivate = false
 }) => {
     const [activeTab, setActiveTab] = React.useState<'grid' | 'tagged'>('grid');
     const [taggedPosts, setTaggedPosts] = React.useState<Post[]>([]);
@@ -40,10 +42,10 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
 
     // Load tagged posts when tab changes
     React.useEffect(() => {
-        if (activeTab === 'tagged' && !taggedLoaded && alterId) {
+        if (activeTab === 'tagged' && !taggedLoaded && alterId && !isPrivate) {
             loadTaggedPosts();
         }
-    }, [activeTab, alterId]);
+    }, [activeTab, alterId, isPrivate]);
 
     const loadTaggedPosts = async () => {
         if (!alterId) return;
@@ -63,6 +65,39 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
 
     const displayPosts = activeTab === 'grid' ? posts : taggedPosts;
     const isListLoading = activeTab === 'grid' ? loading : loadingTagged;
+
+    if (isPrivate) {
+        return (
+            <FlatList
+                key="private-list"
+                data={[]}
+                renderItem={() => null}
+                ListHeaderComponent={() => (
+                    <>
+                        {listHeaderComponent}
+                        <View style={styles.emptyState}>
+                            <View style={[styles.emptyIcon, { borderColor: themeColors?.text || colors.text, opacity: 1 }]}>
+                                <Ionicons name="lock-closed-outline" size={32} color={themeColors?.text || colors.text} />
+                            </View>
+                            <Text style={[styles.emptyTitle, themeColors && { color: themeColors.text }]}>
+                                Compte Privé
+                            </Text>
+                            <Text style={[styles.emptySubtitle, themeColors && { color: themeColors.textSecondary }]}>
+                                Abonnez-vous pour voir les photos et vidéos de {alterName}.
+                            </Text>
+                        </View>
+                    </>
+                )}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor={colors.primary}
+                    />
+                }
+            />
+        );
+    }
 
     if (isListLoading && displayPosts.length === 0) {
         return (

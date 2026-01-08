@@ -196,13 +196,26 @@ export default function AlterSpaceScreen() {
     const renderContent = () => {
         switch (activeTab) {
             case 'profile':
-                // Grid View
                 // Filter posts based on privacy settings
-                const visiblePosts = posts.filter(post => {
-                    if (isOwner) return true; // Owner sees everything
-                    if (post.visibility === 'public') return true; // Everyone sees public
-                    if (post.visibility === 'friends' && friendStatus === 'friends') return true; // Friends see friends-only
-                    return false; // Hide private or friends-only if not friend
+                // User Request: Strict Friends Only (regardless of post public status)
+                // "tant que les deux ne sont pas amis alors il ne peuvent pas voir post ou storie"
+
+                // If not owner and not friends, show Private State (via AlterGrid isPrivate prop)
+                const isPrivate = !isOwner && friendStatus !== 'friends';
+
+                // If private, we pass empty posts effectively (though AlterGrid handles the UI)
+                // If visible, we might still respect 'post.visibility' but user implies blocking everything.
+                // Assuming once friends, normal rules apply? 
+                // "tant que les deux ne sont pas amis..." implies once friends, they CAN see.
+                // So normal visibility rules should apply IF friends.
+                // But user says: "not friends -> cannot see".
+                // I will strictly enforce: if not friends, everything is hidden (private).
+
+                const visiblePosts = isPrivate ? [] : posts.filter(post => {
+                    if (isOwner) return true;
+                    if (post.visibility === 'public') return true;
+                    if (post.visibility === 'friends' && friendStatus === 'friends') return true;
+                    return false;
                 });
 
                 return (
@@ -240,6 +253,7 @@ export default function AlterSpaceScreen() {
                                 />
                             }
                             alterId={alter.id}
+                            isPrivate={isPrivate}
                         />
                     </View>
                 );

@@ -20,7 +20,6 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { httpsCallable } from 'firebase/functions';
-import Markdown from 'react-native-markdown-display';
 
 import { storage, functions } from '../../../src/lib/firebase';
 import { colors, spacing, typography, borderRadius } from '../../../src/lib/theme';
@@ -42,9 +41,8 @@ export default function RitualScreen() {
     const [imageModalVisible, setImageModalVisible] = useState(false);
 
     // Derived values for display (prefer immediate result, fallback to stored data)
-    const displayDescription = resultData?.visualDescription || alter?.visual_dna?.description;
     const displayRefSheetUrl = resultData?.refSheetUrl || alter?.visual_dna?.reference_sheet_url;
-    const isRitualComplete = !!displayDescription;
+    const isRitualComplete = !!displayRefSheetUrl;
 
     const themeColors = getThemeColors(alter?.equipped_items?.theme);
     const primaryColor = themeColors?.primary || colors.primary;
@@ -88,12 +86,12 @@ export default function RitualScreen() {
         if (selectedImages.length === 0) return;
 
         Alert.alert(
-            "Commencer le Rituel ?",
-            `Cette offrande (${selectedImages.length} images) coûte ${AI_COSTS.RITUAL} Crédits. L'Oracle va analyser votre alter en détail.`,
+            "Lancer la création ?",
+            `Ces références (${selectedImages.length} images) coûtent ${AI_COSTS.RITUAL} Crédits. L'IA va analyser votre alter en détail.`,
             [
                 { text: "Annuler", style: "cancel" },
                 {
-                    text: `Offrir (${AI_COSTS.RITUAL} Crédits)`,
+                    text: `Générer (${AI_COSTS.RITUAL} Crédits)`,
                     style: 'default',
                     onPress: processRitual
                 }
@@ -140,18 +138,18 @@ export default function RitualScreen() {
                 });
                 await refresh(); // Background refresh
                 Alert.alert(
-                    "Rituel Accompli ✨",
-                    `L'ADN Visuel de ${alter?.name} a été extrait.`,
+                    "Création Terminée ✨",
+                    `L'apparence de ${alter?.name} a été générée.`,
                     [{ text: "Voir le résultat", onPress: () => { } }]
                 );
             } else {
-                throw new Error("Le rituel n'a pas renvoyé de succès.");
+                throw new Error("La génération n'a pas renvoyé de succès.");
             }
 
         } catch (err: any) {
             console.error("Ritual failed:", err);
             triggerHaptic.error();
-            Alert.alert("Le Rituel a échoué", err.message || "Une pertubation magique est survenue.");
+            Alert.alert("La création a échoué", err.message || "Une erreur est survenue.");
         } finally {
             setLoading(false);
         }
@@ -168,7 +166,7 @@ export default function RitualScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="close" size={28} color="white" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Chambre du Rituel</Text>
+                <Text style={styles.headerTitle}>Studio de Création</Text>
                 <View style={{ width: 28 }} />
             </View>
 
@@ -180,13 +178,13 @@ export default function RitualScreen() {
                         style={StyleSheet.absoluteFill}
                     />
                     <Ionicons name="sparkles" size={32} color={primaryColor} style={styles.cardIcon} />
-                    <Text style={styles.cardTitle}>Rituel de Naissance</Text>
+                    <Text style={styles.cardTitle}>Génération d'Avatar</Text>
                     <Text style={styles.cardDesc}>
-                        Donnez vie à {alter?.name || "votre alter"}. Sélectionnez plusieurs images (Face, Profil, Détails) pour un résultat plus précis.
+                        Visualisez {alter?.name || "votre alter"}. Sélectionnez plusieurs images (Face, Profil, Détails) pour un résultat plus précis.
                     </Text>
                 </View>
 
-                <Text style={styles.sectionTitle}>Offrandes ({selectedImages.length}/5)</Text>
+                <Text style={styles.sectionTitle}>Références ({selectedImages.length}/5)</Text>
 
                 {/* 1. Loading State */}
                 {/* 1. Loading State - REPLACED BY OVERLAY */}
@@ -198,84 +196,47 @@ export default function RitualScreen() {
                         <View style={styles.successContent}>
                             <View style={styles.successHeader}>
                                 <Ionicons name="checkmark-circle" size={48} color={primaryColor} />
-                                <Text style={[styles.successTitle, { color: primaryColor }]}>Résonance Confirmée</Text>
+                                <Text style={[styles.successTitle, { color: primaryColor }]}>Génération Réussie</Text>
                             </View>
 
-                            {/* Visual DNA Display */}
-                            {displayDescription && (
+
+                            {/* Visual Result Display */}
+                            {displayRefSheetUrl && (
                                 <View style={[styles.dnaCard, { borderColor: 'rgba(255,255,255,0.1)' }]}>
-                                    <View style={styles.dnaHeader}>
-                                        <Ionicons name="finger-print" size={20} color={primaryColor} />
-                                        <Text style={[styles.dnaTitle, { color: primaryColor }]}>Identité Visuelle</Text>
-                                    </View>
+                                    <TouchableOpacity onPress={() => setImageModalVisible(true)}>
+                                        <Image
+                                            source={{ uri: displayRefSheetUrl }}
+                                            style={{ width: '100%', height: 400, borderRadius: borderRadius.md, resizeMode: 'contain', backgroundColor: 'rgba(0,0,0,0.2)' }}
+                                        />
+                                    </TouchableOpacity>
+                                    <Text style={{ ...typography.caption, color: colors.textSecondary, marginTop: 8, textAlign: 'center' }}>
+                                        Appuyer pour agrandir
+                                    </Text>
 
-                                    {/* Display Reference Sheet if available */}
-                                    {displayRefSheetUrl ? (
-                                        <View style={{ marginBottom: spacing.md }}>
-                                            <TouchableOpacity onPress={() => setImageModalVisible(true)}>
-                                                <Image
-                                                    source={{ uri: displayRefSheetUrl }}
-                                                    style={{ width: '100%', height: 300, borderRadius: borderRadius.md, resizeMode: 'contain', backgroundColor: 'rgba(0,0,0,0.2)' }}
-                                                />
-                                            </TouchableOpacity>
-                                            <Text style={{ ...typography.caption, color: colors.textSecondary, marginTop: 4, fontStyle: 'italic', textAlign: 'center' }}>
-                                                Planche de référence (Appuyer pour agrandir)
-                                            </Text>
-
-                                            <Modal
-                                                visible={imageModalVisible}
-                                                transparent={true}
-                                                onRequestClose={() => setImageModalVisible(false)}
-                                                animationType="fade"
+                                    <Modal
+                                        visible={imageModalVisible}
+                                        transparent={true}
+                                        onRequestClose={() => setImageModalVisible(false)}
+                                        animationType="fade"
+                                    >
+                                        <View style={styles.modalContainer}>
+                                            <TouchableOpacity
+                                                style={styles.modalCloseButton}
+                                                onPress={() => setImageModalVisible(false)}
                                             >
-                                                <View style={styles.modalContainer}>
-                                                    <TouchableOpacity
-                                                        style={styles.modalCloseButton}
-                                                        onPress={() => setImageModalVisible(false)}
-                                                    >
-                                                        <Ionicons name="close" size={30} color="white" />
-                                                    </TouchableOpacity>
-                                                    <Image
-                                                        source={{ uri: displayRefSheetUrl }}
-                                                        style={styles.modalImage}
-                                                    />
-                                                </View>
-                                            </Modal>
+                                                <Ionicons name="close" size={30} color="white" />
+                                            </TouchableOpacity>
+                                            <Image
+                                                source={{ uri: displayRefSheetUrl }}
+                                                style={styles.modalImage}
+                                            />
                                         </View>
-                                    ) : (
-                                        <View style={{ padding: spacing.md, alignItems: 'center', opacity: 0.7 }}>
-                                            <Text style={{ color: colors.textSecondary, fontStyle: 'italic' }}>
-                                                (La planche de référence n'a pas pu être générée)
-                                            </Text>
-                                        </View>
-                                    )}
-
-                                    {/* Removed nested ScrollView to fix scrolling issues */}
-                                    <View style={styles.dnaScroll}>
-                                        <Markdown
-                                            style={{
-                                                body: {
-                                                    color: '#E0E0E0',
-                                                    fontSize: 15,
-                                                    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-                                                    lineHeight: 24,
-                                                },
-                                                heading1: { color: primaryColor, marginVertical: 12, fontWeight: 'bold', fontSize: 22 },
-                                                heading2: { color: primaryColor, marginVertical: 10, fontWeight: 'bold', fontSize: 19 },
-                                                strong: { color: '#FFF', fontWeight: 'bold' },
-                                                em: { color: colors.textSecondary, fontStyle: 'italic' },
-                                                bullet_list: { marginVertical: 8 },
-                                                list_item: { marginVertical: 4, flexDirection: 'row', alignItems: 'flex-start' },
-                                            }}
-                                        >
-                                            {displayDescription}
-                                        </Markdown>
-                                    </View>
+                                    </Modal>
                                 </View>
                             )}
 
                             <TouchableOpacity style={styles.reDoButton} onPress={pickImages}>
-                                <Text style={styles.reDoText}>Refaire le Rituel (Mettre à jour)</Text>
+                                <Text style={styles.reDoText}>Régénérer (Mettre à jour)</Text>
                             </TouchableOpacity>
                         </View>
                     )
@@ -348,7 +309,7 @@ export default function RitualScreen() {
                                 end={{ x: 1, y: 1 }}
                                 style={styles.confirmGradient}
                             >
-                                <Text style={styles.confirmText}>Commencer le Rituel ({AI_COSTS.RITUAL} Crédits)</Text>
+                                <Text style={styles.confirmText}>Lancer la création ({AI_COSTS.RITUAL} Crédits)</Text>
                                 <Ionicons name="flame" size={24} color="white" style={{ marginLeft: 8 }} />
                             </LinearGradient>
                         </TouchableOpacity>
@@ -358,8 +319,8 @@ export default function RitualScreen() {
             {/* Awesome Loading Screen */}
             <MagicalLoadingView
                 visible={loading}
-                message="Incantation en cours..."
-                subMessage="Analyse de l'ADN Visuel..."
+                message="Création en cours..."
+                subMessage="Analyse des traits..."
             />
         </SafeAreaView >
     );
@@ -588,23 +549,6 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 5,
         elevation: 5,
-    },
-    dnaHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: spacing.md,
-        borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.1)',
-        paddingBottom: spacing.sm,
-    },
-    dnaTitle: {
-        ...typography.h3,
-        fontWeight: '600',
-        marginLeft: spacing.sm,
-        letterSpacing: 0.5,
-    },
-    dnaScroll: {
-        paddingHorizontal: spacing.xs,
     },
     reDoButton: {
         marginTop: spacing.md,

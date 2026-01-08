@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026-01-09] Rebranding Rituel & Simplification UX 🎨
+- **Rituel (Studio de Création)**: Renommage complet de la section "Rituel" en "Studio de Création" pour une approche plus neutre et moderne.
+- **Simplification**: Suppression des descriptions textuelles "ADN Visuel" et "Rituel" pour se concentrer uniquement sur la génération visuelle.
+- **Terminologie**: Remplacement des termes "Magie/Offrande" par "Création/Référence" pour plus de clarté.
+- **Backend (Functions)**: Correction et restauration des fichiers manquants pour les fournisseurs d'IA (Gemini, BytePlus, OpenAI) et résolution des erreurs de compilation TypeScript.
+- **UI UX**: Affichage propre du résultat (image générée) sans texte superflu.
+
 ## [2026-01-08] Préparation v1 & Audit Fonctionnalités 🏷️
 - **StatusBadge**: Introduction d'un système de badges visuels (BETA, ALPHA, BIENTÔT, NOUVEAU) pour clarifier l'état des fonctionnalités.
 - **Audit Système**:

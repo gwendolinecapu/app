@@ -52,6 +52,7 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
     // Highlight selection state
     const [showHighlightModal, setShowHighlightModal] = useState(false);
     const [highlights, setHighlights] = useState<StoryHighlight[]>([]);
+    const [loadingHighlights, setLoadingHighlights] = useState(false);
     // Custom Modal State
     const [createHighlightModalVisible, setCreateHighlightModalVisible] = useState(false);
     const [newHighlightTitle, setNewHighlightTitle] = useState('');

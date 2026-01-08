@@ -17,6 +17,7 @@ export const processAIJob = functions.runWith({
         return;
 
     const job = change.after.data();
+    if (!job) return;
     const previousJob = change.before.exists ? change.before.data() : null;
     const jobId = context.params.jobId;
 
@@ -58,7 +59,7 @@ export const processAIJob = functions.runWith({
         let usageMetadata = {};
         if (result && result.metadata) {
             usageMetadata = result.metadata;
-            delete result.metadata;
+            delete (result as any).metadata;
         }
 
         await JobsService.updateStatus(jobId, 'succeeded', {

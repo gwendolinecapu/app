@@ -237,7 +237,9 @@ export default function AlterSpaceScreen() {
                                     onFriendAction={handleFriendAction}
                                     onFollowersPress={() => setShowFollowersModal(true)}
                                     onFollowingPress={() => setShowFollowingModal(true)}
+                                    onFollowingPress={() => setShowFollowingModal(true)}
                                     themeColors={themeColors}
+                                    friendIds={friendIds}
                                     onAvatarPress={() => {
                                         if (isOwner || friendStatus === 'friends') {
                                             router.push({ pathname: '/story/view', params: { authorId: alter.id } });

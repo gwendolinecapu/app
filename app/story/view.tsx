@@ -84,8 +84,43 @@ export default function StoryViewScreen() {
                         const highlights = await StoriesService.fetchHighlights(authorId);
                         const highlight = highlights.find(h => h.id === highlightId);
                         if (highlight && highlight.story_ids.length > 0) {
-                            const stories = await StoriesService.fetchStoriesByIds(highlight.story_ids);
-                            setStories(stories);
+                            const rawStories = await StoriesService.fetchStoriesByIds(highlight.story_ids);
+
+                            // Filter stories based on author friendship
+                            // Start Promise.all to check status for each unique author if needed?
+                            // Optimization: We know friendStatus with the Highlight Owner (Mona).
+                            // But stories inside might be from others (Alice).
+
+                            // 1. Get unique authors
+                            const authors = [...new Set(rawStories.map(s => s.author_id))];
+
+                            // 2. Filter allowed authors
+                            const allowedAuthors = new Set<string>();
+                            allowedAuthors.add(currentAlter?.id || '');
+                            if (user) allowedAuthors.add(user.uid);
+
+                            for (const authorId of authors) {
+                                if (allowedAuthors.has(authorId)) continue;
+                                // Check friendship
+                                try {
+                                    const status = await FriendService.checkStatus(currentAlter?.id || '', authorId);
+                                    if (status === 'friends') {
+                                        allowedAuthors.add(authorId);
+                                    }
+                                } catch (e) {
+                                    console.warn("Failed to check story privacy for author", authorId);
+                                }
+                            }
+
+                            const validStories = rawStories.filter(s => allowedAuthors.has(s.author_id));
+
+                            if (validStories.length === 0) {
+                                // Silent fail: behave as if content doesn't exist
+                                router.back();
+                                return;
+                            }
+
+                            setStories(validStories);
                         } else {
                             setStories([]);
                         }

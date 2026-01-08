@@ -83,7 +83,8 @@ export async function createStory(input: CreateStoryInput): Promise<Story> {
  */
 export async function fetchActiveStories(
     friendIds: string[],
-    currentSystemId: string
+    currentSystemId: string,
+    allowedAuthorIds?: string[] // STRICT PRIVACY: Only return stories from these authors
 ): Promise<Story[]> {
     const now = new Date();
 
@@ -103,7 +104,64 @@ export async function fetchActiveStories(
 
     const snapshot = await getDocs(q);
 
-    return snapshot.docs.map(doc => {
+    let docs = snapshot.docs;
+
+    // Filter by specific author IDs if friendIds implies strict author checking
+    // The query above uses system_ids. One system can contain multiple alters.
+    // If strict privacy is needed per-alter, we must filter here.
+    // We assume 'friendIds' passed to this function are SYSTEM IDs or ALTER IDs?
+    // In strict mode, friendIds are usually Alter IDs.
+    // BUT the query checks 'system_id' IN friendIds.
+    // This implies friendIds passed here are SYSTEM IDs.
+
+    // WAIT. If friendIds are Alter IDs, the query `where('system_id', 'in', systemIds)` is WRONG if we mix Alter IDs and System IDs.
+    // Current usage in StoriesBar: pass friendIds (Alter IDs).
+    // BUT StoriesBar logic: `const systemIds = [currentSystemId, ...friendIds]`
+    // If friendIds contains Alter IDs, and we treat them as System IDs...
+    // In PluralConnect: System ID === User UID. Alter ID === Document ID.
+    // If we are friends with an Alter from another system, the friendId IS the Alter ID?
+    // Start again: `FriendService` manages Alter-Alter relationships.
+    // So `friendIds` are ALTER IDs.
+
+    // IF we query `system_id` using Alter IDs, we get NOTHING (unless Alter ID == System ID).
+    // So the query line 98 `where('system_id', 'in', systemIds)` suggests `friendIds` MUST be System IDs.
+    // Let's check `StoriesBar` usage. It passes `friendIds` from `useAlterData` or context.
+    // If `friendIds` are Alter IDs, then this service method is flawed for strict Alter-Alter privacy.
+
+    // FIX: 
+    // 1. We should fetch stories where 'author_id' IN [myId, ...friendIds].
+    // BUT 'in' query limit is 10. We might have 20 friends.
+    // 2. Fallback: Fetch by System (broad) then filter by Author (narrow).
+    // Issue: We don't have the friend's System ID easily available here?
+    // Actually, `fetchActiveStories` assumes we pull by System.
+
+    // If we want strict privacy:
+    // We allow fetching my system (currentSystemId).
+    // BUT we must filter results to only show stories from ME (currentAlter) + Friends.
+
+    // To do this, we need 'allowedAuthorIds'.
+    // I will add a new param 'allowedAuthorIds' to this function.
+    // Or I will reuse 'friendIds' as the allow list (assuming it contains Alter IDs).
+    // And I will NOT use 'friendIds' for the system_id query if they are not system IDs.
+    // But how do we get stories from friends in OTHER systems if we don't know their System ID?
+    // The 'friendIds' passed to `StoriesBar` comes from `useAlterData`.
+
+    // Correct Fix for now:
+    // Filter results using `friendIds` (treating them as Allowed Author IDs).
+    // AND `currentSystemId` stories need invalid authors filtered out.
+
+    // I'll assume `friendIds` contains Valid Author IDs (friends).
+    // I need to filter `snapshot.docs` to keep only stories where:
+    // story.author_id IS IN [currentAuthorId, ...friendIds]
+
+    // But I don't have `currentAuthorId` passed here, only `currentSystemId`.
+    // I'll modify the signature or assume caller handles it?
+    // Caller: StoriesBar. It has `currentAlter`.
+
+    // Let's change this function to take `allowedAuthorIds` (optional).
+    // If present, filter.
+
+    const stories = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
             id: doc.id,

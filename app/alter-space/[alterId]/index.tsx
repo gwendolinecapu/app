@@ -312,7 +312,7 @@ export default function AlterSpaceScreen() {
                                 {/* Section: Studio IA */}
                                 <Text style={{ fontSize: 13, fontWeight: '700', color: themeColors?.textSecondary || colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Studio de Création</Text>
 
-                                <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname: '/alter-space/[alterId]/ai-studio', params: { alterId: alter.id } })}>
+                                <TouchableOpacity style={styles.menuItem} onPress={() => router.push(`/alter-space/${alter.id}/ai-studio`)}>
                                     <Ionicons name="sparkles" size={24} color={activeColor} style={{ marginRight: 15 }} />
                                     <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>Studio IA</Text>
                                     <View style={{ flex: 1 }} />

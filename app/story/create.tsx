@@ -100,6 +100,10 @@ export default function CreateStoryScreen() {
     const [selectedHighlight, setSelectedHighlight] = useState<StoryHighlight | null>(null);
     const [addToHighlight, setAddToHighlight] = useState(false);
 
+    // New Highlight Creation Modal State (Cross-Platform)
+    const [createHighlightModalVisible, setCreateHighlightModalVisible] = useState(false);
+    const [newHighlightTitle, setNewHighlightTitle] = useState('');
+
     const pickMedia = async (type: 'camera' | 'gallery') => {
         const options: ImagePicker.ImagePickerOptions = {
             mediaTypes: ImagePicker.MediaTypeOptions.All,

@@ -1,16 +1,18 @@
-import * as functions from "firebase-functions/v1";
-import * as admin from "firebase-admin";
+import * as functions from 'firebase-functions/v1';
+import * as admin from 'firebase-admin';
 
 export const cancelAIJob = functions.runWith({
     secrets: [],
     timeoutSeconds: 60,
     memory: "128MB"
-}).https.onCall(async (data: { jobId: string }, context) => {
+}).https.onCall(async (data: any, context: functions.https.CallableContext) => {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Login required');
     }
+
     const { jobId } = data;
-    if (!jobId) throw new functions.https.HttpsError('invalid-argument', 'Missing Job ID');
+    if (!jobId)
+        throw new functions.https.HttpsError('invalid-argument', 'Missing Job ID');
 
     const jobRef = admin.firestore().collection('ai_jobs').doc(jobId);
     const jobSnap = await jobRef.get();

@@ -1,10 +1,8 @@
-
-import * as functions from "firebase-functions/v1";
-import * as admin from "firebase-admin";
-import { AIJobStartRequest } from "../interfaces/IAIJob";
-import { JobsService } from "../services/JobsService";
-import { BillingUtils } from "../../utils/billing";
-import { COSTS } from "../constants";
+import * as functions from 'firebase-functions/v1';
+import * as admin from 'firebase-admin';
+import { JobsService } from '../services/JobsService';
+import { BillingUtils } from '../../utils/billing';
+import { COSTS } from '../constants';
 
 // The unified entry point for creating AI jobs safely
 export const startAIJob = functions.runWith({
@@ -12,11 +10,12 @@ export const startAIJob = functions.runWith({
     timeoutSeconds: 60,
     memory: "256MB"
     // @ts-ignore
-}).https.onCall(async (data: AIJobStartRequest, context) => {
+}).https.onCall(async (data: any, context: functions.https.CallableContext) => {
     // 1. Auth Check
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Login required');
     }
+
     const userId = context.auth.uid;
     const { type, params } = data;
 
@@ -37,23 +36,33 @@ export const startAIJob = functions.runWith({
 
     switch (type) {
         case 'ritual':
-            if (!params.alterId || !params.referenceImageUrls) throw new functions.https.HttpsError('invalid-argument', 'Missing params');
+            if (!params.alterId || !params.referenceImageUrls)
+                throw new functions.https.HttpsError('invalid-argument', 'Missing params');
 
             // Dynamic Cost Calculation based on Model
-            if (params.model === 'gpt-1.5-low') cost = 10;
-            else if (params.model === 'gpt-1.5-high') cost = 80;
-            else if (params.model === 'seedream-4.5') cost = 60;
-            else cost = 50; // Default (gpt-1.5-mid, seedream-4.0)
+            if (params.model === 'gpt-1.5-low')
+                cost = 10;
+            else if (params.model === 'gpt-1.5-high')
+                cost = 80;
+            else if (params.model === 'seedream-4.5')
+                cost = 60;
+            else
+                cost = 50; // Default (gpt-1.5-mid, seedream-4.0)
 
             description = `Rituel de Naissance (${params.model || 'Standard'})`;
             break;
 
         case 'magic_post':
-            if (!params.alterId || !params.prompt) throw new functions.https.HttpsError('invalid-argument', 'Missing params');
+            if (!params.alterId || !params.prompt)
+                throw new functions.https.HttpsError('invalid-argument', 'Missing params');
+
             const count = params.imageCount || 1;
             // Batch discount logic
-            if (count === 3) cost = 25;
-            else cost = COSTS.POST_STD * count;
+            if (count === 3)
+                cost = 25;
+            else
+                cost = COSTS.POST_STD * count;
+
             description = `Magic Post (${count})`;
             break;
 

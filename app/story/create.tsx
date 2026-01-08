@@ -10,7 +10,8 @@ import {
     Modal,
     TextInput,
     StatusBar,
-    ScrollView
+    ScrollView,
+    Platform
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -162,6 +163,66 @@ export default function CreateStoryScreen() {
             setHighlights([]);
         } finally {
             setLoadingHighlights(false);
+        }
+    };
+
+    const openHighlightModal = () => {
+        loadHighlights();
+        setShowHighlightModal(true);
+    };
+
+    const handleCreateNewHighlight = async () => {
+        if (Platform.OS === 'ios') {
+            Alert.prompt(
+                'Nouvel album',
+                'Donnez un titre à votre album',
+                async (title) => {
+                    if (title && title.trim().length > 0) {
+                        try {
+                            // 1. Pick Image
+                            const result = await ImagePicker.launchImageLibraryAsync({
+                                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                                allowsEditing: true,
+                                aspect: [1, 1],
+                                quality: 0.8,
+                            });
+
+                            if (!result.canceled) {
+                                setLoadingHighlights(true);
+                                // 2. Upload Image
+                                const response = await fetch(result.assets[0].uri);
+                                const blob = await response.blob();
+                                const storageRef = ref(storage, `highlight-covers/${Date.now()}`);
+                                await uploadBytes(storageRef, blob);
+                                const coverUrl = await getDownloadURL(storageRef);
+
+                                // 3. Create Highlight
+                                const newHighlight = await StoriesService.createHighlight(
+                                    user!.uid, // systemId
+                                    title.trim(),
+                                    coverUrl,
+                                    [], // Empty initially, story will be added on publish
+                                    currentAlter?.id
+                                );
+
+                                // 4. Select it
+                                setHighlights(prev => [newHighlight, ...prev]);
+                                setSelectedHighlight(newHighlight);
+                                setAddToHighlight(true);
+                                setShowHighlightModal(false);
+                            }
+                        } catch (error) {
+                            Alert.alert('Erreur', "Impossible de créer l'album");
+                            console.error(error);
+                        } finally {
+                            setLoadingHighlights(false);
+                        }
+                    }
+                },
+                'plain-text'
+            );
+        } else {
+            Alert.alert("Info", "La création d'album n'est pas encore supportée ici sur Android.");
         }
     };
 
@@ -786,6 +847,16 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: colors.background,
+    },
+    createHighlightIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        borderWidth: 2,
+        borderColor: colors.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderStyle: 'dashed',
     },
     highlightOptionCover: {
         width: 48,

@@ -76,6 +76,7 @@ interface ProfileHeaderProps {
     onFollowingPress: () => void;
     themeColors?: ThemeColors | null;
     onAvatarPress?: () => void;
+    friendIds?: string[];
 }
 
 const AnimatedImage = Animated.createAnimatedComponent(Image);
@@ -90,7 +91,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     onFollowersPress,
     onFollowingPress,
     themeColors,
-    onAvatarPress
+    onAvatarPress,
+    friendIds = []
 }) => {
     if (loading) {
         return (
@@ -371,6 +373,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                     systemId={alter.systemId || alter.system_id || alter.userId || 'unknown'}
                     isOwner={isOwner}
                     themeColor={themeColors?.primary || colors.primary}
+                    friendIds={friendIds}
                 />
             )}
 

@@ -16,9 +16,11 @@ interface StoryHighlightsProps {
     isOwner: boolean;
     refreshTrigger?: number; // Prop to trigger refresh from parent
     themeColor?: string; // Color for borders and icons
+    friendIds?: string[];
 }
 
-export const StoryHighlights: React.FC<StoryHighlightsProps> = ({ authorId, systemId, isOwner, refreshTrigger, themeColor = colors.primary }) => {
+export const StoryHighlights: React.FC<StoryHighlightsProps> = ({ authorId, systemId, isOwner, refreshTrigger, themeColor = colors.primary, friendIds = [] }) => {
+    const { alters, currentAlter } = useAuth();
     const [highlights, setHighlights] = useState<StoryHighlight[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -138,7 +140,44 @@ export const StoryHighlights: React.FC<StoryHighlightsProps> = ({ authorId, syst
                     </TouchableOpacity>
                 )}
 
-                {highlights.map(highlight => (
+                {highlights.filter(h => {
+                    // Smart Privacy Filter:
+                    // If a highlight is named EXACTLY like an alter (e.g. "Alice"),
+                    // and we are NOT friends with that alter, hide it.
+
+                    // If we are owner, we usually see everything. BUT user explicitly asked to hide "Alice" from "Mona" 
+                    // if not friends, even on Mona's profile.
+                    // The only way to satisfy this is to filter even for owner if the name matches a non-friend.
+
+                    if (!alters) return true;
+
+                    // 1. Find if title matches an alter name (case insensitive)
+                    const targetAlter = alters.find(a => a.name.toLowerCase() === h.title.toLowerCase());
+
+                    if (targetAlter) {
+                        // 2. If it's ME (the viewer), show it.
+                        // But if I am Mona viewing Mona, and title is "Alice". targetAlter is Alice.
+                        // matchingAlter.id (Alice) !== currentAlter.id (Mona).
+
+                        // 3. Check friendship
+                        // We need to know if currentAlter is friends with targetAlter.
+                        // We have 'friendIds' prop passed from parent (AlterSpaceScreen)
+                        // friendIds contains list of IDs that are friends with the PROFILE OWNER (Mona).
+
+                        // If I am Mona viewing Mona, friendIds are MY friends.
+                        // So checking if targetAlter.id is in friendIds works.
+
+                        const isMe = currentAlter?.id === targetAlter.id;
+                        const isFriend = friendIds?.includes(targetAlter.id);
+
+                        if (!isMe && !isFriend) {
+                            // Hide it!
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }).map(highlight => (
                     <TouchableOpacity
                         key={highlight.id}
                         style={styles.item}

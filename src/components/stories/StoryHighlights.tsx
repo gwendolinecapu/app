@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, ActivityIndicator, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -22,6 +22,10 @@ export const StoryHighlights: React.FC<StoryHighlightsProps> = ({ authorId, syst
     const [highlights, setHighlights] = useState<StoryHighlight[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Custom Modal State
+    const [modalVisible, setModalVisible] = useState(false);
+    const [newHighlightTitle, setNewHighlightTitle] = useState('');
+
     const loadHighlights = async () => {
         try {
             const data = await StoriesService.fetchHighlights(authorId);
@@ -40,61 +44,56 @@ export const StoryHighlights: React.FC<StoryHighlightsProps> = ({ authorId, syst
     }, [authorId, refreshTrigger]);
 
     const handleCreateHighlight = () => {
-        // For now, simpler flow:
-        Alert.alert("Nouveau Highlight", "Créer un album à la une ?", [
-            { text: "Annuler", style: "cancel" },
-            {
-                text: "Créer",
-                onPress: async () => {
-                    // MVP: Create a dummy one or navigate to selection
-                    // Since selection UI is complex, we just prompt name for now to test service
-                    Alert.prompt("Titre", "Entrez un nom pour l'album", [
-                        { text: "Annuler" },
-                        {
-                            text: "OK", onPress: async (title?: string) => {
-                                if (!title) return;
-                                try {
-                                    // Pick a cover image
-                                    const result = await ImagePicker.launchImageLibraryAsync({
-                                        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                                        allowsEditing: true,
-                                        aspect: [1, 1],
-                                        quality: 0.8,
-                                    });
+        setNewHighlightTitle('');
+        setModalVisible(true);
+    };
 
-                                    let coverUrl = 'https://via.placeholder.com/150';
+    const handleConfirmCreate = async () => {
+        if (!newHighlightTitle.trim()) return;
 
-                                    if (!result.canceled && result.assets[0]) {
-                                        // Upload to Firebase Storage
-                                        const localUri = result.assets[0].uri;
-                                        const response = await fetch(localUri);
-                                        const blob = await response.blob();
+        const title = newHighlightTitle.trim();
+        setModalVisible(false);
 
-                                        const filename = `highlights/${systemId}/${Date.now()}.jpg`;
-                                        const storageRef = ref(storage, filename);
+        // Wait for modal to close
+        setTimeout(async () => {
+            try {
+                // Pick a cover image
+                const result = await ImagePicker.launchImageLibraryAsync({
+                    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                    allowsEditing: true,
+                    aspect: [1, 1],
+                    quality: 0.8,
+                });
 
-                                        await uploadBytes(storageRef, blob);
-                                        coverUrl = await getDownloadURL(storageRef);
-                                    }
+                if (!result.canceled && result.assets[0]) {
+                    Alert.alert("Création en cours...", "Upload de l'image...");
 
-                                    await StoriesService.createHighlight(
-                                        systemId,
-                                        title,
-                                        coverUrl,
-                                        [],
-                                        authorId
-                                    );
-                                    loadHighlights();
-                                } catch (e) {
-                                    console.error('Error creating highlight:', e);
-                                    Alert.alert("Erreur", "Impossible de créer.");
-                                }
-                            }
-                        }
-                    ]);
+                    // Upload to Firebase Storage
+                    const localUri = result.assets[0].uri;
+                    const response = await fetch(localUri);
+                    const blob = await response.blob();
+
+                    const filename = `stories/highlights/${systemId}/${Date.now()}.jpg`;
+                    const storageRef = ref(storage, filename);
+
+                    await uploadBytes(storageRef, blob);
+                    const coverUrl = await getDownloadURL(storageRef);
+
+                    await StoriesService.createHighlight(
+                        systemId,
+                        title,
+                        coverUrl,
+                        [],
+                        authorId
+                    );
+                    loadHighlights();
+                    Alert.alert("Succès", "Album créé !");
                 }
+            } catch (e: any) {
+                console.error('Error creating highlight:', e);
+                Alert.alert("Erreur", "Impossible de créer: " + (e?.message || "Erreur inconnue"));
             }
-        ]);
+        }, 500);
     };
 
     const handleDeleteAllHighlights = () => {
@@ -171,7 +170,7 @@ export const StoryHighlights: React.FC<StoryHighlightsProps> = ({ authorId, syst
                                                     const response = await fetch(localUri);
                                                     const blob = await response.blob();
 
-                                                    const filename = `highlights/${systemId}/${Date.now()}.jpg`;
+                                                    const filename = `stories/highlights/${systemId}/${Date.now()}.jpg`;
                                                     const storageRef = ref(storage, filename);
 
                                                     await uploadBytes(storageRef, blob);
@@ -184,9 +183,9 @@ export const StoryHighlights: React.FC<StoryHighlightsProps> = ({ authorId, syst
                                                     Alert.alert("Succès", "Couverture mise à jour !");
                                                     loadHighlights();
                                                 }
-                                            } catch (e) {
+                                            } catch (e: any) {
                                                 console.error('Error updating cover:', e);
-                                                Alert.alert("Erreur", "Impossible de modifier la couverture.");
+                                                Alert.alert("Erreur", "Impossible de modifier: " + (e?.message || "Erreur inconnue"));
                                             }
                                         }
                                     },
@@ -212,7 +211,32 @@ export const StoryHighlights: React.FC<StoryHighlightsProps> = ({ authorId, syst
                     </TouchableOpacity>
                 ))}
             </ScrollView>
-        </View>
+
+
+            <Modal visible={modalVisible} transparent animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Nouveau Highlight</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={newHighlightTitle}
+                            onChangeText={setNewHighlightTitle}
+                            placeholder="Nom de l'album..."
+                            placeholderTextColor="#999"
+                            autoFocus
+                        />
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalButton}>
+                                <Text style={styles.modalButtonTextCancel}>Annuler</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={handleConfirmCreate} style={styles.modalButton}>
+                                <Text style={styles.modalButtonTextConfirm}>Créer</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+        </View >
     );
 };
 
@@ -255,5 +279,58 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: colors.text,
         textAlign: 'center',
+    },
+    // Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        width: '80%',
+        backgroundColor: colors.surface,
+        borderRadius: 20,
+        padding: 20,
+        alignItems: 'center',
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 15,
+        color: colors.text,
+    },
+    input: {
+        width: '100%',
+        height: 40,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 10,
+        paddingHorizontal: 10,
+        marginBottom: 20,
+        color: colors.text,
+        backgroundColor: colors.background,
+    },
+    modalActions: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        paddingHorizontal: 10,
+    },
+    modalButton: {
+        padding: 10,
+    },
+    modalButtonTextCancel: {
+        color: 'red',
+        fontWeight: '600',
+    },
+    modalButtonTextConfirm: {
+        color: colors.primary,
+        fontWeight: 'bold',
     },
 });

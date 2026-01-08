@@ -203,7 +203,8 @@ export default function CreateStoryScreen() {
                     // 2. Upload Image
                     const response = await fetch(result.assets[0].uri);
                     const blob = await response.blob();
-                    const storageRef = ref(storage, `highlight-covers/${Date.now()}`);
+                    // FIX: Use 'stories/highlights' path which is allowed by security rules (unlike 'highlight-covers')
+                    const storageRef = ref(storage, `stories/highlights/${Date.now()}`);
                     await uploadBytes(storageRef, blob);
                     const coverUrl = await getDownloadURL(storageRef);
 
@@ -224,9 +225,9 @@ export default function CreateStoryScreen() {
                 } else {
                     console.log("Image picker canceled");
                 }
-            } catch (error) {
-                Alert.alert('Erreur', "Impossible de créer l'album");
+            } catch (error: any) {
                 console.error("Error creating highlight:", error);
+                Alert.alert('Erreur', "Impossible de créer l'album: " + (error?.message || "Erreur inconnue"));
             } finally {
                 setLoadingHighlights(false);
             }
@@ -234,7 +235,7 @@ export default function CreateStoryScreen() {
     };
 
     const handlePublish = async () => {
-        if ((!selectedMedia && layers.length === 0) || !currentAlter || !user) return;
+        if ((!selectedMedia && layers.length === 0 && !editorMode) || !currentAlter || !user) return;
 
         setUploading(true);
         triggerHaptic.medium();
@@ -243,7 +244,7 @@ export default function CreateStoryScreen() {
             let mediaUri = selectedMedia?.uri;
             let mediaType = selectedMedia?.type || 'image';
 
-            if (editorMode && layers.length > 0) {
+            if (editorMode) {
                 try {
                     const uri = await captureRef(canvasRef, {
                         format: 'jpg',
@@ -423,7 +424,7 @@ export default function CreateStoryScreen() {
                     <TouchableOpacity
                         style={[styles.yourStoryButton, { backgroundColor: isUiDark ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.15)' }]}
                         onPress={handlePublish}
-                        disabled={(layers.length === 0 && !selectedMedia) || uploading}
+                        disabled={((layers.length === 0 && !selectedMedia && !editorMode) || uploading)}
                     >
                         <Image
                             source={{ uri: currentAlter?.avatar || currentAlter?.avatar_url || 'https://via.placeholder.com/50' }}
@@ -464,7 +465,7 @@ export default function CreateStoryScreen() {
                 <TouchableOpacity
                     style={styles.publishFab}
                     onPress={handlePublish}
-                    disabled={(layers.length === 0 && !selectedMedia) || uploading}
+                    disabled={((layers.length === 0 && !selectedMedia && !editorMode) || uploading)}
                 >
                     {uploading ? (
                         <ActivityIndicator color="black" />

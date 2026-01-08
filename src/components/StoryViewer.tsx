@@ -12,6 +12,7 @@ import {
     Animated,
     Alert,
     GestureResponderEvent,
+    TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Video, ResizeMode } from 'expo-av';
@@ -51,7 +52,43 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
     // Highlight selection state
     const [showHighlightModal, setShowHighlightModal] = useState(false);
     const [highlights, setHighlights] = useState<StoryHighlight[]>([]);
-    const [loadingHighlights, setLoadingHighlights] = useState(false);
+    // Custom Modal State
+    const [createHighlightModalVisible, setCreateHighlightModalVisible] = useState(false);
+    const [newHighlightTitle, setNewHighlightTitle] = useState('');
+
+    const createNewHighlightWithStory = (story: Story) => {
+        setNewHighlightTitle('');
+        setCreateHighlightModalVisible(true);
+    };
+
+    const handleConfirmCreateHighlight = async () => {
+        if (!newHighlightTitle.trim() || !currentItem || currentItem.type !== 'story') return;
+
+        const title = newHighlightTitle.trim();
+        const story = currentItem.data;
+        setCreateHighlightModalVisible(false);
+
+        // Wait for modal transition
+        setTimeout(async () => {
+            try {
+                await StoriesService.createHighlight(
+                    story.system_id,
+                    title,
+                    story.media_url,
+                    [story.id],
+                    story.author_id
+                );
+                Alert.alert("Succès", "Album créé avec cette story !");
+                setShowHighlightModal(false);
+                if (currentItem?.type === 'story' && currentItem.data.media_type === 'image') {
+                    startProgress();
+                }
+            } catch (e) {
+                console.error("Error creating highlight:", e);
+                Alert.alert("Erreur", "Impossible de créer l'album.");
+            }
+        }, 300);
+    };
 
     // Animation value for progress bar (0 -> 1)
     const progressAnim = useRef(new Animated.Value(0)).current;
@@ -236,32 +273,7 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
         }
     };
 
-    const createNewHighlightWithStory = async (story: Story) => {
-        Alert.prompt("Nouvel album", "Entrez un nom pour le nouvel album", [
-            { text: "Annuler", onPress: () => setShowHighlightModal(false) },
-            {
-                text: "Créer", onPress: async (title?: string) => {
-                    if (!title) return;
-                    try {
-                        await StoriesService.createHighlight(
-                            story.system_id,
-                            title,
-                            story.media_url, // Use this story's media as cover
-                            [story.id],
-                            story.author_id
-                        );
-                        Alert.alert("Succès", "Album créé avec cette story !");
-                        setShowHighlightModal(false);
-                        if (currentItem?.type === 'story' && currentItem.data.media_type === 'image') {
-                            startProgress();
-                        }
-                    } catch (e) {
-                        Alert.alert("Erreur", "Impossible de créer l'album.");
-                    }
-                }
-            }
-        ]);
-    };
+
 
     if (!visible) return null;
 
@@ -430,53 +442,83 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
                             </TouchableOpacity>
                         </View>
 
-                        {loadingHighlights ? (
-                            <Text style={styles.highlightModalLoading}>Chargement...</Text>
-                        ) : (
-                            <>
-                                {/* Create new highlight option */}
-                                <TouchableOpacity
-                                    style={styles.highlightOption}
-                                    onPress={() => {
-                                        if (currentItem?.type === 'story') {
-                                            createNewHighlightWithStory(currentItem.data);
-                                        }
-                                    }}
-                                >
-                                    <View style={[styles.highlightOptionIcon, { borderStyle: 'dashed' }]}>
-                                        <Ionicons name="add" size={24} color={colors.primary} />
-                                    </View>
-                                    <Text style={styles.highlightOptionText}>Nouvel album</Text>
-                                </TouchableOpacity>
-
-                                {/* Existing highlights */}
-                                {highlights.map(highlight => (
+                        {createHighlightModalVisible ? (
+                            <View>
+                                <Text style={{ fontSize: 16, marginBottom: 16, color: colors.text }}>
+                                    Entrez le nom du nouvel album :
+                                </Text>
+                                <TextInput
+                                    style={styles.highlightInput}
+                                    value={newHighlightTitle}
+                                    onChangeText={setNewHighlightTitle}
+                                    placeholder="Titre..."
+                                    placeholderTextColor="#999"
+                                    autoFocus
+                                />
+                                <View style={styles.actionRow}>
                                     <TouchableOpacity
-                                        key={highlight.id}
+                                        onPress={() => setCreateHighlightModalVisible(false)}
+                                        style={{ padding: 8 }}
+                                    >
+                                        <Text style={{ color: 'red', fontWeight: '600' }}>Annuler</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={handleConfirmCreateHighlight}
+                                        style={{ padding: 8, backgroundColor: colors.primary, borderRadius: 8 }}
+                                    >
+                                        <Text style={{ color: 'white', fontWeight: 'bold' }}>Créer</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        ) : (
+                            loadingHighlights ? (
+                                <Text style={styles.highlightModalLoading}>Chargement...</Text>
+                            ) : (
+                                <>
+                                    {/* Create new highlight option */}
+                                    <TouchableOpacity
                                         style={styles.highlightOption}
                                         onPress={() => {
                                             if (currentItem?.type === 'story') {
-                                                addToHighlight(highlight.id, currentItem.data.id);
+                                                createNewHighlightWithStory(currentItem.data);
                                             }
                                         }}
                                     >
-                                        <Image
-                                            source={{ uri: highlight.cover_image_url }}
-                                            style={styles.highlightOptionCover}
-                                        />
-                                        <Text style={styles.highlightOptionText}>{highlight.title}</Text>
-                                        <Text style={styles.highlightOptionCount}>
-                                            {highlight.story_ids.length} stories
-                                        </Text>
+                                        <View style={[styles.highlightOptionIcon, { borderStyle: 'dashed' }]}>
+                                            <Ionicons name="add" size={24} color={colors.primary} />
+                                        </View>
+                                        <Text style={styles.highlightOptionText}>Nouvel album</Text>
                                     </TouchableOpacity>
-                                ))}
 
-                                {highlights.length === 0 && (
-                                    <Text style={styles.highlightModalEmpty}>
-                                        Aucun album existant. Créez-en un nouveau !
-                                    </Text>
-                                )}
-                            </>
+                                    {/* Existing highlights */}
+                                    {highlights.map(highlight => (
+                                        <TouchableOpacity
+                                            key={highlight.id}
+                                            style={styles.highlightOption}
+                                            onPress={() => {
+                                                if (currentItem?.type === 'story') {
+                                                    addToHighlight(highlight.id, currentItem.data.id);
+                                                }
+                                            }}
+                                        >
+                                            <Image
+                                                source={{ uri: highlight.cover_image_url }}
+                                                style={styles.highlightOptionCover}
+                                            />
+                                            <Text style={styles.highlightOptionText}>{highlight.title}</Text>
+                                            <Text style={styles.highlightOptionCount}>
+                                                {highlight.story_ids.length} stories
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+
+                                    {highlights.length === 0 && (
+                                        <Text style={styles.highlightModalEmpty}>
+                                            Aucun album existant. Créez-en un nouveau !
+                                        </Text>
+                                    )}
+                                </>
+                            )
                         )}
                     </View>
                 </View>
@@ -668,6 +710,22 @@ const styles = StyleSheet.create({
     highlightOptionCount: {
         fontSize: 14,
         color: colors.textSecondary,
+    },
+    highlightInput: {
+        width: '100%',
+        height: 50,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 8,
+        paddingHorizontal: 16,
+        marginBottom: 16,
+        color: colors.text,
+        backgroundColor: colors.background, // Ensure visibility
+    },
+    actionRow: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        gap: 16,
     },
 });
 

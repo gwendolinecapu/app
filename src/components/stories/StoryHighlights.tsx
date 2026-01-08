@@ -149,10 +149,14 @@ export const StoryHighlights: React.FC<StoryHighlightsProps> = ({ authorId, syst
                     // if not friends, even on Mona's profile.
                     // The only way to satisfy this is to filter even for owner if the name matches a non-friend.
 
-                    if (!alters) return true;
+                    if (!alters || alters.length === 0) {
+                        // If alters not loaded, we can't filter safely. 
+                        // But usually this loads fast.
+                        return true;
+                    }
 
-                    // 1. Find if title matches an alter name (case insensitive)
-                    const targetAlter = alters.find(a => a.name.toLowerCase() === h.title.toLowerCase());
+                    const highlightTitle = h.title.trim().toLowerCase();
+                    const targetAlter = alters.find(a => a.name.trim().toLowerCase() === highlightTitle);
 
                     if (targetAlter) {
                         // 2. If it's ME (the viewer), show it.

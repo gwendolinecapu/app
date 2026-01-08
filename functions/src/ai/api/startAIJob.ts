@@ -49,7 +49,7 @@ export const startAIJob = functions.runWith({
             else
                 cost = 50; // Default (gpt-1.5-mid, seedream-4.0)
 
-            description = `Rituel de Naissance (${params.model || 'Standard'})`;
+            description = `Génération d'Avatar (${params.model || 'Standard'})`;
             break;
 
         case 'magic_post':

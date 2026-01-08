@@ -309,14 +309,14 @@ export default function AlterSpaceScreen() {
 
                                 <View style={{ height: 30 }} />
 
-                                {/* Section: Magie & Origines */}
-                                <Text style={{ fontSize: 13, fontWeight: '700', color: themeColors?.textSecondary || colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Magie & Origines</Text>
+                                {/* Section: Studio IA */}
+                                <Text style={{ fontSize: 13, fontWeight: '700', color: themeColors?.textSecondary || colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Studio de Création</Text>
 
-                                <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname: '/alter-space/[alterId]/ritual', params: { alterId: alter.id } })}>
+                                <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname: '/alter-space/[alterId]/ai-studio', params: { alterId: alter.id } })}>
                                     <Ionicons name="sparkles" size={24} color={activeColor} style={{ marginRight: 15 }} />
-                                    <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>Rituel de Naissance</Text>
+                                    <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>Studio IA</Text>
                                     <View style={{ flex: 1 }} />
-                                    <StatusBadge status="beta" />
+                                    <StatusBadge status="new" />
                                     <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} style={{ marginLeft: 8 }} />
                                 </TouchableOpacity>
 

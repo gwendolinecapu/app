@@ -35,10 +35,10 @@ const UPGRADE_CHANCES: Record<Rarity, number> = {
 
 export const REFUND_VALUES: Record<Rarity, number> = {
     common: 1, // Reduced refunds to match lower prices
-    rare: 5,
-    epic: 25,
-    legendary: 125,
-    mythic: 500
+    rare: 10,  // 50% of 20
+    epic: 35,  // ~50% of 75
+    legendary: 125, // 50% of 250
+    mythic: 500 // 50% of 1000
 };
 
 /**

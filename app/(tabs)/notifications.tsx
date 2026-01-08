@@ -174,7 +174,6 @@ export default function NotificationsScreen() {
             setFriendRequests(enrichedRequests as FriendRequest[]); // We augmented it but it's compatible enough or we cast
 
             // Charger les notifications
-            // [DEBUG] REVERT TEMPORAIRE POUR TESTER
             const q = query(
                 collection(db, 'notifications'),
                 where('targetSystemId', '==', user.uid),

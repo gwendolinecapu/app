@@ -50,7 +50,7 @@ const VideoItem = React.memo(({ post, active, user, onLike, onToggleMute, isMute
         <View style={styles.container}>
             <Video
                 ref={videoRef}
-                source={{ uri: post.media_url }}
+                source={{ uri: post.media_url || '' }}
                 style={styles.video}
                 resizeMode={ResizeMode.COVER}
                 shouldPlay={active} // Only play if active item

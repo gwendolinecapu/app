@@ -8,7 +8,8 @@ import {
     Text,
     ScrollView,
     Platform,
-    ActionSheetIOS
+    ActionSheetIOS,
+    Image
 } from 'react-native';
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../../src/contexts/AuthContext';
@@ -385,6 +386,12 @@ export default function AlterSpaceScreen() {
                 <TouchableOpacity onPress={() => router.push('/(tabs)/dashboard')} style={styles.backButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                     <Ionicons name="chevron-back" size={28} color={themeColors?.text || colors.text} />
                 </TouchableOpacity>
+                {(alter.avatar || alter.avatar_url) && (
+                    <Image
+                        source={{ uri: alter.avatar || alter.avatar_url }}
+                        style={{ width: 32, height: 32, borderRadius: 16, marginRight: 8 }}
+                    />
+                )}
                 <Text style={[styles.headerTitle, { color: themeColors?.text || colors.text }]} numberOfLines={1}>{alter.name}</Text>
                 <View style={styles.headerRight}>
                     <TouchableOpacity onPress={() => router.push('/search' as any)} style={{ marginRight: 12 }}>

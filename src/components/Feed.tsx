@@ -114,7 +114,7 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
             if (type === 'friends' && alterId) {
                 // Fetch friend alter IDs (specific friends only)
                 const friendIds = await FriendService.getFriends(alterId);
-                console.log('[Feed] Debug: Friend IDs for', alterId, '->', friendIds);
+
 
                 // Fetch friend system IDs (system-wide friends)
                 const friendSystemIds = await FriendService.getAllSystemFriendSystemIds(user?.uid || '');
@@ -123,7 +123,7 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
                 const targetIds = [...friendIds];
 
                 response = await PostService.fetchFeed(targetIds, friendSystemIds, refresh ? null : lastVisible);
-                console.log('[Feed] Debug: Fetch response count:', response.posts.length);
+
             } else if (type === 'global') {
                 response = await PostService.fetchGlobalFeed(refresh ? null : lastVisible);
             } else {
@@ -147,8 +147,7 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
 
         } catch (error: any) {
             console.error('Error loading posts:', error);
-            // [DEBUG] Show error to user to identify Indexing issues
-            // Alert.alert('Debug Feed', `Erreur chargement: ${error.message}`);
+
         } finally {
             setLoading(false);
             setRefreshing(false);

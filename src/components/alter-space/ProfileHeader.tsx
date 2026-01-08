@@ -366,7 +366,9 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             {/* HIGHLIGHTS SECTION */}
             <StoryHighlights
                 authorId={alter.id}
+                systemId={alter.systemId || alter.system_id || alter.userId || 'unknown'}
                 isOwner={isOwner}
+                themeColor={themeColors?.primary || colors.primary}
             />
 
         </View >
@@ -375,9 +377,12 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
 const styles = StyleSheet.create({
     container: {
-        padding: spacing.md,
-        backgroundColor: colors.background, // or transparent if managed by parent
-        paddingBottom: 0,
+        paddingHorizontal: spacing.lg,
+        paddingTop: spacing.md,
+        paddingBottom: spacing.lg,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+        backgroundColor: 'transparent',
     },
     topSection: {
         flexDirection: 'row',

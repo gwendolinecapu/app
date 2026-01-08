@@ -73,7 +73,6 @@ const PostItem = React.memo(({ post, currentUserId, onLike, onDelete, onAuthorPr
                 showAuthor={true}
                 themeColors={themeColors}
                 onAuthorPress={onAuthorPress}
-                isDetailView={true}
             />
             {/* Comments simplified for list view */}
             <View style={styles.commentsPreview}>
@@ -236,7 +235,7 @@ export default function PostDetailScreen() {
     const currentTheme = currentPost?.alter?.equipped_items?.theme
         ? getThemeColors(currentPost.alter.equipped_items.theme)
         : currentPost?.alter?.color
-            ? { text: colors.text, border: currentPost.alter.color, background: colors.background }
+            ? { text: colors.text, border: currentPost.alter.color, background: colors.background, primary: currentPost.alter.color || colors.primary, backgroundCard: colors.backgroundCard, textSecondary: colors.textSecondary }
             : null;
 
     if (loading) return (

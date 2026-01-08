@@ -343,6 +343,20 @@
                     "order": "ASCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "story_highlights",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "alter_id",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "created_at",
+                    "order": "DESCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []

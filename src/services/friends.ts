@@ -48,7 +48,6 @@ export const FriendService = {
         const receiverSystemId = receiverData?.userId || receiverData?.systemId || receiverData?.system_id;
 
         if (!receiverSystemId) {
-            console.error("DEBUG: Receiver data missing system ID:", JSON.stringify(receiverData));
             throw new Error("Receiver system ID not found (checked userId, systemId, system_id)");
         }
 

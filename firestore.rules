@@ -481,6 +481,15 @@ service cloud.firestore {
     }
 
     // ============================================
+    // Story Highlights Collection
+    // ============================================
+    match /story_highlights/{highlightId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwnerCreate();
+      allow update, delete: if isOwner(resource);
+    }
+
+    // ============================================
     // FCM Tokens Collection
     // ============================================
     match /fcm_tokens/{tokenId} {

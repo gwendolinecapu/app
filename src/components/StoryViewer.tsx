@@ -16,7 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Video, ResizeMode } from 'expo-av';
 import { StoriesService } from '../services/stories';
-import { Story } from '../types';
+import { Story, StoryHighlight } from '../types';
 import { colors, spacing } from '../lib/theme';
 import { timeAgo } from '../lib/date';
 import { useAuth } from '../contexts/AuthContext';
@@ -47,6 +47,11 @@ interface StoryViewerProps {
 export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: StoryViewerProps) => {
     const { user } = useAuth();
     const [currentIndex, setCurrentIndex] = useState(0);
+
+    // Highlight selection state
+    const [showHighlightModal, setShowHighlightModal] = useState(false);
+    const [highlights, setHighlights] = useState<StoryHighlight[]>([]);
+    const [loadingHighlights, setLoadingHighlights] = useState(false);
 
     // Animation value for progress bar (0 -> 1)
     const progressAnim = useRef(new Animated.Value(0)).current;
@@ -202,6 +207,62 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
         );
     };
 
+    const openHighlightModal = async (story: Story) => {
+        progressAnim.stopAnimation();
+        setShowHighlightModal(true);
+        setLoadingHighlights(true);
+        try {
+            const data = await StoriesService.fetchHighlights(story.author_id);
+            setHighlights(data);
+        } catch (error) {
+            console.error('Error fetching highlights:', error);
+            setHighlights([]);
+        } finally {
+            setLoadingHighlights(false);
+        }
+    };
+
+    const addToHighlight = async (highlightId: string, storyId: string) => {
+        try {
+            await StoriesService.addStoryToHighlight(highlightId, storyId);
+            Alert.alert("Succès", "Story ajoutée à l'album !");
+            setShowHighlightModal(false);
+            // Resume playback if image
+            if (currentItem?.type === 'story' && currentItem.data.media_type === 'image') {
+                startProgress();
+            }
+        } catch (error) {
+            Alert.alert("Erreur", "Impossible d'ajouter la story.");
+        }
+    };
+
+    const createNewHighlightWithStory = async (story: Story) => {
+        Alert.prompt("Nouvel album", "Entrez un nom pour le nouvel album", [
+            { text: "Annuler", onPress: () => setShowHighlightModal(false) },
+            {
+                text: "Créer", onPress: async (title?: string) => {
+                    if (!title) return;
+                    try {
+                        await StoriesService.createHighlight(
+                            story.system_id,
+                            title,
+                            story.media_url, // Use this story's media as cover
+                            [story.id],
+                            story.author_id
+                        );
+                        Alert.alert("Succès", "Album créé avec cette story !");
+                        setShowHighlightModal(false);
+                        if (currentItem?.type === 'story' && currentItem.data.media_type === 'image') {
+                            startProgress();
+                        }
+                    } catch (e) {
+                        Alert.alert("Erreur", "Impossible de créer l'album.");
+                    }
+                }
+            }
+        ]);
+    };
+
     if (!visible) return null;
 
     return (
@@ -324,32 +385,7 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
                                 {user && (currentItem.data.author_id === user.uid || currentItem.data.system_id === user.uid) && (
                                     <>
                                         <TouchableOpacity
-                                            onPress={() => {
-                                                progressAnim.stopAnimation();
-                                                Alert.alert(
-                                                    "À la une",
-                                                    "Ajouter cette story aux éléments à la une ?",
-                                                    [
-                                                        {
-                                                            text: "Annuler", style: "cancel", onPress: () => {
-                                                                if (currentItem?.type === 'story' && currentItem.data.media_type === 'image') {
-                                                                    startProgress();
-                                                                }
-                                                            }
-                                                        },
-                                                        {
-                                                            text: "Ajouter",
-                                                            onPress: async () => {
-                                                                // TODO: Open Highlights selection modal
-                                                                // For MVP, just create a new one or add to "Highlights" generic
-                                                                // Ideally we navigate to a selection screen
-                                                                // But since we are in a Modal, we should probably toggle another state
-                                                                Alert.alert("Bientôt", "La sélection des albums arrive !");
-                                                            }
-                                                        }
-                                                    ]
-                                                );
-                                            }}
+                                            onPress={() => openHighlightModal(currentItem.data)}
                                             style={styles.iconButton}
                                         >
                                             <Ionicons name="heart-outline" size={24} color="white" />
@@ -367,6 +403,84 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
                     </View>
                 )}
             </View>
+
+            {/* Highlight Selection Modal */}
+            <Modal
+                visible={showHighlightModal}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => {
+                    setShowHighlightModal(false);
+                    if (currentItem?.type === 'story' && currentItem.data.media_type === 'image') {
+                        startProgress();
+                    }
+                }}
+            >
+                <View style={styles.highlightModalOverlay}>
+                    <View style={styles.highlightModalContent}>
+                        <View style={styles.highlightModalHeader}>
+                            <Text style={styles.highlightModalTitle}>Ajouter à un album</Text>
+                            <TouchableOpacity onPress={() => {
+                                setShowHighlightModal(false);
+                                if (currentItem?.type === 'story' && currentItem.data.media_type === 'image') {
+                                    startProgress();
+                                }
+                            }}>
+                                <Ionicons name="close" size={24} color={colors.text} />
+                            </TouchableOpacity>
+                        </View>
+
+                        {loadingHighlights ? (
+                            <Text style={styles.highlightModalLoading}>Chargement...</Text>
+                        ) : (
+                            <>
+                                {/* Create new highlight option */}
+                                <TouchableOpacity
+                                    style={styles.highlightOption}
+                                    onPress={() => {
+                                        if (currentItem?.type === 'story') {
+                                            createNewHighlightWithStory(currentItem.data);
+                                        }
+                                    }}
+                                >
+                                    <View style={[styles.highlightOptionIcon, { borderStyle: 'dashed' }]}>
+                                        <Ionicons name="add" size={24} color={colors.primary} />
+                                    </View>
+                                    <Text style={styles.highlightOptionText}>Nouvel album</Text>
+                                </TouchableOpacity>
+
+                                {/* Existing highlights */}
+                                {highlights.map(highlight => (
+                                    <TouchableOpacity
+                                        key={highlight.id}
+                                        style={styles.highlightOption}
+                                        onPress={() => {
+                                            if (currentItem?.type === 'story') {
+                                                addToHighlight(highlight.id, currentItem.data.id);
+                                            }
+                                        }}
+                                    >
+                                        <Image
+                                            source={{ uri: highlight.cover_image_url }}
+                                            style={styles.highlightOptionCover}
+                                        />
+                                        <Text style={styles.highlightOptionText}>{highlight.title}</Text>
+                                        <Text style={styles.highlightOptionCount}>
+                                            {highlight.story_ids.length} stories
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+
+                                {highlights.length === 0 && (
+                                    <Text style={styles.highlightModalEmpty}>
+                                        Aucun album existant. Créez-en un nouveau !
+                                    </Text>
+                                )}
+                            </>
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </Modal>
     );
 };
@@ -488,6 +602,72 @@ const styles = StyleSheet.create({
     storyMedia: {
         width: SCREEN_WIDTH,
         height: SCREEN_HEIGHT, // Full immserive
+    },
+    // Highlight Modal Styles
+    highlightModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    highlightModalContent: {
+        backgroundColor: colors.surface,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        paddingVertical: spacing.lg,
+        paddingHorizontal: spacing.md,
+        maxHeight: '60%',
+    },
+    highlightModalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.md,
+    },
+    highlightModalTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: colors.text,
+    },
+    highlightModalLoading: {
+        textAlign: 'center',
+        color: colors.textSecondary,
+        marginVertical: spacing.lg,
+    },
+    highlightModalEmpty: {
+        textAlign: 'center',
+        color: colors.textSecondary,
+        marginVertical: spacing.md,
+    },
+    highlightOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: spacing.sm,
+        gap: spacing.md,
+    },
+    highlightOptionIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        borderWidth: 2,
+        borderColor: colors.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: colors.background,
+    },
+    highlightOptionCover: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+    },
+    highlightOptionText: {
+        flex: 1,
+        fontSize: 16,
+        color: colors.text,
+        fontWeight: '500',
+    },
+    highlightOptionCount: {
+        fontSize: 14,
+        color: colors.textSecondary,
     },
 });
 

@@ -338,6 +338,17 @@ export async function removeStoryFromHighlight(highlightId: string, storyId: str
 }
 
 /**
+ * Met à jour l'image de couverture d'un highlight
+ */
+export async function updateHighlightCover(highlightId: string, newCoverUrl: string): Promise<void> {
+    const highlightRef = doc(db, 'story_highlights', highlightId);
+    await updateDoc(highlightRef, {
+        cover_image_url: newCoverUrl,
+        updated_at: serverTimestamp(),
+    });
+}
+
+/**
  * Supprime un highlight complet
  */
 export async function deleteHighlight(highlightId: string): Promise<void> {
@@ -357,5 +368,23 @@ export const StoriesService = {
     fetchHighlights,
     addStoryToHighlight,
     removeStoryFromHighlight,
+    updateHighlightCover,
     deleteHighlight,
+    deleteAllHighlights,
 };
+
+/**
+ * Supprime TOUS les highlights (pour nettoyage)
+ */
+export async function deleteAllHighlights(): Promise<number> {
+    const highlightsRef = collection(db, 'story_highlights');
+    const snapshot = await getDocs(highlightsRef);
+
+    let count = 0;
+    for (const docSnap of snapshot.docs) {
+        await deleteDoc(doc(db, 'story_highlights', docSnap.id));
+        count++;
+    }
+
+    return count;
+}

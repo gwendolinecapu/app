@@ -20,6 +20,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { captureRef } from 'react-native-view-shot';
 import { storage } from '../../src/lib/firebase';
 import { StoriesService } from '../../src/services/stories';
+import { StoryHighlight } from '../../src/types';
 import { colors, spacing, typography } from '../../src/lib/theme';
 import { getThemeColors } from '../../src/lib/cosmetics';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -91,6 +92,13 @@ export default function CreateStoryScreen() {
 
     const [uploading, setUploading] = useState(false);
 
+    // Highlight selection state
+    const [showHighlightModal, setShowHighlightModal] = useState(false);
+    const [highlights, setHighlights] = useState<StoryHighlight[]>([]);
+    const [loadingHighlights, setLoadingHighlights] = useState(false);
+    const [selectedHighlight, setSelectedHighlight] = useState<StoryHighlight | null>(null);
+    const [addToHighlight, setAddToHighlight] = useState(false);
+
     const pickMedia = async (type: 'camera' | 'gallery') => {
         const options: ImagePicker.ImagePickerOptions = {
             mediaTypes: ImagePicker.MediaTypeOptions.All,
@@ -143,6 +151,21 @@ export default function CreateStoryScreen() {
         setTextBackgroundEnabled(false);
     };
 
+    const openHighlightModal = async () => {
+        if (!currentAlter) return;
+        setShowHighlightModal(true);
+        setLoadingHighlights(true);
+        try {
+            const data = await StoriesService.fetchHighlights(currentAlter.id);
+            setHighlights(data);
+        } catch (error) {
+            console.error('Error fetching highlights:', error);
+            setHighlights([]);
+        } finally {
+            setLoadingHighlights(false);
+        }
+    };
+
     const handlePublish = async () => {
         if ((!selectedMedia && layers.length === 0) || !currentAlter || !user) return;
 
@@ -181,7 +204,7 @@ export default function CreateStoryScreen() {
             await uploadBytes(storageRef, blob);
             const downloadUrl = await getDownloadURL(storageRef);
 
-            await StoriesService.createStory({
+            const createdStory = await StoriesService.createStory({
                 authorId: currentAlter.id,
                 authorName: currentAlter.name,
                 authorAvatar: currentAlter.avatar || currentAlter.avatar_url,
@@ -190,6 +213,18 @@ export default function CreateStoryScreen() {
                 mediaUrl: downloadUrl,
                 mediaType: mediaType,
             });
+
+            // Add to highlight if selected
+            if (addToHighlight && selectedHighlight) {
+                try {
+                    await StoriesService.addStoryToHighlight(selectedHighlight.id, createdStory.id);
+                } catch (e) {
+                    console.error('Failed to add to highlight:', e);
+                    // Don't fail the whole publish for this
+                }
+            }
+            // Note: Creating new highlight with prompt was causing async issues
+            // User should create highlight from profile after story is published
 
             triggerHaptic.success();
             router.back();
@@ -317,17 +352,47 @@ export default function CreateStoryScreen() {
 
             {/* Bottom Bar (Overlay) */}
             <View style={styles.bottomBar}>
-                <TouchableOpacity
-                    style={[styles.yourStoryButton, { backgroundColor: isUiDark ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.15)' }]}
-                    onPress={handlePublish}
-                    disabled={(layers.length === 0 && !selectedMedia) || uploading}
-                >
-                    <Image
-                        source={{ uri: currentAlter?.avatar || currentAlter?.avatar_url || 'https://via.placeholder.com/50' }}
-                        style={styles.miniAvatar}
-                    />
-                    <Text style={[styles.storyLabel, { color: uiColor }]}>Votre Story</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <TouchableOpacity
+                        style={[styles.yourStoryButton, { backgroundColor: isUiDark ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.15)' }]}
+                        onPress={handlePublish}
+                        disabled={(layers.length === 0 && !selectedMedia) || uploading}
+                    >
+                        <Image
+                            source={{ uri: currentAlter?.avatar || currentAlter?.avatar_url || 'https://via.placeholder.com/50' }}
+                            style={styles.miniAvatar}
+                        />
+                        <Text style={[styles.storyLabel, { color: uiColor }]}>Votre Story</Text>
+                    </TouchableOpacity>
+
+                    {/* Highlight Toggle Button */}
+                    <TouchableOpacity
+                        style={[
+                            styles.highlightToggle,
+                            { backgroundColor: isUiDark ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.15)', marginLeft: 8 },
+                            addToHighlight && { backgroundColor: themeColors?.primary || colors.primary }
+                        ]}
+                        onPress={() => {
+                            if (!addToHighlight) {
+                                openHighlightModal();
+                            } else {
+                                setAddToHighlight(false);
+                                setSelectedHighlight(null);
+                            }
+                        }}
+                    >
+                        <Ionicons
+                            name={addToHighlight ? "heart" : "heart-outline"}
+                            size={20}
+                            color={addToHighlight ? "white" : uiColor}
+                        />
+                        {selectedHighlight && (
+                            <Text style={[styles.highlightToggleText, { color: 'white' }]} numberOfLines={1}>
+                                {selectedHighlight.title}
+                            </Text>
+                        )}
+                    </TouchableOpacity>
+                </View>
 
                 <TouchableOpacity
                     style={styles.publishFab}
@@ -385,6 +450,77 @@ export default function CreateStoryScreen() {
                                 onPress={() => setCurrentTextColor(c)}
                             />
                         ))}
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Highlight Selection Modal */}
+            <Modal visible={showHighlightModal} transparent animationType="slide">
+                <View style={styles.highlightModalOverlay}>
+                    <View style={[
+                        styles.highlightModalContent,
+                        themeColors && { backgroundColor: themeColors.backgroundCard }
+                    ]}>
+                        <View style={styles.highlightModalHeader}>
+                            <Text style={[
+                                styles.highlightModalTitle,
+                                themeColors && { color: themeColors.text }
+                            ]}>
+                                Ajouter à un album
+                            </Text>
+                            <TouchableOpacity onPress={() => setShowHighlightModal(false)}>
+                                <Ionicons
+                                    name="close"
+                                    size={24}
+                                    color={themeColors ? themeColors.text : colors.text}
+                                />
+                            </TouchableOpacity>
+                        </View>
+
+                        {loadingHighlights ? (
+                            <Text style={[
+                                styles.highlightModalLoading,
+                                themeColors && { color: themeColors.textSecondary }
+                            ]}>Chargement...</Text>
+                        ) : (
+                            <>
+                                {highlights.map(highlight => (
+                                    <TouchableOpacity
+                                        key={highlight.id}
+                                        style={styles.highlightOption}
+                                        onPress={() => {
+                                            setAddToHighlight(true);
+                                            setSelectedHighlight(highlight);
+                                            setShowHighlightModal(false);
+                                        }}
+                                    >
+                                        <Image
+                                            source={{ uri: highlight.cover_image_url }}
+                                            style={styles.highlightOptionCover}
+                                        />
+                                        <Text style={[
+                                            styles.highlightOptionText,
+                                            themeColors && { color: themeColors.text }
+                                        ]}>{highlight.title}</Text>
+                                        <Text style={[
+                                            styles.highlightOptionCount,
+                                            themeColors && { color: themeColors.textSecondary }
+                                        ]}>
+                                            {highlight.story_ids.length} stories
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+
+                                {highlights.length === 0 && (
+                                    <Text style={[
+                                        styles.highlightModalEmpty,
+                                        themeColors && { color: themeColors.textSecondary }
+                                    ]}>
+                                        Aucun album existant. Créez-en un depuis votre profil après avoir publié.
+                                    </Text>
+                                )}
+                            </>
+                        )}
                     </View>
                 </View>
             </Modal>
@@ -572,5 +708,85 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: 'rgba(0,0,0,0.1)',
         borderRadius: 16,
+    },
+    // Highlight Toggle Button
+    highlightToggle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 20,
+        gap: 6,
+    },
+    highlightToggleText: {
+        fontSize: 14,
+        fontWeight: '500',
+        maxWidth: 100,
+    },
+    // Highlight Modal Styles
+    highlightModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    highlightModalContent: {
+        backgroundColor: colors.surface,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        paddingVertical: spacing.lg,
+        paddingHorizontal: spacing.md,
+        maxHeight: '60%',
+    },
+    highlightModalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.md,
+    },
+    highlightModalTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: colors.text,
+    },
+    highlightModalLoading: {
+        textAlign: 'center',
+        color: colors.textSecondary,
+        marginVertical: spacing.lg,
+    },
+    highlightModalEmpty: {
+        textAlign: 'center',
+        color: colors.textSecondary,
+        marginVertical: spacing.md,
+    },
+    highlightOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: spacing.sm,
+        gap: spacing.md,
+    },
+    highlightOptionIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        borderWidth: 2,
+        borderColor: colors.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: colors.background,
+    },
+    highlightOptionCover: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+    },
+    highlightOptionText: {
+        flex: 1,
+        fontSize: 16,
+        color: colors.text,
+        fontWeight: '500',
+    },
+    highlightOptionCount: {
+        fontSize: 14,
+        color: colors.textSecondary,
     },
 });

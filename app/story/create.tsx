@@ -176,47 +176,53 @@ export default function CreateStoryScreen() {
             Alert.prompt(
                 'Nouvel album',
                 'Donnez un titre à votre album',
-                async (title) => {
+                (title) => {
                     if (title && title.trim().length > 0) {
-                        try {
-                            // 1. Pick Image
-                            const result = await ImagePicker.launchImageLibraryAsync({
-                                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                                allowsEditing: true,
-                                aspect: [1, 1],
-                                quality: 0.8,
-                            });
+                        // Wait for Alert to close before opening Image Picker
+                        setTimeout(async () => {
+                            try {
+                                console.log("Starting highlight creation flow for:", title);
+                                // 1. Pick Image
+                                const result = await ImagePicker.launchImageLibraryAsync({
+                                    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                                    allowsEditing: true,
+                                    aspect: [1, 1],
+                                    quality: 0.8,
+                                });
 
-                            if (!result.canceled) {
-                                setLoadingHighlights(true);
-                                // 2. Upload Image
-                                const response = await fetch(result.assets[0].uri);
-                                const blob = await response.blob();
-                                const storageRef = ref(storage, `highlight-covers/${Date.now()}`);
-                                await uploadBytes(storageRef, blob);
-                                const coverUrl = await getDownloadURL(storageRef);
+                                if (!result.canceled) {
+                                    setLoadingHighlights(true);
+                                    // 2. Upload Image
+                                    const response = await fetch(result.assets[0].uri);
+                                    const blob = await response.blob();
+                                    const storageRef = ref(storage, `highlight-covers/${Date.now()}`);
+                                    await uploadBytes(storageRef, blob);
+                                    const coverUrl = await getDownloadURL(storageRef);
 
-                                // 3. Create Highlight
-                                const newHighlight = await StoriesService.createHighlight(
-                                    user!.uid, // systemId
-                                    title.trim(),
-                                    coverUrl,
-                                    [], // Empty initially, story will be added on publish
-                                    currentAlter?.id
-                                );
+                                    // 3. Create Highlight
+                                    const newHighlight = await StoriesService.createHighlight(
+                                        user!.uid, // systemId
+                                        title.trim(),
+                                        coverUrl,
+                                        [], // Empty initially, story will be added on publish
+                                        currentAlter?.id
+                                    );
 
-                                // 4. Select it
-                                setHighlights(prev => [newHighlight, ...prev]);
-                                setSelectedHighlight(newHighlight);
-                                setAddToHighlight(true);
-                                setShowHighlightModal(false);
+                                    // 4. Select it
+                                    setHighlights(prev => [newHighlight, ...prev]);
+                                    setSelectedHighlight(newHighlight);
+                                    setAddToHighlight(true);
+                                    setShowHighlightModal(false);
+                                } else {
+                                    console.log("Image picker canceled");
+                                }
+                            } catch (error) {
+                                Alert.alert('Erreur', "Impossible de créer l'album");
+                                console.error("Error creating highlight:", error);
+                            } finally {
+                                setLoadingHighlights(false);
                             }
-                        } catch (error) {
-                            Alert.alert('Erreur', "Impossible de créer l'album");
-                            console.error(error);
-                        } finally {
-                            setLoadingHighlights(false);
-                        }
+                        }, 500);
                     }
                 },
                 'plain-text'

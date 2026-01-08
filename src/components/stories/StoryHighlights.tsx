@@ -143,9 +143,17 @@ export const StoryHighlights: React.FC<StoryHighlightsProps> = ({ authorId, syst
                         key={highlight.id}
                         style={styles.item}
                         onPress={() => {
-                            // Navigate to viewer (highlight mode)
-                            // We need to implement highlight viewing mode in StoryViewer or route
-                            Alert.alert(highlight.title, `${highlight.story_ids.length} stories`);
+                            if (highlight.story_ids.length === 0) {
+                                if (isOwner) Alert.alert("Album vide", "Ajoutez des stories à cet album via la visionneuse de story.");
+                                return;
+                            }
+                            router.push({
+                                pathname: '/story/view',
+                                params: {
+                                    authorId: authorId,
+                                    highlightId: highlight.id
+                                }
+                            });
                         }}
                         onLongPress={() => {
                             if (isOwner) {

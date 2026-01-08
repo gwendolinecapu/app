@@ -9,14 +9,14 @@ import { Story } from '../../src/types';
 import { colors } from '../../src/lib/theme';
 
 export default function StoryViewScreen() {
-    const { authorId } = useLocalSearchParams<{ authorId: string }>();
+    const { authorId, highlightId } = useLocalSearchParams<{ authorId: string, highlightId: string }>();
     const router = useRouter();
     const { user, currentAlter } = useAuth();
     const [stories, setStories] = useState<Story[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!authorId || !user) {
+        if ((!authorId && !highlightId) || !user) {
             router.back();
             return;
         }
@@ -45,12 +45,59 @@ export default function StoryViewScreen() {
                     }
                 }
 
-                // 2. Load Stories
-                const fetchedStories = await StoriesService.fetchAuthorStories(authorId);
-                if (fetchedStories.length === 0) {
-                    router.back();
+                if (highlightId) {
+                    // Highlight Mode
+                    // 1. Fetch Highlight to verify ownership/visibility (optional but good)
+                    // For now, just load the stories using ids
+                    // Note: Ideally we should fetch highlight first to check permissions if private?
+                    // Assuming highlights are public for friends of author.
+
+                    // We need the highlight object to get story_ids
+                    // But we don't have a direct "getHighlightById" method that is singular?
+                    // We can't fetch all author highlights.
+                    // But wait, we received highlightId.
+
+                    // Let's assume we pass the storyIds ? No, URL limit.
+                    // We need getHighlightById.
+                    // Wait, I didn't add getHighlightById.
+
+                    // Let's implement a quick fetch for highlight or just rely on passing storyIds via service?
+                    // No, let's add fetchHighlightById to service or...
+                    // Wait, fetchHighlights returns all.
+
+                    // Let's add fetchHighlight(id) to service or just iterate if not too many?
+                    // Better: add fetchHighlight to service.
+
+                    // Re-evaluating: I missed checking if fetchHighlight exists.
+                    // It does NOT.
+
+                    // Okay, plan change: 
+                    // I will implement fetching the specific highlight in StoryView using a direct doc get (using firebase/firestore imports if needed, but better via Service).
+
+                    // Let's assume I will adding fetchHighlight to service in next step?
+                    // Or I can use fetchHighlights(authorId) and find it. 
+                    // But I might not know authorId if I only have highlightId? 
+                    // The params have authorId usually.
+                    // Let's try finding it in author's highlights if authorId is present.
+
+                    if (authorId) {
+                        const highlights = await StoriesService.fetchHighlights(authorId);
+                        const highlight = highlights.find(h => h.id === highlightId);
+                        if (highlight && highlight.story_ids.length > 0) {
+                            const stories = await StoriesService.fetchStoriesByIds(highlight.story_ids);
+                            setStories(stories);
+                        } else {
+                            setStories([]);
+                        }
+                    }
                 } else {
-                    setStories(fetchedStories);
+                    // Active Stories Mode
+                    const fetchedStories = await StoriesService.fetchAuthorStories(authorId);
+                    if (fetchedStories.length === 0) {
+                        router.back();
+                    } else {
+                        setStories(fetchedStories);
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching stories:', error);

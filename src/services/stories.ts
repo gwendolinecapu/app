@@ -164,6 +164,57 @@ export async function fetchAuthorStories(authorId: string): Promise<Story[]> {
 }
 
 /**
+ * Récupère pécifiquement des stories par leurs IDs (pour les Highlights)
+ * Inclut les stories expirées
+ */
+export async function fetchStoriesByIds(storyIds: string[]): Promise<Story[]> {
+    if (!storyIds || storyIds.length === 0) return [];
+
+    // Batch requests because 'in' limit is 10
+    // For simplicity, we'll fetch them in chunks of 10
+    const chunks = [];
+    for (let i = 0; i < storyIds.length; i += 10) {
+        chunks.push(storyIds.slice(i, i + 10));
+    }
+
+    const allStories: Story[] = [];
+
+    for (const chunk of chunks) {
+        const storiesRef = collection(db, 'stories');
+        const q = query(
+            storiesRef,
+            where(documentId(), 'in', chunk)
+        );
+
+        const snapshot = await getDocs(q);
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            allStories.push({
+                id: doc.id,
+                author_id: data.author_id,
+                author_name: data.author_name,
+                author_avatar: data.author_avatar,
+                author_frame: data.author_frame,
+                system_id: data.system_id,
+                media_url: data.media_url,
+                media_type: data.media_type,
+                created_at: data.created_at instanceof Timestamp
+                    ? data.created_at.toDate().toISOString()
+                    : data.created_at,
+                expires_at: data.expires_at instanceof Timestamp
+                    ? data.expires_at.toDate().toISOString()
+                    : data.expires_at,
+                viewers: data.viewers || [],
+            });
+        });
+    }
+
+    // Sort by creation date (oldest first usually for highlights? or newest?)
+    // Instagram highlights usually play oldest to newest.
+    return allStories.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+}
+
+/**
  * Marque une story comme vue par un utilisateur
  */
 export async function markStoryAsViewed(storyId: string, viewerId: string): Promise<void> {
@@ -366,6 +417,7 @@ export const StoriesService = {
     // Highlights
     createHighlight,
     fetchHighlights,
+    fetchStoriesByIds,
     addStoryToHighlight,
     removeStoryFromHighlight,
     updateHighlightCover,

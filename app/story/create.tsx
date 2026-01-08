@@ -151,9 +151,8 @@ export default function CreateStoryScreen() {
         setTextBackgroundEnabled(false);
     };
 
-    const openHighlightModal = async () => {
+    const loadHighlights = async () => {
         if (!currentAlter) return;
-        setShowHighlightModal(true);
         setLoadingHighlights(true);
         try {
             const data = await StoriesService.fetchHighlights(currentAlter.id);
@@ -476,6 +475,20 @@ export default function CreateStoryScreen() {
                                 />
                             </TouchableOpacity>
                         </View>
+
+                        {/* Create New Highlight Button */}
+                        <TouchableOpacity
+                            style={styles.highlightOption}
+                            onPress={handleCreateNewHighlight}
+                        >
+                            <View style={[styles.createHighlightIcon, themeColors && { borderColor: themeColors.primary }]}>
+                                <Ionicons name="add" size={24} color={themeColors ? themeColors.primary : colors.primary} />
+                            </View>
+                            <Text style={[
+                                styles.highlightOptionText,
+                                themeColors && { color: themeColors.text }
+                            ]}>Nouveau...</Text>
+                        </TouchableOpacity>
 
                         {loadingHighlights ? (
                             <Text style={[

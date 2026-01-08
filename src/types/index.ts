@@ -463,3 +463,18 @@ export interface InnerWorldShape {
     linked_world_id?: string; // ID of the inner world contained in this shape
     created_at: string;
 }
+
+// ============================================
+// Story Highlights
+// ============================================
+
+export interface StoryHighlight {
+    id: string;
+    system_id: string;
+    alter_id?: string | null;
+    title: string;
+    cover_image_url: string;
+    story_ids: string[];
+    created_at: any;
+    updated_at: any;
+}

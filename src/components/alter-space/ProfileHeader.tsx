@@ -364,12 +364,15 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             </View>
 
             {/* HIGHLIGHTS SECTION */}
-            <StoryHighlights
-                authorId={alter.id}
-                systemId={alter.systemId || alter.system_id || alter.userId || 'unknown'}
-                isOwner={isOwner}
-                themeColor={themeColors?.primary || colors.primary}
-            />
+            {/* Strict Privacy: Only show highlights if owner or friends */}
+            {(isOwner || friendStatus === 'friends') && (
+                <StoryHighlights
+                    authorId={alter.id}
+                    systemId={alter.systemId || alter.system_id || alter.userId || 'unknown'}
+                    isOwner={isOwner}
+                    themeColor={themeColors?.primary || colors.primary}
+                />
+            )}
 
         </View >
     );

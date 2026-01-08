@@ -11,7 +11,7 @@ import {
     Image,
     ScrollView,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -60,9 +60,17 @@ export default function CreatePostScreen() {
     const themeColors = getThemeColors(themeId);
     const backgroundStyle = { backgroundColor: themeColors?.background || colors.background };
 
+    const { type } = useLocalSearchParams<{ type?: string }>();
+
     useEffect(() => {
         checkDraft();
     }, []);
+
+    useEffect(() => {
+        if (type === 'magic') {
+            setShowMagicModal(true);
+        }
+    }, [type]);
 
     useEffect(() => {
         // Auto-save draft when content changes

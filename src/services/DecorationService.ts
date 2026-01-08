@@ -362,16 +362,14 @@ class DecorationService {
             });
         }
 
-        console.log('[DecorationService] Purchase successful:', decorationId);
+
         return true;
     }
 
     // ==================== EQUIPMENT ====================
 
     async equipDecoration(alterId: string, decorationId: string, type: 'frame' | 'theme' | 'bubble'): Promise<boolean> {
-        console.log(`[DecorationService.equipDecoration] Checking ownership of ${decorationId} for alter ${alterId}`);
         const isOwned = await this.ownsDecoration(alterId, decorationId);
-        console.log(`[DecorationService.equipDecoration] isOwned: ${isOwned}`);
         if (!isOwned) {
             console.warn(`[DecorationService.equipDecoration] Item ${decorationId} not owned, cannot equip`);
             return false;
@@ -384,7 +382,6 @@ class DecorationService {
                 [type]: decorationId
             }
         }, { merge: true });
-        console.log(`[DecorationService.equipDecoration] Successfully equipped ${decorationId} as ${type}`);
         return true;
     }
 

@@ -1,28 +1,8 @@
-import { ILLMProvider } from "../interfaces/ILLMProvider";
-import { IImageProvider } from "../interfaces/IImageProvider";
-import { GeminiProvider } from "../providers/GeminiProvider";
-import { BytePlusProvider } from "../providers/BytePlusProvider";
-import { OpenAIProvider } from "../providers/OpenAIProvider";
+import { GeminiProvider } from '../providers/GeminiProvider';
+import { BytePlusProvider } from '../providers/BytePlusProvider';
+import { OpenAIProvider } from '../providers/OpenAIProvider';
 
-export interface AIProviderConfig {
-    llm: {
-        default: string;
-        fallback: string;
-    };
-    image: {
-        default: string;
-        fallback: string;
-    };
-    models: {
-        [key: string]: {
-            provider: string;
-            modelName: string;
-            apiKeyEnv: string;
-        };
-    };
-}
-
-export const AIConfig: AIProviderConfig = {
+export const AIConfig = {
     llm: {
         default: "gemini_flash",
         fallback: "gemini_pro"
@@ -49,7 +29,7 @@ export const AIConfig: AIProviderConfig = {
         },
         "openai": {
             provider: "openai",
-            modelName: "dall-e-3", // Default, specific model passed in options overrides this
+            modelName: "dall-e-3",
             apiKeyEnv: "OPENAI_API_KEY"
         }
     }
@@ -57,55 +37,58 @@ export const AIConfig: AIProviderConfig = {
 
 export class AIProviderRegistry {
     private static instance: AIProviderRegistry;
-    private providers: Map<string, ILLMProvider | IImageProvider> = new Map();
+    private providers: Map<string, any>;
 
-    private constructor() { }
+    constructor() {
+        this.providers = new Map();
+    }
 
-    static getInstance(): AIProviderRegistry {
+    static getInstance() {
         if (!AIProviderRegistry.instance) {
             AIProviderRegistry.instance = new AIProviderRegistry();
         }
         return AIProviderRegistry.instance;
     }
 
-    getLLM(configKey: string): ILLMProvider {
-        if (this.providers.has(configKey)) return this.providers.get(configKey) as ILLMProvider;
-
-        const config = AIConfig.models[configKey];
-        if (!config) throw new Error(`Model config not found: ${configKey}`);
-
+    getLLM(configKey: string) {
+        if (this.providers.has(configKey))
+            return this.providers.get(configKey);
+        const config = (AIConfig.models as any)[configKey];
+        if (!config)
+            throw new Error(`Model config not found: ${configKey}`);
         const apiKey = process.env[config.apiKeyEnv];
-        if (!apiKey) throw new Error(`Missing API Key: ${config.apiKeyEnv}`);
-
-        let provider: ILLMProvider;
+        if (!apiKey)
+            throw new Error(`Missing API Key: ${config.apiKeyEnv}`);
+        let provider;
         if (config.provider === 'gemini') {
             provider = new GeminiProvider(apiKey, config.modelName);
-        } else {
+        }
+        else {
             throw new Error(`Unknown LLM provider type: ${config.provider}`);
         }
-
         this.providers.set(configKey, provider);
         return provider;
     }
 
-    getImageGen(configKey: string): IImageProvider {
-        if (this.providers.has(configKey)) return this.providers.get(configKey) as IImageProvider;
-
-        const config = AIConfig.models[configKey];
-        if (!config) throw new Error(`Model config not found: ${configKey}`);
-
+    getImageGen(configKey: string) {
+        if (this.providers.has(configKey))
+            return this.providers.get(configKey);
+        const config = (AIConfig.models as any)[configKey];
+        if (!config)
+            throw new Error(`Model config not found: ${configKey}`);
         const apiKey = process.env[config.apiKeyEnv];
-        if (!apiKey) throw new Error(`Missing API Key: ${config.apiKeyEnv}`);
-
-        let provider: IImageProvider;
+        if (!apiKey)
+            throw new Error(`Missing API Key: ${config.apiKeyEnv}`);
+        let provider;
         if (config.provider === 'byteplus') {
             provider = new BytePlusProvider(apiKey, config.modelName);
-        } else if (config.provider === 'openai') {
+        }
+        else if (config.provider === 'openai') {
             provider = new OpenAIProvider(apiKey, config.modelName);
-        } else {
+        }
+        else {
             throw new Error(`Unknown Image provider type: ${config.provider}`);
         }
-
         this.providers.set(configKey, provider);
         return provider;
     }

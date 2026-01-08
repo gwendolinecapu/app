@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     ScrollView,
@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { colors, spacing, typography } from '../lib/theme';
 import { getFrameStyle } from '../lib/cosmetics';
 import { StoriesService } from '../services/stories';
@@ -55,6 +55,12 @@ export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors }: Storie
     useEffect(() => {
         loadStories();
     }, [friendIds]);
+
+    useFocusEffect(
+        useCallback(() => {
+            loadStories();
+        }, [friendIds])
+    );
 
     const loadStories = async () => {
         if (!user) return;

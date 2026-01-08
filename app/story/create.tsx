@@ -175,65 +175,62 @@ export default function CreateStoryScreen() {
         setShowHighlightModal(true);
     };
 
-    const handleCreateNewHighlight = async () => {
-        if (Platform.OS === 'ios') {
-            Alert.prompt(
-                'Nouvel album',
-                'Donnez un titre à votre album',
-                (title) => {
-                    if (title && title.trim().length > 0) {
-                        // Wait for Alert to close before opening Image Picker
-                        setTimeout(async () => {
-                            try {
-                                console.log("Starting highlight creation flow for:", title);
-                                // 1. Pick Image
-                                const result = await ImagePicker.launchImageLibraryAsync({
-                                    mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                                    allowsEditing: true,
-                                    aspect: [1, 1],
-                                    quality: 0.8,
-                                });
+    const handleCreateNewHighlight = () => {
+        setNewHighlightTitle('');
+        setCreateHighlightModalVisible(true);
+    };
 
-                                if (!result.canceled) {
-                                    setLoadingHighlights(true);
-                                    // 2. Upload Image
-                                    const response = await fetch(result.assets[0].uri);
-                                    const blob = await response.blob();
-                                    const storageRef = ref(storage, `highlight-covers/${Date.now()}`);
-                                    await uploadBytes(storageRef, blob);
-                                    const coverUrl = await getDownloadURL(storageRef);
+    const handleContinueHighlightCreation = async () => {
+        if (!newHighlightTitle || newHighlightTitle.trim().length === 0) return;
 
-                                    // 3. Create Highlight
-                                    const newHighlight = await StoriesService.createHighlight(
-                                        user!.uid, // systemId
-                                        title.trim(),
-                                        coverUrl,
-                                        [], // Empty initially, story will be added on publish
-                                        currentAlter?.id
-                                    );
+        const title = newHighlightTitle.trim();
+        setCreateHighlightModalVisible(false);
 
-                                    // 4. Select it
-                                    setHighlights(prev => [newHighlight, ...prev]);
-                                    setSelectedHighlight(newHighlight);
-                                    setAddToHighlight(true);
-                                    setShowHighlightModal(false);
-                                } else {
-                                    console.log("Image picker canceled");
-                                }
-                            } catch (error) {
-                                Alert.alert('Erreur', "Impossible de créer l'album");
-                                console.error("Error creating highlight:", error);
-                            } finally {
-                                setLoadingHighlights(false);
-                            }
-                        }, 500);
-                    }
-                },
-                'plain-text'
-            );
-        } else {
-            Alert.alert("Info", "La création d'album n'est pas encore supportée ici sur Android.");
-        }
+        // Wait for Modal to close before opening Image Picker
+        setTimeout(async () => {
+            try {
+                console.log("Starting highlight creation flow for:", title);
+                // 1. Pick Image
+                const result = await ImagePicker.launchImageLibraryAsync({
+                    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                    allowsEditing: true,
+                    aspect: [1, 1],
+                    quality: 0.8,
+                });
+
+                if (!result.canceled) {
+                    setLoadingHighlights(true);
+                    // 2. Upload Image
+                    const response = await fetch(result.assets[0].uri);
+                    const blob = await response.blob();
+                    const storageRef = ref(storage, `highlight-covers/${Date.now()}`);
+                    await uploadBytes(storageRef, blob);
+                    const coverUrl = await getDownloadURL(storageRef);
+
+                    // 3. Create Highlight
+                    const newHighlight = await StoriesService.createHighlight(
+                        user!.uid, // systemId
+                        title.trim(),
+                        coverUrl,
+                        [], // Empty initially, story will be added on publish
+                        currentAlter?.id
+                    );
+
+                    // 4. Select it
+                    setHighlights(prev => [newHighlight, ...prev]);
+                    setSelectedHighlight(newHighlight);
+                    setAddToHighlight(true);
+                    setShowHighlightModal(false);
+                } else {
+                    console.log("Image picker canceled");
+                }
+            } catch (error) {
+                Alert.alert('Erreur', "Impossible de créer l'album");
+                console.error("Error creating highlight:", error);
+            } finally {
+                setLoadingHighlights(false);
+            }
+        }, 500);
     };
 
     const handlePublish = async () => {
@@ -608,6 +605,64 @@ export default function CreateStoryScreen() {
                     </View>
                 </View>
             </Modal>
+
+            {/* Create Highlight Title Modal (Custom Prompt) */}
+            <Modal visible={createHighlightModalVisible} transparent animationType="fade">
+                <View style={styles.promptModalOverlay}>
+                    <View style={[
+                        styles.promptModalContent,
+                        themeColors && { backgroundColor: themeColors.backgroundCard }
+                    ]}>
+                        <Text style={[
+                            styles.promptTitle,
+                            themeColors && { color: themeColors.text }
+                        ]}>
+                            Nouvel album
+                        </Text>
+                        <Text style={[
+                            styles.promptMessage,
+                            themeColors && { color: themeColors.textSecondary }
+                        ]}>
+                            Donnez un titre à votre album
+                        </Text>
+
+                        <TextInput
+                            style={[
+                                styles.promptInput,
+                                themeColors && {
+                                    color: themeColors.text,
+                                    borderColor: themeColors.border || 'rgba(255,255,255,0.2)'
+                                }
+                            ]}
+                            value={newHighlightTitle}
+                            onChangeText={setNewHighlightTitle}
+                            placeholder="Titre..."
+                            placeholderTextColor="#666"
+                            autoFocus
+                        />
+
+                        <View style={styles.promptActions}>
+                            <TouchableOpacity
+                                onPress={() => setCreateHighlightModalVisible(false)}
+                                style={styles.promptButton}
+                            >
+                                <Text style={[styles.promptButtonText, { color: '#ef4444' }]}>Annuler</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={handleContinueHighlightCreation}
+                                style={styles.promptButton}
+                            >
+                                <Text style={[
+                                    styles.promptButtonText,
+                                    { fontWeight: 'bold', color: themeColors ? themeColors.primary : colors.primary }
+                                ]}>
+                                    Continuer
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -803,10 +858,69 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     highlightToggleText: {
-        fontSize: 14,
-        fontWeight: '500',
+        fontSize: 12,
+        fontWeight: '600',
         maxWidth: 100,
     },
+
+    // Custom Prompt Modal Styles
+    promptModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    promptModalContent: {
+        width: '85%',
+        backgroundColor: '#1E1E1E',
+        borderRadius: 20,
+        padding: 24,
+        alignItems: 'center',
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+    },
+    promptTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 8,
+        color: 'white',
+    },
+    promptMessage: {
+        fontSize: 14,
+        color: '#AAA',
+        marginBottom: 24,
+        textAlign: 'center',
+    },
+    promptInput: {
+        width: '100%',
+        height: 50,
+        borderWidth: 1.5,
+        borderColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        marginBottom: 24,
+        color: 'white',
+        fontSize: 16,
+        backgroundColor: 'rgba(0,0,0,0.2)',
+    },
+    promptActions: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        width: '100%',
+        gap: 20, // Supported in RN 0.71+
+    },
+    promptButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 4,
+    },
+    promptButtonText: {
+        fontSize: 17,
+        fontWeight: '600',
+    },
+
     // Highlight Modal Styles
     highlightModalOverlay: {
         flex: 1,

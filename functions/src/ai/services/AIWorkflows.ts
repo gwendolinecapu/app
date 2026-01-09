@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin';
 import { BytePlusProvider } from '../providers/BytePlusProvider';
+import { GeminiProvider } from '../providers/GeminiProvider';
 import { PromptService } from './PromptService';
-import { AIRouter } from './AIRouter';
 
 // Helper to download image
 async function downloadImageAsBase64(url: string): Promise<string> {
@@ -97,67 +97,89 @@ export const AIWorkflows = {
         };
     },
     async performMagicPost(job: any) {
-        const router = new AIRouter();
         const { id: jobId, params } = job;
         const { alterId, prompt, style, imageCount, sceneImageUrl, poseImageUrl } = params;
         const count = imageCount || 1;
         const selectedStyle = style || "Cinematic";
+
         await checkCancelled(jobId);
+
         // 1. Get Alter Context
         const alterDoc = await admin.firestore().collection('alters').doc(alterId).get();
         const alterData = alterDoc.data();
         const charDesc = alterData?.visual_dna?.description || alterData?.name || "A character";
-        // 2. Enhance Prompt
-        const enhancementPrompt = PromptService.getMagicPromptExpansion(prompt, charDesc, selectedStyle); // prompt is required in MagicPostRequest but verify
-        const magicRes = await router.generateText(enhancementPrompt);
-        const magicPrompt = magicRes.result;
+
+        // 2. Enhance Prompt (Gemini Direct)
+        const enhancementPrompt = PromptService.getMagicPromptExpansion(prompt, charDesc, selectedStyle);
+
+        const googleApiKey = process.env.GOOGLE_AI_API_KEY;
+        if (!googleApiKey) throw new Error("Missing GOOGLE_AI_API_KEY");
+        const llmProvider = new GeminiProvider(googleApiKey, 'gemini-1.5-flash');
+
+        const magicPrompt = await llmProvider.generateText(enhancementPrompt);
         await checkCancelled(jobId);
+
         // 3. Prepare References
         const references: string[] = [];
         if (sceneImageUrl)
             references.push(await downloadImageAsBase64(sceneImageUrl));
         if (poseImageUrl)
             references.push(await downloadImageAsBase64(poseImageUrl));
+
         await checkCancelled(jobId);
-        // 4. Generate
-        // Note: Router generates one batch usually, but let's loop if needed or pass count
-        // Our interfaces said 'count' in options.
-        // Assuming router/provider handles options.count if supported, OR we do parallel calls.
-        // Let's do optimized parallel calls via Router
-        const promises = Array.from({ length: count }).map(() => router.generateImage(magicPrompt, {
+
+        // 4. Generate Images (BytePlus Direct)
+        const bytePlusKey = process.env.BYTEPLUS_API_KEY;
+        if (!bytePlusKey) throw new Error("Missing BYTEPLUS_API_KEY");
+        const imageProvider = new BytePlusProvider(bytePlusKey, 'seedream-4-5-251128');
+
+        // Parallel generation if count > 1
+        // Note: BytePlus provider returns Buffer[] because of parallel/batch possibilities in API, but usually 1 unless configured
+        // We will call it 'count' times in parallel or use API features if available. Provider wrapper does simplified single call usually.
+        // Let's call it in parallel to be safe and fast.
+        const promises = Array.from({ length: count }).map(() => imageProvider.generateInfoImage(magicPrompt, {
             referenceImages: references,
-            style: selectedStyle
+            width: 1024,
+            height: 1024
         }));
-        const results = await Promise.all(promises);
+
+        const nestedResults = await Promise.all(promises);
         await checkCancelled(jobId);
-        const allBuffers: any[] = results.flatMap(r => r.result);
-        const providersUsed = results.map(r => r.providerUsed);
-        const fallbackUsed = results.some(r => r.fallbackUsed) || magicRes.fallbackUsed;
+
+        // Flatten results
+        const allBuffers: Buffer[] = nestedResults.flat();
+
         // 5. Upload
         const uploadPromises = allBuffers.map((buf, idx) => uploadImage(buf, `posts/ai/${alterId}_${Date.now()}_${idx}.png`));
         const imageUrls = await Promise.all(uploadPromises);
+
         return {
             images: imageUrls,
             magicPrompt,
             metadata: {
                 providerUsed: {
-                    prompt: magicRes.providerUsed,
-                    generation: [...new Set(providersUsed)]
+                    prompt: 'gemini-direct',
+                    generation: 'byteplus-direct'
                 },
-                fallbackUsed
+                fallbackUsed: false
             }
         };
     },
     async performChat(job: any) {
-        const router = new AIRouter();
         const { messages, context } = job.params;
         const systemPrompt = PromptService.getChatSystemPrompt(context?.traits, context?.recentSummary);
-        const res = await router.chat(messages, { systemInstruction: systemPrompt });
+
+        const googleApiKey = process.env.GOOGLE_AI_API_KEY;
+        if (!googleApiKey) throw new Error("Missing GOOGLE_AI_API_KEY");
+        const llmProvider = new GeminiProvider(googleApiKey, 'gemini-1.5-flash');
+
+        const response = await llmProvider.chat(messages, { systemInstruction: systemPrompt });
+
         return {
-            message: res.result,
+            message: response,
             metadata: {
-                providerUsed: res.providerUsed,
-                fallbackUsed: res.fallbackUsed
+                providerUsed: 'gemini-direct',
+                model: 'gemini-1.5-flash'
             }
         };
     }

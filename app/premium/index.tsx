@@ -56,40 +56,22 @@ interface PricingPlan {
 
 const FEATURES: FeatureItem[] = [
     {
-        icon: 'infinite',
-        title: 'Alters Illimités',
-        description: 'Créez autant d\'alters que vous le souhaitez, sans restriction',
-        color: '#8B5CF6',
-    },
-    {
-        icon: 'cloud-done',
-        title: 'Synchronisation Cloud',
-        description: 'Sauvegarde automatique et sécurisée de toutes vos données',
-        color: '#3B82F6',
-    },
-    {
-        icon: 'color-palette',
-        title: 'Personnalisation Premium',
-        description: 'Thèmes exclusifs, cadres, bulles et couleurs illimitées',
+        icon: 'mic-circle',
+        title: 'Journal Vocal & Photos',
+        description: 'Enregistrez des audios et ajoutez des photos. Ces fichiers coûtent cher en stockage serveur : votre abonnement finance cet espace sécurisé.',
         color: '#EC4899',
     },
     {
-        icon: 'stats-chart',
-        title: 'Statistiques Avancées',
-        description: 'Analysez vos patterns de fronting et votre évolution',
-        color: '#22C55E',
+        icon: 'heart',
+        title: 'Soutien & Badge VIP',
+        description: 'Aidez l\'application à rester indépendante et obtenez un badge VIP exclusif visible par la communauté.',
+        color: '#8B5CF6',
     },
     {
-        icon: 'eye-off',
-        title: 'Sans Publicités',
-        description: 'Expérience 100% fluide, sans interruptions',
-        color: '#F59E0B',
-    },
-    {
-        icon: 'diamond',
-        title: 'Boutique Premium',
-        description: 'Accès exclusif à tous les items de la boutique',
-        color: '#06B6D4',
+        icon: 'server',
+        title: 'Hébergement Sécurisé',
+        description: 'Vos médias (sons/images) sont sauvegardés sur des serveurs privés et cryptés, garantis par votre contribution.',
+        color: '#3B82F6',
     },
 ];
 

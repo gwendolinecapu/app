@@ -297,7 +297,6 @@ export const PostService = {
             // 2. Query by System IDs - DISABLED for now to prevent showing all alters of a friend system
             // If we want to show posts by the System Account itself, we should ensure the System ID is in 'friendIds'
             // and handled by the query above (assuming system posts have alter_id = system_id).
-            /*
             if (friendSystemIds.length > 0) {
                 const targetSystemIds = friendSystemIds.slice(0, 30);
                 let q2 = query(
@@ -309,7 +308,6 @@ export const PostService = {
                 if (lastVisible) q2 = query(q2, startAfter(lastVisible));
                 promises.push(getDocs(q2));
             }
-            */
 
             const snapshots = await Promise.all(promises);
             const allDocs = snapshots.flatMap(snap => snap.docs);
@@ -356,6 +354,34 @@ export const PostService = {
             };
         } catch (error) {
             console.error('Error fetching friend feed:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Fetch video feed (Reels-like) from friends
+     */
+    fetchVideoFeed: async (friendIds: string[], friendSystemIds: string[] = [], lastVisible: QueryDocumentSnapshot | null = null, pageSize: number = 20) => {
+        try {
+            // We fetch a larger batch because we will filter meaningful amount of non-videos
+            // Multiplier for fetching to ensure we get enough videos
+            const fetchSize = pageSize * 3;
+
+            const result = await PostService.fetchFeed(friendIds, friendSystemIds, lastVisible, fetchSize);
+
+            // Filter only videos
+            const videoPosts = result.posts.filter(post => {
+                if (!post.media_url) return false;
+                const url = post.media_url.toLowerCase();
+                return url.includes('.mp4') || url.includes('.mov') || url.includes('.avi') || url.includes('.webm');
+            });
+
+            return {
+                posts: videoPosts,
+                lastVisible: result.lastVisible // This is imperfect for pagination since we might skip docs, but suffice for MVP feed
+            };
+        } catch (error) {
+            console.error('Error fetching video feed:', error);
             throw error;
         }
     },

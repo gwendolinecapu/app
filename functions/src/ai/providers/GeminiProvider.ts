@@ -1,7 +1,6 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
-import { ILLMProvider } from '../interfaces/ILLMProvider';
 
-export class GeminiProvider implements ILLMProvider {
+export class GeminiProvider {
     private genAI: GoogleGenerativeAI;
     private modelName: string;
 

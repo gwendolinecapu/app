@@ -203,7 +203,7 @@ export const FriendService = {
                 alterId: senderId, // The new friend
                 friendId: receiverId,
             },
-            senderId: senderId, // Them
+            senderId: senderSystemId, // Them (System ID for profile linking)
             read: false,
             created_at: serverTimestamp()
         });

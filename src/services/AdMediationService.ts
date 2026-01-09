@@ -29,12 +29,14 @@ import {
 // =====================================================
 const isExpoGo = Constants.appOwnership === 'expo';
 
+import AnalyticsService from './AnalyticsService';
+
 // Declare types for AdMob to avoid TS errors
 let mobileAds: any = null;
 let RewardedAd: any = null;
 let TestIds: any = { BANNER: '', REWARDED: '' };
-let RewardedAdEventType: any = { LOADED: '', EARNED_REWARD: '' };
-let AdEventType: any = { ERROR: '' };
+let RewardedAdEventType: any = { LOADED: '', EARNED_REWARD: '', PAID: '' };
+let AdEventType: any = { ERROR: '', PAID: '' };
 
 if (!isExpoGo) {
     try {
@@ -51,7 +53,6 @@ if (!isExpoGo) {
 } else {
 
 }
-
 
 // =====================================================
 // CONFIGURATION AVANCÉE
@@ -221,6 +222,18 @@ class AdMediationService {
         });
 
         this.rewardedAd.addAdEventListener(RewardedAdEventType.EARNED_REWARD, (reward: { type: string; amount: number }) => {
+        });
+
+        this.rewardedAd.addAdEventListener(RewardedAdEventType.PAID, (event: any) => {
+            console.log('[AdMediation] Ad Paid:', event);
+            AnalyticsService.logAdRevenue({
+                value: event.value,
+                currency: event.currency,
+                network: 'admob',
+                adUnitId: adUnitId,
+                format: 'rewarded',
+                precision: event.precision
+            });
         });
 
         // Charger

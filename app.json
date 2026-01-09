@@ -131,7 +131,8 @@
         }
       ],
       "@react-native-google-signin/google-signin",
-      "./plugins/withUnityAds"
+      "./plugins/withUnityAds",
+      "@react-native-firebase/app"
     ],
     "experiments": {
       "typedRoutes": true

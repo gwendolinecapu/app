@@ -83,6 +83,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
 
+            // Set User ID for Analytics
+            const AnalyticsService = require('../services/AnalyticsService').default;
+            await AnalyticsService.setUserId(firebaseUser ? firebaseUser.uid : null);
+
             setUser(firebaseUser);
             if (firebaseUser) {
                 setLoading(true); // Prevent flicker while fetching system/alters

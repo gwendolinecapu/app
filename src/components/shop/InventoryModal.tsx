@@ -45,17 +45,11 @@ export function InventoryModal({ visible, onClose, onEquip }: InventoryModalProp
 
         const allItems = [...COSMETIC_ITEMS, ...decorationsAsShopItems];
 
-        console.log('[InventoryModal] OwnedItems:', ownedItems);
-        const owned = allItems.filter(item => {
-            const isOwned = ownedItems.includes(item.id);
-            if (item.id === 'theme_cafe_cosy') console.log('Checking Cafe Cosy:', isOwned);
-            return isOwned;
-        });
+        const owned = allItems.filter(item => ownedItems.includes(item.id));
 
         // Remove duplicates if any ID exists in both lists
         const uniqueItems = Array.from(new Map(owned.map(item => [item.id, item])).values());
 
-        console.log('[InventoryModal] Filtered Inventory Items:', uniqueItems.length);
         return uniqueItems as ShopItem[];
     }, [ownedItems]);
 

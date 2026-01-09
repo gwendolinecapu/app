@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, SafeAreaView, Dimensions, ScrollView, Platform, FlatList, Alert } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, SafeAreaView, Dimensions, ScrollView, Platform, FlatList, Alert, Share } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Video, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { PostService } from '../../../src/services/posts';
+import { FriendService } from '../../../src/services/friends';
 import { Post } from '../../../src/types';
 import { colors, spacing, typography } from '../../../src/lib/theme';
 import { useAuth } from '../../../src/contexts/AuthContext';
@@ -14,11 +16,13 @@ const { width, height } = Dimensions.get('window');
 
 // Helper to check if a post is a video
 const isPostVideo = (post: Post) => {
-    return post.media_url && (
-        post.media_url.endsWith('.mp4') ||
-        post.media_url.endsWith('.mov') ||
-        post.media_url.endsWith('.avi') ||
-        post.media_url.endsWith('.webm')
+    if (!post.media_url) return false;
+    const url = post.media_url.toLowerCase();
+    return (
+        url.includes('.mp4') ||
+        url.includes('.mov') ||
+        url.includes('.avi') ||
+        url.includes('.webm')
     );
 };
 
@@ -80,6 +84,49 @@ const VideoItem = React.memo(({ post, active, user, onLike, onToggleMute, isMute
                 <TouchableOpacity style={styles.actionButton} onPress={onToggleMute}>
                     <Ionicons name={isMuted ? "volume-mute" : "volume-high"} size={32} color="white" />
                 </TouchableOpacity>
+
+                <TouchableOpacity style={styles.actionButton} onPress={() => {
+                    // Create Deep Link
+                    // Scheme: pluralconnect://post/video/[id]
+                    const deepLink = `pluralconnect://post/video/${post.id}`;
+                    const content = `Regarde cette vidéo sur PluralConnect : ${deepLink}`;
+
+                    // Simple ActionSheet for options
+                    Alert.alert(
+                        "Partager",
+                        undefined,
+                        [
+                            {
+                                text: "Copier le lien",
+                                onPress: async () => {
+                                    await Clipboard.setStringAsync(deepLink);
+                                    Alert.alert("Succès", "Lien copié dans le presse-papier !");
+                                }
+                            },
+                            {
+                                text: "Envoyer / Partager",
+                                onPress: async () => {
+                                    try {
+                                        await Share.share({
+                                            message: content,
+                                            // url: deepLink // iOS often prefers url field for links
+                                            url: deepLink
+                                        });
+                                    } catch (error) {
+                                        console.error(error);
+                                    }
+                                }
+                            },
+                            {
+                                text: "Annuler",
+                                style: "cancel"
+                            }
+                        ]
+                    );
+                }}>
+                    <Ionicons name="share-social-outline" size={32} color="white" />
+                    <Text style={styles.actionText}>Partager</Text>
+                </TouchableOpacity>
             </View>
 
             {/* Bottom Info */}
@@ -135,25 +182,46 @@ export default function FullPageVideoScreen() {
                 const res = await PostService.fetchPosts(contextId, null, 50);
                 fetchedPosts = res.posts.filter(p => p.system_id === contextId);
             } else {
-                if (id) {
-                    const singlePost = await PostService.getPostById(id);
-                    if (singlePost) fetchedPosts = [singlePost];
+                // Default: Video Feed (Reels style)
+                // Fetch from friends + current user? Or just friends?
+                // Usually "Feed" implies followed content.
+                if (user) {
+                    // Get friends
+                    const friendIds = await FriendService.getAllSystemFriendSystemIds(user.uid);
+
+                    // Add self to friends list if we want to see own videos in feed too? 
+                    // Usually yes, or at least the clicked one.
+                    const allSourceIds = [user.uid, ...friendIds];
+
+                    // Find "Alter IDs" for these systems? 
+                    // Use fetchFeed which handles "friendIds" (Alter IDs) and "friendSystemIds"
+                    // Our fetchVideoFeed wrapper takes (friendIds, friendSystemIds)
+                    // We primarily have System IDs here.
+                    const res = await PostService.fetchVideoFeed([], allSourceIds, null, 20);
+                    fetchedPosts = res.posts;
                 }
             }
 
-            // Filter only videos for this "Reels" view
-            const videoPosts = fetchedPosts.filter(isPostVideo);
+            // Filter only videos for this "Reels" view (Double check for non-feed contexts)
+            let videoPosts = fetchedPosts.filter(isPostVideo);
 
-            // Safety: if clicked post isn't in fetched list (pagination?) or was filtered out (unlikely if clicked from grid),
+            // Safety: if clicked post isn't in fetched list (pagination?) or was filtered out,
             // ensure it's added.
             if (id && !videoPosts.find(p => p.id === id)) {
                 const singlePost = await PostService.getPostById(id);
                 if (singlePost && isPostVideo(singlePost)) {
-                    videoPosts.push(singlePost);
-                    // Sort again? or just put it at top?
-                    // Better to just have it.
+                    // Add to beginning if it's the target
+                    videoPosts.unshift(singlePost);
                 }
             }
+
+            // Deduplicate just in case
+            const seen = new Set();
+            videoPosts = videoPosts.filter(p => {
+                if (seen.has(p.id)) return false;
+                seen.add(p.id);
+                return true;
+            });
 
             setPosts(videoPosts);
 

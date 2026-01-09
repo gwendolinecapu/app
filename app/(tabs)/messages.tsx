@@ -1,45 +1,28 @@
-import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    FlatList,
-    TouchableOpacity,
-    StyleSheet,
-} from 'react-native';
-import { router } from 'expo-router';
-import { useAuth } from '../../src/contexts/AuthContext';
-import { Alter } from '../../src/types';
-import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
+import { MessagingService } from '../../src/services/messaging';
 
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { GroupService } from '../../src/services/groups';
-import { FriendService } from '../../src/services/friends';
-import { Image } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../src/lib/firebase';
-
-interface ConversationItem {
-    id: string;
-    alter: Alter;
-    lastMessage: string;
-    time: string;
-    unread: number;
-}
+// ... existing imports
 
 export default function MessagesScreen() {
     const { alters, currentAlter, system } = useAuth();
     const [activeTab, setActiveTab] = useState<'internal' | 'groups' | 'requests' | 'friends'>('internal');
+
+    // State for sorted conversations
+    const [sortedInternal, setSortedInternal] = useState<ConversationItem[]>([]);
+    const [sortedFriends, setSortedFriends] = useState<ConversationItem[]>([]);
+
     const [groups, setGroups] = useState<any[]>([]);
     const [requests, setRequests] = useState<any[]>([]);
-    const [friends, setFriends] = useState<Alter[]>([]);
+
+    const [loadingInternal, setLoadingInternal] = useState(false);
+    const [loadingFriends, setLoadingFriends] = useState(false);
     const [loadingGroups, setLoadingGroups] = useState(false);
     const [loadingRequests, setLoadingRequests] = useState(false);
-    const [loadingFriends, setLoadingFriends] = useState(false);
 
 
     React.useEffect(() => {
-        if (activeTab === 'groups' && system) {
+        if (activeTab === 'internal' && currentAlter) {
+            loadInternalConversations();
+        } else if (activeTab === 'groups' && system) {
             loadGroups();
         } else if (activeTab === 'requests' && currentAlter) {
             loadRequests();
@@ -48,46 +31,125 @@ export default function MessagesScreen() {
         }
     }, [activeTab, system, currentAlter]);
 
+    const loadInternalConversations = async () => {
+        if (!currentAlter) return;
+        setLoadingInternal(true);
+        try {
+            // 1. Get all other alters
+            const otherAlters = alters.filter(a => a.id !== currentAlter.id);
+
+            // 2. Fetch last message for each
+            const conversations = await Promise.all(otherAlters.map(async (alter) => {
+                const metadata = await MessagingService.getLastMessage(currentAlter.id, alter.id);
+                const unread = await MessagingService.getUnreadCount(currentAlter.id, alter.id);
+
+                return {
+                    id: alter.id,
+                    alter,
+                    lastMessage: metadata ? metadata.lastMessage : 'Démarrer une conversation',
+                    time: metadata ? metadata.lastMessageTime : '', // Empty string = oldest sorting
+                    unread: unread,
+                    timestamp: metadata ? new Date(metadata.lastMessageTime).getTime() : 0
+                } as ConversationItem & { timestamp: number };
+            }));
+
+            // 3. Add General Chat (Static for now, but could be fetched too if we had group chat logic)
+            // Giving it a high timestamp to pin it or fetch its actual last message if possible
+            // For now, let's keep it at top or check if we want to sort it too.
+            // Let's say System General is always pinned or treated normally? 
+            // Requests say "last person messaged at top", usually General is a separate entity.
+            // Let's add it with 0 timestamp or current if we want.
+            // For now, let's just prepend it or sort it. User asked for "last person".
+
+            const generalItem: ConversationItem & { timestamp: number } = {
+                id: 'system-general',
+                alter: {
+                    id: 'general',
+                    name: 'Chat Général',
+                    color: colors.primary,
+                } as Alter,
+                lastMessage: 'Discussion de groupe système',
+                time: '',
+                unread: 0,
+                timestamp: 9999999999999 // Pin to top? Or 0? Let's use 0 to let active chats overtake it?
+                // Actually, user usually wants General accessible. Let's pin it at index 0 separate from sort, OR sort it if we had data.
+                // Reverting to: Sort everything by activity.
+            };
+
+            // Calculate General Chat timestamp? (Not implemented in service yet)
+            // Just sorting alters for now.
+
+            // Sort desc
+            conversations.sort((a, b) => b.timestamp - a.timestamp);
+
+            // Insert General at top? Or let it float?
+            // "sa serai bien que la derniere personne a qui on as envoyé un message ce met tout en haut"
+            // So pure time sort. 
+            // We'll put General at the top by default if no activity, but active chats go above.
+            // Use 0 timestamp for General.
+
+            const final = [generalItem, ...conversations].sort((a, b) => {
+                // Always keep General available, maybe just separately? 
+                // Let's just put General first if no one spoke, but otherwise sort.
+
+                // SPECIAL RULE: If General has no timestamp, maybe keep it at very top?
+                // Or treat it as generic.
+                if (a.id === 'system-general') return -1; // General always top logic?
+                if (b.id === 'system-general') return 1;
+                return b.timestamp - a.timestamp;
+            });
+
+            setSortedInternal(conversations.sort((a, b) => b.timestamp - a.timestamp));
+
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoadingInternal(false);
+        }
+    };
+
     const loadFriends = async () => {
         if (!currentAlter || !system) return;
         setLoadingFriends(true);
         try {
             const friendIds = await FriendService.getFriends(currentAlter.id);
-            // Deduplicate IDs
             const uniqueFriendIds = [...new Set(friendIds)];
 
             if (uniqueFriendIds.length === 0) {
-                setFriends([]);
-                setLoadingFriends(false);
+                setSortedFriends([]);
                 return;
             }
 
             const friendsData = await Promise.all(uniqueFriendIds.map(async (fid) => {
-                try {
-                    const docRef = doc(db, 'alters', fid);
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        return { id: docSnap.id, ...docSnap.data() } as Alter;
-                    }
-                    return null;
-                } catch (e) {
-                    console.error("Error fetching friend:", fid, e);
-                    return null;
-                }
+                const docRef = doc(db, 'alters', fid);
+                const docSnap = await getDoc(docRef);
+                if (!docSnap.exists()) return null;
+                const alter = { id: docSnap.id, ...docSnap.data() } as Alter;
+
+                // Filter internal
+                const isInternal = (alter.systemId === system.id) ||
+                    (alter.system_id === system.id) ||
+                    (alter.userId === system.id);
+                if (isInternal) return null;
+
+                // Fetch metadata
+                const metadata = await MessagingService.getLastMessage(currentAlter.id, alter.id);
+                const unread = await MessagingService.getUnreadCount(currentAlter.id, alter.id);
+
+                return {
+                    id: alter.id,
+                    alter,
+                    lastMessage: metadata ? metadata.lastMessage : 'Démarrer une discussion',
+                    time: metadata ? metadata.lastMessageTime : '',
+                    unread,
+                    timestamp: metadata ? new Date(metadata.lastMessageTime).getTime() : 0
+                } as ConversationItem & { timestamp: number };
             }));
 
-            // Filter out nulls AND internal alters to strictly respect "Amis = External"
-            const validFriends = friendsData.filter((f): f is Alter => {
-                if (!f) return false;
-                // Check if alter belongs to same system
-                // Use all potential field names for system ID
-                const isInternal = (f.systemId === system.id) ||
-                    (f.system_id === system.id) ||
-                    (f.userId === system.id);
-                return !isInternal;
-            });
+            const valid = friendsData.filter((i): i is ConversationItem & { timestamp: number } => i !== null);
+            valid.sort((a, b) => b.timestamp - a.timestamp);
 
-            setFriends(validFriends);
+            setSortedFriends(valid);
 
         } catch (error) {
             console.error("Failed to load friends", error);
@@ -122,31 +184,6 @@ export default function MessagesScreen() {
         }
     };
 
-    // Create mock conversations from alters
-    const internalConversations: ConversationItem[] = [
-        {
-            id: 'system-general',
-            alter: {
-                id: 'general',
-                name: 'Chat Général',
-                color: colors.primary,
-                avatar_url: undefined // Use specific icon logic if needed
-            } as Alter,
-            lastMessage: 'Discussion de groupe système',
-            time: '',
-            unread: 0,
-        },
-        ...alters
-            .filter(a => a.id !== currentAlter?.id)
-            .map(alter => ({
-                id: alter.id,
-                alter,
-                lastMessage: 'Démarrer une conversation',
-                time: '',
-                unread: 0,
-            }))
-    ];
-
     const renderConversation = ({ item }: { item: ConversationItem }) => (
         <TouchableOpacity
             style={styles.conversationItem}
@@ -174,7 +211,11 @@ export default function MessagesScreen() {
             <View style={styles.conversationContent}>
                 <View style={styles.conversationHeader}>
                     <Text style={styles.conversationName}>{item.alter.name}</Text>
-                    {item.time && <Text style={styles.conversationTime}>{item.time}</Text>}
+                    {item.time ? <Text style={styles.conversationTime}>{
+                        new Date(item.time).toLocaleDateString() === new Date().toLocaleDateString()
+                            ? new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            : new Date(item.time).toLocaleDateString()
+                    }</Text> : null}
                 </View>
                 <Text style={styles.lastMessage} numberOfLines={1}>
                     {item.lastMessage}
@@ -188,37 +229,45 @@ export default function MessagesScreen() {
         </TouchableOpacity>
     );
 
-    const renderFriendConversation = ({ item }: { item: Alter }) => (
+    const renderFriendConversation = ({ item }: { item: ConversationItem }) => (
         <TouchableOpacity
             style={styles.conversationItem}
-            onPress={() => router.push(`/conversation/${item.id}?internal=false`)}
+            onPress={() => router.push(`/conversation/${item.alter.id}?internal=false`)}
         >
-            <View style={[styles.avatar, { backgroundColor: item.color || colors.primary }]}>
-                {item.avatar_url ? (
-                    <Image source={{ uri: item.avatar_url }} style={{ width: 50, height: 50, borderRadius: 25 }} />
+            <View style={[styles.avatar, { backgroundColor: item.alter.color || colors.primary }]}>
+                {item.alter.avatar_url ? (
+                    <Image source={{ uri: item.alter.avatar_url }} style={{ width: 50, height: 50, borderRadius: 25 }} />
                 ) : (
                     <Text style={styles.avatarText}>
-                        {item.name.charAt(0).toUpperCase()}
+                        {item.alter.name.charAt(0).toUpperCase()}
                     </Text>
                 )}
             </View>
             <View style={styles.conversationContent}>
                 <View style={styles.conversationHeader}>
-                    <Text style={styles.conversationName}>{item.name}</Text>
+                    <Text style={styles.conversationName}>{item.alter.name}</Text>
+                    {item.time ? <Text style={styles.conversationTime}>{
+                        new Date(item.time).toLocaleDateString() === new Date().toLocaleDateString()
+                            ? new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            : new Date(item.time).toLocaleDateString()
+                    }</Text> : null}
                 </View>
                 <Text style={styles.lastMessage} numberOfLines={1}>
-                    Démarrer une discussion
+                    {item.lastMessage}
                 </Text>
             </View>
+            {item.unread > 0 && (
+                <View style={styles.unreadBadge}>
+                    <Text style={styles.unreadText}>{item.unread}</Text>
+                </View>
+            )}
         </TouchableOpacity>
     );
 
     const handleAcceptRequest = async (requestId: string) => {
         try {
             await FriendService.acceptRequest(requestId);
-            // Refresh list
             loadRequests();
-            // Show success?
         } catch (error) {
             console.error(error);
         }
@@ -266,7 +315,6 @@ export default function MessagesScreen() {
             <View style={styles.conversationContent}>
                 <View style={styles.conversationHeader}>
                     <Text style={styles.conversationName}>{item.name}</Text>
-                    {/* Time placeholder if needed */}
                 </View>
                 <Text style={styles.lastMessage} numberOfLines={1}>
                     {item.description || "Aucune description"}
@@ -301,6 +349,12 @@ export default function MessagesScreen() {
         </View>
     );
 
+    // Filter avatars for Top Bar
+    // We want sortedInternal but excluding any without recent activity maybe?
+    // Users generally want "Recent contacts".
+    // Or just sorted list.
+    const topBarAvatars = sortedInternal.slice(0, 10); // Show top 10 recent
+
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header with current alter */}
@@ -324,32 +378,39 @@ export default function MessagesScreen() {
                     </View>
                 </View>
 
-                {/* Avatar Row - Visible only on internal tab for quick access */}
-                {activeTab === 'internal' && (
+                {/* Avatar Row - Visible only on internal tab for quick access, using Sorted list */}
+                {activeTab === 'internal' && topBarAvatars.length > 0 && (
                     <View style={styles.avatarRow}>
-                        {alters.slice(0, 6).map((alter) => (
+                        {topBarAvatars.map((item) => (
                             <TouchableOpacity
-                                key={alter.id}
-                                onPress={() => router.push(`/alter/${alter.id}`)}
+                                key={item.id}
+                                onPress={() => {
+                                    if (item.id === 'system-general') {
+                                        router.push('/team-chat');
+                                    } else {
+                                        router.push(`/conversation/${item.alter.id}?internal=true`);
+                                    }
+                                }}
                             >
                                 <View
                                     style={[
                                         styles.rowAvatar,
-                                        { backgroundColor: alter.color },
-                                        // Ne pas montrer comme "actif" car on ne s'envoie pas de message à soi-même
+                                        { backgroundColor: item.alter.color },
+                                        item.unread > 0 && { borderColor: colors.primary, borderWidth: 2 }
                                     ]}
                                 >
-                                    <Text style={styles.rowAvatarText}>
-                                        {alter.name.charAt(0).toUpperCase()}
-                                    </Text>
+                                    {item.id === 'system-general' ? (
+                                        <Ionicons name="people" size={24} color="white" />
+                                    ) : item.alter.avatar_url ? (
+                                        <Image source={{ uri: item.alter.avatar_url }} style={{ width: 46, height: 46, borderRadius: 23 }} />
+                                    ) : (
+                                        <Text style={styles.rowAvatarText}>
+                                            {item.alter.name.charAt(0).toUpperCase()}
+                                        </Text>
+                                    )}
                                 </View>
                             </TouchableOpacity>
                         ))}
-                        {alters.length > 6 && (
-                            <View style={[styles.rowAvatar, styles.moreAvatar]}>
-                                <Text style={styles.moreText}>+{alters.length - 6}</Text>
-                            </View>
-                        )}
                     </View>
                 )}
             </View>
@@ -405,13 +466,13 @@ export default function MessagesScreen() {
 
             {/* Conversations List */}
             <FlatList
-                data={activeTab === 'internal' ? internalConversations : activeTab === 'friends' ? friends : activeTab === 'groups' ? groups : requests}
+                data={activeTab === 'internal' ? [{ id: 'general', alter: { id: 'general', name: 'Chat Général', color: colors.primary } as Alter, lastMessage: 'Discussion système', time: '', unread: 0 }, ...sortedInternal] as any : activeTab === 'friends' ? sortedFriends : activeTab === 'groups' ? groups : requests}
                 renderItem={(activeTab === 'internal' ? renderConversation : activeTab === 'friends' ? renderFriendConversation : activeTab === 'groups' ? renderGroup : renderRequest) as any}
                 keyExtractor={(item) => item.id}
                 ListEmptyComponent={renderEmptyState}
                 contentContainerStyle={styles.listContent}
-                refreshing={activeTab === 'groups' ? loadingGroups : activeTab === 'requests' ? loadingRequests : activeTab === 'friends' ? loadingFriends : false}
-                onRefresh={activeTab === 'groups' ? loadGroups : activeTab === 'requests' ? loadRequests : activeTab === 'friends' ? loadFriends : undefined}
+                refreshing={activeTab === 'groups' ? loadingGroups : activeTab === 'requests' ? loadingRequests : (activeTab === 'internal' ? loadingInternal : loadingFriends)}
+                onRefresh={activeTab === 'groups' ? loadGroups : activeTab === 'requests' ? loadRequests : (activeTab === 'internal' ? loadInternalConversations : loadFriends)}
             />
         </SafeAreaView >
     );

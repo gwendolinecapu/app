@@ -73,7 +73,7 @@ export const FriendService = {
                 senderId: senderId,
                 alterId: receiverId
             },
-            senderId: senderId, // Important for UI enrichment
+            senderId: auth.currentUser.uid, // Sender System ID for profile linking
             read: false,
             created_at: serverTimestamp()
         });
@@ -184,7 +184,7 @@ export const FriendService = {
                     alterId: receiverId, // The one who accepted (us)
                     friendId: senderId,
                 },
-                senderId: receiverId,
+                senderId: currentSystemId, // Us (System ID for profile linking)
                 read: false,
                 created_at: serverTimestamp()
             });

@@ -212,7 +212,7 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
         }
     };
 
-    const renderItem = ({ item, index }: { item: any, index: number }) => {
+    const renderItem = useCallback(({ item, index }: { item: any, index: number }) => {
         // Render publicité
         if (item.type === 'ad') {
             return <NativeAdCard themeColors={themeColors} />;
@@ -229,7 +229,7 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
                 themeColors={themeColors}
             />
         );
-    };
+    }, [themeColors, currentAlter?.id, user?.uid, handleLike, handleComment]);
 
     const renderHeader = () => (
         <View>

@@ -15,7 +15,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.pluralconnect.app",
+      "bundleIdentifier": "com.plural.connect",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSFaceIDUsageDescription": "L'accès à FaceID est nécessaire pour sécuriser l'accès à votre système.",
         "NSUserTrackingUsageDescription": "Cette autorisation permet d'afficher des publicités personnalisées.",
@@ -98,7 +99,7 @@
         "backgroundColor": "#1a1a2e"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.pluralconnect.app"
+      "package": "com.plural.connect"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -132,7 +133,15 @@
       ],
       "@react-native-google-signin/google-signin",
       "./plugins/withUnityAds",
-      "@react-native-firebase/app"
+      "@react-native-firebase/app",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

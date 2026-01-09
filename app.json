@@ -15,7 +15,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.pluralconnect.app",
+      "bundleIdentifier": "com.plural.connect",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSFaceIDUsageDescription": "L'accès à FaceID est nécessaire pour sécuriser l'accès à votre système.",
         "NSUserTrackingUsageDescription": "Cette autorisation permet d'afficher des publicités personnalisées.",
@@ -81,6 +82,12 @@
           },
           {
             "SKAdNetworkIdentifier": "3qy4746246.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "4dzt52r2t5.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "bvpn9ufu9p.skadnetwork"
           }
         ],
         "ITSAppUsesNonExemptEncryption": false
@@ -92,7 +99,7 @@
         "backgroundColor": "#1a1a2e"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.pluralconnect.app"
+      "package": "com.plural.connect"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -124,7 +131,17 @@
           "photosPermission": "L'accès à vos photos est nécessaire pour les ajouter à la galerie de l'alter."
         }
       ],
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      "./plugins/withUnityAds",
+      "@react-native-firebase/app",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

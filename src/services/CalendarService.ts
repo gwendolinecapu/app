@@ -66,26 +66,22 @@ export const CalendarService = {
             const q = query(
                 collection(db, COLLECTION),
                 where('systemId', '==', systemId),
-                // where('startTime', '>=', start),
-                // where('startTime', '<=', end),
-                // orderBy('startTime', 'asc')
+                where('startTime', '>=', start),
+                where('startTime', '<=', end),
+                orderBy('startTime', 'asc')
             );
 
             // Note: Range query might require composite index (systemId + startTime).
-            // Attempting simple fetch first.
+            // If it fails, check console link to create index.
 
             const querySnapshot = await getDocs(q);
             const events: CalendarEvent[] = [];
 
             querySnapshot.forEach((doc) => {
-                const data = doc.data() as Omit<CalendarEvent, 'id'>;
-                // Client-side filtering for range to avoid index issues during dev
-                if (data.startTime >= start && data.startTime <= end) {
-                    events.push({ id: doc.id, ...data });
-                }
+                events.push({ id: doc.id, ...doc.data() as Omit<CalendarEvent, 'id'> });
             });
 
-            return events.sort((a, b) => a.startTime - b.startTime);
+            return events;
         } catch (error) {
             console.error('Error fetching events:', error);
             throw error;

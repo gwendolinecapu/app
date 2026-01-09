@@ -60,7 +60,7 @@ class RevenueCatService {
         const apiKey = Platform.OS === 'ios' ? API_KEYS.ios : API_KEYS.android;
         // API keys are usually long (around 30+ chars). Trivial keys cause SDK errors.
         if (!apiKey || apiKey === '' || apiKey.includes('YOUR_') || apiKey.length < 20) {
-            console.log('[RevenueCat] Invalid or placeholder API key found. Skipping initialization.');
+            console.warn('[RevenueCat] Invalid configuration: Missing or placeholder API key. Purchases will be UNCONFIGURED.');
             this.initialized = true;
             this.configured = false;
             return;

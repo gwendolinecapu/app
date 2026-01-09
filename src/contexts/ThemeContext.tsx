@@ -27,14 +27,45 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         // Determine dynamic color based on active front
         if (activeFront.type === 'single' && activeFront.alters.length > 0) {
             const alter = activeFront.alters[0];
-            if (alter.color) {
+
+            // 1. Check for Equipped Theme
+            const equippedThemeId = alter.equipped_items?.theme;
+            if (equippedThemeId) {
+                // Determine color from theme ID (using MonetizationTypes or Decorations)
+                const COSEMETIC_ITEMS = require('../services/MonetizationTypes').COSMETIC_ITEMS;
+                const themeItem = COSEMETIC_ITEMS.find((i: any) => i.id === equippedThemeId);
+
+                if (themeItem && themeItem.preview) {
+                    currentPrimary = themeItem.preview;
+                    isDynamic = true;
+                } else if (alter.color) {
+                    // Fallback to alter color if theme has no color
+                    currentPrimary = alter.color;
+                    isDynamic = true;
+                }
+            } else if (alter.color) {
+                // 2. Fallback to Alter Color
                 currentPrimary = alter.color;
                 isDynamic = true;
             }
         } else if (activeFront.type === 'co-front' && activeFront.alters.length > 0) {
             // For co-fronting, we use the first alter's color as the primary theme color for now
             const alter = activeFront.alters[0];
-            if (alter.color) {
+
+            // Same logic for co-front (first alter priority)
+            const equippedThemeId = alter.equipped_items?.theme;
+            if (equippedThemeId) {
+                const COSEMETIC_ITEMS = require('../services/MonetizationTypes').COSMETIC_ITEMS;
+                const themeItem = COSEMETIC_ITEMS.find((i: any) => i.id === equippedThemeId);
+
+                if (themeItem && themeItem.preview) {
+                    currentPrimary = themeItem.preview;
+                    isDynamic = true;
+                } else if (alter.color) {
+                    currentPrimary = alter.color;
+                    isDynamic = true;
+                }
+            } else if (alter.color) {
                 currentPrimary = alter.color;
                 isDynamic = true;
             }

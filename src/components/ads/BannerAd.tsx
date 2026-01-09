@@ -32,6 +32,17 @@ export function BannerAd({ placement }: BannerAdProps) {
                 requestOptions={{
                     requestNonPersonalizedAdsOnly: true,
                 }}
+                onPaid={(event) => {
+                    const AnalyticsService = require('../../services/AnalyticsService').default;
+                    AnalyticsService.logAdRevenue({
+                        value: event.value,
+                        currency: event.currency,
+                        network: 'admob',
+                        adUnitId: adUnitId,
+                        format: 'banner',
+                        precision: event.precision
+                    });
+                }}
             />
         </View>
     );

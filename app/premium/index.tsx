@@ -73,6 +73,12 @@ const FEATURES: FeatureItem[] = [
         description: 'Vos médias (sons/images) sont sauvegardés sur des serveurs privés et cryptés, garantis par votre contribution.',
         color: '#3B82F6',
     },
+    {
+        icon: 'watch',
+        title: 'Extension Apple Watch',
+        description: 'Gardez le contact avec votre système directement depuis votre poignet. (Bientôt disponible)',
+        color: '#F59E0B',
+    },
 ];
 
 const PRICING_PLANS: PricingPlan[] = [

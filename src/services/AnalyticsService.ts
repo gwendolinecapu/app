@@ -1,6 +1,15 @@
 
-import analytics from '@react-native-firebase/analytics';
+
 import { Platform } from 'react-native';
+
+// Optional: Import natif conditionnel pour éviter le crash "RNFBAppModule not found"
+let analytics: any = null;
+try {
+    const analyticsModule = require('@react-native-firebase/analytics');
+    analytics = analyticsModule.default;
+} catch (e) {
+    console.warn('[AnalyticsService] Firebase Analytics native module not found. Analytics disabled.');
+}
 
 /**
  * Service centralisé pour l'analytics
@@ -23,6 +32,8 @@ class AnalyticsService {
      * À appeler après le login
      */
     async setUserId(userId: string | null): Promise<void> {
+        if (!analytics) return;
+
         if (!userId) {
             await analytics().setUserId(null); // Clear ID on logout
             return;
@@ -34,6 +45,8 @@ class AnalyticsService {
      * Log un événement personnalisé
      */
     async logEvent(name: string, params: { [key: string]: any } = {}): Promise<void> {
+        if (!analytics) return;
+
         try {
             await analytics().logEvent(name, params);
         } catch (error) {
@@ -53,6 +66,8 @@ class AnalyticsService {
         format: 'banner' | 'interstitial' | 'rewarded' | 'native';
         precision?: string; // e.g. 'ESTIMATED', 'PUBLISHER_PROVIDED', 'PRECISE'
     }): Promise<void> {
+        if (!analytics) return;
+
         try {
             // Conversion micros -> standard si nécessaire (AdMob envoie souvent en micros 1e-6)
             // MAIS attention: logAdImpression attend-il des micros ou des unités ?

@@ -145,11 +145,11 @@ class AdMediationService {
             try {
                 // Check if AdMob valid IDs are configured, else skip to prevent UMP crash
                 if (!AD_CONFIG_KEYS.ADMOB_APP_ID_IOS.startsWith('ca-app-pub-') || AD_CONFIG_KEYS.ADMOB_APP_ID_IOS.includes('YOUR_')) {
-                    console.log('[AdMediation] AdMob ID not configured. Skipping Consent Flow.');
+
                 } else {
                     const ConsentService = require('./ConsentService').default;
                     await ConsentService.requestConsent();
-                    console.log('[AdMediation] Consent flow completed');
+
                 }
             } catch (consentError) {
                 // Warning only - don't block app init
@@ -205,7 +205,7 @@ class AdMediationService {
             ? (Platform.OS === 'ios' ? AD_CONFIG_KEYS.ADMOB_REWARDED_ID_IOS : AD_CONFIG_KEYS.ADMOB_REWARDED_ID_ANDROID)
             : TestIds.REWARDED;
 
-        console.log(`[AdMediation] Loading Rewarded Ad (Real Ads: ${shouldUseRealAds}) - ID: ${adUnitId}`);
+
 
         this.rewardedAd = RewardedAd.createForAdRequest(adUnitId, {
             requestNonPersonalizedAdsOnly: true,
@@ -225,7 +225,7 @@ class AdMediationService {
         });
 
         this.rewardedAd.addAdEventListener(RewardedAdEventType.PAID, (event: any) => {
-            console.log('[AdMediation] Ad Paid:', event);
+
             AnalyticsService.logAdRevenue({
                 value: event.value,
                 currency: event.currency,

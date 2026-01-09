@@ -77,9 +77,9 @@ const AD_CONFIG_KEYS = {
     ADMOB_REWARDED_ID_IOS: 'ca-app-pub-7014088517639318/1623243206', // Récompense iOS 50 crédits
     ADMOB_REWARDED_ID_ANDROID: 'ca-app-pub-7014088517639318/6129464424', // Récompense Android 50 crédits
 
-    // Unity Ads (placeholder - à configurer si utilisé)
-    UNITY_GAME_ID_IOS: '4XXXXX',
-    UNITY_GAME_ID_ANDROID: '4YYYYY',
+    // Unity Ads
+    UNITY_GAME_ID_IOS: '6022245',
+    UNITY_GAME_ID_ANDROID: '6022244',
     UNITY_BANNER_PLACEMENT: 'Banner_iOS',
     UNITY_REWARDED_PLACEMENT: 'Rewarded_iOS',
 

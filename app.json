@@ -81,6 +81,12 @@
           },
           {
             "SKAdNetworkIdentifier": "3qy4746246.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "4dzt52r2t5.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "bvpn9ufu9p.skadnetwork"
           }
         ],
         "ITSAppUsesNonExemptEncryption": false
@@ -124,7 +130,8 @@
           "photosPermission": "L'accès à vos photos est nécessaire pour les ajouter à la galerie de l'alter."
         }
       ],
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      "./plugins/withUnityAds"
     ],
     "experiments": {
       "typedRoutes": true

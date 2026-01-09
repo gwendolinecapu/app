@@ -224,7 +224,7 @@ class AdMediationService {
         this.rewardedAd.addAdEventListener(RewardedAdEventType.EARNED_REWARD, (reward: { type: string; amount: number }) => {
         });
 
-        this.rewardedAd.addAdEventListener(RewardedAdEventType.PAID, (event: any) => {
+        this.rewardedAd.addAdEventListener(AdEventType.PAID, (event: any) => {
 
             AnalyticsService.logAdRevenue({
                 value: event.value,

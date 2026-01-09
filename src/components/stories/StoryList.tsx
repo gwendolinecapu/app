@@ -35,7 +35,8 @@ export const StoryList = ({ refreshTrigger }: StoryListProps) => {
             const friendSystemIds = await FriendService.getAllSystemFriendSystemIds(user.uid);
 
             // 2. Fetch active stories from friends AND self
-            const allStories = await StoriesService.fetchActiveStories(friendSystemIds, user.uid);
+            const allSystemIds = [user.uid, ...friendSystemIds];
+            const allStories = await StoriesService.fetchActiveStories(allSystemIds);
 
             // 3. Group by author
             // But first separate "my" stories

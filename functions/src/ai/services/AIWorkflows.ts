@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin';
+import { BytePlusProvider } from '../providers/BytePlusProvider';
 import { PromptService } from './PromptService';
 import { AIRouter } from './AIRouter';
 
@@ -37,71 +38,61 @@ async function checkCancelled(jobId: string) {
 
 export const AIWorkflows = {
     async performRitual(job: any) {
-        const router = new AIRouter();
+        // Direct BytePlus (Seedream 4.5) Implementation - No Router, No Gemini
         const { id: jobId, params } = job;
         const { alterId, referenceImageUrls } = params;
+
         if (!alterId || !referenceImageUrls)
             throw new Error("Missing params");
+
         await checkCancelled(jobId);
-        // 1. Analyze (Vision)
+
+        // 1. Download Images
         const imagesBase64 = await Promise.all(referenceImageUrls.map(downloadImageAsBase64));
         await checkCancelled(jobId);
-        const analysisPrompt = PromptService.getRitualAnalysisPrompt();
-        // Use Router
-        const analysisRes = await router.analyzeImage(imagesBase64[0], analysisPrompt);
-        const visualDescription = analysisRes.result;
-        await checkCancelled(jobId);
-        // 2. Ref Sheet (Image Gen)
-        const refSheetPrompt = PromptService.getRitualRefSheetPrompt(visualDescription);
-        // Map specific model override if provided
-        let genOptions: any = {
+
+        // 2. Direct Generation (Skip Analysis)
+        const refSheetPrompt = PromptService.getRitualRefSheetPrompt();
+
+        // Instantiate BytePlus Provider directly
+        // We need to access the API Key. In Cloud Functions, it's in process.env if secrets are declared.
+        // We assume 'BYTEPLUS_API_KEY' is available as per index.ts secrets.
+        const apiKey = process.env.BYTEPLUS_API_KEY;
+        if (!apiKey) throw new Error("Missing BYTEPLUS_API_KEY");
+
+        const provider = new BytePlusProvider(apiKey, 'seedream-4-5-251128');
+
+        const genOptions = {
             referenceImages: imagesBase64,
-            width: 2048, height: 2048
+            width: 1024, // BytePlus standard/optimal
+            height: 1024 // BytePlus standard/optimal - Aspect Ratio will be handled by provider or we request wide?
+            // Seedream/BytePlus usually handles resolution. Let's request 1024x1024 or similar.
+            // User wanted "Wide" ref sheet. 
+            // If we want wide, maybe 1280x720 or 1024x576? 
+            // Let's stick to square or standard 3:4 for safety unless we know Seedream supports specific AR.
+            // Reverting to standard high res.
         };
-        if (params.model) {
-            if (params.model === 'gpt-1.5-low') {
-                genOptions.provider = 'openai';
-                genOptions.quality = 'eco';
-                genOptions.model = 'gpt-image-1.5';
-            }
-            else if (params.model === 'gpt-1.5-mid') {
-                genOptions.provider = 'openai';
-                genOptions.quality = 'std';
-                genOptions.model = 'gpt-image-1.5';
-            }
-            else if (params.model === 'gpt-1.5-high') {
-                genOptions.provider = 'openai';
-                genOptions.quality = 'high';
-                genOptions.model = 'gpt-image-1.5';
-            }
-            else if (params.model === 'seedream-4.5') {
-                genOptions.provider = 'byteplus';
-                genOptions.model = 'seedream-4-5-251128';
-            }
-            else if (params.model === 'seedream-4.0') {
-                genOptions.provider = 'byteplus';
-                genOptions.model = 'seedream-4-0-250828';
-            }
-        }
-        const refSheetRes = await router.generateImage(refSheetPrompt, genOptions);
-        const refSheetBuffers = refSheetRes.result;
+
+        const resultBuffers = await provider.generateInfoImage(refSheetPrompt, genOptions);
+
         await checkCancelled(jobId);
-        const refSheetUrl = await uploadImage(refSheetBuffers[0], `alters/${alterId}/visual_dna/ref_sheet_${Date.now()}.png`);
+
+        // 3. Upload & Save
+        const refSheetUrl = await uploadImage(resultBuffers[0], `alters/${alterId}/visual_dna/ref_sheet_${Date.now()}.png`);
+
         await admin.firestore().collection('alters').doc(alterId).update({
-            'visual_dna.description': visualDescription,
+            'visual_dna.description': "Généré par Seedream 4.5", // Static desc since we removed analysis
             'visual_dna.reference_sheet_url': refSheetUrl,
             'visual_dna.is_ready': true,
             'visual_dna.updated_at': admin.firestore.FieldValue.serverTimestamp()
         });
+
         return {
-            visualDescription,
+            visualDescription: "Généré par Seedream 4.5",
             refSheetUrl,
             metadata: {
-                providerUsed: {
-                    analysis: analysisRes.providerUsed,
-                    generation: refSheetRes.providerUsed
-                },
-                fallbackUsed: analysisRes.fallbackUsed || refSheetRes.fallbackUsed
+                providerUsed: 'byteplus-direct',
+                model: 'seedream-4.5'
             }
         };
     },

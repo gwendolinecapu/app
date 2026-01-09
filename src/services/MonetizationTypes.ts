@@ -441,6 +441,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         name: 'Mint Cute',
         description: 'Fraîcheur menthe douce.',
         priceCredits: 1000,
+        preview: '#B5EAD7',
     },
     {
         id: 'theme_cute_sky',
@@ -448,6 +449,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         name: 'Sky Cute',
         description: 'Douceur céleste.',
         priceCredits: 1000,
+        preview: '#A2D2FF',
     },
     {
         id: 'theme_cute_lavender',
@@ -455,6 +457,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         name: 'Lavender Cute',
         description: 'Sérénité lavande.',
         priceCredits: 1000,
+        preview: '#CDB4DB',
     },
     {
         id: 'theme_cute_peach',
@@ -462,6 +465,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         name: 'Peach Cute',
         description: 'Pêche sucrée.',
         priceCredits: 1000,
+        preview: '#FFDAC1',
     },
     {
         id: 'theme_cute_lemon',
@@ -469,6 +473,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         name: 'Lemon Cute',
         description: 'Zeste de citron doux.',
         priceCredits: 1000,
+        preview: '#FFF9C4',
     },
     {
         id: 'theme_cute_aqua',
@@ -476,6 +481,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         name: 'Aqua Cute',
         description: 'Lagon pastel.',
         priceCredits: 1000,
+        preview: '#99F6E4',
     },
     {
         id: 'theme_cute_cream',
@@ -483,6 +489,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         name: 'Cream Cute',
         description: 'Douceur crème.',
         priceCredits: 1000,
+        preview: '#FDFBF7',
     },
     {
         id: 'theme_cute_coral',
@@ -490,6 +497,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         name: 'Coral Cute',
         description: 'Récif pastel.',
         priceCredits: 1000,
+        preview: '#FF9AA2',
     },
 
     // ========== CADRES ==========

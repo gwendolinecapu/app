@@ -29,12 +29,14 @@ import {
 // =====================================================
 const isExpoGo = Constants.appOwnership === 'expo';
 
+import AnalyticsService from './AnalyticsService';
+
 // Declare types for AdMob to avoid TS errors
 let mobileAds: any = null;
 let RewardedAd: any = null;
 let TestIds: any = { BANNER: '', REWARDED: '' };
-let RewardedAdEventType: any = { LOADED: '', EARNED_REWARD: '' };
-let AdEventType: any = { ERROR: '' };
+let RewardedAdEventType: any = { LOADED: '', EARNED_REWARD: '', PAID: '' };
+let AdEventType: any = { ERROR: '', PAID: '' };
 
 if (!isExpoGo) {
     try {
@@ -51,7 +53,6 @@ if (!isExpoGo) {
 } else {
 
 }
-
 
 // =====================================================
 // CONFIGURATION AVANCÉE
@@ -77,9 +78,9 @@ const AD_CONFIG_KEYS = {
     ADMOB_REWARDED_ID_IOS: 'ca-app-pub-7014088517639318/1623243206', // Récompense iOS 50 crédits
     ADMOB_REWARDED_ID_ANDROID: 'ca-app-pub-7014088517639318/6129464424', // Récompense Android 50 crédits
 
-    // Unity Ads (placeholder - à configurer si utilisé)
-    UNITY_GAME_ID_IOS: '4XXXXX',
-    UNITY_GAME_ID_ANDROID: '4YYYYY',
+    // Unity Ads
+    UNITY_GAME_ID_IOS: '6022245',
+    UNITY_GAME_ID_ANDROID: '6022244',
     UNITY_BANNER_PLACEMENT: 'Banner_iOS',
     UNITY_REWARDED_PLACEMENT: 'Rewarded_iOS',
 
@@ -144,11 +145,11 @@ class AdMediationService {
             try {
                 // Check if AdMob valid IDs are configured, else skip to prevent UMP crash
                 if (!AD_CONFIG_KEYS.ADMOB_APP_ID_IOS.startsWith('ca-app-pub-') || AD_CONFIG_KEYS.ADMOB_APP_ID_IOS.includes('YOUR_')) {
-                    console.log('[AdMediation] AdMob ID not configured. Skipping Consent Flow.');
+
                 } else {
                     const ConsentService = require('./ConsentService').default;
                     await ConsentService.requestConsent();
-                    console.log('[AdMediation] Consent flow completed');
+
                 }
             } catch (consentError) {
                 // Warning only - don't block app init
@@ -204,7 +205,7 @@ class AdMediationService {
             ? (Platform.OS === 'ios' ? AD_CONFIG_KEYS.ADMOB_REWARDED_ID_IOS : AD_CONFIG_KEYS.ADMOB_REWARDED_ID_ANDROID)
             : TestIds.REWARDED;
 
-        console.log(`[AdMediation] Loading Rewarded Ad (Real Ads: ${shouldUseRealAds}) - ID: ${adUnitId}`);
+
 
         this.rewardedAd = RewardedAd.createForAdRequest(adUnitId, {
             requestNonPersonalizedAdsOnly: true,
@@ -221,6 +222,18 @@ class AdMediationService {
         });
 
         this.rewardedAd.addAdEventListener(RewardedAdEventType.EARNED_REWARD, (reward: { type: string; amount: number }) => {
+        });
+
+        this.rewardedAd.addAdEventListener(RewardedAdEventType.PAID, (event: any) => {
+
+            AnalyticsService.logAdRevenue({
+                value: event.value,
+                currency: event.currency,
+                network: 'admob',
+                adUnitId: adUnitId,
+                format: 'rewarded',
+                precision: event.precision
+            });
         });
 
         // Charger

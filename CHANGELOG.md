@@ -6,6 +6,10 @@
 - **Terminologie**: Remplacement des termes "Magie/Offrande" par "Création/Référence" pour plus de clarté.
 - **Backend (Functions)**: Correction et restauration des fichiers manquants pour les fournisseurs d'IA (Gemini, BytePlus, OpenAI) et résolution des erreurs de compilation TypeScript.
 - **UI UX**: Affichage propre du résultat (image générée) sans texte superflu.
+- **Ad Revenue Tracking**: Implémentation du suivi précis des revenus publicitaires par utilisateur.
+  - **Analytics**: Service dédié `AnalyticsService` pour normaliser les rapports.
+  - **Attribution**: Liaison automatique des événements de revenus avec l'ID utilisateur (UserID).
+  - **Précision**: Capture des événements `PAID` AdMob (Banner & Rewarded) avec valeur, devise et précision exactes.
 
 ## [2026-01-08] Préparation v1 & Audit Fonctionnalités 🏷️
 - **StatusBadge**: Introduction d'un système de badges visuels (BETA, ALPHA, BIENTÔT, NOUVEAU) pour clarifier l'état des fonctionnalités.

@@ -1,6 +1,4 @@
-import { IImageProvider } from '../interfaces/IImageProvider';
-
-export class BytePlusProvider implements IImageProvider {
+export class BytePlusProvider {
     private endpoint: string;
     private apiKey: string;
     private model: string;

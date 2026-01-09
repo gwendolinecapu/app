@@ -7,13 +7,12 @@ import { BillingUtils } from './utils/billing';
 import { startAIJob } from './ai/api/startAIJob';
 import { cancelAIJob } from './ai/api/cancelAIJob';
 import { retryAIJob } from './ai/api/retryAIJob';
-import { compareAIModels } from './ai/api/compareAIModels';
 
 admin.initializeApp();
 
 const SECRETS = ["GOOGLE_AI_API_KEY", "BYTEPLUS_API_KEY"];
 
-export { processAIJob, startAIJob, cancelAIJob, retryAIJob, compareAIModels };
+export { processAIJob, startAIJob, cancelAIJob, retryAIJob };
 
 export const performBirthRitual = functions.runWith({
     secrets: SECRETS,

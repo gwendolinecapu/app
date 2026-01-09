@@ -22,6 +22,7 @@ import { SakuraFrame } from './effects/SakuraPetals';
 import { TropicalFrame } from './effects/TropicalLeaves';
 import { FlameFrame } from './effects/FlameFrame';
 import { NatureMysticFrame } from './effects/NatureMysticFrame';
+import { FriendService } from '../services/friends';
 import { getCosmeticItem } from '../lib/cosmetics';
 
 // =====================================================
@@ -63,14 +64,25 @@ export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors }: Storie
     );
 
     const loadStories = async () => {
-        if (!user) return;
+        if (!user || !currentAlter) return;
 
         try {
             setLoading(true);
-            // Strict Privacy: Only show stories from ME and my FRIENDS.
-            // Even if they are in the same system, non-friends should be hidden.
-            const allowedIds = currentAlter ? [currentAlter.id, ...friendIds] : friendIds;
-            const stories = await StoriesService.fetchActiveStories(friendIds, user.uid, allowedIds);
+
+            // 1. Identify which Systems we need to fetch stories from.
+            // We fetch from: My System + Systems of my friends.
+            const friendSystemIds = await FriendService.getFriendSystemIds(currentAlter.id);
+            // Deduplicate system IDs (my system + friend systems)
+            const uniqueSystemIds = Array.from(new Set([user.uid, ...friendSystemIds]));
+
+            // 2. Strict Privacy: Define exactly WHICH authors are allowed.
+            // Even if we fetch from a system, we only want to see stories from specific friends in that system.
+            const allowedAuthorIds = [currentAlter.id, ...friendIds];
+
+            // 3. Fetch stories
+            // Pass uniqueSystemIds as the first arg (systems to query)
+            // Pass allowedAuthorIds as the second arg (authors to filter for)
+            const stories = await StoriesService.fetchActiveStories(uniqueSystemIds, allowedAuthorIds);
             const grouped = StoriesService.groupStoriesByAuthor(stories);
 
             // Fetch live decorations for all authors to ensure frames are up to date
@@ -84,18 +96,17 @@ export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors }: Storie
             }));
 
             // Séparer mes stories des autres
-            const mine = groupedWithDecorations.filter(a => a.authorId === currentAlter?.id);
-            const others = groupedWithDecorations.filter(a => a.authorId !== currentAlter?.id);
+            const mine = groupedWithDecorations.filter(a => a.authorId === currentAlter.id);
+            const others = groupedWithDecorations.filter(a => a.authorId !== currentAlter.id);
 
             setMyStories(mine.length > 0 ? mine[0].stories : []);
             setAuthors(others);
         } catch (error: any) {
             // Gérer silencieusement les erreurs de permissions Firestore
-            // Ces erreurs sont normales quand les règles de sécurité bloquent l'accès
             if (error?.code === 'permission-denied') {
                 // Ignore permissions error
             } else {
-                // Log silently or ignore
+                console.log('Error loading stories:', error);
             }
             // Continuer avec des tableaux vides
             setMyStories([]);

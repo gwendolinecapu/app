@@ -17,7 +17,7 @@ class GoogleAuthService {
             GoogleSignin.configure({
                 // Get this from Firebase Console -> Authentication -> Sign-in method -> Google -> Web SDK configuration
                 // It's required for the 'idToken' to be returned
-                webClientId: '280489246228-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com', // TODO: REPLACE WITH REAL WEB CLIENT ID
+                webClientId: '280489246228-dspg418bku4kosdjlfvh74jnls284v8s.apps.googleusercontent.com',
                 offlineAccess: true,
             });
             this.configured = true;

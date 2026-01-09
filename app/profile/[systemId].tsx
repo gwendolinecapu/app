@@ -26,6 +26,8 @@ import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { SkeletonProfile } from '../../src/components/ui/Skeleton';
 import { EmptyState } from '../../src/components/ui/EmptyState';
 import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../src/lib/firebase';
 
 const GRID_ITEM_SIZE = (Dimensions.get('window').width - spacing.md * 2 - 4) / 3;
 
@@ -57,15 +59,54 @@ export default function ExternalProfileScreen() {
             const profileData = await FollowService.getPublicProfile(systemId);
             setProfile(profileData);
 
-            // Vérifier si on suit ce profil
-            const following = await FollowService.isFollowing(user.uid, systemId);
-            setIsFollowing(following);
+            if (profileData) {
+                // Vérifier si on suit ce profil seulement si le profil existe
+                const following = await FollowService.isFollowing(user.uid, systemId);
+                setIsFollowing(following);
 
-            // Charger les posts publics
-            const publicPosts = await FollowService.getPublicPosts(systemId);
-            setPosts(publicPosts as Post[]);
-        } catch (error) {
+                // Charger les posts publics
+                const publicPosts = await FollowService.getPublicPosts(systemId);
+                setPosts(publicPosts as Post[]);
+            } else {
+                // If profile not found, maybe it's an Alter ID? Try to assume it's an alterId and find the system
+                try {
+                    const alterDoc = await getDoc(doc(db, 'alters', systemId));
+                    if (alterDoc.exists()) {
+                        const data = alterDoc.data();
+                        const actualSystemId = data.userId || data.systemId || data.system_id;
+                        if (actualSystemId && actualSystemId !== systemId) {
+                            console.log('Redirecting Alter ID to System ID:', actualSystemId);
+                            // Recursive retry with correct ID or redirect
+                            // For simplicity, let's just use router.replace
+                            router.replace({ pathname: '/profile/[systemId]', params: { systemId: actualSystemId } });
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.log('Fallback check failed:', e);
+                }
+            }
+
+        } catch (error: any) {
             console.error('Error loading profile:', error);
+
+            // Handle Permission Denied (Private Profile?) or "Missing permissions"
+            if (error.code === 'permission-denied' || error.message?.includes('Missing or insufficient permissions')) {
+                // Try fallback just in case it was an Alter ID causing the permission error
+                try {
+                    const alterDoc = await getDoc(doc(db, 'alters', systemId));
+                    if (alterDoc.exists()) {
+                        const data = alterDoc.data();
+                        const actualSystemId = data.userId || data.systemId || data.system_id;
+                        if (actualSystemId && actualSystemId !== systemId) {
+                            router.replace({ pathname: '/profile/[systemId]', params: { systemId: actualSystemId } });
+                            return;
+                        }
+                    }
+                } catch (e) { }
+            }
+
+            // Only alert if it's not a generic permission error we just tried to handle or failed to handle
             Alert.alert('Erreur', 'Impossible de charger ce profil');
         } finally {
             setLoading(false);

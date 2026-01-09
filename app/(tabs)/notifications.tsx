@@ -643,7 +643,7 @@ export default function NotificationsScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor }]}>
-            <View style={styles.header}>
+            <View style={[styles.header, { borderBottomColor: themeColors?.border || colors.border }]}>
                 <TouchableOpacity
                     onPress={() => {
                         if (currentAlter) {
@@ -661,7 +661,7 @@ export default function NotificationsScreen() {
                 </View>
                 {hasContent ? (
                     <TouchableOpacity onPress={handleClearAll}>
-                        <Text style={[styles.clearAllText, { color: textColor }]}>Tout effacer</Text>
+                        <Text style={[styles.clearAllText, { color: themeColors?.primary || colors.primary }]}>Tout effacer</Text>
                     </TouchableOpacity>
                 ) : <View style={{ width: 60 }} />}
             </View>
@@ -684,7 +684,8 @@ export default function NotificationsScreen() {
                     <RefreshControl
                         refreshing={refreshing}
                         onRefresh={onRefresh}
-                        tintColor={themeColor}
+                        tintColor={themeColors?.primary || colors.primary}
+                        colors={[themeColors?.primary || colors.primary]} // Android
                     />
                 }
                 contentContainerStyle={styles.listContent}

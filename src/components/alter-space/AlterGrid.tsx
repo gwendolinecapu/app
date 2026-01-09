@@ -187,6 +187,45 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
         );
     }
 
+    const renderGridItem = React.useCallback(({ item }: { item: Post }) => (
+        <TouchableOpacity
+            style={styles.gridItem}
+            onPress={() => {
+                const isVideo = item.media_url && (
+                    item.media_url.endsWith('.mp4') ||
+                    item.media_url.endsWith('.mov') ||
+                    item.media_url.endsWith('.avi') ||
+                    item.media_url.endsWith('.webm')
+                );
+
+                // Pass context for scrolling logic
+                // Only for grid view (authored posts)
+                const contextParams = activeTab === 'grid' && alterId
+                    ? `?context=alter&contextId=${alterId}`
+                    : '';
+
+                if (isVideo) {
+                    router.push(`/post/video/${item.id}${contextParams}` as any);
+                } else {
+                    router.push(`/post/${item.id}${contextParams}`);
+                }
+            }}
+        >
+            {item.media_url ? (
+                <GridMediaItem
+                    mediaUrl={item.media_url}
+                    themeColors={themeColors}
+                />
+            ) : (
+                <View style={[styles.gridTextContent, themeColors && { backgroundColor: themeColors.backgroundCard }]}>
+                    <Text style={[styles.gridText, themeColors && { color: themeColors.text }]} numberOfLines={3}>
+                        {item.content}
+                    </Text>
+                </View>
+            )}
+        </TouchableOpacity>
+    ), [activeTab, alterId, themeColors]);
+
     return (
         <FlatList
             key={activeTab}
@@ -226,44 +265,7 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
                     tintColor={colors.primary}
                 />
             }
-            renderItem={({ item }) => (
-                <TouchableOpacity
-                    style={styles.gridItem}
-                    onPress={() => {
-                        const isVideo = item.media_url && (
-                            item.media_url.endsWith('.mp4') ||
-                            item.media_url.endsWith('.mov') ||
-                            item.media_url.endsWith('.avi') ||
-                            item.media_url.endsWith('.webm')
-                        );
-
-                        // Pass context for scrolling logic
-                        // Only for grid view (authored posts)
-                        const contextParams = activeTab === 'grid' && alterId
-                            ? `?context=alter&contextId=${alterId}`
-                            : '';
-
-                        if (isVideo) {
-                            router.push(`/post/video/${item.id}${contextParams}` as any);
-                        } else {
-                            router.push(`/post/${item.id}${contextParams}`);
-                        }
-                    }}
-                >
-                    {item.media_url ? (
-                        <GridMediaItem
-                            mediaUrl={item.media_url}
-                            themeColors={themeColors}
-                        />
-                    ) : (
-                        <View style={[styles.gridTextContent, themeColors && { backgroundColor: themeColors.backgroundCard }]}>
-                            <Text style={[styles.gridText, themeColors && { color: themeColors.text }]} numberOfLines={3}>
-                                {item.content}
-                            </Text>
-                        </View>
-                    )}
-                </TouchableOpacity>
-            )}
+            renderItem={renderGridItem}
             contentContainerStyle={styles.listContent}
         />
     );

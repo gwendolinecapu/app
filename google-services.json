@@ -1,0 +1,47 @@
+{
+    "project_info": {
+        "project_number": "280489246228",
+        "project_id": "app-tdi",
+        "storage_bucket": "app-tdi.firebasestorage.app"
+    },
+    "client": [
+        {
+            "client_info": {
+                "mobilesdk_app_id": "1:280489246228:android:b4bd9a139c68bf2ecaf101",
+                "android_client_info": {
+                    "package_name": "com.plural.connect"
+                }
+            },
+            "oauth_client": [
+                {
+                    "client_id": "280489246228-dspg418bku4kosdjlfvh74jnls284v8s.apps.googleusercontent.com",
+                    "client_type": 3
+                }
+            ],
+            "api_key": [
+                {
+                    "current_key": "AIzaSyA7UhCatZ6RZILWTAxlYGF5kS0wLKyHspI"
+                }
+            ],
+            "services": {
+                "appinvite_service": {
+                    "other_platform_oauth_client": [
+                        {
+                            "client_id": "280489246228-dspg418bku4kosdjlfvh74jnls284v8s.apps.googleusercontent.com",
+                            "client_type": 3
+                        },
+                        {
+                            "client_id": "280489246228-8uvr8030eiec37fpvnauute60hor7nq8.apps.googleusercontent.com",
+                            "client_type": 2,
+                            "ios_info": {
+                                "bundle_id": "com.plural.connect.ios"
+                            }
+                        }
+                    ]
+                }
+            },
+            "admob_app_id": "ca-app-pub-7014088517639318~7514041741"
+        }
+    ],
+    "configuration_version": "1"
+}

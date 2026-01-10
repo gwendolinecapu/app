@@ -397,11 +397,19 @@ export default function ConversationScreen() {
                         style={[
                             styles.avatar,
                             { backgroundColor: otherAlter?.color || colors.primary },
+                            otherAlter?.avatar_url ? { overflow: 'hidden' } : {}
                         ]}
                     >
-                        <Text style={styles.avatarText}>
-                            {otherAlter?.name?.charAt(0).toUpperCase() || '?'}
-                        </Text>
+                        {otherAlter?.avatar_url ? (
+                            <Image
+                                source={{ uri: otherAlter.avatar_url }}
+                                style={{ width: '100%', height: '100%' }}
+                            />
+                        ) : (
+                            <Text style={styles.avatarText}>
+                                {otherAlter?.name?.charAt(0).toUpperCase() || '?'}
+                            </Text>
+                        )}
                     </View>
                     <View style={styles.headerInfo}>
                         <Text style={styles.headerName}>{otherAlter?.name || 'Conversation'}</Text>

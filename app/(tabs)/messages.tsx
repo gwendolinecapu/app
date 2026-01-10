@@ -1,6 +1,31 @@
+import React, { useState } from 'react';
+import {
+    View,
+    Text,
+    FlatList,
+    TouchableOpacity,
+    StyleSheet,
+    Image
+} from 'react-native';
+import { router } from 'expo-router';
+import { useAuth } from '../../src/contexts/AuthContext';
+import { Alter } from '../../src/types';
+import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { GroupService } from '../../src/services/groups';
+import { FriendService } from '../../src/services/friends';
+import { Ionicons } from '@expo/vector-icons';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../src/lib/firebase';
 import { MessagingService } from '../../src/services/messaging';
 
-// ... existing imports
+interface ConversationItem {
+    id: string;
+    alter: Alter;
+    lastMessage: string;
+    time: string;
+    unread: number;
+}
 
 export default function MessagesScreen() {
     const { alters, currentAlter, system } = useAuth();

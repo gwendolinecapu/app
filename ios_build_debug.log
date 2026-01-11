@@ -1,0 +1,302 @@
+env: load .env
+env: export EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_ANON_KEY EXPO_PUBLIC_RC_IOS_KEY EXPO_PUBLIC_RC_ANDROID_KEY OPENAI_API_KEY
+Unexpected devicectl JSON version output from devicectl. Connecting to physical Apple devices may not work as expected.
+› Using --device 00008130-00110C2214F8001C
+› Auto signing app using team(s): FCM788N656
+› Planning build
+› Preparing Pods/UnityAds-UnityAdsResources » ResourceBundle-UnityAdsResources-UnityAds-Info.plist
+› Preparing expo-image Pods/SDWebImage-SDWebImage » ResourceBundle-SDWebImage-SDWebImage-Info.plist
+› Preparing react-native-purchases-ui Pods/RevenueCat-RevenueCat » ResourceBundle-RevenueCat-RevenueCat-Info.plist
+› Preparing Pods/lottie-ios-LottiePrivacyInfo » ResourceBundle-LottiePrivacyInfo-lottie-ios-Info.plist
+› Preparing Pods/nanopb-nanopb_Privacy » ResourceBundle-nanopb_Privacy-nanopb-Info.plist
+› Preparing Pods/lottie-react-native-Lottie_React_Native_Privacy » ResourceBundle-Lottie_React_Native_Privacy-lottie-react-native-Info.plist
+› Preparing Pods/RNSVG-RNSVGFilters » ResourceBundle-RNSVGFilters-RNSVG-Info.plist
+› Executing react-native Pods/hermes-engine » [CP-User] [Hermes] Replace Hermes for the right configuration, if needed
+› Executing react-native Pods/ReactNativeDependencies » [CP-User] [RNDeps] Replace React Native Dependencies for the right configuration, if needed
+› Preparing expo-image Pods/libwebp » libwebp-Info.plist
+› Preparing expo-image Pods/libdav1d » libdav1d-Info.plist
+› Preparing Pods/React-cxxreact-React-cxxreact_privacy » ResourceBundle-React-cxxreact_privacy-React-cxxreact-Info.plist
+› Preparing Pods/React-Core-React-Core_privacy » ResourceBundle-React-Core_privacy-React-Core-Info.plist
+› Preparing Pods/RNCAsyncStorage-RNCAsyncStorage_resources » ResourceBundle-RNCAsyncStorage_resources-RNCAsyncStorage-Info.plist
+› Preparing @react-native-firebase/analytics Pods/nanopb » nanopb-Info.plist
+› Preparing expo-image Pods/SDWebImage » SDWebImage-Info.plist
+› Preparing react-native-purchases-ui Pods/PurchasesHybridCommon-PurchasesHybridCommon » ResourceBundle-PurchasesHybridCommon-PurchasesHybridCommon-Info.plist
+› Preparing Pods/PromisesObjC-FBLPromises_Privacy » ResourceBundle-FBLPromises_Privacy-PromisesObjC-Info.plist
+› Preparing Pods/GoogleUtilities-GoogleUtilities_Privacy » ResourceBundle-GoogleUtilities_Privacy-GoogleUtilities-Info.plist
+› Preparing Pods/GoogleUserMessagingPlatform-UserMessagingPlatformResources » ResourceBundle-UserMessagingPlatformResources-GoogleUserMessagingPlatform-Info.plist
+› Preparing @react-native-google-signin/google-signin Pods/GoogleSignIn-GoogleSignIn » ResourceBundle-GoogleSignIn-GoogleSignIn-Info.plist
+› Preparing Pods/Google-Mobile-Ads-SDK-GoogleMobileAdsResources » ResourceBundle-GoogleMobileAdsResources-Google-Mobile-Ads-SDK-Info.plist
+› Preparing Pods/GTMSessionFetcher-GTMSessionFetcher_Core_Privacy » ResourceBundle-GTMSessionFetcher_Core_Privacy-GTMSessionFetcher-Info.plist
+› Preparing Pods/RevenueCatUI-RevenueCat_RevenueCatUI » ResourceBundle-RevenueCat_RevenueCatUI-RevenueCatUI-Info.plist
+› Preparing @react-native-google-signin/google-signin Pods/PromisesObjC » PromisesObjC-Info.plist
+› Preparing Pods/GoogleUtilities » GoogleUtilities-Info.plist
+› Preparing Pods/GTMAppAuth-GTMAppAuth_Privacy » ResourceBundle-GTMAppAuth_Privacy-GTMAppAuth-Info.plist
+› Preparing Pods/FirebaseInstallations-FirebaseInstallations_Privacy » ResourceBundle-FirebaseInstallations_Privacy-FirebaseInstallations-Info.plist
+› Preparing Pods/FirebaseCoreInternal-FirebaseCoreInternal_Privacy » ResourceBundle-FirebaseCoreInternal_Privacy-FirebaseCoreInternal-Info.plist
+› Preparing Pods/GTMSessionFetcher » GTMSessionFetcher-Info.plist
+› Preparing Pods/FirebaseCore-FirebaseCore_Privacy » ResourceBundle-FirebaseCore_Privacy-FirebaseCore-Info.plist
+› Preparing Pods/ExpoFileSystem-ExpoFileSystem_privacy » ResourceBundle-ExpoFileSystem_privacy-ExpoFileSystem-Info.plist
+› Preparing Pods/ExpoDevice-ExpoDevice_privacy » ResourceBundle-ExpoDevice_privacy-ExpoDevice-Info.plist
+› Preparing Pods/EXNotifications-ExpoNotifications_privacy » ResourceBundle-ExpoNotifications_privacy-EXNotifications-Info.plist
+› Preparing Pods/EXConstants-ExpoConstants_privacy » ResourceBundle-ExpoConstants_privacy-EXConstants-Info.plist
+› Preparing expo-constants Pods/EXConstants-EXConstants » ResourceBundle-EXConstants-EXConstants-Info.plist
+› Preparing Pods/EXApplication-ExpoApplication_privacy » ResourceBundle-ExpoApplication_privacy-EXApplication-Info.plist
+› Preparing Pods/AppAuth-AppAuthCore_Privacy » ResourceBundle-AppAuthCore_Privacy-AppAuth-Info.plist
+› Preparing @react-native-google-signin/google-signin Pods/AppAuth » AppAuth-Info.plist
+› Preparing lottie-react-native Pods/lottie-ios » lottie-ios-Info.plist
+› Preparing Pods/libavif » libavif-Info.plist
+› Preparing expo-image Pods/SDWebImageWebPCoder » SDWebImageWebPCoder-Info.plist
+› Preparing expo-image Pods/SDWebImageSVGCoder » SDWebImageSVGCoder-Info.plist
+› Preparing react-native-purchases-ui Pods/RevenueCat » RevenueCat-Info.plist
+› Preparing react-native-google-mobile-ads Pods/Google-Mobile-Ads-SDK » Google-Mobile-Ads-SDK-Info.plist
+› Preparing @react-native-google-signin/google-signin Pods/GTMAppAuth » GTMAppAuth-Info.plist
+› Preparing @react-native-firebase/app Pods/FirebaseCoreInternal » FirebaseCoreInternal-Info.plist
+› Preparing @react-native-google-signin/google-signin Pods/AppCheckCore » AppCheckCore-Info.plist
+› Executing react-native Pods/React-Core-prebuilt » [CP-User] [RNDeps] Replace React Native Core for the right configuration, if needed
+› Preparing react-native-purchases-ui Pods/RevenueCatUI » RevenueCatUI-Info.plist
+› Preparing expo-image Pods/SDWebImageAVIFCoder » SDWebImageAVIFCoder-Info.plist
+› Preparing @react-native-google-signin/google-signin Pods/GoogleSignIn » GoogleSignIn-Info.plist
+› Preparing react-native-purchases-ui Pods/PurchasesHybridCommon » PurchasesHybridCommon-Info.plist
+› Preparing @react-native-firebase/app Pods/FirebaseCore » FirebaseCore-Info.plist
+› Preparing react-native-purchases-ui Pods/PurchasesHybridCommonUI » PurchasesHybridCommonUI-Info.plist
+› Preparing @react-native-firebase/analytics Pods/FirebaseInstallations » FirebaseInstallations-Info.plist
+› Preparing @react-native-community/netinfo Pods/react-native-netinfo » react-native-netinfo-Info.plist
+› Preparing @react-native-cookies/cookies Pods/react-native-cookies » react-native-cookies-Info.plist
+› Preparing react-native-purchases Pods/RNPurchases » RNPurchases-Info.plist
+› Preparing @react-native-firebase/app Pods/RNFBApp » RNFBApp-Info.plist
+› Preparing react-native-purchases-ui Pods/RNPaywalls » RNPaywalls-Info.plist
+› Executing react-native Pods/React-RCTFBReactNativeSpec » [CP-User] [RN]Check FBReactNativeSpec
+› Compiling @react-native-firebase/analytics Pods/RNFBAnalytics » RNFBAnalyticsModule.m
+
+❌  (node_modules/@react-native-firebase/analytics/ios/RNFBAnalytics/RNFBAnalyticsModule.h:22:44)
+
+  20 | #import <React/RCTBridgeModule.h>
+  21 | 
+> 22 | @interface RNFBAnalyticsModule : NSObject <RCTBridgeModule>
+     |                                            ^ declaration of 'RCTBridgeModule' must be imported from module 'RNFBApp.RNFBAppModule' before it is required
+  23 | 
+  24 | @end
+  25 | 
+
+
+❌  (node_modules/@react-native-firebase/analytics/ios/RNFBAnalytics/RNFBAnalyticsModule.m:28:1)
+
+  26 | #pragma mark Module Setup
+  27 | 
+> 28 | RCT_EXPORT_MODULE();
+     | ^ type specifier missing, defaults to 'int'; ISO C99 and later do not support implicit int [-Wimplicit-int]
+  29 | 
+  30 | - (dispatch_queue_t)methodQueue {
+  31 |   return dispatch_get_main_queue();
+
+
+❌  (node_modules/@react-native-firebase/analytics/ios/RNFBAnalytics/RNFBAnalyticsModule.m:37:19)
+
+  35 | #pragma mark Firebase Analytics Methods
+  36 | 
+> 37 | RCT_EXPORT_METHOD(logEvent
+     |                   ^ type specifier missing, defaults to 'int'; ISO C99 and later do not support implicit int [-Wimplicit-int]
+  38 |                   : (NSString *)name params
+  39 |                   : (NSDictionary *)params resolver
+  40 |                   : (RCTPromiseResolveBlock)resolve rejecter
+
+
+❌  (node_modules/@react-native-firebase/analytics/ios/RNFBAnalytics/RNFBAnalyticsModule.m:38:19)
+
+  36 | 
+  37 | RCT_EXPORT_METHOD(logEvent
+> 38 |                   : (NSString *)name params
+     |                   ^ expected ')'
+  39 |                   : (NSDictionary *)params resolver
+  40 |                   : (RCTPromiseResolveBlock)resolve rejecter
+  41 |                   : (RCTPromiseRejectBlock)reject) {
+
+
+❌  (node_modules/@react-native-firebase/analytics/ios/RNFBAnalytics/RNFBAnalyticsModule.m:37:1)
+
+  35 | #pragma mark Firebase Analytics Methods
+  36 | 
+> 37 | RCT_EXPORT_METHOD(logEvent
+     | ^ type specifier missing, defaults to 'int'; ISO C99 and later do not support implicit int [-Wimplicit-int]
+  38 |                   : (NSString *)name params
+  39 |                   : (NSDictionary *)params resolver
+  40 |                   : (RCTPromiseResolveBlock)resolve rejecter
+
+
+❌  (node_modules/@react-native-firebase/analytics/ios/RNFBAnalytics/RNFBAnalyticsModule.m:51:19)
+
+  49 | }
+  50 | 
+> 51 | RCT_EXPORT_METHOD(setAnalyticsCollectionEnabled
+     |                   ^ type specifier missing, defaults to 'int'; ISO C99 and later do not support implicit int [-Wimplicit-int]
+  52 |                   : (BOOL)enabled resolver
+  53 |                   : (RCTPromiseResolveBlock)resolve rejecter
+  54 |                   : (RCTPromiseRejectBlock)reject) {
+
+
+❌  (node_modules/@react-native-firebase/analytics/ios/RNFBAnalytics/RNFBAnalyticsModule.m:52:19)
+
+  50 | 
+  51 | RCT_EXPORT_METHOD(setAnalyticsCollectionEnabled
+> 52 |                   : (BOOL)enabled resolver
+     |                   ^ expected ')'
+  53 |                   : (RCTPromiseResolveBlock)resolve rejecter
+  54 |                   : (RCTPromiseRejectBlock)reject) {
+  55 |   @try {
+
+
+❌  (node_modules/@react-native-firebase/analytics/ios/RNFBAnalytics/RNFBAnalyticsModule.m:51:1)
+
+  49 | }
+  50 | 
+> 51 | RCT_EXPORT_METHOD(setAnalyticsCollectionEnabled
+     | ^ type specifier missing, defaults to 'int'; ISO C99 and later do not support implicit int [-Wimplicit-int]
+  52 |                   : (BOOL)enabled resolver
+  53 |                   : (RCTPromiseResolveBlock)resolve rejecter
+  54 |                   : (RCTPromiseRejectBlock)reject) {
+
+
+❌  (node_modules/@react-native-firebase/analytics/ios/RNFBAnalytics/RNFBAnalyticsModule.m:64:19)
+
+  62 | }
+  63 | 
+> 64 | RCT_EXPORT_METHOD(setUserId
+     |                   ^ type specifier missing, defaults to 'int'; ISO C99 and later do not support implicit int [-Wimplicit-int]
+  65 |                   : (NSString *)id resolver
+  66 |                   : (RCTPromiseResolveBlock)resolve rejecter
+  67 |                   : (RCTPromiseRejectBlock)reject) {
+
+
+❌  (node_modules/@react-native-firebase/analytics/ios/RNFBAnalytics/RNFBAnalyticsModule.m:65:19)
+
+  63 | 
+  64 | RCT_EXPORT_METHOD(setUserId
+> 65 |                   : (NSString *)id resolver
+     |                   ^ expected ')'
+  66 |                   : (RCTPromiseResolveBlock)resolve rejecter
+  67 |                   : (RCTPromiseRejectBlock)reject) {
+  68 |   @try {
+
+
+❌  (node_modules/@react-native-firebase/analytics/ios/RNFBAnalytics/RNFBAnalyticsModule.m:64:1)
+
+  62 | }
+  63 | 
+> 64 | RCT_EXPORT_METHOD(setUserId
+     | ^ type specifier missing, defaults to 'int'; ISO C99 and later do not support implicit int [-Wimplicit-int]
+  65 |                   : (NSString *)id resolver
+  66 |                   : (RCTPromiseResolveBlock)resolve rejecter
+  67 |                   : (RCTPromiseRejectBlock)reject) {
+
+
+❌  (node_modules/@react-native-firebase/analytics/ios/RNFBAnalytics/RNFBAnalyticsModule.m:76:19)
+
+  74 | }
+  75 | 
+> 76 | RCT_EXPORT_METHOD(setUserProperty
+     |                   ^ type specifier missing, defaults to 'int'; ISO C99 and later do not support implicit int [-Wimplicit-int]
+  77 |                   : (NSString *)name value
+  78 |                   : (NSString *)value resolver
+  79 |                   : (RCTPromiseResolveBlock)resolve rejecter
+
+
+❌  (node_modules/@react-native-firebase/analytics/ios/RNFBAnalytics/RNFBAnalyticsModule.m:77:19)
+
+  75 | 
+  76 | RCT_EXPORT_METHOD(setUserProperty
+> 77 |                   : (NSString *)name value
+     |                   ^ expected ')'
+  78 |                   : (NSString *)value resolver
+  79 |                   : (RCTPromiseResolveBlock)resolve rejecter
+  80 |                   : (RCTPromiseRejectBlock)reject) {
+
+
+❌  (node_modules/@react-native-firebase/analytics/ios/RNFBAnalytics/RNFBAnalyticsModule.m:76:1)
+
+  74 | }
+  75 | 
+> 76 | RCT_EXPORT_METHOD(setUserProperty
+     | ^ type specifier missing, defaults to 'int'; ISO C99 and later do not support implicit int [-Wimplicit-int]
+  77 |                   : (NSString *)name value
+  78 |                   : (NSString *)value resolver
+  79 |                   : (RCTPromiseResolveBlock)resolve rejecter
+
+
+❌  (node_modules/@react-native-firebase/analytics/ios/RNFBAnalytics/RNFBAnalyticsModule.m:89:19)
+
+  87 | }
+  88 | 
+> 89 | RCT_EXPORT_METHOD(setUserProperties
+     |                   ^ type specifier missing, defaults to 'int'; ISO C99 and later do not support implicit int [-Wimplicit-int]
+  90 |                   : (NSDictionary *)properties resolver
+  91 |                   : (RCTPromiseResolveBlock)resolve rejecter
+  92 |                   : (RCTPromiseRejectBlock)reject) {
+
+
+❌  (node_modules/@react-native-firebase/analytics/ios/RNFBAnalytics/RNFBAnalyticsModule.m:90:19)
+
+  88 | 
+  89 | RCT_EXPORT_METHOD(setUserProperties
+> 90 |                   : (NSDictionary *)properties resolver
+     |                   ^ expected ')'
+  91 |                   : (RCTPromiseResolveBlock)resolve rejecter
+  92 |                   : (RCTPromiseRejectBlock)reject) {
+  93 |   @try {
+
+
+❌  (node_modules/@react-native-firebase/analytics/ios/RNFBAnalytics/RNFBAnalyticsModule.m:89:1)
+
+  87 | }
+  88 | 
+> 89 | RCT_EXPORT_METHOD(setUserProperties
+     | ^ type specifier missing, defaults to 'int'; ISO C99 and later do not support implicit int [-Wimplicit-int]
+  90 |                   : (NSDictionary *)properties resolver
+  91 |                   : (RCTPromiseResolveBlock)resolve rejecter
+  92 |                   : (RCTPromiseRejectBlock)reject) {
+
+
+❌  (node_modules/@react-native-firebase/analytics/ios/RNFBAnalytics/RNFBAnalyticsModule.m:103:19)
+
+  101 | }
+  102 | 
+> 103 | RCT_EXPORT_METHOD(resetAnalyticsData
+      |                   ^ type specifier missing, defaults to 'int'; ISO C99 and later do not support implicit int [-Wimplicit-int]
+  104 |                   : (RCTPromiseResolveBlock)resolve rejecter
+  105 |                   : (RCTPromiseRejectBlock)reject) {
+  106 |   @try {
+
+
+❌  (node_modules/@react-native-firebase/analytics/ios/RNFBAnalytics/RNFBAnalyticsModule.m:104:19)
+
+  102 | 
+  103 | RCT_EXPORT_METHOD(resetAnalyticsData
+> 104 |                   : (RCTPromiseResolveBlock)resolve rejecter
+      |                   ^ expected ')'
+  105 |                   : (RCTPromiseRejectBlock)reject) {
+  106 |   @try {
+  107 |     [FIRAnalytics resetAnalyticsData];
+
+
+❌  fatal error: too many errors emitted, stopping now [-ferror-limit=]
+
+
+› Preparing app Pods/ReactCodegen » ReactCodegen-Info.plist
+› Preparing @react-native-firebase/analytics Pods/RNFBAnalytics » RNFBAnalytics-Info.plist
+› Compiling app Pods/ReactCodegen » safeareacontextJSI-generated.cpp
+› Compiling app Pods/ReactCodegen » safeareacontext-generated.mm
+› Compiling app Pods/ReactCodegen » rnworklets-generated.mm
+› Compiling app Pods/ReactCodegen » rnworkletsJSI-generated.cpp
+› Compiling app Pods/ReactCodegen » rnviewshotJSI-generated.cpp
+› Compiling app Pods/ReactCodegen » rnviewshot-generated.mm
+› Compiling app Pods/ReactCodegen » rnsvgJSI-generated.cpp
+› Compiling app Pods/ReactCodegen » rnsvg-generated.mm
+    Run script build phase 'Create Symlinks to Header Folders' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'RNReanimated' from project 'Pods')
+    Run script build phase 'Create Symlinks to Header Folders' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'RNWorklets' from project 'Pods')
+    Run script build phase '[CP-User] [RNFB] Core Configuration' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'PluralConnect' from project 'PluralConnect')
+    Run script build phase '[CP-User] [RNGoogleMobileAds] Configuration' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'PluralConnect' from project 'PluralConnect')
+    Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
+    Run script build phase 'Create Symlinks to Header Folders' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'ReactCodegen' from project 'Pods')
+
+› 20 error(s), and 6 warning(s)
+
+CommandError: Failed to build iOS project. "xcodebuild" exited with error code 65.

@@ -3,13 +3,29 @@
  * 
  * Custom hook for local AI summarization using expo-llm-mediapipe (Gemma).
  * Provides model download, loading, and text generation with progress tracking.
+ * 
+ * NOTE: Requires a development build. Not available in Expo Go.
  */
 
 import { useState, useCallback } from 'react';
-import { useLLM } from 'expo-llm-mediapipe';
 import { NativeModules, Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 const { LocalAI } = NativeModules;
+
+// Check if we're in Expo Go (native modules not available)
+const isExpoGo = Constants.appOwnership === 'expo';
+
+// Conditionally import expo-llm-mediapipe only in dev builds
+let useLLM: any = null;
+if (!isExpoGo) {
+    try {
+        const mediapipe = require('expo-llm-mediapipe');
+        useLLM = mediapipe.useLLM;
+    } catch (e) {
+        console.warn('[useLocalAI] expo-llm-mediapipe not available:', e);
+    }
+}
 
 // ============================================
 // Types
@@ -60,12 +76,12 @@ export function useLocalAI() {
         isLoading: false,
         isGenerating: false,
         downloadProgress: 0,
-        provider: 'mock',
-        error: null,
+        provider: isExpoGo ? 'mock' : 'gemma',
+        error: isExpoGo ? 'Expo Go detected - native AI unavailable' : null,
     });
 
-    // Initialize expo-llm-mediapipe
-    const llm = useLLM(MODEL_CONFIG);
+    // Initialize expo-llm-mediapipe (only if available)
+    const llm = useLLM ? useLLM(MODEL_CONFIG) : null;
 
     // ============================================
     // Check Native AI Availability
@@ -90,6 +106,10 @@ export function useLocalAI() {
     // ============================================
 
     const downloadModel = useCallback(async () => {
+        if (isExpoGo || !llm) {
+            throw new Error('Téléchargement non disponible dans Expo Go. Utilisez un development build.');
+        }
+
         setStatus(prev => ({ ...prev, isDownloading: true, error: null, downloadProgress: 0 }));
 
         try {
@@ -128,6 +148,10 @@ export function useLocalAI() {
     // ============================================
 
     const loadModel = useCallback(async () => {
+        if (isExpoGo || !llm) {
+            throw new Error('Chargement non disponible dans Expo Go. Utilisez un development build.');
+        }
+
         setStatus(prev => ({ ...prev, isLoading: true, error: null }));
 
         try {
@@ -158,6 +182,14 @@ export function useLocalAI() {
     ): Promise<SummaryResult> => {
         const periodLabel = period === 'day' ? 'journée' : period === 'week' ? 'semaine' : 'mois';
 
+        // 0. If Expo Go, use mock immediately
+        if (isExpoGo) {
+            return {
+                summary: await mockSummarize(content, periodLabel),
+                provider: 'mock',
+            };
+        }
+
         // 1. Try Native AI first (Apple Intelligence / Gemini Nano)
         const nativeProvider = await checkNativeAvailability();
         if (nativeProvider && LocalAI) {
@@ -170,7 +202,7 @@ export function useLocalAI() {
         }
 
         // 2. Use Gemma via expo-llm-mediapipe
-        if (status.isModelLoaded) {
+        if (status.isModelLoaded && llm) {
             setStatus(prev => ({ ...prev, isGenerating: true }));
 
             try {

@@ -215,7 +215,7 @@ export const AIWorkflows = {
 
         const googleApiKey = process.env.GOOGLE_AI_API_KEY;
         if (!googleApiKey) throw new Error("Missing GOOGLE_AI_API_KEY");
-        const llmProvider = new GeminiProvider(googleApiKey, 'gemini-1.5-flash');
+        const llmProvider = new GeminiProvider(googleApiKey, 'gemini-2.5-flash');
 
         const response = await llmProvider.chat(messages, { systemInstruction: systemPrompt });
 
@@ -223,7 +223,7 @@ export const AIWorkflows = {
             message: response,
             metadata: {
                 providerUsed: 'gemini-direct',
-                model: 'gemini-1.5-flash'
+                model: 'gemini-2.5-flash'
             }
         };
     }

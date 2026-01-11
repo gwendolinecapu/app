@@ -38,6 +38,12 @@ export class BytePlusProvider {
             }
         }
 
+        // 🔍 LOG: Payload exact envoyé à BytePlus API
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('📡 [BYTEPLUS] Payload envoyé à l\'API:');
+        console.log(JSON.stringify(payload, null, 2).substring(0, 1000)); // Tronqué pour éviter les logs trop longs avec base64
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
         const response = await fetch(this.endpoint, {
             method: 'POST',
             headers: {

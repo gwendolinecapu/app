@@ -11,7 +11,7 @@ const { LocalAI } = NativeModules;
 const MODEL_ID = 'gemma-3n-e2b-it';
 const MODEL_STORAGE_KEY = '@local_ai_model_installed';
 // Helper getters for model paths (documentDirectory can be null on web)
-const getModelDir = () => `${FileSystem.documentDirectory || ''}models/`;
+const getModelDir = () => `${(FileSystem as any).documentDirectory || ''}models/`;
 const getModelFile = () => `${getModelDir()}${MODEL_ID}.onnx`;
 
 // Hugging Face model URL (ONNX quantized version)

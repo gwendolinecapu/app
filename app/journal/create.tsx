@@ -29,12 +29,17 @@ const MOODS: EmotionType[] = [
     'tired', 'calm', 'confused', 'excited'
 ];
 
+import { useLocalSearchParams } from 'expo-router';
+
 export default function CreateJournalEntryScreen() {
     const { currentAlter, system } = useAuth();
+    const params = useLocalSearchParams();
+    const defaultVisibility = params.defaultVisibility as 'private' | 'public' | undefined;
+
     const [title, setTitle] = useState('');
     const { draft: content, setDraft: setContent, clearDraft, isLoaded } = useDrafts('journal_entry_draft');
     const [selectedMood, setSelectedMood] = useState<EmotionType | null>(null);
-    const [isLocked, setIsLocked] = useState(false);
+    const [isLocked, setIsLocked] = useState(defaultVisibility === 'private'); // Default to locked if private tab
     const [loading, setLoading] = useState(false);
 
     const handleSave = async () => {
@@ -43,26 +48,24 @@ export default function CreateJournalEntryScreen() {
             return;
         }
 
-        if (!currentAlter) {
-            Alert.alert('Erreur', 'Aucun alter sélectionné');
-            return;
-        }
-
-        if (!system) {
-            Alert.alert('Erreur', 'Système non identifié');
+        if (!currentAlter || !system) {
+            Alert.alert('Erreur', 'Session invalide');
             return;
         }
 
         setLoading(true);
         try {
+            const visibility = isLocked ? 'private' : 'public';
+
             // IMPORTANT: system_id est requis par les règles Firestore pour les permissions
             const newEntry = {
-                system_id: system.id, // Requis pour les règles de sécurité
+                system_id: system.id,
                 alter_id: currentAlter.id,
                 title: title.trim() || null,
                 content: content.trim(),
                 mood: selectedMood,
                 is_locked: isLocked,
+                visibility: visibility, // New field
                 is_audio: false,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
@@ -188,13 +191,43 @@ export default function CreateJournalEntryScreen() {
 
                     {/* Options */}
                     <View style={styles.optionsSection}>
+                        {/* Visibility Selector */}
                         <View style={styles.optionRow}>
                             <View style={styles.optionInfo}>
-                                <Text style={styles.optionEmoji}>🔒</Text>
+                                <Text style={styles.optionEmoji}>
+                                    {isLocked ? '🔒' : (
+                                        // If locked, it forces private anyway, but let's show Public icon if not locked
+                                        '🌍'
+                                    )}
+                                </Text>
                                 <View>
-                                    <Text style={styles.optionLabel}>Verrouiller</Text>
+                                    <Text style={styles.optionLabel}>Visibilité IA</Text>
                                     <Text style={styles.optionHint}>
-                                        Masquer le contenu dans la liste
+                                        {isLocked
+                                            ? "Forcé en Privé (Verrouillé)"
+                                            : "Journal de bord (Public pour l'IA)"}
+                                    </Text>
+                                </View>
+                            </View>
+                            <Switch
+                                value={!isLocked} // "Public" is ON, but we map it to visibility state
+                                onValueChange={(val) => {
+                                    if (val) setIsLocked(false); // If turning ON public, unlock
+                                    // Logic handled in state
+                                }}
+                                disabled={isLocked} // If locked, can't toggle to public easily without unlocking first
+                                trackColor={{ false: colors.border, true: colors.secondary || '#6B40E2' }}
+                                thumbColor={colors.text}
+                            />
+                        </View>
+
+                        <View style={[styles.optionRow, { borderTopWidth: 1, borderTopColor: colors.border }]}>
+                            <View style={styles.optionInfo}>
+                                <Text style={styles.optionEmoji}>🔑</Text>
+                                <View>
+                                    <Text style={styles.optionLabel}>Verrouiller (Privé)</Text>
+                                    <Text style={styles.optionHint}>
+                                        Chiffré & exclu de l'IA
                                     </Text>
                                 </View>
                             </View>
@@ -211,7 +244,7 @@ export default function CreateJournalEntryScreen() {
                     <View style={styles.alterInfo}>
                         <View style={[styles.alterDot, { backgroundColor: currentAlter.color }]} />
                         <Text style={styles.alterInfoText}>
-                            Cette entrée sera enregistrée pour {currentAlter.name}
+                            Entrée {isLocked ? 'Privée' : 'Publique (IA)'} pour {currentAlter.name}
                         </Text>
                     </View>
                 </ScrollView>

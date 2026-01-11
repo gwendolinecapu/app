@@ -5,10 +5,11 @@ let AdsConsent: any;
 let AdsConsentStatus: any;
 
 try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mobileAds = require('react-native-google-mobile-ads');
     AdsConsent = mobileAds.AdsConsent;
     AdsConsentStatus = mobileAds.AdsConsentStatus;
-} catch (e) {
+} catch {
     console.warn('[ConsentService] Google Mobile Ads native module not found. Consent features will be disabled.');
     AdsConsent = {
         requestInfoUpdate: async () => ({ isConsentFormAvailable: false, status: 'UNKNOWN' }),

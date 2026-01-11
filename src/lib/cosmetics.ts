@@ -1,6 +1,6 @@
-import { StyleSheet, ViewStyle, TextStyle, ImageSourcePropType } from 'react-native';
+import { ViewStyle, TextStyle, ImageSourcePropType } from 'react-native';
 import { COSMETIC_ITEMS, ShopItem } from '../services/MonetizationTypes';
-import { colors, borderRadius } from './theme';
+import { colors } from './theme';
 
 // ==================== HELPERS ====================
 
@@ -252,7 +252,7 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
 
     if (!frameId || frameId === 'frame_default') return defaultStyle;
 
-    const item = getCosmeticItem(frameId);
+
 
     switch (frameId) {
         case 'frame_default':

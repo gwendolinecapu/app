@@ -43,7 +43,7 @@ export const formatRelativeTime = (dateString: string | number | Date | any): st
             .replace('mois', 'mo')
             .replace('années', 'an')
             .replace('année', 'an');
-    } catch (error) {
+    } catch {
         return 'récemment';
     }
 };

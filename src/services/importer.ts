@@ -1,6 +1,6 @@
-import { collection, addDoc, query, where, getDocs, Timestamp, writeBatch, doc } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, writeBatch, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Alter, FrontingEntry } from '../types';
+import { Alter } from '../types';
 
 export interface ImportResult {
     altersCreated: number;

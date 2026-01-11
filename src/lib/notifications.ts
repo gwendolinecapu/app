@@ -28,7 +28,6 @@ export const SUPPORT_MESSAGES = [
 ];
 
 export async function registerForPushNotificationsAsync() {
-    let token;
     let finalStatus; // Moved declaration to a higher scope
 
     if (Platform.OS === 'android') {

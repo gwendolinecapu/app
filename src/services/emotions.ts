@@ -270,7 +270,7 @@ export const EmotionService = {
     getEmotionsDistribution: async function (alterId: string, daysOrStartDate: number | Date = 30, endDate?: Date): Promise<{ type: EmotionType; label: string; count: number; percentage: number }[]> {
         const emotions = await this.getEmotionsHistory(alterId, daysOrStartDate, endDate);
 
-        const EMOTION_LABELS_MAP = await import('../types').then(m => m.EMOTION_LABELS);
+
 
         // Use the map or fallback. Note: imported map is better.
         // Actually, best to just use the one from types if available globally or import it at top of file.

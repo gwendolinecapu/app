@@ -7,9 +7,7 @@ import {
     query,
     where,
     getDocs,
-    serverTimestamp,
-    orderBy,
-    Timestamp
+    orderBy
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { HelpRequest } from '../types';

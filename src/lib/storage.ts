@@ -29,7 +29,7 @@ export const storage = {
             const value = await AsyncStorage.getItem(KEYS.HAS_BIOMETRICS_ENABLED);
             // Default to true if not set (first launch with feature existing)
             return value !== 'false';
-        } catch (e) {
+        } catch {
             return false;
         }
     },

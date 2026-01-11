@@ -1,8 +1,9 @@
 // Safely import CookieManager to avoid crashes in Expo Go or if native module is missing
 let CookieManager: any;
 try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     CookieManager = require('@react-native-cookies/cookies').default;
-} catch (error) {
+} catch {
     console.warn('[SocialSessionService] CookieManager native module not found. Session management will be disabled.');
     // Mock implementation to prevent crashes
     CookieManager = {

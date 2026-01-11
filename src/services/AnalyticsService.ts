@@ -5,9 +5,10 @@ import { Platform } from 'react-native';
 // Optional: Import natif conditionnel pour éviter le crash "RNFBAppModule not found"
 let analytics: any = null;
 try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const analyticsModule = require('@react-native-firebase/analytics');
     analytics = analyticsModule.default;
-} catch (e) {
+} catch {
     console.warn('[AnalyticsService] Firebase Analytics native module not found. Analytics disabled.');
 }
 

@@ -12,6 +12,7 @@ import 'firebase/compat/storage';
 
 // Import Modular types for exports
 import { getAuth, initializeAuth } from 'firebase/auth';
+
 import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
@@ -45,11 +46,12 @@ if (Platform.OS === 'web') {
     // Native: Use modular auth with persistence
     try {
         // Explicitly try to initialize with React Native Persistence first
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
         const { getReactNativePersistence } = require('firebase/auth');
         auth = initializeAuth(app, {
             persistence: getReactNativePersistence(AsyncStorage)
         });
-    } catch (e: any) {
+    } catch {
         // If already initialized (e.g. by compat), get the existing instance
         // Note: use compat/auth imports might auto-init without persistence, 
         // so strictly speaking we prefer the above to succeed first.

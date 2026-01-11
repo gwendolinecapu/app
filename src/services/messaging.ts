@@ -59,7 +59,7 @@ export const MessagingService = {
             );
             const snapshot = await getDocs(q);
             return snapshot.size;
-        } catch (error) {
+        } catch {
             return 0;
         }
     }

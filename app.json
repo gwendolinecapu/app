@@ -142,7 +142,8 @@
             "useFrameworks": "static"
           }
         }
-      ]
+      ],
+      "expo-llm-mediapipe"
     ],
     "experiments": {
       "typedRoutes": true

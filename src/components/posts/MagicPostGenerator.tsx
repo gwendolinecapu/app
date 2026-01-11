@@ -185,13 +185,16 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
                 isBodySwap: !!sceneImageUri
             });
 
-            if (result.data.success && (result.data.images || result.data.imageUrl)) {
-                // Support both legacy single 'imageUrl' and new 'images' array
-                const images = result.data.images || [result.data.imageUrl];
-                setGeneratedImages(images);
+            // New structure returns { images: [...], magicPrompt: "...", metadata: {...} }
+            if (result.data && result.data.images && result.data.images.length > 0) {
+                setGeneratedImages(result.data.images);
+                setSelectedResultIndex(0);
+            } else if (result.data && result.data.imageUrl) {
+                // Legacy single image support
+                setGeneratedImages([result.data.imageUrl]);
                 setSelectedResultIndex(0);
             } else {
-                throw new Error(result.data.error || "Génération échouée");
+                throw new Error(result.data?.error || "Génération échouée");
             }
 
         } catch (err: any) {

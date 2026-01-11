@@ -19,9 +19,11 @@ import { db } from '../../src/lib/firebase';
 import { collection, query, where, getDocs, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { JournalEntry, EmotionType, EMOTION_EMOJIS } from '../../src/types';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, startOfDay, startOfWeek, startOfMonth, isAfter } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { SecureContainer } from '../../src/components/security/SecureContainer';
+
+type SummaryPeriod = 'day' | 'week' | 'month';
 
 import { SummaryModal } from '../../src/components/journal/SummaryModal';
 
@@ -159,9 +161,34 @@ export default function JournalScreen() {
         </TouchableOpacity>
     );
 
-    const getAggregatedContentForAI = () => {
-        // Concatenate all text from current list for the summary
-        return entries
+    /**
+     * Get entries filtered by period for AI summarization.
+     * Only includes PUBLIC entries (Journal de Bord).
+     */
+    const getEntriesForPeriod = (period: SummaryPeriod): string => {
+        const now = new Date();
+        let startDate: Date;
+
+        switch (period) {
+            case 'day':
+                startDate = startOfDay(now);
+                break;
+            case 'week':
+                startDate = startOfWeek(now, { weekStartsOn: 1 }); // Monday
+                break;
+            case 'month':
+                startDate = startOfMonth(now);
+                break;
+        }
+
+        // Filter PUBLIC entries within the period
+        const filtered = entries.filter(e => {
+            const entryDate = new Date(e.created_at);
+            const visibility = e.visibility || 'private';
+            return visibility === 'public' && isAfter(entryDate, startDate);
+        });
+
+        return filtered
             .map(e => `[${formatDate(e.created_at)}] ${e.content}`)
             .join('\n\n');
     };
@@ -273,7 +300,7 @@ export default function JournalScreen() {
                 <SummaryModal
                     visible={summaryModalVisible}
                     onClose={() => setSummaryModalVisible(false)}
-                    entryContent={getAggregatedContentForAI()}
+                    getEntriesForPeriod={getEntriesForPeriod}
                 />
             </SafeAreaView>
         </SecureContainer>

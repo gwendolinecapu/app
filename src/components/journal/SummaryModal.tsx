@@ -12,13 +12,11 @@ import {
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
-import { LocalAIService, ModelStatus, AIProvider } from '../../services/LocalAIService';
+import { useLocalAI, AIProvider, SummaryPeriod } from '../../hooks/useLocalAI';
 
 // ============================================
 // Types
 // ============================================
-
-type SummaryPeriod = 'day' | 'week' | 'month';
 
 interface SummaryModalProps {
     visible: boolean;
@@ -35,7 +33,7 @@ const PERIOD_LABELS: Record<SummaryPeriod, string> = {
 const PROVIDER_BADGES: Record<AIProvider, { label: string; icon: string }> = {
     apple: { label: 'Apple Intelligence', icon: '🍎' },
     gemini: { label: 'Gemini Nano', icon: '⚡' },
-    gemma: { label: 'Gemma 3n', icon: '🤖' },
+    gemma: { label: 'Gemma 2B', icon: '🤖' },
     mock: { label: 'Mode Test', icon: '🧪' },
 };
 
@@ -48,40 +46,27 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
     onClose,
     getEntriesForPeriod,
 }) => {
-    const [status, setStatus] = useState<ModelStatus | null>(null);
+    const localAI = useLocalAI();
     const [period, setPeriod] = useState<SummaryPeriod>('day');
-    const [loading, setLoading] = useState(false);
-    const [downloading, setDownloading] = useState(false);
-    const [downloadProgress, setDownloadProgress] = useState(0);
     const [summary, setSummary] = useState<string | null>(null);
     const [provider, setProvider] = useState<AIProvider | null>(null);
 
-    // Check AI status when modal opens
+    // Reset when modal opens
     useEffect(() => {
         if (visible) {
-            checkStatus();
+            setSummary(null);
+            setProvider(null);
         }
     }, [visible]);
 
-    const checkStatus = async () => {
-        const modelStatus = await LocalAIService.getStatus();
-        setStatus(modelStatus);
-    };
-
     const handleDownloadModel = async () => {
-        setDownloading(true);
-        setDownloadProgress(0);
-
         try {
-            await LocalAIService.downloadModel((progress) => {
-                setDownloadProgress(progress);
-            });
-            await checkStatus();
-            Alert.alert('✅ Succès', 'Le modèle IA a été installé avec succès !');
-        } catch (error) {
-            Alert.alert('Erreur', 'Échec du téléchargement. Vérifie ta connexion.');
-        } finally {
-            setDownloading(false);
+            await localAI.downloadModel();
+            Alert.alert('✅ Modèle téléchargé', 'Chargement en mémoire...');
+            await localAI.loadModel();
+            Alert.alert('✅ Prêt', 'L\'IA locale est prête à utiliser !');
+        } catch (error: any) {
+            Alert.alert('Erreur', error.message || 'Échec du téléchargement.');
         }
     };
 
@@ -96,15 +81,12 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
             return;
         }
 
-        setLoading(true);
         try {
-            const result = await LocalAIService.summarize(content, period);
+            const result = await localAI.summarize(content, period);
             setSummary(result.summary);
             setProvider(result.provider);
         } catch (error: any) {
             Alert.alert('Erreur IA', error.message || 'Impossible de générer le résumé.');
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -112,24 +94,6 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
         setSummary(null);
         setProvider(null);
         onClose();
-    };
-
-    const handleDeleteModel = () => {
-        Alert.alert(
-            'Supprimer le modèle IA ?',
-            `Cela libérera ~${LocalAIService.getModelSizeMB()}MB d'espace.`,
-            [
-                { text: 'Annuler', style: 'cancel' },
-                {
-                    text: 'Supprimer',
-                    style: 'destructive',
-                    onPress: async () => {
-                        await LocalAIService.deleteModel();
-                        await checkStatus();
-                    },
-                },
-            ]
-        );
     };
 
     // ============================================
@@ -157,41 +121,28 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
             <Ionicons name="cloud-download-outline" size={48} color={colors.primary} />
             <Text style={styles.downloadTitle}>Installer l'IA locale</Text>
             <Text style={styles.downloadSubtitle}>
-                Télécharge le modèle Gemma 3n (~{LocalAIService.getModelSizeMB()}MB) pour générer des résumés directement sur ton appareil.
+                Télécharge le modèle Gemma 2B (~{localAI.modelSizeMB}MB) pour générer des résumés directement sur ton appareil.
             </Text>
             <Text style={styles.privacyNote}>
                 🔒 100% local, tes données restent privées
             </Text>
 
-            {downloading ? (
+            {localAI.status.isDownloading ? (
                 <View style={styles.progressContainer}>
                     <View style={styles.progressBar}>
-                        <View style={[styles.progressFill, { width: `${downloadProgress}%` }]} />
+                        <View style={[styles.progressFill, { width: `${localAI.status.downloadProgress}%` }]} />
                     </View>
-                    <Text style={styles.progressText}>{downloadProgress}%</Text>
+                    <Text style={styles.progressText}>{localAI.status.downloadProgress}%</Text>
+                </View>
+            ) : localAI.status.isLoading ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="small" color={colors.primary} />
+                    <Text style={styles.loadingText}>Chargement du modèle...</Text>
                 </View>
             ) : (
                 <TouchableOpacity style={styles.downloadButton} onPress={handleDownloadModel}>
                     <Ionicons name="download" size={20} color={colors.text} />
-                    <Text style={styles.downloadButtonText}>Installer (~{LocalAIService.getModelSizeMB()}MB)</Text>
-                </TouchableOpacity>
-            )}
-        </View>
-    );
-
-    const renderSummaryResult = () => (
-        <View style={styles.summaryContainer}>
-            {provider && (
-                <View style={styles.providerBadge}>
-                    <Text style={styles.providerIcon}>{PROVIDER_BADGES[provider].icon}</Text>
-                    <Text style={styles.providerLabel}>{PROVIDER_BADGES[provider].label}</Text>
-                </View>
-            )}
-            <Text style={styles.summaryText}>{summary}</Text>
-
-            {status?.provider === 'gemma' && (
-                <TouchableOpacity style={styles.deleteLink} onPress={handleDeleteModel}>
-                    <Text style={styles.deleteLinkText}>Libérer l'espace (~{LocalAIService.getModelSizeMB()}MB)</Text>
+                    <Text style={styles.downloadButtonText}>Installer (~{localAI.modelSizeMB}MB)</Text>
                 </TouchableOpacity>
             )}
         </View>
@@ -209,11 +160,24 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
         </View>
     );
 
+    const renderSummaryResult = () => (
+        <View style={styles.summaryContainer}>
+            {provider && (
+                <View style={styles.providerBadge}>
+                    <Text style={styles.providerIcon}>{PROVIDER_BADGES[provider].icon}</Text>
+                    <Text style={styles.providerLabel}>{PROVIDER_BADGES[provider].label}</Text>
+                </View>
+            )}
+            <Text style={styles.summaryText}>{summary}</Text>
+        </View>
+    );
+
     // ============================================
     // Main Render
     // ============================================
 
-    const needsDownload = status && !status.isInstalled && status.provider !== 'mock';
+    const needsDownload = !localAI.status.isModelLoaded && !__DEV__;
+    const isProcessing = localAI.status.isDownloading || localAI.status.isLoading || localAI.status.isGenerating;
 
     return (
         <Modal
@@ -252,8 +216,13 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
 
                     {/* Footer */}
                     <View style={styles.footer}>
-                        {loading ? (
-                            <ActivityIndicator size="large" color={colors.primary} />
+                        {isProcessing ? (
+                            <View style={styles.processingContainer}>
+                                <ActivityIndicator size="large" color={colors.primary} />
+                                <Text style={styles.processingText}>
+                                    {localAI.status.isGenerating ? 'Génération en cours...' : 'Préparation...'}
+                                </Text>
+                            </View>
                         ) : summary ? (
                             <TouchableOpacity style={styles.doneButton} onPress={handleClose}>
                                 <Text style={styles.doneButtonText}>Terminé</Text>
@@ -431,6 +400,16 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: spacing.xs,
     },
+    loadingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: spacing.lg,
+        gap: spacing.sm,
+    },
+    loadingText: {
+        ...typography.body,
+        color: colors.textSecondary,
+    },
     // Summary
     summaryContainer: {
         backgroundColor: colors.background,
@@ -457,23 +436,21 @@ const styles = StyleSheet.create({
         color: colors.text,
         lineHeight: 24,
     },
-    deleteLink: {
-        marginTop: spacing.md,
-        paddingTop: spacing.sm,
-        borderTopWidth: 1,
-        borderTopColor: colors.border,
-    },
-    deleteLinkText: {
-        ...typography.caption,
-        color: colors.textMuted,
-        textDecorationLine: 'underline',
-    },
     // Footer
     footer: {
         padding: spacing.md,
         borderTopWidth: 1,
         borderTopColor: colors.border,
         alignItems: 'center',
+    },
+    processingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+    },
+    processingText: {
+        ...typography.body,
+        color: colors.textSecondary,
     },
     generateButton: {
         flexDirection: 'row',

@@ -9,11 +9,9 @@ import {
     updateDoc,
     deleteDoc,
     serverTimestamp,
-    getDoc,
-    setDoc
+    getDoc
 } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
-import { Alter } from '../types';
 
 export type FriendRequestStatus = 'pending' | 'accepted' | 'rejected';
 
@@ -171,7 +169,7 @@ export const FriendService = {
                 if (receiverDoc.exists()) {
                     senderName = receiverDoc.data().name;
                 }
-            } catch (e) { }
+            } catch { }
 
             await addDoc(collection(db, 'notifications'), {
                 recipientId: senderId, // The sender of the request

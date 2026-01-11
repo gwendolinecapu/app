@@ -1,8 +1,7 @@
 import Purchases, {
     PurchasesOffering,
     PurchasesPackage,
-    CustomerInfo,
-    LOG_LEVEL
+    CustomerInfo
 } from 'react-native-purchases';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import { Platform, LogBox } from 'react-native';

@@ -174,7 +174,7 @@ class DynamicIslandService {
             const stored = await AsyncStorage.getItem(STORAGE_KEY);
             // Par défaut activé si disponible
             return stored ? JSON.parse(stored) : true;
-        } catch (error) {
+        } catch {
             return true;
         }
     }

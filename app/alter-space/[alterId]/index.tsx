@@ -237,7 +237,7 @@ export default function AlterSpaceScreen() {
                                     onFriendAction={handleFriendAction}
                                     onFollowersPress={() => setShowFollowersModal(true)}
                                     onFollowingPress={() => setShowFollowingModal(true)}
-                                    onFollowingPress={() => setShowFollowingModal(true)}
+
                                     themeColors={themeColors}
                                     friendIds={friendIds}
                                     onAvatarPress={() => {

@@ -9,11 +9,11 @@
  * react-native-google-mobile-ads nécessite un build natif
  */
 
-import { Platform, NativeModules } from 'react-native';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import AnalyticsService from './AnalyticsService';
 import {
-    AdType,
     AdNetwork,
     RewardResult,
     NativeAdData,
@@ -29,8 +29,6 @@ import {
 // =====================================================
 const isExpoGo = Constants.appOwnership === 'expo';
 
-import AnalyticsService from './AnalyticsService';
-
 // Declare types for AdMob to avoid TS errors
 let mobileAds: any = null;
 let RewardedAd: any = null;
@@ -41,6 +39,7 @@ let AdEventType: any = { ERROR: '', PAID: '' };
 if (!isExpoGo) {
     try {
         // Only import in native builds
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const AdMobModule = require('react-native-google-mobile-ads');
         mobileAds = AdMobModule.default;
         RewardedAd = AdMobModule.RewardedAd;

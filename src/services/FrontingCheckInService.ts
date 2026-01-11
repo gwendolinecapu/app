@@ -130,7 +130,7 @@ class FrontingCheckInService {
                 quietHoursStart: 22,
                 quietHoursEnd: 8,
             };
-        } catch (error) {
+        } catch {
             return { enabled: true, intervalHours: DEFAULT_INTERVAL_HOURS };
         }
     }
@@ -146,7 +146,7 @@ class FrontingCheckInService {
         await this.cancelAllCheckIns();
 
         // Calculer le prochain trigger
-        const trigger = this.calculateNextTriggerTime(settings);
+        this.calculateNextTriggerTime(settings);
 
         try {
             // Planifier la notification récurrente

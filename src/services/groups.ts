@@ -14,7 +14,7 @@ import {
     onSnapshot
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Group, GroupMember, Message } from '../types';
+import { Group, Message } from '../types';
 
 export const GroupService = {
     /**
@@ -300,7 +300,7 @@ export const GroupService = {
             } else {
                 await deleteDoc(typingRef);
             }
-        } catch (error) {
+        } catch {
             // Silencieux pour ne pas spammer les logs si erreur mineure réseau
         }
     },

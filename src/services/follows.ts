@@ -8,7 +8,6 @@ import {
     collection,
     doc,
     setDoc,
-    deleteDoc,
     getDocs,
     getDoc,
     query,
@@ -17,7 +16,6 @@ import {
     limit,
     increment,
     updateDoc,
-    serverTimestamp,
     writeBatch,
     addDoc,
 } from 'firebase/firestore';

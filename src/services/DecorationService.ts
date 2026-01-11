@@ -10,13 +10,10 @@ import {
     DecorationType,
     DecorationRarity,
     DECORATION_PRICES,
-    RARITY_COLORS,
     COSMETIC_ITEMS,
     ShopItem,
 } from './MonetizationTypes';
 import CreditService from './CreditService';
-
-const FIRESTORE_COLLECTION = 'user_monetization';
 
 // ==================== CATALOGUE DE DÉCORATIONS ====================
 

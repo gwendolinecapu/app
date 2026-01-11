@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
-import { JobsService } from '../services/JobsService'; // Though not strictly used if we just update directly, but for consistency
+
 import { BillingUtils } from '../../utils/billing';
 
 export const retryAIJob = functions.runWith({
@@ -24,7 +24,7 @@ export const retryAIJob = functions.runWith({
             throw new functions.https.HttpsError('not-found', 'Job not found');
 
         const job = jobDoc.data();
-        if (job?.userId !== context.auth.uid) {
+        if (job?.userId !== context.auth!.uid) {
             throw new functions.https.HttpsError('permission-denied', 'Not your job');
         }
 

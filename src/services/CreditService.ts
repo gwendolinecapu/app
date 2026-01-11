@@ -3,7 +3,7 @@
  * Gestion des crédits virtuels (gains, dépenses, historique)
  */
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import {
     doc,
     getDoc,
@@ -23,12 +23,10 @@ import {
     CreditTransaction,
     CreditTransactionType,
     CREDIT_REWARDS,
-    CREDIT_ITEMS,
     ShopItem,
 } from './MonetizationTypes';
 import PremiumService from './PremiumService';
 
-const STORAGE_KEY = '@credit_balance';
 const FIRESTORE_COLLECTION = 'user_monetization';
 const TRANSACTIONS_SUBCOLLECTION = 'credit_transactions';
 

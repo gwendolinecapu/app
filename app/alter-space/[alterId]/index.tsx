@@ -12,6 +12,7 @@ import {
     Image
 } from 'react-native';
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { useNotificationContext } from '../../../src/contexts/NotificationContext';
 import { FriendService } from '../../../src/services/friends';
@@ -39,6 +40,7 @@ import { ErrorBoundary } from '../../../src/components/ErrorBoundary';
 type TabType = 'feed' | 'profile' | 'journal' | 'gallery' | 'emotions' | 'settings' | 'menu' | 'shop';
 
 export default function AlterSpaceScreen() {
+    const insets = useSafeAreaInsets();
     const { alterId, tab } = useLocalSearchParams<{ alterId: string; tab?: string }>();
     const { alters, currentAlter, user } = useAuth(); // currentAlter is the one viewing
     const { unreadCount } = useNotificationContext();
@@ -447,7 +449,11 @@ export default function AlterSpaceScreen() {
 
             {/* Bottom Tab Bar (Custom for Alter Space navigation) - Only for Owner */}
             {isOwner && (
-                <View style={[styles.bottomBar, { backgroundColor: themeColors?.backgroundCard || colors.surface, borderTopColor: themeColors?.border || colors.border }]}>
+                <View style={[styles.bottomBar, {
+                    backgroundColor: themeColors?.backgroundCard || colors.surface,
+                    borderTopColor: themeColors?.border || colors.border,
+                    paddingBottom: 20 + (Platform.OS === 'android' ? insets.bottom : 0)
+                }]}>
                     {/* 1. Accueil / Feed */}
                     <TouchableOpacity style={[styles.tabButton, { minHeight: 44, justifyContent: 'center' }]} onPress={() => setActiveTab('feed')}>
                         <Ionicons name={activeTab === 'feed' ? "home" : "home-outline"} size={24} color={activeTab === 'feed' ? activeColor : inactiveColor} />

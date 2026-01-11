@@ -64,14 +64,22 @@ export const AIWorkflows = {
 
         const genOptions = {
             referenceImages: imagesBase64,
-            width: 1024, // BytePlus standard/optimal
-            height: 1024 // BytePlus standard/optimal - Aspect Ratio will be handled by provider or we request wide?
-            // Seedream/BytePlus usually handles resolution. Let's request 1024x1024 or similar.
-            // User wanted "Wide" ref sheet. 
-            // If we want wide, maybe 1280x720 or 1024x576? 
-            // Let's stick to square or standard 3:4 for safety unless we know Seedream supports specific AR.
-            // Reverting to standard high res.
+            width: 2560,  // Landscape format 16:10 - BytePlus minimum: 3686400 pixels (2560x1600 = 4096000)
+            height: 1600  // Landscape format for 4-view reference sheet
         };
+
+        // 🔍 LOG: Prompt exact envoyé à SeeDream API
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('🎨 [SEEDREAM] Génération avatar - Ritual');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('📝 PROMPT EXACT:');
+        console.log(refSheetPrompt);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('📊 OPTIONS:');
+        console.log(`  - Modèle: seedream-4-5-251128`);
+        console.log(`  - Résolution: ${genOptions.width}x${genOptions.height}`);
+        console.log(`  - Nombre d'images référence: ${genOptions.referenceImages.length}`);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
         const resultBuffers = await provider.generateInfoImage(refSheetPrompt, genOptions);
 
@@ -109,15 +117,10 @@ export const AIWorkflows = {
         const alterData = alterDoc.data();
         const charDesc = alterData?.visual_dna?.description || alterData?.name || "A character";
 
-        // 2. Enhance Prompt (Gemini Direct)
-        const enhancementPrompt = PromptService.getMagicPromptExpansion(prompt, charDesc, selectedStyle);
-
-        const googleApiKey = process.env.GOOGLE_AI_API_KEY;
-        if (!googleApiKey) throw new Error("Missing GOOGLE_AI_API_KEY");
-        const llmProvider = new GeminiProvider(googleApiKey, 'gemini-1.5-flash');
-
-        const magicPrompt = await llmProvider.generateText(enhancementPrompt);
-        await checkCancelled(jobId);
+        // 2. Build Direct Prompt (No Gemini Enhancement)
+        // Combine user prompt with character description and style keywords
+        const styleKeywords = style ? `Style: ${selectedStyle}.` : '';
+        const magicPrompt = `${prompt}\nCharacter: ${charDesc}\n${styleKeywords}`;
 
         // 3. Prepare References
         const references: string[] = [];
@@ -158,7 +161,7 @@ export const AIWorkflows = {
             magicPrompt,
             metadata: {
                 providerUsed: {
-                    prompt: 'gemini-direct',
+                    prompt: 'direct-prompt',
                     generation: 'byteplus-direct'
                 },
                 fallbackUsed: false

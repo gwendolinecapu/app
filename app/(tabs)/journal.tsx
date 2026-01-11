@@ -23,18 +23,24 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { SecureContainer } from '../../src/components/security/SecureContainer';
 
+import { SummaryModal } from '../../src/components/journal/SummaryModal';
+
+type JournalTab = 'private' | 'public';
+
 export default function JournalScreen() {
     const { currentAlter, user } = useAuth();
     const [entries, setEntries] = useState<JournalEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState<JournalTab>('private');
+    const [summaryModalVisible, setSummaryModalVisible] = useState(false);
 
-    // Rafraîchir quand l'écran reprend le focus
+    // Rafraîchir quand l'écran reprend le focus ou quand l'onglet change
     useFocusEffect(
         useCallback(() => {
             if (currentAlter) {
                 fetchEntries();
             }
-        }, [currentAlter])
+        }, [currentAlter, activeTab])
     );
 
     const fetchEntries = async () => {
@@ -42,17 +48,37 @@ export default function JournalScreen() {
         setLoading(true);
 
         try {
-            const q = query(
-                collection(db, 'journal_entries'),
+            // Base query filters
+            let baseConstraints = [
                 where('system_id', '==', user.uid),
                 where('alter_id', '==', currentAlter.id),
                 orderBy('created_at', 'desc')
+            ];
+
+            // Filter specific to Public/Private
+            // Note: If you have existing data without 'visibility', you might need to backfill or handle missing field
+            // Here we assume new entries have it, old entries default to 'private' logic (or we filter client side if index issue)
+
+            // For now, let's filter client-side if your Firestore indexes aren't ready for 'visibility' yet
+            // Or better, add the 'where' clause if you added the index.
+            // Let's assume we filter client-side to avoid "Index needed" errors immediately for the user
+            // UNTIL the user manually adds the index or runs a migration script.
+
+            const q = query(
+                collection(db, 'journal_entries'),
+                ...baseConstraints
             );
 
             const querySnapshot = await getDocs(q);
             const data: JournalEntry[] = [];
             querySnapshot.forEach((doc) => {
-                data.push({ id: doc.id, ...doc.data() } as JournalEntry);
+                const entry = { id: doc.id, ...doc.data() } as JournalEntry;
+
+                // Client-side filtering for visibility compatibility
+                const entryVisibility = entry.visibility || 'private'; // Default to private for legacy
+                if (entryVisibility === activeTab) {
+                    data.push(entry);
+                }
             });
 
             setEntries(data);
@@ -133,6 +159,13 @@ export default function JournalScreen() {
         </TouchableOpacity>
     );
 
+    const getAggregatedContentForAI = () => {
+        // Concatenate all text from current list for the summary
+        return entries
+            .map(e => `[${formatDate(e.created_at)}] ${e.content}`)
+            .join('\n\n');
+    };
+
     if (!currentAlter) {
         return (
             <View style={styles.container}>
@@ -146,8 +179,11 @@ export default function JournalScreen() {
 
     return (
         <SecureContainer
-            title="Journal Sécurisé"
-            subtitle="Authentifie-toi pour accéder à tes pensées"
+            // Only require strict auth for the Private tab, effectively
+            // But SecureContainer wraps the whole screen usually. 
+            // We can customize the 'title' based on tab.
+            title={activeTab === 'private' ? "Journal Intime" : "Journal de Bord"}
+            subtitle={activeTab === 'private' ? "Accès sécurisé" : "Journal d'activité partagé (IA)"}
         >
             <SafeAreaView style={styles.container} edges={['top']}>
                 {/* Header */}
@@ -161,11 +197,31 @@ export default function JournalScreen() {
                         </TouchableOpacity>
                     </View>
                     <View style={styles.headerContent}>
-                        <Text style={styles.title}>Mon Journal</Text>
+                        <Text style={styles.title}>Journal</Text>
                         <Text style={styles.subtitle}>
-                            Par {currentAlter.name}
+                            Espace de {currentAlter.name}
                         </Text>
                     </View>
+                </View>
+
+                {/* Tabs */}
+                <View style={styles.tabContainer}>
+                    <TouchableOpacity
+                        style={[styles.tabButton, activeTab === 'private' && styles.activeTab]}
+                        onPress={() => setActiveTab('private')}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'private' && styles.activeTabText]}>
+                            🔒 Privé
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.tabButton, activeTab === 'public' && styles.activeTab]}
+                        onPress={() => setActiveTab('public')}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'public' && styles.activeTabText]}>
+                            🌍 Journal de Bord
+                        </Text>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Liste des entrées */}
@@ -176,24 +232,49 @@ export default function JournalScreen() {
                     contentContainerStyle={styles.listContent}
                     ListEmptyComponent={
                         <View style={styles.emptyState}>
-                            <Text style={styles.emptyEmoji}>📝</Text>
+                            <Text style={styles.emptyEmoji}>
+                                {activeTab === 'private' ? '🤫' : '📢'}
+                            </Text>
                             <Text style={styles.emptyTitle}>
                                 {loading ? 'Chargement...' : 'Aucune entrée'}
                             </Text>
                             <Text style={styles.emptySubtitle}>
-                                Commence à écrire tes pensées
+                                {activeTab === 'private'
+                                    ? "Tes secrets sont en sécurité ici."
+                                    : "Raconte ta journée pour que l'IA puisse en faire un résumé."}
                             </Text>
                         </View>
                     }
                 />
 
-                {/* FAB - Bouton flottant pour créer */}
-                <TouchableOpacity
-                    style={styles.fab}
-                    onPress={() => router.push('/journal/create')}
-                >
-                    <Text style={styles.fabIcon}>+</Text>
-                </TouchableOpacity>
+                {/* FABs */}
+                <View style={styles.fabContainer}>
+                    {activeTab === 'public' && entries.length > 0 && (
+                        <TouchableOpacity
+                            style={styles.aiFab}
+                            onPress={() => setSummaryModalVisible(true)}
+                        >
+                            <Ionicons name="sparkles" size={24} color="white" />
+                        </TouchableOpacity>
+                    )}
+
+                    <TouchableOpacity
+                        style={styles.fab}
+                        onPress={() => router.push({
+                            pathname: '/journal/create',
+                            params: { defaultVisibility: activeTab }
+                        })}
+                    >
+                        <Text style={styles.fabIcon}>+</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* AI Summary Modal */}
+                <SummaryModal
+                    visible={summaryModalVisible}
+                    onClose={() => setSummaryModalVisible(false)}
+                    entryContent={getAggregatedContentForAI()}
+                />
             </SafeAreaView>
         </SecureContainer>
     );
@@ -206,6 +287,7 @@ const styles = StyleSheet.create({
     },
     header: {
         padding: spacing.lg,
+        paddingBottom: spacing.sm,
     },
     headerTop: {
         flexDirection: 'row',
@@ -213,12 +295,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: spacing.md,
     },
-    headerContent: {
-        marginTop: spacing.xs,
-    },
     backButton: {
         padding: spacing.xs,
         marginLeft: -spacing.xs,
+    },
+    headerContent: {
+        marginTop: spacing.xs,
     },
     title: {
         ...typography.h1,
@@ -227,6 +309,31 @@ const styles = StyleSheet.create({
     subtitle: {
         ...typography.bodySmall,
         color: colors.textSecondary,
+    },
+    tabContainer: {
+        flexDirection: 'row',
+        marginHorizontal: spacing.lg,
+        marginBottom: spacing.md,
+        backgroundColor: colors.backgroundCard,
+        borderRadius: borderRadius.md,
+        padding: 4,
+    },
+    tabButton: {
+        flex: 1,
+        paddingVertical: spacing.sm,
+        alignItems: 'center',
+        borderRadius: borderRadius.sm,
+    },
+    activeTab: {
+        backgroundColor: colors.backgroundCard,
+    },
+    tabText: {
+        ...typography.bodySmall,
+        color: colors.textSecondary,
+        fontWeight: '600',
+    },
+    activeTabText: {
+        color: colors.text,
     },
     listContent: {
         padding: spacing.md,
@@ -270,6 +377,7 @@ const styles = StyleSheet.create({
     },
     lockedContent: {
         color: colors.textMuted,
+        fontStyle: 'italic',
     },
     audioBadge: {
         marginTop: spacing.sm,
@@ -300,11 +408,30 @@ const styles = StyleSheet.create({
     emptySubtitle: {
         ...typography.bodySmall,
         color: colors.textSecondary,
+        textAlign: 'center',
+        paddingHorizontal: spacing.xl,
     },
-    fab: {
+    fabContainer: {
         position: 'absolute',
         right: spacing.lg,
-        bottom: 100,
+        bottom: 100, // Above tab bar
+        gap: spacing.md,
+        alignItems: 'center',
+    },
+    aiFab: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: colors.secondary || '#6B40E2',
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    fab: {
         width: 60,
         height: 60,
         borderRadius: 30,

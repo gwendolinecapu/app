@@ -311,11 +311,22 @@ export interface JournalEntry {
     is_audio: boolean;
     audio_url?: string;
     is_locked: boolean;
+    visibility: 'private' | 'public'; // 'private' = encrypted/hidden, 'public' = AI log
     created_at: string;
     updated_at: string;
     // Relations
     alter?: Alter;
     credits?: number;
+}
+
+export interface JournalSummary {
+    id: string;
+    system_id: string;
+    period: 'day' | 'week' | 'month';
+    start_date: string; // ISO Date
+    end_date: string; // ISO Date
+    content: string;
+    created_at: string;
 }
 
 // ============================================

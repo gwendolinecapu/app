@@ -140,6 +140,8 @@ export const AIWorkflows = {
         const selectedStyle = style || "Cinematic";
         const selectedFormat = format || "instagram_square"; // Default: Instagram carré
 
+        console.log('📝 [MAGIC] Job params:', { alterId, prompt, style, imageCount, format });
+
         // Format definitions (all >= 3.6M pixels for BytePlus)
         const formats: Record<string, { width: number; height: number; name: string }> = {
             instagram_square: { width: 2048, height: 2048, name: "Instagram Carré (1:1)" },       // 4.2M pixels
@@ -150,37 +152,45 @@ export const AIWorkflows = {
         };
 
         const formatConfig = formats[selectedFormat] || formats.instagram_square;
+        console.log(`📐 Using format: ${formatConfig.name} (${formatConfig.width}x${formatConfig.height})`);
 
         await checkCancelled(jobId);
 
         // 1. Get Alter Context
+        console.log(`🔍 Fetching alter ${alterId}...`);
         const alterDoc = await admin.firestore().collection('alters').doc(alterId).get();
         const alterData = alterDoc.data();
         const charDesc = alterData?.visual_dna?.description || alterData?.name || "A character";
+        console.log(`👤 Character description: ${charDesc}`);
 
         // 2. Build Direct Prompt (No Gemini Enhancement)
         // Combine user prompt with character description and style keywords
         const styleKeywords = style ? `Style: ${selectedStyle}.` : '';
         const magicPrompt = `${prompt}\nCharacter: ${charDesc}\n${styleKeywords}`;
+        console.log(`💬 Final prompt: ${magicPrompt}`);
 
         // 3. Prepare References
         const references: string[] = [];
-        if (sceneImageUrl)
+        if (sceneImageUrl) {
+            console.log(`🖼️ Downloading scene image: ${sceneImageUrl}`);
             references.push(await downloadImageAsBase64(sceneImageUrl));
-        if (poseImageUrl)
+        }
+        if (poseImageUrl) {
+            console.log(`🧍 Downloading pose image: ${poseImageUrl}`);
             references.push(await downloadImageAsBase64(poseImageUrl));
+        }
+        console.log(`📦 Total reference images: ${references.length}`);
 
         await checkCancelled(jobId);
 
         // 4. Generate Images (BytePlus Direct)
+        console.log('🎨 Initializing BytePlus provider...');
         const bytePlusKey = process.env.BYTEPLUS_API_KEY;
         if (!bytePlusKey) throw new Error("Missing BYTEPLUS_API_KEY");
         const imageProvider = new BytePlusProvider(bytePlusKey, 'seedream-4-5-251128');
 
         // Parallel generation if count > 1
-        // Note: BytePlus provider returns Buffer[] because of parallel/batch possibilities in API, but usually 1 unless configured
-        // We will call it 'count' times in parallel or use API features if available. Provider wrapper does simplified single call usually.
-        // Let's call it in parallel to be safe and fast.
+        console.log(`🚀 Generating ${count} images with BytePlus...`);
         const promises = Array.from({ length: count }).map(() => imageProvider.generateInfoImage(magicPrompt, {
             referenceImages: references,
             width: formatConfig.width,
@@ -188,14 +198,18 @@ export const AIWorkflows = {
         }));
 
         const nestedResults = await Promise.all(promises);
+        console.log(`✅ Generation complete, received ${nestedResults.length} results`);
         await checkCancelled(jobId);
 
         // Flatten results
         const allBuffers: Buffer[] = nestedResults.flat();
+        console.log(`📊 Total buffers to upload: ${allBuffers.length}`);
 
         // 5. Upload with compression (Magic Posts only, not avatars)
+        console.log('☁️ Uploading images with compression...');
         const uploadPromises = allBuffers.map((buf, idx) => uploadImage(buf, `posts/ai/${alterId}_${Date.now()}_${idx}.png`, true));
         const imageUrls = await Promise.all(uploadPromises);
+        console.log(`✅ Upload complete: ${imageUrls.length} URLs`);
 
         return {
             images: imageUrls,

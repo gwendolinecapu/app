@@ -94,6 +94,7 @@ export const EmotionService = {
 
     /**
      * Subscribe to latest system emotions (for realtime updates)
+     * Only returns emotions from the last 24h (story-like behavior)
      */
     subscribeToSystemEmotions: (systemId: string, callback: (emotions: Record<string, Emotion>) => void) => {
         const q = query(
@@ -105,8 +106,24 @@ export const EmotionService = {
 
         return onSnapshot(q, (snapshot) => {
             const allEmotions: Emotion[] = [];
+            const now = Date.now();
+            const twentyFourHoursAgo = now - (24 * 60 * 60 * 1000);
+
             snapshot.forEach(doc => {
-                allEmotions.push({ id: doc.id, ...doc.data() } as Emotion);
+                const emotion = { id: doc.id, ...doc.data() } as Emotion;
+
+                // Filter: Only include emotions from the last 24h
+                let emotionTime: number;
+                if ((emotion.created_at as any)?.seconds) {
+                    emotionTime = (emotion.created_at as any).seconds * 1000;
+                } else {
+                    emotionTime = new Date(emotion.created_at).getTime();
+                }
+
+                // Only add if within 24h
+                if (emotionTime >= twentyFourHoursAgo) {
+                    allEmotions.push(emotion);
+                }
             });
 
             // Sort client-side
@@ -116,7 +133,7 @@ export const EmotionService = {
                 return timeB - timeA;
             });
 
-            // Dedup by alter_id (keep latest)
+            // Dedup by alter_id (keep latest within 24h)
             const latestEmotions: Record<string, Emotion> = {};
             for (const emotion of allEmotions) {
                 if (!latestEmotions[emotion.alter_id]) {

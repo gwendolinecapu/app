@@ -19,6 +19,9 @@ interface DashboardHeaderProps {
     selectionMode: 'single' | 'multi';
     onModeChange: (mode: 'single' | 'multi') => void;
     hasSelection: boolean;
+    deleteMode: boolean;
+    onToggleDeleteMode: () => void;
+    onSelectAll?: () => void;
 }
 
 
@@ -33,6 +36,9 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     selectionMode,
     onModeChange,
     hasSelection,
+    deleteMode,
+    onToggleDeleteMode,
+    onSelectAll,
 }) => {
     const insets = useSafeAreaInsets(); // Added for insets
 
@@ -48,7 +54,24 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                     <Text style={styles.title}>Qui est là ?</Text>
                 </View>
                 <View style={styles.headerActions}>
-                    {/* Icons removed as per user request */}
+                    {deleteMode && onSelectAll && (
+                        <AnimatedPressable
+                            style={styles.selectAllBtn}
+                            onPress={onSelectAll}
+                        >
+                            <Text style={styles.selectAllText}>Tout sélectionner</Text>
+                        </AnimatedPressable>
+                    )}
+                    <AnimatedPressable
+                        style={[styles.headerIconBtn, deleteMode && styles.headerIconBtnActive]}
+                        onPress={onToggleDeleteMode}
+                    >
+                        <Ionicons
+                            name={deleteMode ? "close" : "trash-outline"}
+                            size={22}
+                            color={deleteMode ? 'white' : colors.text}
+                        />
+                    </AnimatedPressable>
                 </View>
             </View>
 
@@ -113,6 +136,30 @@ const styles = StyleSheet.create({
     headerActions: {
         flexDirection: 'row',
         gap: 8,
+    },
+    headerIconBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: colors.backgroundLight,
+    },
+    headerIconBtnActive: {
+        backgroundColor: '#FF3B30', // iOS red
+    },
+    selectAllBtn: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        backgroundColor: colors.backgroundLight,
+        borderRadius: 20,
+        marginRight: 8,
+    },
+    selectAllText: {
+        ...typography.caption,
+        color: colors.text,
+        fontWeight: '600',
+        fontSize: 12,
     },
     modeSwitchContainer: {
         flexDirection: 'row',

@@ -19,6 +19,7 @@ interface AlterBubbleProps {
     onPress: () => void;
     onLongPress?: () => void;
     dimmed?: boolean;
+    deleteMode?: boolean;
 }
 
 const AnimatedImage = Animated.createAnimatedComponent(Image);
@@ -32,6 +33,7 @@ const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
     onPress,
     onLongPress,
     dimmed,
+    deleteMode = false,
 }) => {
     // --- THEME ---
     const themeColors = alter ? getThemeColors(alter.equipped_items?.theme) : null;
@@ -91,8 +93,9 @@ const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
     const showCheck = selectionMode === 'multi' && isSelected;
 
     // Compute selected style manually since we need dynamic color
+    // Use red border in delete mode
     const selectedStyle = isSelected ? {
-        borderColor: primaryColor,
+        borderColor: deleteMode ? '#FF3B30' : primaryColor, // iOS red for delete mode
         borderWidth: 6,
     } : {};
 

@@ -16,6 +16,7 @@ interface AlterEmotionsProps {
 }
 
 import { EMOTION_CONFIG, getEmotionConfig } from '../../lib/emotions';
+import { EmotionHistory } from './EmotionHistory';
 
 export const AlterEmotions: React.FC<AlterEmotionsProps> = ({ alterId, alterName, themeColors }) => {
     const [latestEmotion, setLatestEmotion] = useState<Emotion | null>(null);
@@ -158,6 +159,12 @@ export const AlterEmotions: React.FC<AlterEmotionsProps> = ({ alterId, alterName
                     </Text>
                 </View>
             )}
+
+            {/* Emotion History Section */}
+            <View style={styles.historySection}>
+                <Text style={[styles.sectionTitle, themeColors && { color: themeColors.textSecondary }]}>Historique (30 derniers jours)</Text>
+                <EmotionHistory alterId={alterId} />
+            </View>
         </ScrollView>
     );
 };
@@ -277,5 +284,11 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: 'bold',
         fontSize: 16,
+    },
+    historySection: {
+        marginTop: spacing.xl,
+        paddingTop: spacing.lg,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
     },
 });

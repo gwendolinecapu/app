@@ -27,6 +27,7 @@ interface DashboardGridProps {
     handleBlurryMode: () => void;
     setModalVisible: (visible: boolean) => void;
     ListHeaderComponent?: React.ReactElement;
+    deleteMode?: boolean;
 }
 
 const DashboardGridComponent = ({
@@ -40,7 +41,8 @@ const DashboardGridComponent = ({
     toggleSelection,
     handleBlurryMode,
     setModalVisible,
-    ListHeaderComponent
+    ListHeaderComponent,
+    deleteMode = false
 }: DashboardGridProps) => {
 
     const renderItem = useCallback(({ item }: { item: GridItem }) => (
@@ -52,6 +54,7 @@ const DashboardGridComponent = ({
                 selectionMode={selectionMode}
                 isSelected={item.type === 'alter' && selectedAlters.includes(item.data.id)}
                 dimmed={selectionMode === 'multi' && selectedAlters.length > 0 && (item.type !== 'alter' || !selectedAlters.includes(item.data.id))}
+                deleteMode={deleteMode}
                 onPress={() => {
                     if (item.type === 'alter') toggleSelection(item.data.id);
                     else if (item.type === 'blurry') handleBlurryMode();
@@ -60,7 +63,7 @@ const DashboardGridComponent = ({
                 onLongPress={() => item.type === 'alter' && router.push(`/alter-space/${item.data.id}` as any)}
             />
         </View>
-    ), [numColumns, bubbleSize, selectionMode, selectedAlters, toggleSelection, handleBlurryMode, setModalVisible]);
+    ), [numColumns, bubbleSize, selectionMode, selectedAlters, deleteMode, toggleSelection, handleBlurryMode, setModalVisible]);
 
     const keyExtractor = useCallback((item: GridItem) => item.type === 'alter' ? item.data.id : item.type, []);
 

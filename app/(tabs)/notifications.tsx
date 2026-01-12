@@ -344,10 +344,18 @@ export default function NotificationsScreen() {
     }, [currentAlter, user]);
 
     const markAllAsRead = async (docs: any[]) => {
+        if (!currentAlter) return;
+
         const batch = writeBatch(db);
         let hasUpdates = false;
         docs.forEach(doc => {
-            if (!doc.data().read) {
+            const data = doc.data();
+            // Only mark as read if it's for the current alter
+            const isForMe = data.recipientId === currentAlter.id ||
+                data.recipientId === user?.uid ||
+                (!data.recipientId && data.targetSystemId === user?.uid);
+
+            if (!data.read && isForMe) {
                 batch.update(doc.ref, { read: true });
                 hasUpdates = true;
             }

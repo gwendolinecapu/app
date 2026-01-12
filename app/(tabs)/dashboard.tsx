@@ -26,12 +26,14 @@ import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useScrollToTop } from '@react-navigation/native';
 import { triggerHaptic } from '../../src/lib/haptics';
+import { deleteDoc, doc } from 'firebase/firestore';
 
 import { DashboardHeader } from '../../src/components/dashboard/DashboardHeader';
 import { SystemControlBar } from '../../src/components/dashboard/SystemControlBar';
 import { SystemMenuModal } from '../../src/components/dashboard/SystemMenuModal';
 import { AddAlterModal } from '../../src/components/dashboard/AddAlterModal';
 import { DashboardGrid, GridItem } from '../../src/components/dashboard/DashboardGrid';
+import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
 
 import { Alter } from '../../src/types';
 
@@ -69,6 +71,7 @@ export default function Dashboard() {
     const [searchQuery, setSearchQuery] = useState('');
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [deleteMode, setDeleteMode] = useState(false);
 
     const { width } = useWindowDimensions();
     const availableWidth = width - (CONTAINER_PADDING * 2);
@@ -199,6 +202,79 @@ export default function Dashboard() {
         }
     };
 
+    const handleToggleDeleteMode = () => {
+        setDeleteMode(!deleteMode);
+        if (!deleteMode) {
+            // Entering delete mode
+            setSelectionMode('multi');
+            setSelectedAlters([]);
+        } else {
+            // Exiting delete mode
+            setSelectionMode('single');
+            setSelectedAlters([]);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedAlters.length === 0) return;
+
+        // Safety checks
+        const hostsSelected = selectedAlters.some(id => {
+            const alter = alters.find(a => a.id === id);
+            return alter?.is_host;
+        });
+
+        if (hostsSelected) {
+            Alert.alert('Erreur', 'Vous ne pouvez pas supprimer l\'alter host.');
+            return;
+        }
+
+        if (alters.length - selectedAlters.length < 1) {
+            Alert.alert('Erreur', 'Au moins un alter doit rester dans le système.');
+            return;
+        }
+
+        // Confirmation
+        const count = selectedAlters.length;
+        Alert.alert(
+            'Confirmer la suppression',
+            `Êtes-vous sûr de vouloir supprimer ${count} alter${count > 1 ? 's' : ''} ? Cette action est irréversible.`,
+            [
+                { text: 'Annuler', style: 'cancel' },
+                {
+                    text: 'Supprimer',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setLoading(true);
+                        try {
+                            // Delete all selected alters
+                            await Promise.all(
+                                selectedAlters.map(id => deleteDoc(doc(db, 'alters', id)))
+                            );
+                            await refreshAlters();
+                            setSelectedAlters([]);
+                            setDeleteMode(false);
+                            setSelectionMode('single');
+                            triggerHaptic.success();
+                        } catch (error) {
+                            Alert.alert('Erreur', 'Impossible de supprimer les alters');
+                            triggerHaptic.error();
+                        } finally {
+                            setLoading(false);
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleSelectAll = () => {
+        // Select all alters except hosts
+        const selectableAlters = alters.filter(alter => !alter.is_host).map(a => a.id);
+        setSelectedAlters(selectableAlters);
+        triggerHaptic.selection();
+    };
+
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <DashboardGrid
@@ -212,6 +288,7 @@ export default function Dashboard() {
                 toggleSelection={toggleSelection}
                 handleBlurryMode={handleBlurryMode}
                 setModalVisible={setModalVisible}
+                deleteMode={deleteMode}
                 ListHeaderComponent={
                     <View>
                         <DashboardHeader
@@ -220,6 +297,9 @@ export default function Dashboard() {
                             selectionMode={selectionMode}
                             onModeChange={setSelectionMode}
                             hasSelection={selectedAlters.length > 0}
+                            deleteMode={deleteMode}
+                            onToggleDeleteMode={handleToggleDeleteMode}
+                            onSelectAll={handleSelectAll}
                         />
 
                         <View style={{ height: 16 }} />
@@ -227,11 +307,29 @@ export default function Dashboard() {
                 }
             />
 
-            <SystemControlBar
-                onOpenMenu={handleOpenMenu}
-                onConfirmFronting={handleConfirmCoFront}
-                hasSelection={selectedAlters.length > 0}
-            />
+            {/* Delete Button - only show in delete mode */}
+            {deleteMode && selectedAlters.length > 0 && (
+                <View style={styles.deleteButtonContainer}>
+                    <AnimatedPressable
+                        style={styles.deleteButton}
+                        onPress={handleBulkDelete}
+                    >
+                        <Ionicons name="trash" size={20} color="white" />
+                        <Text style={styles.deleteButtonText}>
+                            Supprimer {selectedAlters.length} alter{selectedAlters.length > 1 ? 's' : ''}
+                        </Text>
+                    </AnimatedPressable>
+                </View>
+            )}
+
+            {/* Co-Front Control Bar - only show when NOT in delete mode */}
+            {!deleteMode && (
+                <SystemControlBar
+                    onOpenMenu={handleOpenMenu}
+                    onConfirmFronting={handleConfirmCoFront}
+                    hasSelection={selectedAlters.length > 0}
+                />
+            )}
 
             <AddAlterModal
                 visible={modalVisible}
@@ -681,6 +779,32 @@ const styles = StyleSheet.create({
         ...typography.body,
         fontWeight: '600',
         color: 'white',
+    },
+    deleteButtonContainer: {
+        position: 'absolute',
+        bottom: 30,
+        left: spacing.lg,
+        right: spacing.lg,
+        alignItems: 'center',
+    },
+    deleteButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        backgroundColor: '#FF3B30', // iOS red
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.xl,
+        borderRadius: borderRadius.full,
+        shadowColor: '#FF3B30',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+        elevation: 8,
+    },
+    deleteButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
 });
 

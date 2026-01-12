@@ -10,6 +10,7 @@ import { colors, spacing, borderRadius, typography, alterColors } from '../../sr
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../src/lib/firebase';
 import { Alter, Role } from '../../src/types';
+import { useNotificationContext } from '../../src/contexts/NotificationContext';
 
 const ROLE_DEFINITIONS: Record<string, string> = {
     'host': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
@@ -42,6 +43,7 @@ export default function AlterProfileScreen() {
     const router = useRouter();
     const { id } = useLocalSearchParams<{ id: string }>();
     const { user, alters, refreshAlters } = useAuth();
+    const { unreadCount } = useNotificationContext();
     // ... (rest of state)
 
     const [alter, setAlter] = useState<Alter | null>(null);
@@ -240,7 +242,22 @@ export default function AlterProfileScreen() {
                 </TouchableOpacity>
                 <View style={{ flex: 1 }} />
                 <TouchableOpacity onPress={() => router.push('/(tabs)/notifications')} style={{ padding: 4 }}>
-                    <Ionicons name="notifications-outline" size={24} color={colors.text} />
+                    <View>
+                        <Ionicons name="notifications-outline" size={24} color={colors.text} />
+                        {unreadCount > 0 && (
+                            <View style={{
+                                position: 'absolute',
+                                top: -2,
+                                right: -2,
+                                backgroundColor: 'red',
+                                width: 10,
+                                height: 10,
+                                borderRadius: 5,
+                                borderWidth: 1,
+                                borderColor: colors.background,
+                            }} />
+                        )}
+                    </View>
                 </TouchableOpacity>
             </View>
             <ScrollView style={styles.scrollContent}>

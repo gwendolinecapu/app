@@ -17,8 +17,9 @@ import {
     NotificationFrequency,
 } from '../services/NotificationTypes';
 import { Alter } from '../types';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, or } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
+import { useAuth } from './AuthContext';
 
 // Types pour le front
 interface FrontData {
@@ -68,6 +69,7 @@ interface NotificationProviderProps {
 
 export function NotificationProvider({ children }: NotificationProviderProps) {
     const router = useRouter();
+    const { currentAlter, user } = useAuth(); // Get current alter from AuthContext
     const [settings, setSettings] = useState<NotificationSettings | null>(null);
     const [loading, setLoading] = useState(true);
     const [isPersistentActive, setIsPersistentActive] = useState(false);
@@ -81,27 +83,55 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         initializeNotifications();
     }, []);
 
-    // Subscribe to unread notifications count
+    // Subscribe to unread notifications count (filtered by current alter)
     useEffect(() => {
-        if (!auth.currentUser) {
+        if (!user || !currentAlter) {
             setUnreadCount(0);
             return;
         }
 
-        const q = query(
+        let notifCount = 0;
+        let requestCount = 0;
+
+        // Listen to Firestore notifications for THIS ALTER ONLY
+        const notifQuery = query(
             collection(db, 'notifications'),
-            where('targetSystemId', '==', auth.currentUser.uid),
+            where('targetSystemId', '==', user.uid),
             where('read', '==', false)
         );
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            setUnreadCount(snapshot.size);
+        const unsubNotif = onSnapshot(notifQuery, (snapshot) => {
+            // Filter to only count notifications for current alter
+            notifCount = snapshot.docs.filter(doc => {
+                const data = doc.data();
+                return data.recipientId === currentAlter.id ||
+                    data.recipientId === user.uid ||
+                    (!data.recipientId && data.targetSystemId === user.uid);
+            }).length;
+            setUnreadCount(notifCount + requestCount);
         }, (error) => {
             console.error("Error listening to notifications:", error);
         });
 
-        return () => unsubscribe();
-    }, [auth.currentUser]); // Re-subscribe if user changes (though usually handled by provider unmount/remount if auth changes top level, but explicit dep is safer if provider persists)
+        // Listen to pending friend requests for THIS ALTER ONLY
+        const requestQuery = query(
+            collection(db, 'friend_requests'),
+            where('receiverId', '==', currentAlter.id),
+            where('status', '==', 'pending')
+        );
+
+        const unsubRequests = onSnapshot(requestQuery, (snapshot) => {
+            requestCount = snapshot.size;
+            setUnreadCount(notifCount + requestCount);
+        }, (error) => {
+            console.error("Error listening to friend requests:", error);
+        });
+
+        return () => {
+            unsubNotif();
+            unsubRequests();
+        };
+    }, [user, currentAlter]); // Re-run when user or currentAlter changes
 
     const initializeNotifications = async () => {
         try {

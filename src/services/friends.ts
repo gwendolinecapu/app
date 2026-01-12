@@ -190,18 +190,28 @@ export const FriendService = {
 
         // 4. Notify the RECEIVER (Us) - "Vous êtes maintenant amis"
         // This puts a confirmation in our own notification list
+        let senderAlterName = 'Cet alter';
+        try {
+            const senderDoc = await getDoc(doc(db, 'alters', senderId));
+            if (senderDoc.exists()) {
+                senderAlterName = senderDoc.data().name;
+            }
+        } catch { }
+
         await addDoc(collection(db, 'notifications'), {
             recipientId: receiverId, // Us
             targetSystemId: currentSystemId,
             type: 'friend_new', // New type or reuse accepted
             title: 'Nouvel ami',
-            message: `Vous êtes maintenant amis avec cet alter.`,
+            message: `${senderAlterName} et vous êtes maintenant ami(e)s.`,
             subtitle: 'Connexion établie',
             data: {
                 alterId: senderId, // The new friend
                 friendId: receiverId,
             },
-            senderId: senderSystemId, // Them (System ID for profile linking)
+            senderId: senderSystemId, // System ID for profile linking
+            senderAlterId: senderId, // IMPORTANT: Actual alter ID for correct name enrichment
+            actorName: senderAlterName, // Pre-populate to avoid enrichment issues
             read: false,
             created_at: serverTimestamp()
         });

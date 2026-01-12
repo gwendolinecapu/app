@@ -31,6 +31,7 @@ import { EmptyState } from '../../src/components/ui/EmptyState';
 import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
 import { Alert } from 'react-native';
 import { getThemeColors } from '../../src/lib/cosmetics';
+import { useNotificationContext } from '../../src/contexts/NotificationContext';
 
 const ROLE_DEFINITIONS: Record<string, string> = {
     'host': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
@@ -65,6 +66,7 @@ const getGridSize = (width: number) => (width - 4) / 3;
 
 export default function ProfileScreen() {
     const { currentAlter, system, alters, user } = useAuth();
+    const { unreadCount } = useNotificationContext();
     const { width } = useWindowDimensions();
     const GRID_SIZE = getGridSize(width);
     const [posts, setPosts] = useState<Post[]>([]);
@@ -270,7 +272,22 @@ export default function ProfileScreen() {
                             <Ionicons name="search-outline" size={24} color={colors.text} />
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => router.push('/(tabs)/notifications')}>
-                            <Ionicons name="notifications-outline" size={24} color={colors.text} />
+                            <View>
+                                <Ionicons name="notifications-outline" size={24} color={colors.text} />
+                                {unreadCount > 0 && (
+                                    <View style={{
+                                        position: 'absolute',
+                                        top: -2,
+                                        right: -2,
+                                        backgroundColor: 'red',
+                                        width: 10,
+                                        height: 10,
+                                        borderRadius: 5,
+                                        borderWidth: 1,
+                                        borderColor: colors.background,
+                                    }} />
+                                )}
+                            </View>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => router.push('/settings/index' as any)}>
                             <Ionicons name="settings-outline" size={24} color={colors.text} />

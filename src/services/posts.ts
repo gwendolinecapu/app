@@ -294,20 +294,20 @@ export const PostService = {
                 promises.push(getDocs(q1));
             }
 
-            // 2. Query by System IDs - DISABLED for now to prevent showing all alters of a friend system
-            // If we want to show posts by the System Account itself, we should ensure the System ID is in 'friendIds'
-            // and handled by the query above (assuming system posts have alter_id = system_id).
-            if (friendSystemIds.length > 0) {
-                const targetSystemIds = friendSystemIds.slice(0, 30);
-                let q2 = query(
-                    collection(db, POSTS_COLLECTION),
-                    where('system_id', 'in', targetSystemIds),
-                    orderBy('created_at', 'desc'),
-                    limit(pageSize)
-                );
-                if (lastVisible) q2 = query(q2, startAfter(lastVisible));
-                promises.push(getDocs(q2));
-            }
+            // 2. Query by System IDs - COMPLETELY DISABLED to enforce strict alter isolation
+            // New accounts should NOT see posts from all alters of a friend system
+            // Only explicitly followed alter IDs should appear in the feed
+            // if (friendSystemIds.length > 0) {
+            //     const targetSystemIds = friendSystemIds.slice(0, 30);
+            //     let q2 = query(
+            //         collection(db, POSTS_COLLECTION),
+            //         where('system_id', 'in', targetSystemIds),
+            //         orderBy('created_at', 'desc'),
+            //         limit(pageSize)
+            //     );
+            //     if (lastVisible) q2 = query(q2, startAfter(lastVisible));
+            //     promises.push(getDocs(q2));
+            // }
 
             const snapshots = await Promise.all(promises);
             const allDocs = snapshots.flatMap(snap => snap.docs);

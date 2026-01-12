@@ -112,17 +112,12 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
             let response;
 
             if (type === 'friends' && alterId) {
-                // Fetch friend alter IDs (specific friends only)
+                // STRICT ISOLATION: Only fetch posts from explicitly followed alter IDs
+                // No automatic system-wide friend aggregation
                 const friendIds = await FriendService.getFriends(alterId);
 
-
-                // Fetch friend system IDs (system-wide friends)
-                const friendSystemIds = await FriendService.getAllSystemFriendSystemIds(user?.uid || '');
-
-                // Fetch feed based on Alter IDs AND System IDs
-                const targetIds = [...friendIds];
-
-                response = await PostService.fetchFeed(targetIds, friendSystemIds, refresh ? null : lastVisible);
+                // Only show posts from these specific friend IDs, no system-level connections
+                response = await PostService.fetchFeed(friendIds, [], refresh ? null : lastVisible);
 
             } else if (type === 'global') {
                 response = await PostService.fetchGlobalFeed(refresh ? null : lastVisible);

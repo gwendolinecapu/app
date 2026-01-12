@@ -533,6 +533,30 @@ export default function AlterSpaceScreen() {
                         console.error('Error in followers sync:', e);
                     }
                 }}
+                canRemove={isOwner}
+                onRemove={async (id) => {
+                    Alert.alert(
+                        "Retirer l'abonné",
+                        "Voulez-vous retirer cet utilisateur de vos abonnés ?",
+                        [
+                            { text: "Annuler", style: "cancel" },
+                            {
+                                text: "Retirer",
+                                style: "destructive",
+                                onPress: async () => {
+                                    try {
+                                        if (!alter) return;
+                                        await FriendService.removeFriend(id, alter.id);
+                                        refresh();
+                                    } catch (e) {
+                                        console.error(e);
+                                        Alert.alert("Erreur", "Impossible de retirer l'utilisateur.");
+                                    }
+                                }
+                            }
+                        ]
+                    );
+                }}
             />
             <FollowListModal
                 visible={showFollowingModal}
@@ -562,6 +586,30 @@ export default function AlterSpaceScreen() {
                     } catch (e) {
                         console.error('Error in following sync:', e);
                     }
+                }}
+                canRemove={isOwner}
+                onRemove={async (id) => {
+                    Alert.alert(
+                        "Se désabonner",
+                        "Voulez-vous ne plus suivre cet utilisateur ?",
+                        [
+                            { text: "Annuler", style: "cancel" },
+                            {
+                                text: "Se désabonner",
+                                style: "destructive",
+                                onPress: async () => {
+                                    try {
+                                        if (!alter) return;
+                                        await FriendService.removeFriend(alter.id, id);
+                                        refresh();
+                                    } catch (e) {
+                                        console.error(e);
+                                        Alert.alert("Erreur", "Impossible de se désabonner.");
+                                    }
+                                }
+                            }
+                        ]
+                    );
                 }}
             />
 

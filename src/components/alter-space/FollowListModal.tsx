@@ -16,9 +16,20 @@ interface FollowListModalProps {
     themeColors?: ThemeColors | null;
     /** Callback to clean up missing/deleted users found during fetch */
     onSync?: (missingIds: string[], duplicateIds: string[]) => void;
+    canRemove?: boolean;
+    onRemove?: (id: string) => Promise<void>;
 }
 
-export const FollowListModal: React.FC<FollowListModalProps> = ({ visible, title, userIds, onClose, themeColors, onSync }) => {
+export const FollowListModal: React.FC<FollowListModalProps> = ({
+    visible,
+    title,
+    userIds,
+    onClose,
+    themeColors,
+    onSync,
+    canRemove,
+    onRemove
+}) => {
     const [data, setData] = React.useState<Alter[]>([]);
     const [loading, setLoading] = React.useState(false);
 
@@ -98,27 +109,37 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({ visible, title
                         windowSize={5}
                         contentContainerStyle={{ paddingBottom: 40 }}
                         renderItem={({ item }) => (
-                            <TouchableOpacity
-                                style={styles.item}
-                                onPress={() => {
-                                    onClose();
-                                    router.push(`/alter-space/${item.id}`);
-                                }}
-                            >
-                                <View style={[styles.avatar, { backgroundColor: item.color || themeColors?.primary || colors.primary }]}>
-                                    {item.avatar_url ? (
-                                        <Image
-                                            source={{ uri: item.avatar_url }}
-                                            style={styles.avatarImage}
-                                            contentFit="cover"
-                                            transition={200}
-                                        />
-                                    ) : (
-                                        <Text style={styles.avatarText}>{item.name[0]}</Text>
-                                    )}
-                                </View>
-                                <Text style={[styles.name, { color: textColor }]}>{item.name}</Text>
-                            </TouchableOpacity>
+                            <View style={styles.item}>
+                                <TouchableOpacity
+                                    style={styles.itemContent}
+                                    onPress={() => {
+                                        onClose();
+                                        router.push(`/alter-space/${item.id}`);
+                                    }}
+                                >
+                                    <View style={[styles.avatar, { backgroundColor: item.color || themeColors?.primary || colors.primary }]}>
+                                        {item.avatar_url ? (
+                                            <Image
+                                                source={{ uri: item.avatar_url }}
+                                                style={styles.avatarImage}
+                                                contentFit="cover"
+                                                transition={200}
+                                            />
+                                        ) : (
+                                            <Text style={styles.avatarText}>{item.name[0]}</Text>
+                                        )}
+                                    </View>
+                                    <Text style={[styles.name, { color: textColor }]}>{item.name}</Text>
+                                </TouchableOpacity>
+                                {canRemove && onRemove && (
+                                    <TouchableOpacity
+                                        style={[styles.removeButton, { borderColor: themeColors?.border || colors.border }]}
+                                        onPress={() => onRemove(item.id)}
+                                    >
+                                        <Text style={[styles.removeButtonText, { color: themeColors?.textSecondary || colors.textSecondary }]}>Retirer</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
                         )}
                         ListEmptyComponent={
                             <View style={styles.emptyState}>
@@ -168,6 +189,23 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: spacing.md,
         paddingHorizontal: spacing.lg,
+        justifyContent: 'space-between',
+    },
+    itemContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    removeButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        borderWidth: 1,
+        marginLeft: 8,
+    },
+    removeButtonText: {
+        fontSize: 12,
+        fontWeight: '600',
     },
     avatar: {
         width: 44,

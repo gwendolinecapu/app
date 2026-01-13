@@ -183,22 +183,38 @@ export default function FullPageVideoScreen() {
                 fetchedPosts = res.posts.filter(p => p.system_id === contextId);
             } else {
                 // Default: Video Feed (Reels style)
-                // Fetch from friends + current user? Or just friends?
-                // Usually "Feed" implies followed content.
+                // Fetch from friends (alters we follow)
                 if (user) {
-                    // Get friends
-                    const friendIds = await FriendService.getAllSystemFriendSystemIds(user.uid);
+                    // Get the current alter's following list (alter IDs they follow)
+                    const { currentAlter } = require('../../../src/contexts/AuthContext');
 
-                    // Add self to friends list if we want to see own videos in feed too? 
-                    // Usually yes, or at least the clicked one.
-                    const allSourceIds = [user.uid, ...friendIds];
+                    // We need to get friends for the current viewing alter
+                    // Since we're in a hook context, we pass currentAlter from useAuth
+                    // But useAuth is already imported, let's use it directly
 
-                    // Find "Alter IDs" for these systems? 
-                    // Use fetchFeed which handles "friendIds" (Alter IDs) and "friendSystemIds"
-                    // Our fetchVideoFeed wrapper takes (friendIds, friendSystemIds)
-                    // We primarily have System IDs here.
-                    const res = await PostService.fetchVideoFeed([], allSourceIds, null, 20);
-                    fetchedPosts = res.posts;
+                    // Get all alters this user's alters follow
+                    const altersRef = collection(db, 'alters');
+                    const altersQuery = query(altersRef, where('systemId', '==', user.uid));
+                    const altersSnap = await getDocs(altersQuery);
+
+                    const allFollowedAlterIds: string[] = [];
+
+                    for (const alterDoc of altersSnap.docs) {
+                        const alterId = alterDoc.id;
+                        const friendIds = await FriendService.getFriends(alterId);
+                        allFollowedAlterIds.push(...friendIds);
+                    }
+
+                    // Deduplicate
+                    const uniqueFollowedIds = [...new Set(allFollowedAlterIds)];
+
+                    console.log('📋 Following', uniqueFollowedIds.length, 'alters');
+
+                    if (uniqueFollowedIds.length > 0) {
+                        // Use fetchVideoFeed with alter IDs
+                        const res = await PostService.fetchVideoFeed(uniqueFollowedIds, [], null, 50);
+                        fetchedPosts = res.posts;
+                    }
                 }
             }
 

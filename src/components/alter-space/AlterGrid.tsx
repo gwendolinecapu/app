@@ -41,14 +41,7 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
     const [loadingTagged, setLoadingTagged] = React.useState(false);
     const [taggedLoaded, setTaggedLoaded] = React.useState(false);
 
-    // Load tagged posts when tab changes
-    React.useEffect(() => {
-        if (activeTab === 'tagged' && !taggedLoaded && alterId && !isPrivate) {
-            loadTaggedPosts();
-        }
-    }, [activeTab, alterId, isPrivate]);
-
-    const loadTaggedPosts = async () => {
+    const loadTaggedPosts = React.useCallback(async () => {
         if (!alterId) return;
         setLoadingTagged(true);
         try {
@@ -62,7 +55,14 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
         } finally {
             setLoadingTagged(false);
         }
-    };
+    }, [alterId]);
+
+    // Load tagged posts when tab changes
+    React.useEffect(() => {
+        if (activeTab === 'tagged' && !taggedLoaded && alterId && !isPrivate) {
+            loadTaggedPosts();
+        }
+    }, [activeTab, taggedLoaded, alterId, isPrivate, loadTaggedPosts]);
 
     const displayPosts = activeTab === 'grid' ? posts : taggedPosts;
     const isListLoading = activeTab === 'grid' ? loading : loadingTagged;

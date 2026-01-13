@@ -224,10 +224,13 @@ export default function FullPageVideoScreen() {
             });
 
             setPosts(videoPosts);
+            console.log('🎬 Video Feed Loaded:', videoPosts.length, 'videos');
+            console.log('📹 Video IDs:', videoPosts.map(p => p.id));
 
             const index = videoPosts.findIndex(p => p.id === id);
             if (index !== -1) {
                 setActiveIndex(index);
+                console.log('📍 Starting at index:', index);
             }
         } catch (error) {
             console.error('Error loading video posts:', error);
@@ -238,7 +241,9 @@ export default function FullPageVideoScreen() {
 
     const handleViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: any[] }) => {
         if (viewableItems.length > 0) {
-            setActiveIndex(viewableItems[0].index || 0);
+            const newIndex = viewableItems[0].index || 0;
+            console.log('👁️ Viewable changed to index:', newIndex);
+            setActiveIndex(newIndex);
         }
     }, []);
 
@@ -275,7 +280,9 @@ export default function FullPageVideoScreen() {
         <View style={styles.mainContainer}>
             <FlatList
                 data={posts}
-                pagingEnabled
+                snapToOffsets={posts.map((_, index) => index * height)}
+                decelerationRate="fast"
+                snapToAlignment="start"
                 keyExtractor={item => item.id}
                 renderItem={({ item, index }) => (
                     <View style={{ width, height }}>
@@ -292,11 +299,16 @@ export default function FullPageVideoScreen() {
                 onViewableItemsChanged={handleViewableItemsChanged}
                 viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
                 showsVerticalScrollIndicator={false}
-                initialScrollIndex={activeIndex}
+                initialScrollIndex={activeIndex > 0 ? activeIndex : undefined}
                 getItemLayout={(data, index) => (
                     { length: height, offset: height * index, index }
                 )}
-                onScrollToIndexFailed={() => { }} // Silent fail or retry
+                onScrollToIndexFailed={(info) => {
+                    console.log('Scroll to index failed:', info);
+                }}
+                removeClippedSubviews={false}
+                windowSize={3}
+                scrollEventThrottle={16}
             />
 
             {/* Top Bar - Fixed */}
@@ -304,6 +316,9 @@ export default function FullPageVideoScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="chevron-down" size={32} color="white" />
                 </TouchableOpacity>
+                <Text style={{ color: 'white', fontSize: 12, marginTop: 10 }}>
+                    {activeIndex + 1} / {posts.length}
+                </Text>
             </SafeAreaView>
         </View>
     );

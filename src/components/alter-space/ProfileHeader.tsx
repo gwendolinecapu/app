@@ -249,20 +249,35 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                     <Text style={[styles.pronouns, themeColors && { color: themeColors.textSecondary }]}>{alter.pronouns}</Text>
                 ) : null}
 
+                {/* MAJOR ROLES - Always visible as badges */}
+                {alter.custom_fields?.find(f => f.label === 'MajorRole')?.value && (
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                        {alter.custom_fields.find(f => f.label === 'MajorRole')?.value.split(',').map((majorRole, index) => (
+                            <AnimatedPressable
+                                key={index}
+                                style={[
+                                    styles.roleRow,
+                                    themeColors ? { backgroundColor: themeColors.primary } : { backgroundColor: colors.primary }
+                                ]}
+                                onPress={() => {
+                                    const roleName = majorRole.trim();
+                                    Alert.alert("Définition du rôle", getRoleDefinition(roleName));
+                                }}
+                            >
+                                <Ionicons name="information-circle" size={14} color="white" style={{ marginRight: 4 }} />
+                                <Text style={[styles.roleText, { color: 'white', fontWeight: 'bold' }]}>{majorRole.trim()}</Text>
+                            </AnimatedPressable>
+                        ))}
+                    </View>
+                )}
+
+                {/* SECONDARY ROLES - Collapsible menu */}
                 {alter.custom_fields?.find(f => f.label === 'Role')?.value && (
-                    <AnimatedPressable
-                        style={[
-                            styles.roleRow,
-                            themeColors ? { backgroundColor: themeColors.primary } : { backgroundColor: colors.primary }
-                        ]}
-                        onPress={() => {
-                            const role = alter.custom_fields?.find(f => f.label === 'Role')?.value || '';
-                            Alert.alert("Définition du rôle", getRoleDefinition(role));
-                        }}
-                    >
-                        <Ionicons name="information-circle" size={14} color="white" style={{ marginRight: 4 }} />
-                        <Text style={[styles.roleText, { color: 'white', fontWeight: 'bold' }]}>{alter.custom_fields.find(f => f.label === 'Role')?.value}</Text>
-                    </AnimatedPressable>
+                    <View style={{ marginBottom: 8 }}>
+                        <Text style={{ fontSize: 12, color: themeColors?.textSecondary || colors.textSecondary }}>
+                            + {alter.custom_fields.find(f => f.label === 'Role')?.value}
+                        </Text>
+                    </View>
                 )}
 
                 {alter.bio ? (

@@ -43,7 +43,6 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
 
     const loadUsers = async () => {
         try {
-            console.log('[FollowListModal] Loading users for IDs:', userIds);
             setLoading(true);
             const { AlterService } = await import('../../services/alters');
 
@@ -51,7 +50,6 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
             const uniqueIds = Array.from(new Set(userIds));
             const users = await AlterService.getAlters(uniqueIds);
 
-            console.log('[FollowListModal] Fetched users:', users);
             setData(users);
 
             // Detect and handle missing users (ghosts) AND duplicates
@@ -67,7 +65,6 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
                 });
 
                 if (missingIds.length > 0 || duplicateIds.length > 0) {
-                    console.log('[FollowListModal] Found issues, triggering sync. Missing:', missingIds, 'Duplicates:', duplicateIds);
                     onSync(missingIds, duplicateIds);
                 }
             }

@@ -106,7 +106,7 @@ export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors }: Storie
             if (error?.code === 'permission-denied') {
                 // Ignore permissions error
             } else {
-                console.log('Error loading stories:', error);
+                console.error('Error loading stories:', error);
             }
             // Continuer avec des tableaux vides
             setMyStories([]);

@@ -147,9 +147,10 @@ export default function NotificationsScreen() {
                         return { name: data.username || 'Système', avatar: data.avatar || data.avatar_url, exists: true };
                     }
 
-                    // Profile doesn't exist (deleted)
-                    return { name: 'Profil supprimé', avatar: null, exists: false };
+                    // Profile doesn't exist (deleted or invalid ID)
+                    return { name: 'Utilisateur inconnu', avatar: null, exists: false };
                 } catch (e) {
+                    console.error('[getSenderInfo] Error:', senderId, e);
                     return { name: 'Utilisateur inconnu', avatar: null, exists: false };
                 }
             };
@@ -211,17 +212,25 @@ export default function NotificationsScreen() {
                 }
             }
 
+            // Helper to detect if a string looks like a Firebase ID
+            const looksLikeFirebaseId = (str: string) => {
+                if (!str) return false;
+                // Firebase IDs are typically 20-28 characters, mix of letters and numbers
+                const isLongAlphanumeric = str.length > 15 && /^[a-zA-Z0-9]+$/.test(str);
+                const hasMixedCase = /[a-z]/.test(str) && /[A-Z]/.test(str);
+                return isLongAlphanumeric && hasMixedCase;
+            };
+
             // Enrich Notifications that are missing actor info OR have generic placeholder OR are missing avatar
-            const notificationsToEnrich = loadedNotifications.filter(n =>
-                (
-                    !n.actorName ||
-                    n.actorName.includes('tilisateur') ||
-                    n.actorName === '?' ||
-                    !n.actorAvatar // Enrichir aussi si l'avatar manque
-                ) && n.senderId
-            );
+            const notificationsToEnrich = loadedNotifications.filter(n => (
+                !n.actorName ||
+                n.actorName.includes('tilisateur') ||
+                n.actorName === '?' ||
+                looksLikeFirebaseId(n.actorName) ||
+                !n.actorAvatar
+            ) && n.senderId);
+
             if (notificationsToEnrich.length > 0) {
-                console.log('Enriching', notificationsToEnrich.length, 'notifications');
                 await Promise.all(notificationsToEnrich.map(async (n) => {
                     // PRIORITÉ À L'ALTER ID si disponible pour afficher le bon profil
                     let senderId = (n as any).senderAlterId || n.senderId;
@@ -381,6 +390,44 @@ export default function NotificationsScreen() {
         loadData();
     }, [loadData]);
 
+    // Mark all notifications as read when screen is opened
+    useEffect(() => {
+        const markAsRead = async () => {
+            if (!currentAlter || notifications.length === 0) return;
+
+            try {
+                const { doc, updateDoc } = await import('firebase/firestore');
+                const { db } = await import('../../src/lib/firebase');
+
+                // Mark all unread notifications as read
+                const unreadNotifications = notifications.filter(n => !n.isRead);
+
+                if (unreadNotifications.length > 0) {
+                    // Update each notification to isRead: true
+                    await Promise.all(
+                        unreadNotifications.map(async (notif) => {
+                            try {
+                                // Skip friend requests as they're virtual notifications
+                                if (notif.id.startsWith('friend_')) return;
+
+                                const notifRef = doc(db, 'notifications', notif.id);
+                                await updateDoc(notifRef, { isRead: true });
+                            } catch (e) {
+                                // Ignore errors for individual notifications
+                            }
+                        })
+                    );
+                }
+            } catch (error) {
+                console.error('Error marking notifications as read:', error);
+            }
+        };
+
+        // Small delay to ensure screen is fully visible
+        const timer = setTimeout(markAsRead, 500);
+        return () => clearTimeout(timer);
+    }, [currentAlter, notifications]);
+
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
         await loadData();
@@ -414,14 +461,41 @@ export default function NotificationsScreen() {
     };
 
     const handleDeleteNotification = async (notificationId: string) => {
-        try {
-            triggerHaptic.selection();
-            await deleteDoc(doc(db, 'notifications', notificationId));
-            setNotifications(prev => prev.filter(n => n.id !== notificationId));
-        } catch (error) {
-            console.error('Error deleting notification:', error);
-            Alert.alert('Erreur', "Impossible de supprimer la notification");
-        }
+        Alert.alert(
+            "Supprimer cette notification ?",
+            "Cette action est irréversible.",
+            [
+                {
+                    text: "Annuler",
+                    style: "cancel"
+                },
+                {
+                    text: "Supprimer",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            // Check if it's a friend request (ID starts with "friend_")
+                            if (notificationId.startsWith('friend_')) {
+                                const realId = notificationId.replace('friend_', '');
+                                await deleteDoc(doc(db, 'friend_requests', realId));
+                                setFriendRequests(prev => prev.filter(r => r.id !== realId));
+                            } else {
+                                // Regular notification
+                                await deleteDoc(doc(db, 'notifications', notificationId));
+                            }
+
+                            // Update local state
+                            setNotifications(prev => prev.filter(n => n.id !== notificationId));
+                            triggerHaptic.success();
+                        } catch (error) {
+                            console.error('Error deleting notification:', error);
+                            triggerHaptic.error();
+                            Alert.alert('Érreur', "Impossible de supprimer la notification");
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     const handleClearAll = async () => {
@@ -437,16 +511,36 @@ export default function NotificationsScreen() {
                         try {
                             setLoading(true);
                             const batch = writeBatch(db);
+
+                            // Only delete notifications (not friend requests which have IDs starting with "friend_")
                             notifications.forEach(n => {
-                                const ref = doc(db, 'notifications', n.id);
-                                batch.delete(ref);
+                                if (!n.id.startsWith('friend_')) {
+                                    const ref = doc(db, 'notifications', n.id);
+                                    batch.delete(ref);
+                                }
                             });
+
                             await batch.commit();
+
+                            // Also delete all friend requests
+                            const friendRequestIds = notifications
+                                .filter(n => n.id.startsWith('friend_'))
+                                .map(n => n.id.replace('friend_', ''));
+
+                            for (const reqId of friendRequestIds) {
+                                try {
+                                    await deleteDoc(doc(db, 'friend_requests', reqId));
+                                } catch (e) {
+                                    console.log('Could not delete friend request:', reqId);
+                                }
+                            }
+
                             setNotifications([]);
+                            setFriendRequests([]);
                             triggerHaptic.success();
                         } catch (error) {
                             console.error('Error clear all:', error);
-                            Alert.alert('Erreur', "Impossible de tout supprimer");
+                            Alert.alert('Érreur', "Impossible de tout supprimer");
                         } finally {
                             setLoading(false);
                         }
@@ -537,6 +631,7 @@ export default function NotificationsScreen() {
                     item.isProfileDeleted && { opacity: 0.6 } // Gray out deleted profiles
                 ]}
                 onPress={handlePress}
+                onLongPress={() => handleDeleteNotification(item.id)}
             >
                 {/* Avatar Left */}
                 <TouchableOpacity

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, Dimensions, Text } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Dimensions, Text, ActivityIndicator } from 'react-native';
 import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../lib/theme';
@@ -29,6 +29,9 @@ export const VideoPlayer = ({ uri, autoPlay = true, style, onPress }: VideoPlaye
     const duration = status?.isLoaded ? status.durationMillis || 0 : 0;
     const position = status?.isLoaded ? status.positionMillis || 0 : 0;
     const progress = duration > 0 ? position / duration : 0;
+
+    // Check if video is loading
+    const isLoading = !status || !status.isLoaded || (status.isLoaded && status.isBuffering);
 
     const togglePlay = useCallback(async () => {
         if (!videoRef.current) return;
@@ -111,6 +114,13 @@ export const VideoPlayer = ({ uri, autoPlay = true, style, onPress }: VideoPlaye
                 </View>
             )}
 
+            {/* Loading Indicator */}
+            {isLoading && (
+                <View style={styles.loadingOverlay}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                </View>
+            )}
+
             {/* Mute indicator when not showing controls */}
             {!showControls && isMuted && (
                 <View style={styles.muteIndicator}>
@@ -177,6 +187,12 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 11,
         marginTop: 4,
+    },
+    loadingOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     muteIndicator: {
         position: 'absolute',

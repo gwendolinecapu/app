@@ -98,7 +98,7 @@ export const StoryNativeAd: React.FC<StoryNativeAdProps> = ({ onClose, onNext, o
                     <Text style={styles.headline}>{adData.headline}</Text>
                     <Text style={styles.body}>{adData.body}</Text>
 
-                    <TouchableOpacity style={styles.ctaButton} onPress={() => console.log("Ad Clicked")}>
+                    <TouchableOpacity style={styles.ctaButton} onPress={() => { /* Track ad click */ }}>
                         <Text style={styles.ctaText}>{adData.callToAction}</Text>
                         <Ionicons name="chevron-forward" size={16} color="white" />
                     </TouchableOpacity>

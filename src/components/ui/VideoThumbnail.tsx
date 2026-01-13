@@ -39,7 +39,7 @@ export const VideoThumbnail: React.FC<VideoThumbnailProps> = ({ mediaUrl, style 
                         return; // Success!
                     }
                 } catch (e) {
-                    console.log(`Thumbnail generation failed at ${time}ms for ${mediaUrl}:`, e);
+                    // Silently fail - caller handles error display
                 }
             }
 

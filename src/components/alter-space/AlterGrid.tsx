@@ -35,6 +35,7 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
     alterId,
     isPrivate = false
 }) => {
+    // ALL HOOKS MUST BE CALLED FIRST - No early returns before this point
     const [activeTab, setActiveTab] = React.useState<'grid' | 'tagged'>('grid');
     const [taggedPosts, setTaggedPosts] = React.useState<Post[]>([]);
     const [loadingTagged, setLoadingTagged] = React.useState(false);
@@ -66,6 +67,7 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
     const displayPosts = activeTab === 'grid' ? posts : taggedPosts;
     const isListLoading = activeTab === 'grid' ? loading : loadingTagged;
 
+    // NOW we can do conditional rendering
     if (isPrivate) {
         return (
             <FlatList

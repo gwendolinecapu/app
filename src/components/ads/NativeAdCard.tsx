@@ -42,7 +42,7 @@ export const NativeAdCard: React.FC<NativeAdCardProps> = ({ themeColors }) => {
         triggerHaptic.selection();
         // Dans une vraie implémentation, ceci serait géré par le SDK (click handling)
         // Pour le mock, on pourrait ouvrir un lien placeholder
-        console.log('Ad clicked:', adData.headline);
+        // Track ad click
     };
 
     const handleOptions = () => {

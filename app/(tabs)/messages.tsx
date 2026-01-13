@@ -35,8 +35,8 @@ export default function MessagesScreen() {
     const [sortedInternal, setSortedInternal] = useState<ConversationItem[]>([]);
     const [sortedFriends, setSortedFriends] = useState<ConversationItem[]>([]);
 
-    const [groups, setGroups] = useState<any[]>([]);
-    const [requests, setRequests] = useState<any[]>([]);
+    const [groups, setGroups] = useState<Array<{ id: string; name: string; description?: string }>>([]);
+    const [requests, setRequests] = useState<Array<{ id: string; senderId: string; senderName?: string; receiverId: string }>>([]);
 
     const [loadingInternal, setLoadingInternal] = useState(false);
     const [loadingFriends, setLoadingFriends] = useState(false);
@@ -101,30 +101,12 @@ export default function MessagesScreen() {
                 // Reverting to: Sort everything by activity.
             };
 
-            // Calculate General Chat timestamp? (Not implemented in service yet)
-            // Just sorting alters for now.
-
-            // Sort desc
+            // Sort conversations by most recent activity
             conversations.sort((a, b) => b.timestamp - a.timestamp);
 
-            // Insert General at top? Or let it float?
-            // "sa serai bien que la derniere personne a qui on as envoyé un message ce met tout en haut"
-            // So pure time sort. 
-            // We'll put General at the top by default if no activity, but active chats go above.
-            // Use 0 timestamp for General.
-
-            const final = [generalItem, ...conversations].sort((a, b) => {
-                // Always keep General available, maybe just separately? 
-                // Let's just put General first if no one spoke, but otherwise sort.
-
-                // SPECIAL RULE: If General has no timestamp, maybe keep it at very top?
-                // Or treat it as generic.
-                if (a.id === 'system-general') return -1; // General always top logic?
-                if (b.id === 'system-general') return 1;
-                return b.timestamp - a.timestamp;
-            });
-
-            setSortedInternal(conversations.sort((a, b) => b.timestamp - a.timestamp));
+            // Add General Chat at the top
+            const sortedWithGeneral = [generalItem, ...conversations];
+            setSortedInternal(sortedWithGeneral);
 
         } catch (error) {
             console.error(error);
@@ -291,41 +273,72 @@ export default function MessagesScreen() {
 
     const handleAcceptRequest = async (requestId: string) => {
         try {
+            const { triggerHaptic } = await import('../../src/lib/haptics');
+            triggerHaptic.success();
             await FriendService.acceptRequest(requestId);
             loadRequests();
         } catch (error) {
+            const { triggerHaptic } = await import('../../src/lib/haptics');
+            triggerHaptic.error();
             console.error(error);
         }
     };
 
     const handleRejectRequest = async (requestId: string) => {
-        try {
-            await FriendService.rejectRequest(requestId);
-            loadRequests();
-        } catch (error) {
-            console.error(error);
-        }
+        const { Alert } = await import('react-native');
+        Alert.alert(
+            "Refuser cette demande ?",
+            "Cette action est irréversible.",
+            [
+                { text: "Annuler", style: "cancel" },
+                {
+                    text: "Refuser",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            const { triggerHaptic } = await import('../../src/lib/haptics');
+                            triggerHaptic.selection();
+                            await FriendService.rejectRequest(requestId);
+                            loadRequests();
+                        } catch (error) {
+                            const { triggerHaptic } = await import('../../src/lib/haptics');
+                            triggerHaptic.error();
+                            console.error(error);
+                        }
+                    }
+                }
+            ]
+        );
     };
 
-    const renderRequest = ({ item }: { item: any }) => (
-        <View style={styles.conversationItem}>
-            <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-                <Ionicons name="person-add" size={24} color="white" />
+    const renderRequest = ({ item }: { item: any }) => {
+        const senderName = item.senderName || item.senderId || 'Utilisateur inconnu';
+        const isDeleted = senderName === 'Utilisateur inconnu' || !item.senderName;
+
+        return (
+            <View style={styles.conversationItem}>
+                <View style={[styles.avatar, { backgroundColor: isDeleted ? colors.textMuted : colors.primary }]}>
+                    {isDeleted ? (
+                        <Ionicons name="person-remove" size={24} color="white" />
+                    ) : (
+                        <Ionicons name="person-add" size={24} color="white" />
+                    )}
+                </View>
+                <View style={styles.conversationContent}>
+                    <Text style={styles.conversationName}>{isDeleted ? 'Utilisateur inconnu' : senderName}</Text>
+                    <Text style={styles.lastMessage}>{isDeleted ? 'Profil supprimé' : 'Nouvelle demande d\'ami'}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                    <TouchableOpacity onPress={() => handleAcceptRequest(item.id)} style={{ padding: 5 }}>
+                        <Ionicons name="checkmark-circle" size={32} color={colors.success || '#4CAF50'} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleRejectRequest(item.id)} style={{ padding: 5 }}>
+                        <Ionicons name="close-circle" size={32} color={colors.error || '#F44336'} />
+                    </TouchableOpacity>
+                </View>
             </View>
-            <View style={styles.conversationContent}>
-                <Text style={styles.conversationName}>Nouvelle demande</Text>
-                <Text style={styles.lastMessage}>De: {item.senderId}</Text>
-            </View>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-                <TouchableOpacity onPress={() => handleAcceptRequest(item.id)} style={{ padding: 5 }}>
-                    <Ionicons name="checkmark-circle" size={32} color={colors.success || '#4CAF50'} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleRejectRequest(item.id)} style={{ padding: 5 }}>
-                    <Ionicons name="close-circle" size={32} color={colors.error || '#F44336'} />
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
+        );
+    };
 
     const renderGroup = ({ item }: { item: any }) => (
         <TouchableOpacity
@@ -491,7 +504,7 @@ export default function MessagesScreen() {
 
             {/* Conversations List */}
             <FlatList
-                data={activeTab === 'internal' ? [{ id: 'general', alter: { id: 'general', name: 'Chat Général', color: colors.primary } as Alter, lastMessage: 'Discussion système', time: '', unread: 0 }, ...sortedInternal] as any : activeTab === 'friends' ? sortedFriends : activeTab === 'groups' ? groups : requests}
+                data={activeTab === 'internal' ? sortedInternal : activeTab === 'friends' ? sortedFriends : activeTab === 'groups' ? groups : requests}
                 renderItem={(activeTab === 'internal' ? renderConversation : activeTab === 'friends' ? renderFriendConversation : activeTab === 'groups' ? renderGroup : renderRequest) as any}
                 keyExtractor={(item) => item.id}
                 ListEmptyComponent={renderEmptyState}

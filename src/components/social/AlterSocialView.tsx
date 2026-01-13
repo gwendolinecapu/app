@@ -31,7 +31,7 @@ export default function AlterSocialView({ alter, platform, initialUrl }: Props) 
         let isMounted = true;
 
         const initSession = async () => {
-            console.log(`[AlterSocialView] Initializing session for ${alter.name} on ${platform}`);
+            // Initialize session
             await SocialSessionService.restoreSession(alter, platform, domain);
             if (isMounted) setIsReady(true);
         };
@@ -41,7 +41,7 @@ export default function AlterSocialView({ alter, platform, initialUrl }: Props) 
         return () => {
             isMounted = false;
             // Save session on exit
-            console.log(`[AlterSocialView] Saving session for ${alter.name} on ${platform}`);
+            // Save session
             SocialSessionService.saveSession(alter.id, platform, domain);
         };
     }, [alter.id, platform, domain]);
@@ -298,7 +298,7 @@ export default function AlterSocialView({ alter, platform, initialUrl }: Props) 
                             }
 
                             if (likeBtn) {
-                                console.log('[DoubleTap] Clicking like button:', likeBtn);
+                                // Click like button
                                 likeBtn.click();
                             }
                         }

@@ -25,7 +25,7 @@ import { Alter } from '../../../src/types';
 import { alterColors, freeAlterColors, premiumAlterColors, colors, spacing, borderRadius, typography } from '../../../src/lib/theme';
 import PremiumService from '../../../src/services/PremiumService';
 import { useAuth } from '../../../src/contexts/AuthContext';
-import { getFrameStyle } from '../../../src/lib/cosmetics';
+import { getFrameStyle, getThemeColors } from '../../../src/lib/cosmetics';
 
 export default function EditAlterProfileScreen() {
     const { alterId } = useLocalSearchParams<{ alterId: string }>();
@@ -40,7 +40,8 @@ export default function EditAlterProfileScreen() {
     const [name, setName] = useState('');
     const [pronouns, setPronouns] = useState('');
     const [bio, setBio] = useState('');
-    const [role, setRole] = useState(''); // We'll store this in custom_fields for now if dynamic
+    const [role, setRole] = useState(''); // Secondary roles
+    const [majorRole, setMajorRole] = useState(''); // Primary role
     const [color, setColor] = useState(freeAlterColors[0]);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
@@ -48,11 +49,15 @@ export default function EditAlterProfileScreen() {
     const [birthDate, setBirthDate] = useState<Date | null>(null);
     const [arrivalDate, setArrivalDate] = useState<Date | null>(null);
     const [showBirthPicker, setShowBirthPicker] = useState(false);
-
     const [showArrivalPicker, setShowArrivalPicker] = useState(false);
-
+    const [showRoleInfoModal, setShowRoleInfoModal] = useState(false);
+    const [showMajorRoleModal, setShowMajorRoleModal] = useState(false);
+    const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+    const [selectedMajorRoles, setSelectedMajorRoles] = useState<string[]>([]);
 
     const [initialAlter, setInitialAlter] = useState<Alter | null>(null);
+
+
 
     useEffect(() => {
         fetchAlter();
@@ -94,6 +99,12 @@ export default function EditAlterProfileScreen() {
                 if (roleField) {
                     setRole(roleField.value);
                 }
+
+                // Try to find majorRole in custom_fields
+                const majorRoleField = data.custom_fields?.find(f => f.label.toLowerCase() === 'majorrole');
+                if (majorRoleField) {
+                    setMajorRole(majorRoleField.value);
+                }
             } else {
                 Alert.alert('Erreur', 'Alter non trouvé');
                 router.back();
@@ -106,6 +117,109 @@ export default function EditAlterProfileScreen() {
         }
     };
 
+    // Role definitions for long press
+    const roleDefinitions: Record<string, string> = {
+        'Protecteur': 'Protège le système des menaces extérieures et intérieures',
+        'Protecteur émotionnel': 'Gère et protège contre les émotions fortes',
+        'Protecteur physique': 'Prend le contrôle en situation de danger physique',
+        'Gatekeeper': 'Contrôle l\'accès aux souvenirs, alters et au front',
+        'Persecutor': 'Semble nuire mais agit souvent pour "protéger" à sa manière',
+        'Avenger': 'Réagit face aux injustices ou abus',
+        'Hôte': 'Alter principal qui gère la vie quotidienne',
+        'Co-hôte': 'Partage le rôle de l\'hôte',
+        'Manager': 'Planifie, structure et prend des décisions',
+        'Caretaker': 'Prend soin du système et des autres alters',
+        'ISH': 'Internal Self Helper - alter très conscient, guide interne',
+        'Mediator': 'Gère les conflits internes',
+        'Archiviste': 'Garde et organise les souvenirs',
+        'Little': 'Alter enfant (âge variable)',
+        'Middle': 'Alter préadolescent',
+        'Age slider': 'Alter dont l\'âge varie',
+        'Regressor': 'Peut redevenir enfant sous stress',
+        'Trauma holder': 'Porte les souvenirs traumatiques',
+        'Emotional holder': 'Porte des émotions spécifiques',
+        'Pain holder': 'Porte la douleur physique ou émotionnelle',
+        'Fear holder': 'Porte la peur',
+        'Fragment': 'Partie très spécifique ou limitée',
+        'Social alter': 'Gère les interactions sociales',
+        'Mask': 'Alter créé pour "faire semblant d\'aller bien"',
+        'Entertainer': 'Humour et créativité',
+        'Artist': 'Création artistique',
+        'Communicator': 'Parle pour le système',
+        'Worker': 'Gère le travail et les études',
+        'Student': 'Spécialisé dans l\'apprentissage',
+        'Sexual alter': 'Gère la sexualité et l\'intimité',
+        'Romantic': 'Gère les relations amoureuses',
+        'Spiritual': 'Spiritualité et croyances',
+        'Fictive': 'Issu d\'un personnage fictif',
+        'Introject': 'Basé sur une personne réelle',
+        'Non-human': 'Animal, créature ou entité',
+        'Object': 'Alter objet',
+        'Subsystem': 'Système dans le système',
+        'Shell': 'Présence minimale ou vide',
+        'Fronting': 'Celui qui est au contrôle',
+        'Co-front': 'Plusieurs alters au front',
+        'Observer': 'Observe sans contrôler',
+        'Dormant': 'Inactif temporairement'
+    };
+
+    const handleRoleSelect = (roleName: string) => {
+        setSelectedRoles(prev => {
+            if (prev.includes(roleName)) {
+                return prev.filter(r => r !== roleName);
+            } else {
+                return [...prev, roleName];
+            }
+        });
+    };
+
+    const handleRoleLongPress = (roleName: string) => {
+        const definition = roleDefinitions[roleName];
+        if (definition) {
+            Alert.alert(roleName, definition);
+        }
+    };
+
+    const applySelectedRoles = () => {
+        setRole(selectedRoles.join(', '));
+        setShowRoleInfoModal(false);
+    };
+
+    // Major role handlers (multiple selection)
+    const handleMajorRoleSelect = (roleName: string) => {
+        setSelectedMajorRoles(prev => {
+            if (prev.includes(roleName)) {
+                return prev.filter(r => r !== roleName);
+            } else {
+                return [...prev, roleName];
+            }
+        });
+    };
+
+    const applySelectedMajorRole = () => {
+        setMajorRole(selectedMajorRoles.join(', '));
+        setShowMajorRoleModal(false);
+    };
+    // Pre-select roles when modal opens
+    useEffect(() => {
+        if (showRoleInfoModal && role) {
+            // Split current role by comma and trim
+            const currentRoles = role.split(',').map(r => r.trim()).filter(r => r.length > 0);
+            setSelectedRoles(currentRoles);
+        } else if (!showRoleInfoModal) {
+            setSelectedRoles([]);
+        }
+    }, [showRoleInfoModal, role]);
+
+    // Pre-select major roles when modal opens
+    useEffect(() => {
+        if (showMajorRoleModal && majorRole) {
+            const currentMajorRoles = majorRole.split(',').map(r => r.trim()).filter(r => r.length > 0);
+            setSelectedMajorRoles(currentMajorRoles);
+        } else if (!showMajorRoleModal) {
+            setSelectedMajorRoles([]);
+        }
+    }, [showMajorRoleModal, majorRole]);
     const pickImage = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ['images'],
@@ -175,14 +289,18 @@ export default function EditAlterProfileScreen() {
                 }
             }
 
-            // Prepare Custom Fields (Role)
-            // Filter out any existing Role entries (case insensitive) to avoid duplicates
+            // Prepare Custom Fields (Role and MajorRole)
+            // Filter out any existing Role/MajorRole entries (case insensitive) to avoid duplicates
             const customFields = (initialAlter?.custom_fields || []).filter(
-                f => f.label.toLowerCase() !== 'role'
+                f => f.label.toLowerCase() !== 'role' && f.label.toLowerCase() !== 'majorrole'
             );
 
             if (role.trim()) {
                 customFields.push({ label: 'Role', value: role.trim() });
+            }
+
+            if (majorRole.trim()) {
+                customFields.push({ label: 'MajorRole', value: majorRole.trim() });
             }
 
             const updateData: Partial<Alter> = {
@@ -237,7 +355,7 @@ export default function EditAlterProfileScreen() {
                     {saving ? (
                         <ActivityIndicator size="small" color={colors.primary} />
                     ) : (
-                        <Ionicons name="checkmark" size={28} color={colors.primary} />
+                        <Ionicons name="checkmark" size={28} color={color} />
                     )}
                 </TouchableOpacity>
             </View>
@@ -245,7 +363,7 @@ export default function EditAlterProfileScreen() {
             <ScrollView contentContainerStyle={styles.content}>
                 {/* ==================== IDENTITY SECTION ==================== */}
                 <View style={styles.sectionHeader}>
-                    <Ionicons name="person-outline" size={20} color={colors.primary} />
+                    <Ionicons name="person-outline" size={20} color={color} />
                     <Text style={styles.sectionHeaderText}>Identité</Text>
                 </View>
 
@@ -332,13 +450,42 @@ export default function EditAlterProfileScreen() {
                         />
                     </View>
 
+                    {/* RÔLE MAJEUR */}
                     <View style={styles.formGroup}>
-                        <Text style={styles.label}>Rôle</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text style={styles.label}>RÔLE MAJEUR</Text>
+                            <TouchableOpacity
+                                onPress={() => setShowMajorRoleModal(true)}
+                                style={{ marginLeft: 6, padding: 2 }}
+                            >
+                                <Ionicons name="information-circle-outline" size={16} color={color} />
+                            </TouchableOpacity>
+                        </View>
+                        <TextInput
+                            style={styles.input}
+                            value={majorRole}
+                            onChangeText={setMajorRole}
+                            placeholder="Ex: Hôte, Protecteur..."
+                            placeholderTextColor={colors.textMuted}
+                        />
+                    </View>
+
+                    {/* RÔLES SECONDAIRES */}
+                    <View style={styles.formGroup}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text style={styles.label}>RÔLES</Text>
+                            <TouchableOpacity
+                                onPress={() => setShowRoleInfoModal(true)}
+                                style={{ marginLeft: 6, padding: 2 }}
+                            >
+                                <Ionicons name="information-circle-outline" size={16} color={color} />
+                            </TouchableOpacity>
+                        </View>
                         <TextInput
                             style={styles.input}
                             value={role}
                             onChangeText={setRole}
-                            placeholder="Ex: Protecteur, Gatekeeper..."
+                            placeholder="Ex: Artiste, Non-human..."
                             placeholderTextColor={colors.textMuted}
                         />
                     </View>
@@ -391,7 +538,7 @@ export default function EditAlterProfileScreen() {
 
                 {/* ==================== APPEARANCE SECTION ==================== */}
                 <View style={[styles.sectionHeader, { marginTop: spacing.xl }]}>
-                    <Ionicons name="color-palette-outline" size={20} color={colors.primary} />
+                    <Ionicons name="color-palette-outline" size={20} color={color} />
                     <Text style={styles.sectionHeaderText}>Apparence & Cosmétiques</Text>
                 </View>
 
@@ -565,6 +712,223 @@ export default function EditAlterProfileScreen() {
                         }}
                     />
                 )}
+
+                {/* Major Role Info Modal */}
+                <Modal visible={showMajorRoleModal} transparent animationType="fade">
+                    <View style={styles.modalOverlay}>
+                        <View style={[styles.datePickerContainer, { maxHeight: '80%' }]}>
+                            <View style={styles.datePickerHeader}>
+                                <Text style={styles.datePickerTitle}>Sélectionner un rôle majeur</Text>
+                                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                                    <TouchableOpacity onPress={applySelectedMajorRole}>
+                                        <Text style={[styles.doneButton, { fontWeight: 'bold' }]}>Appliquer</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => setShowMajorRoleModal(false)}>
+                                        <Text style={styles.doneButton}>Fermer</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                            <ScrollView style={{ padding: spacing.lg }}>
+                                {/* Helper component for major role chip */}
+                                {(() => {
+                                    const MajorRoleChip = ({ roleName }: { roleName: string }) => {
+                                        const isSelected = selectedMajorRoles.includes(roleName);
+                                        return (
+                                            <TouchableOpacity
+                                                onPress={() => handleMajorRoleSelect(roleName)}
+                                                onLongPress={() => handleRoleLongPress(roleName)}
+                                                style={{
+                                                    backgroundColor: isSelected ? color : colors.backgroundCard,
+                                                    paddingHorizontal: spacing.md,
+                                                    paddingVertical: spacing.sm,
+                                                    borderRadius: borderRadius.lg,
+                                                    marginRight: spacing.xs,
+                                                    marginBottom: spacing.xs,
+                                                    borderWidth: 1,
+                                                    borderColor: isSelected ? color : colors.border
+                                                }}
+                                            >
+                                                <Text style={{
+                                                    fontSize: 14,
+                                                    fontWeight: isSelected ? '600' : '500',
+                                                    color: isSelected ? 'white' : colors.text
+                                                }}>{roleName}</Text>
+                                            </TouchableOpacity>
+                                        );
+                                    };
+
+                                    return (
+                                        <>
+                                            {/* Protection */}
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>Protection</Text>
+                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                <MajorRoleChip roleName="Protecteur" />
+                                                <MajorRoleChip roleName="Protecteur émotionnel" />
+                                                <MajorRoleChip roleName="Protecteur physique" />
+                                                <MajorRoleChip roleName="Gatekeeper" />
+                                                <MajorRoleChip roleName="Persecutor" />
+                                                <MajorRoleChip roleName="Avenger" />
+                                            </View>
+
+                                            {/* Gestion */}
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>Gestion</Text>
+                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                <MajorRoleChip roleName="Hôte" />
+                                                <MajorRoleChip roleName="Co-hôte" />
+                                                <MajorRoleChip roleName="Manager" />
+                                                <MajorRoleChip roleName="Caretaker" />
+                                                <MajorRoleChip roleName="ISH" />
+                                                <MajorRoleChip roleName="Mediator" />
+                                                <MajorRoleChip roleName="Archiviste" />
+                                            </View>
+
+                                            <View style={{ backgroundColor: colors.backgroundCard, padding: spacing.md, borderRadius: borderRadius.md, marginTop: spacing.md }}>
+                                                <Text style={{ fontSize: 12, color: colors.textSecondary, fontStyle: 'italic' }}>💡 Sélectionnez un ou plusieurs rôles majeurs pour cet alter. Appui long pour voir la définition.</Text>
+                                            </View>
+                                        </>
+                                    );
+                                })()}
+                            </ScrollView>
+                        </View>
+                    </View>
+                </Modal>
+
+                {/* Role Info Modal */}
+                <Modal visible={showRoleInfoModal} transparent animationType="fade">
+                    <View style={styles.modalOverlay}>
+                        <View style={[styles.datePickerContainer, { maxHeight: '80%' }]}>
+                            <View style={styles.datePickerHeader}>
+                                <Text style={styles.datePickerTitle}>Sélectionner des rôles</Text>
+                                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                                    <TouchableOpacity onPress={applySelectedRoles}>
+                                        <Text style={[styles.doneButton, { fontWeight: 'bold' }]}>Appliquer</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => setShowRoleInfoModal(false)}>
+                                        <Text style={styles.doneButton}>Fermer</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                            <ScrollView style={{ padding: spacing.lg }}>
+                                {/* Helper component for role chip */}
+                                {(() => {
+                                    const RoleChip = ({ roleName }: { roleName: string }) => {
+                                        const isSelected = selectedRoles.includes(roleName);
+                                        return (
+                                            <TouchableOpacity
+                                                onPress={() => handleRoleSelect(roleName)}
+                                                onLongPress={() => handleRoleLongPress(roleName)}
+                                                style={{
+                                                    backgroundColor: isSelected ? color : colors.backgroundCard,
+                                                    paddingHorizontal: spacing.md,
+                                                    paddingVertical: spacing.sm,
+                                                    borderRadius: borderRadius.lg,
+                                                    marginRight: spacing.xs,
+                                                    marginBottom: spacing.xs,
+                                                    borderWidth: 1,
+                                                    borderColor: isSelected ? color : colors.border
+                                                }}
+                                            >
+                                                <Text style={{
+                                                    fontSize: 14,
+                                                    fontWeight: isSelected ? '600' : '500',
+                                                    color: isSelected ? 'white' : colors.text
+                                                }}>{roleName}</Text>
+                                            </TouchableOpacity>
+                                        );
+                                    };
+
+                                    return (
+                                        <>
+                                            {/* Protection */}
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>Protection</Text>
+                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                <RoleChip roleName="Protecteur" />
+                                                <RoleChip roleName="Protecteur émotionnel" />
+                                                <RoleChip roleName="Protecteur physique" />
+                                                <RoleChip roleName="Gatekeeper" />
+                                                <RoleChip roleName="Persecutor" />
+                                                <RoleChip roleName="Avenger" />
+                                            </View>
+
+                                            {/* Gestion */}
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>Gestion</Text>
+                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                <RoleChip roleName="Hôte" />
+                                                <RoleChip roleName="Co-hôte" />
+                                                <RoleChip roleName="Manager" />
+                                                <RoleChip roleName="Caretaker" />
+                                                <RoleChip roleName="ISH" />
+                                                <RoleChip roleName="Mediator" />
+                                                <RoleChip roleName="Archiviste" />
+                                            </View>
+
+                                            {/* Enfance */}
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>Enfance</Text>
+                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                <RoleChip roleName="Little" />
+                                                <RoleChip roleName="Middle" />
+                                                <RoleChip roleName="Age slider" />
+                                                <RoleChip roleName="Regressor" />
+                                            </View>
+
+                                            {/* Traumatismes */}
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>Traumatismes</Text>
+                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                <RoleChip roleName="Trauma holder" />
+                                                <RoleChip roleName="Emotional holder" />
+                                                <RoleChip roleName="Pain holder" />
+                                                <RoleChip roleName="Fear holder" />
+                                                <RoleChip roleName="Fragment" />
+                                            </View>
+
+                                            {/* Sociaux */}
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>Sociaux</Text>
+                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                <RoleChip roleName="Social alter" />
+                                                <RoleChip roleName="Mask" />
+                                                <RoleChip roleName="Animateur/trice" />
+                                                <RoleChip roleName="Artiste" />
+                                                <RoleChip roleName="Communicateur/trice" />
+                                            </View>
+
+                                            {/* Spécialisés */}
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>Spécialisés</Text>
+                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                <RoleChip roleName="Travailleur/se" />
+                                                <RoleChip roleName="Étudiant(e)" />
+                                                <RoleChip roleName="Sexual alter" />
+                                                <RoleChip roleName="Romantique" />
+                                                <RoleChip roleName="Spirituel/le" />
+                                            </View>
+
+                                            {/* Types particuliers */}
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>Types particuliers</Text>
+                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                <RoleChip roleName="Fictive" />
+                                                <RoleChip roleName="Introject" />
+                                                <RoleChip roleName="Non-human" />
+                                                <RoleChip roleName="Objet" />
+                                                <RoleChip roleName="Subsystem" />
+                                                <RoleChip roleName="Shell" />
+                                            </View>
+
+                                            {/* États du front */}
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>États du front</Text>
+                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                <RoleChip roleName="Co-front" />
+                                                <RoleChip roleName="Dormant" />
+                                            </View>
+
+                                            <View style={{ backgroundColor: colors.backgroundCard, padding: spacing.md, borderRadius: borderRadius.md, marginTop: spacing.md }}>
+                                                <Text style={{ fontSize: 12, color: colors.textSecondary, fontStyle: 'italic' }}>💡 Appui long sur un rôle pour voir sa définition. Sélectionnez un ou plusieurs rôles puis appuyez sur "Appliquer".</Text>
+                                            </View>
+                                        </>
+                                    );
+                                })()}
+                            </ScrollView>
+                        </View>
+                    </View>
+                </Modal>
             </ScrollView>
         </KeyboardAvoidingView >
     );

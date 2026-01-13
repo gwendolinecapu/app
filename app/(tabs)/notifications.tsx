@@ -30,6 +30,7 @@ import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { triggerHaptic } from '../../src/lib/haptics';
 import { timeAgo } from '../../src/lib/date';
 import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
+import { AvatarWithLoading } from '../../src/components/ui/AvatarWithLoading';
 
 // Types pour les différentes notifications
 type NotificationType = 'friend_request' | 'follow' | 'like' | 'comment' | 'mention' | 'system' | 'friend_request_accepted' | 'FRIEND_REQUEST_ACCEPTED' | 'friend_new';
@@ -52,6 +53,7 @@ interface Notification {
     data?: any; // For legacy or complex data
     targetName?: string; // For "You accepted X's request"
     targetAvatar?: string; // For double avatar display
+    isProfileDeleted?: boolean; // NEW: Flag for deleted profiles
 }
 
 interface NotificationSection {
@@ -135,17 +137,21 @@ export default function NotificationsScreen() {
                     const alterSnap = await getDoc(doc(db, 'alters', senderId));
                     if (alterSnap.exists()) {
                         const data = alterSnap.data();
-                        return { name: data.name, avatar: data.avatar || data.avatar_url };
+                        return { name: data.name, avatar: data.avatar || data.avatar_url, exists: true };
                     }
 
                     // Try System
                     const systemSnap = await getDoc(doc(db, 'systems', senderId));
                     if (systemSnap.exists()) {
                         const data = systemSnap.data();
-                        return { name: data.username || 'Système', avatar: data.avatar || data.avatar_url };
+                        return { name: data.username || 'Système', avatar: data.avatar || data.avatar_url, exists: true };
                     }
-                } catch (e) { return { name: 'Utilisateur inconnu' }; }
-                return { name: 'Utilisateur' };
+
+                    // Profile doesn't exist (deleted)
+                    return { name: 'Profil supprimé', avatar: null, exists: false };
+                } catch (e) {
+                    return { name: 'Utilisateur inconnu', avatar: null, exists: false };
+                }
             };
 
             // Use Promise.all to enrich requests parallel
@@ -265,39 +271,45 @@ export default function NotificationsScreen() {
                             // Try to get name via helper if available, or fetch doc
                             if (typeof getSenderInfo === 'function') {
                                 const info = await getSenderInfo(senderId);
-                                if (info.name && !info.name.includes('Utilisateur')) {
-                                    n.actorName = info.name;
-                                    if (info.avatar) n.actorAvatar = info.avatar;
-                                }
-                            }
-
-                            // If actorName is still missing/generic, fetch directly
-                            if (!n.actorName || n.actorName === '?' || n.actorName.includes('tilisateur')) {
-                                const { doc, getDoc } = await import('firebase/firestore');
-                                const { db } = await import('../../src/lib/firebase');
-                                const senderDoc = await getDoc(doc(db, 'alters', senderId));
-                                if (senderDoc.exists()) {
-                                    n.actorName = senderDoc.data().name;
-                                    n.actorAvatar = senderDoc.data().avatar || senderDoc.data().avatar_url;
-                                } else {
-                                    // Try system as fallback
-                                    const sysSnap = await getDoc(doc(db, 'systems', senderId));
-                                    if (sysSnap.exists()) {
-                                        n.actorName = sysSnap.data().name || 'Système';
-                                        n.actorAvatar = sysSnap.data().avatar_url || sysSnap.data().avatar;
+                                n.actorName = info.name;
+                                if (info.avatar) n.actorAvatar = info.avatar;
+                                n.isProfileDeleted = !(info as any).exists; // Mark if profile is deleted
+                            } else {
+                                // Fallback: If actorName is still missing/generic, fetch directly
+                                if (!n.actorName || n.actorName === '?' || n.actorName.includes('tilisateur')) {
+                                    const { doc, getDoc } = await import('firebase/firestore');
+                                    const { db } = await import('../../src/lib/firebase');
+                                    const senderDoc = await getDoc(doc(db, 'alters', senderId));
+                                    if (senderDoc.exists()) {
+                                        n.actorName = senderDoc.data().name;
+                                        n.actorAvatar = senderDoc.data().avatar || senderDoc.data().avatar_url;
+                                        n.isProfileDeleted = false;
+                                    } else {
+                                        // Try system as fallback
+                                        const sysSnap = await getDoc(doc(db, 'systems', senderId));
+                                        if (sysSnap.exists()) {
+                                            n.actorName = sysSnap.data().name || 'Système';
+                                            n.actorAvatar = sysSnap.data().avatar_url || sysSnap.data().avatar;
+                                            n.isProfileDeleted = false;
+                                        } else {
+                                            // Profile doesn't exist
+                                            n.actorName = 'Profil supprimé';
+                                            n.isProfileDeleted = true;
+                                        }
                                     }
-                                }
-                            } else if (!n.actorAvatar) {
-                                // Just avatar missing
-                                const { doc, getDoc } = await import('firebase/firestore');
-                                const { db } = await import('../../src/lib/firebase');
-                                const senderDoc = await getDoc(doc(db, 'alters', senderId));
-                                if (senderDoc.exists()) {
-                                    n.actorAvatar = senderDoc.data().avatar || senderDoc.data().avatar_url;
+                                } else if (!n.actorAvatar) {
+                                    // Just avatar missing
+                                    const { doc, getDoc } = await import('firebase/firestore');
+                                    const { db } = await import('../../src/lib/firebase');
+                                    const senderDoc = await getDoc(doc(db, 'alters', senderId));
+                                    if (senderDoc.exists()) {
+                                        n.actorAvatar = senderDoc.data().avatar || senderDoc.data().avatar_url;
+                                    }
                                 }
                             }
                         } catch (err) {
                             console.log(`Could not fetch actor for notification ${n.id}`, err);
+                            n.isProfileDeleted = true; // Assume deleted on error
                         }
                     } else {
                         console.log('Notification missing senderId:', n.id, n);
@@ -455,18 +467,12 @@ export default function NotificationsScreen() {
 
         return (
             <View style={[styles.requestCard, isAccepted && { opacity: 0.6, backgroundColor: colors.backgroundLight + '40' }]}>
-                <View style={[styles.requestAvatar, isAccepted && { backgroundColor: colors.textMuted }, !isAccepted && { backgroundColor: themeColor }]}>
-                    {(item as any).senderAvatar ? (
-                        <Image
-                            source={{ uri: (item as any).senderAvatar }}
-                            style={{ width: 50, height: 50, borderRadius: 25 }}
-                        />
-                    ) : (
-                        <Text style={styles.requestAvatarText}>
-                            {senderName.charAt(0).toUpperCase()}
-                        </Text>
-                    )}
-                </View>
+                <AvatarWithLoading
+                    uri={(item as any).senderAvatar}
+                    fallbackText={senderName}
+                    size={50}
+                    color={isAccepted ? colors.textMuted : themeColor}
+                />
                 <View style={styles.requestContent}>
                     <Text style={[styles.requestTitle, { color: textColor }]}>{senderName}</Text>
                     <Text style={[styles.requestSubtitle, { color: textSecondaryColor }]}>
@@ -502,22 +508,17 @@ export default function NotificationsScreen() {
 
         // Handle press: navigate to post or profile
         const handlePress = () => {
+            // Block navigation if profile is deleted
+            if (item.isProfileDeleted && !item.postId) {
+                Alert.alert(
+                    "Profil supprimé",
+                    "Ce profil a été supprimé et n'est plus accessible.",
+                    [{ text: "OK" }]
+                );
+                return;
+            }
+
             if (item.postId) {
-                // Navigate to post detail (we can use the modal profile trick or a dedidcated route)
-                // For now, assuming modal logic or feed logic. 
-                // If we have a route for single post, use it.
-                // We have /post/[id] but usually it's better to show in context.
-                // Ideally we'd open the post in a way that allows scrolling.
-                // Let's just create a generic route or assume standard navigation.
-                // Since we don't have a direct "view post" handy globally without context, 
-                // we might check if there is a generic post view.
-                // There is app/post/[id].tsx (implied from earlier context).
-                // Try:
-                // router.push(`/post/${item.postId}`);
-                // Actually previous snippets showed we used a Modal in Profile.
-                // Let's try to navigate to the user profile and open the post? No, too complex.
-                // app/post/[id] seems safe if exists.
-                // Wait, context said "Post Not Found" error debugging used app/post/[id].tsx. So it exists.
                 router.push(`/post/${item.postId}` as any);
             } else if (item.senderId) {
                 router.push(`/profile/${item.senderId}` as any);
@@ -532,50 +533,65 @@ export default function NotificationsScreen() {
                         backgroundColor: themeColor + '20',
                         borderLeftWidth: 4,
                         borderLeftColor: themeColor
-                    }
+                    },
+                    item.isProfileDeleted && { opacity: 0.6 } // Gray out deleted profiles
                 ]}
                 onPress={handlePress}
             >
                 {/* Avatar Left */}
-                <TouchableOpacity onPress={() => item.senderId && router.push(`/profile/${item.senderId}` as any)}>
+                <TouchableOpacity
+                    onPress={() => {
+                        if (item.isProfileDeleted) {
+                            Alert.alert(
+                                "Profil supprimé",
+                                "Ce profil a été supprimé et n'est plus accessible.",
+                                [{ text: "OK" }]
+                            );
+                        } else if (item.senderId) {
+                            router.push(`/profile/${item.senderId}` as any);
+                        }
+                    }}
+                >
                     <View style={styles.notificationAvatarContainer}>
-                        {/* Special case: Double Avatar for Self-Accepted Friend Request */}
-                        {(item.type === 'friend_request_accepted' || item.type === 'FRIEND_REQUEST_ACCEPTED') && item.senderId === currentAlter?.id && item.targetAvatar ? (
-                            <View style={{ width: 50, height: 50, flexDirection: 'row', alignItems: 'center' }}>
-                                {/* User Avatar (Back) */}
-                                {item.actorAvatar ? (
-                                    <Image
-                                        source={{ uri: item.actorAvatar }}
-                                        style={[styles.notificationAvatar, { width: 35, height: 35, borderRadius: 17.5, position: 'absolute', left: 0, opacity: 0.8 }]}
+                        {/* Deleted Profile Badge */}
+                        {item.isProfileDeleted ? (
+                            <View style={[styles.notificationAvatar, {
+                                backgroundColor: colors.textMuted,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                opacity: 0.5
+                            }]}>
+                                <Ionicons name="person-remove" size={20} color="white" />
+                                <View style={styles.deletedBadge}>
+                                    <Ionicons name="close-circle" size={18} color={colors.error} />
+                                </View>
+                            </View>
+                        ) : /* Special case: Double Avatar for Self-Accepted Friend Request */
+                            (item.type === 'friend_request_accepted' || item.type === 'FRIEND_REQUEST_ACCEPTED') && item.senderId === currentAlter?.id && item.targetAvatar ? (
+                                <View style={{ width: 50, height: 50, flexDirection: 'row', alignItems: 'center' }}>
+                                    <AvatarWithLoading
+                                        uri={item.actorAvatar}
+                                        fallbackText={item.actorName || '?'}
+                                        size={35}
+                                        color={themeColor}
+                                        style={{ position: 'absolute', left: 0, opacity: 0.8 }}
                                     />
-                                ) : (
-                                    <View style={[styles.notificationAvatar, { width: 35, height: 35, borderRadius: 17.5, position: 'absolute', left: 0, backgroundColor: themeColor, justifyContent: 'center', alignItems: 'center' }]}>
-                                        <Text style={{ color: 'white', fontSize: 12 }}>{item.actorName?.[0] || '?'}</Text>
-                                    </View>
-                                )}
-
-                                {/* Friend Avatar (Front) */}
-                                <Image
-                                    source={{ uri: item.targetAvatar }}
-                                    style={[styles.notificationAvatar, { width: 35, height: 35, borderRadius: 17.5, position: 'absolute', right: 0, borderWidth: 2, borderColor: themeColor }]}
+                                    <AvatarWithLoading
+                                        uri={item.targetAvatar}
+                                        fallbackText={item.targetName || '?'}
+                                        size={35}
+                                        color={themeColor}
+                                        style={{ position: 'absolute', right: 0, borderWidth: 2, borderColor: themeColor }}
+                                    />
+                                </View>
+                            ) : (
+                                <AvatarWithLoading
+                                    uri={item.actorAvatar}
+                                    fallbackText={item.actorName || '?'}
+                                    size={44}
+                                    color={themeColor}
                                 />
-                            </View>
-                        ) : item.actorAvatar ? (
-                            <Image
-                                source={{ uri: item.actorAvatar }}
-                                style={styles.notificationAvatar}
-                            />
-                        ) : (
-                            <View style={[styles.notificationAvatar, { backgroundColor: themeColor, justifyContent: 'center', alignItems: 'center' }]}>
-                                <Text style={{ color: 'white', fontWeight: 'bold' }}>{item.actorName?.[0] || '?'}</Text>
-                            </View>
-                        )}
-                        {/* Type Icon Badge (optional, Insta usually doesn't show it on avatar except stories) */}
-                        {/* 
-                        <View style={styles.typeBadge}>
-                             <Ionicons name={getIcon(item.type)} size={10} color="white" />
-                        </View>
-                        */}
+                            )}
                     </View>
                 </TouchableOpacity>
 
@@ -856,6 +872,22 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderWidth: 2,
         borderColor: colors.background,
+    },
+    deletedBadge: {
+        position: 'absolute',
+        bottom: -2,
+        right: -2,
+        backgroundColor: 'white',
+        borderRadius: 12,
+        width: 22,
+        height: 22,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+        elevation: 2,
     },
     notificationContent: {
         flex: 1,

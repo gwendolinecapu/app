@@ -4,6 +4,8 @@ import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Video, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { db } from '../../../src/lib/firebase';
 import { PostService } from '../../../src/services/posts';
 import { FriendService } from '../../../src/services/friends';
 import { Post } from '../../../src/types';
@@ -41,23 +43,34 @@ const VideoItem = React.memo(({ post, active, user, onLike, onToggleMute, isMute
 
     useEffect(() => {
         setIsPlaying(active);
-        if (active) {
+        if (active && post.media_url) {
             videoRef.current?.playAsync();
         } else {
             videoRef.current?.pauseAsync();
         }
-    }, [active]);
+    }, [active, post.media_url]);
 
     const isLiked = user && post.likes?.includes(user.uid);
+
+    // Skip rendering if no valid media URL
+    if (!post.media_url) {
+        return (
+            <View style={styles.container}>
+                <View style={[styles.video, { backgroundColor: 'black', justifyContent: 'center', alignItems: 'center' }]}>
+                    <Text style={{ color: 'white' }}>Vidéo non disponible</Text>
+                </View>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
             <Video
                 ref={videoRef}
-                source={{ uri: post.media_url || '' }}
+                source={{ uri: post.media_url }}
                 style={styles.video}
                 resizeMode={ResizeMode.COVER}
-                shouldPlay={active} // Only play if active item
+                shouldPlay={active}
                 isMuted={isMuted}
                 isLooping
             />
@@ -183,38 +196,28 @@ export default function FullPageVideoScreen() {
                 fetchedPosts = res.posts.filter(p => p.system_id === contextId);
             } else {
                 // Default: Video Feed (Reels style)
-                // Fetch from friends (alters we follow)
-                if (user) {
-                    // Get the current alter's following list (alter IDs they follow)
-                    const { currentAlter } = require('../../../src/contexts/AuthContext');
+                // Fetch ALL videos for now (simplify to test swipe)
+                try {
+                    const postsRef = collection(db, 'posts');
+                    const postsQuery = query(
+                        postsRef,
+                        where('visibility', '==', 'public'),
+                        limit(50)
+                    );
+                    const postsSnap = await getDocs(postsQuery);
 
-                    // We need to get friends for the current viewing alter
-                    // Since we're in a hook context, we pass currentAlter from useAuth
-                    // But useAuth is already imported, let's use it directly
+                    fetchedPosts = postsSnap.docs.map(doc => {
+                        const data = doc.data();
+                        return {
+                            id: doc.id,
+                            ...data,
+                            created_at: data.created_at?.toDate?.()?.toISOString() || new Date().toISOString(),
+                        } as Post;
+                    });
 
-                    // Get all alters this user's alters follow
-                    const altersRef = collection(db, 'alters');
-                    const altersQuery = query(altersRef, where('systemId', '==', user.uid));
-                    const altersSnap = await getDocs(altersQuery);
-
-                    const allFollowedAlterIds: string[] = [];
-
-                    for (const alterDoc of altersSnap.docs) {
-                        const alterId = alterDoc.id;
-                        const friendIds = await FriendService.getFriends(alterId);
-                        allFollowedAlterIds.push(...friendIds);
-                    }
-
-                    // Deduplicate
-                    const uniqueFollowedIds = [...new Set(allFollowedAlterIds)];
-
-                    console.log('📋 Following', uniqueFollowedIds.length, 'alters');
-
-                    if (uniqueFollowedIds.length > 0) {
-                        // Use fetchVideoFeed with alter IDs
-                        const res = await PostService.fetchVideoFeed(uniqueFollowedIds, [], null, 50);
-                        fetchedPosts = res.posts;
-                    }
+                    console.log('📋 Fetched', fetchedPosts.length, 'public posts');
+                } catch (e) {
+                    console.error('Error fetching all posts:', e);
                 }
             }
 
@@ -292,14 +295,27 @@ export default function FullPageVideoScreen() {
         );
     }
 
+    // Create infinite loop data by duplicating posts a few times (not too many to avoid memory issues)
+    const LOOP_COUNT = 10; // Reasonable for memory
+    const loopedPosts = posts.length > 0
+        ? Array(LOOP_COUNT).fill(posts).flat()
+        : [];
+
+    // Calculate initial index in the middle of the loop for bidirectional scrolling
+    const middleLoopStart = Math.floor(LOOP_COUNT / 2) * posts.length;
+    const initialLoopIndex = middleLoopStart + (posts.findIndex(p => p.id === id) || 0);
+
+    // Get real index (modulo original length)
+    const realIndex = posts.length > 0 ? activeIndex % posts.length : 0;
+
     return (
         <View style={styles.mainContainer}>
             <FlatList
-                data={posts}
-                snapToOffsets={posts.map((_, index) => index * height)}
+                data={loopedPosts}
+                snapToOffsets={loopedPosts.map((_, index) => index * height)}
                 decelerationRate="fast"
                 snapToAlignment="start"
-                keyExtractor={item => item.id}
+                keyExtractor={(item, index) => `${item.id}-${index}`}
                 renderItem={({ item, index }) => (
                     <View style={{ width, height }}>
                         <VideoItem
@@ -315,7 +331,7 @@ export default function FullPageVideoScreen() {
                 onViewableItemsChanged={handleViewableItemsChanged}
                 viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
                 showsVerticalScrollIndicator={false}
-                initialScrollIndex={activeIndex > 0 ? activeIndex : undefined}
+                initialScrollIndex={initialLoopIndex > 0 ? initialLoopIndex : undefined}
                 getItemLayout={(data, index) => (
                     { length: height, offset: height * index, index }
                 )}
@@ -323,8 +339,9 @@ export default function FullPageVideoScreen() {
                     console.log('Scroll to index failed:', info);
                 }}
                 removeClippedSubviews={false}
-                windowSize={3}
+                windowSize={5}
                 scrollEventThrottle={16}
+                maxToRenderPerBatch={3}
             />
 
             {/* Top Bar - Fixed */}
@@ -333,7 +350,7 @@ export default function FullPageVideoScreen() {
                     <Ionicons name="chevron-down" size={32} color="white" />
                 </TouchableOpacity>
                 <Text style={{ color: 'white', fontSize: 12, marginTop: 10 }}>
-                    {activeIndex + 1} / {posts.length}
+                    {realIndex + 1} / {posts.length}
                 </Text>
             </SafeAreaView>
         </View>

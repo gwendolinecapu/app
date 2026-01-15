@@ -117,76 +117,76 @@ export default function EditAlterProfileScreen() {
         }
     };
 
-    // Role definitions for long press
+    // Role definitions for long press - detailed explanations
     const roleDefinitions: Record<string, string> = {
         // Protection
-        'Protecteur': 'Protège le système des menaces extérieures et intérieures',
-        'Protecteur émotionnel': 'Gère et protège contre les émotions fortes',
-        'Protecteur physique': 'Prend le contrôle en situation de danger physique',
-        'Gatekeeper': 'Contrôle l\'accès aux souvenirs, alters et au front',
-        'Persecutor': 'Semble nuire mais agit souvent pour "protéger" à sa manière',
-        'Avenger': 'Réagit face aux injustices ou abus',
-        'Guardian': 'Veille sur le système et ses membres de manière générale',
+        'Protecteur': 'Rôle de défense du système. Intervient pour protéger le corps ou les autres alters contre des situations perçues comme dangereuses ou menaçantes.',
+        'Protecteur émotionnel': 'Spécialisé dans la gestion des émotions intenses. Peut "absorber" ou bloquer les émotions trop fortes pour protéger le système du surmenage émotionnel.',
+        'Protecteur physique': 'Prend le contrôle lors de situations de danger physique. Souvent plus résistant à la douleur et capable de réagir rapidement en cas d\'urgence.',
+        'Gatekeeper': 'Le "gardien des portes" du système. Contrôle qui peut fronter, quand, et gère l\'accès aux souvenirs (parfois traumatiques) pour protéger le système.',
+        'Persecutor': 'Alter qui semble nuisible mais dont les actions viennent souvent d\'une volonté de protéger à sa manière. Peut reproduire des comportements d\'agresseurs passés comme mécanisme de défense.',
+        'Avenger': 'Le "vengeur" du système. Réagit face aux injustices subies ou aux abus. Peut exprimer la colère que d\'autres alters ne peuvent pas gérer.',
+        'Guardian': 'Veille sur l\'ensemble du système de manière générale. Moins spécialisé que le protecteur, il surveille le bien-être global.',
         // Gestion
-        'Hôte': 'Alter principal qui gère la vie quotidienne',
-        'Co-hôte': 'Partage le rôle de l\'hôte',
-        'Manager': 'Planifie, structure et prend des décisions',
-        'Caretaker': 'Prend soin du système et des autres alters',
-        'ISH': 'Internal Self Helper - alter très conscient, guide interne',
-        'Mediator': 'Gère les conflits internes',
-        'Archiviste': 'Garde et organise les souvenirs',
-        'Organisateur': 'Gère l\'organisation et la planification du quotidien',
-        'Core': 'Noyau central du système, souvent l\'alter original',
+        'Hôte': 'L\'alter principal qui gère la vie quotidienne la majorité du temps. C\'est souvent celui qui interagit le plus avec le monde extérieur.',
+        'Co-hôte': 'Partage les responsabilités de l\'hôte. Peut alterner avec l\'hôte principal ou fronter régulièrement pour partager la charge du quotidien.',
+        'Manager': 'Responsable de la planification et de l\'organisation. Prend des décisions importantes et structure la vie du système.',
+        'Caretaker': 'Le "soignant" du système. Prend soin des autres alters, notamment des plus vulnérables (littles). S\'assure que tout le monde va bien.',
+        'ISH': 'Internal Self Helper - Un alter très conscient du fonctionnement du système. Sert de guide interne et peut aider à la communication entre alters.',
+        'Mediator': 'Gère les conflits internes entre alters. Aide à trouver des compromis et maintient l\'harmonie dans le système.',
+        'Archiviste': 'Garde et organise les souvenirs du système. Peut avoir accès à plus de mémoires que les autres alters.',
+        'Organisateur': 'Se concentre sur l\'organisation pratique : emploi du temps, tâches à faire, gestion des responsabilités quotidiennes.',
+        'Core': 'Le "noyau" ou alter original du système. Pas toujours présent ou identifiable dans tous les systèmes. Représente parfois l\'identité d\'origine.',
         // Enfance
-        'Little': 'Alter enfant (âge variable)',
-        'Middle': 'Alter préadolescent',
-        'Teen': 'Alter adolescent',
-        'Age slider': 'Alter dont l\'âge varie',
-        'Regressor': 'Peut redevenir enfant sous stress',
+        'Little': 'Alter enfant, généralement perçu comme ayant moins de 12 ans. Peut garder l\'innocence, la curiosité, ou les traumatismes de l\'enfance.',
+        'Middle': 'Alter préadolescent (environ 9-12 ans). Entre l\'enfance et l\'adolescence, avec des caractéristiques des deux périodes.',
+        'Teen': 'Alter adolescent (13-17 ans). Peut gérer des situations que les littles ne peuvent pas, tout en ayant des besoins différents des adultes.',
+        'Age slider': 'Alter dont l\'âge perçu varie selon les situations ou le temps. Peut être enfant un jour et adulte un autre.',
+        'Regressor': 'Alter qui peut "régresser" vers un état plus jeune, souvent en réponse au stress ou au besoin de réconfort.',
         // Traumatismes
-        'Trauma holder': 'Porte les souvenirs traumatiques',
-        'Emotional holder': 'Porte des émotions spécifiques',
-        'Pain holder': 'Porte la douleur physique ou émotionnelle',
-        'Fear holder': 'Porte la peur',
-        'Memory holder': 'Garde des souvenirs spécifiques (pas forcément traumatiques)',
-        'Fragment': 'Partie très spécifique ou limitée',
+        'Trauma holder': 'Porte les souvenirs traumatiques pour protéger les autres alters. Peut avoir des flashbacks ou des réactions liées aux traumas.',
+        'Emotional holder': 'Porte des émotions spécifiques (tristesse, colère, honte...) pour que les autres alters puissent fonctionner sans être submergés.',
+        'Pain holder': 'Porte la douleur physique ou émotionnelle. Peut ressentir plus de douleur que les autres mais les protège ainsi.',
+        'Fear holder': 'Spécialisé dans le port de la peur et de l\'anxiété. Permet aux autres alters de fonctionner sans être paralysés par la peur.',
+        'Memory holder': 'Garde des souvenirs spécifiques, pas forcément traumatiques. Peut être le seul à se souvenir de certains événements.',
+        'Fragment': 'Un alter très limité, souvent créé pour une fonction ou un souvenir très spécifique. Peut n\'avoir qu\'une personnalité partielle.',
         // Sociaux & Créatifs
-        'Social alter': 'Gère les interactions sociales',
-        'Mask': 'Alter créé pour "faire semblant d\'aller bien"',
-        'Entertainer': 'Humour et créativité',
-        'Animateur/trice': 'Anime et divertit, apporte de la joie',
+        'Social alter': 'Spécialisé dans les interactions sociales. Gère les conversations, les relations, et peut être très à l\'aise en société.',
+        'Mask': 'Alter créé pour "faire semblant que tout va bien". Permet au système de fonctionner socialement même quand ça ne va pas.',
+        'Entertainer': 'Apporte humour, joie et divertissement. Peut alléger l\'atmosphère et aider le système à se détendre.',
+        'Animateur/trice': 'Anime les situations, apporte de l\'énergie positive. Aime divertir et faire rire les autres.',
         'Artist': 'Création artistique',
-        'Artiste': 'Création artistique et expression créative',
+        'Artiste': 'Alter créatif, s\'exprime à travers l\'art (dessin, peinture, écriture, musique...). La création peut être un exutoire important.',
         'Communicator': 'Parle pour le système',
-        'Communicateur/trice': 'Gère la communication du système',
-        'Performer': 'S\'exprime à travers la performance (danse, musique, théâtre)',
+        'Communicateur/trice': 'Gère la communication interne et externe. Peut exprimer ce que les autres alters n\'arrivent pas à dire.',
+        'Performer': 'S\'exprime à travers la performance : danse, musique, théâtre, sport. Aime être sur scène ou montrer ses talents.',
         // Spécialisés
         'Worker': 'Gère le travail et les études',
-        'Travailleur/se': 'Gère le travail et la vie professionnelle',
+        'Travailleur/se': 'Spécialisé dans le travail et la vie professionnelle. Compétent et concentré sur les tâches à accomplir.',
         'Student': 'Spécialisé dans l\'apprentissage',
-        'Étudiant(e)': 'Se concentre sur les études et l\'apprentissage',
-        'Sexual alter': 'Gère la sexualité et l\'intimité',
+        'Étudiant(e)': 'Se concentre sur les études et l\'apprentissage. Aime apprendre de nouvelles choses.',
+        'Sexual alter': 'Gère la sexualité et l\'intimité du système. Peut aussi être un mécanisme de protection suite à des traumas sexuels.',
         'Romantic': 'Gère les relations amoureuses',
-        'Romantique': 'Gère les relations affectives et romantiques',
+        'Romantique': 'Gère les relations affectives et romantiques. Ressent et exprime l\'amour et l\'attachement.',
         'Spiritual': 'Spiritualité et croyances',
-        'Spirituel/le': 'Connecté à la spiritualité et aux croyances',
-        'Somatic': 'Gère les sensations corporelles et physiques',
+        'Spirituel/le': 'Connecté à la spiritualité, la religion ou les croyances du système. Peut apporter sens et guidance.',
+        'Somatic': 'Particulièrement connecté au corps et aux sensations physiques. Peut être le seul à ressentir certaines sensations.',
         // Types particuliers
-        'Fictive': 'Issu d\'un personnage fictif (film, livre, jeu...)',
-        'Factive': 'Basé sur une personne célèbre ou publique',
-        'Introject': 'Basé sur une personne réelle connue personnellement',
-        'Non-human': 'Animal, créature mythique ou entité non-humaine',
-        'Therian': 'S\'identifie comme un animal ou une créature',
+        'Fictive': 'Alter basé sur un personnage fictif (de film, livre, jeu vidéo, série...). A l\'apparence et parfois la personnalité du personnage.',
+        'Factive': 'Alter basé sur une personne réelle célèbre ou publique. N\'est pas cette personne mais en a des caractéristiques.',
+        'Introject': 'Alter basé sur une personne réelle connue personnellement (famille, ami, agresseur...). Créé pour diverses raisons.',
+        'Non-human': 'Alter qui ne s\'identifie pas comme humain : animal, créature mythique, robot, entité abstraite...',
+        'Therian': 'S\'identifie spécifiquement comme un animal ou une créature. Peut avoir des instincts ou comportements liés à cet animal.',
         'Object': 'Alter objet',
-        'Objet': 'Alter qui s\'identifie comme un objet',
-        'Subsystem': 'Système dans le système',
-        'Shell': 'Présence minimale ou vide, souvent utilisé pour masquer',
+        'Objet': 'Alter qui s\'identifie comme un objet (peluche, outil, etc.). Plus rare mais valide.',
+        'Subsystem': 'Un système dans le système. Le subsystem contient lui-même plusieurs alters interconnectés.',
+        'Shell': 'Alter avec une présence minimale, parfois "vide". Peut être utilisé pour masquer que quelqu\'un est front.',
         // États du front
-        'Fronting': 'Celui qui est actuellement au contrôle',
-        'Co-front': 'Plusieurs alters au front simultanément',
-        'Observer': 'Observe sans prendre le contrôle',
-        'Dormant': 'Inactif temporairement ou depuis longtemps',
-        'Unknown': 'Rôle inconnu ou non encore déterminé'
+        'Fronting': 'L\'alter qui contrôle actuellement le corps. Peut changer fréquemment ou rester stable longtemps.',
+        'Co-front': 'Situation où plusieurs alters sont présents au front simultanément, partageant le contrôle à des degrés divers.',
+        'Observer': 'Alter qui observe ce qui se passe sans prendre le contrôle. Peut être conscient de l\'extérieur sans pouvoir agir.',
+        'Dormant': 'Alter actuellement inactif, parfois depuis longtemps. Peut se "réveiller" plus tard.',
+        'Unknown': 'Pour les alters dont le rôle n\'est pas encore connu ou défini. Parfaitement valide !'
     };
 
     const handleRoleSelect = (roleName: string) => {
@@ -367,19 +367,27 @@ export default function EditAlterProfileScreen() {
         );
     }
 
+    // Get theme colors for the alter
+    const themeColors = getThemeColors(initialAlter?.equipped_items?.theme);
+    const bgColor = themeColors?.background || colors.background;
+    const textColor = themeColors?.text || colors.text;
+    const textSecondaryColor = themeColors?.textSecondary || colors.textSecondary;
+    const cardBg = themeColors?.backgroundCard || colors.backgroundCard;
+    const borderColor = themeColors?.border || colors.border;
+
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.container}
+            style={[styles.container, { backgroundColor: bgColor }]}
         >
-            <View style={styles.header}>
+            <View style={[styles.header, { borderBottomColor: borderColor }]}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="close" size={28} color={colors.text} />
+                    <Ionicons name="close" size={28} color={textColor} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Modifier le profil</Text>
+                <Text style={[styles.headerTitle, { color: textColor }]}>Modifier le profil</Text>
                 <TouchableOpacity onPress={handleSave} disabled={saving}>
                     {saving ? (
-                        <ActivityIndicator size="small" color={colors.primary} />
+                        <ActivityIndicator size="small" color={color} />
                     ) : (
                         <Ionicons name="checkmark" size={28} color={color} />
                     )}
@@ -390,7 +398,7 @@ export default function EditAlterProfileScreen() {
                 {/* ==================== IDENTITY SECTION ==================== */}
                 <View style={styles.sectionHeader}>
                     <Ionicons name="person-outline" size={20} color={color} />
-                    <Text style={styles.sectionHeaderText}>Identité</Text>
+                    <Text style={[styles.sectionHeaderText, { color: textColor }]}>Identité</Text>
                 </View>
 
                 {/* Avatar Section (Part of Identity visually) */}
@@ -449,98 +457,96 @@ export default function EditAlterProfileScreen() {
                         );
                     })()}
                     <TouchableOpacity onPress={pickImage}>
-                        <Text style={styles.changePhotoText}>Changer de photo</Text>
+                        <Text style={[styles.changePhotoText, { color: color }]}>Changer de photo</Text>
                     </TouchableOpacity>
                 </View>
 
                 <View style={styles.formSection}>
                     <View style={styles.formGroup}>
-                        <Text style={styles.label}>Nom</Text>
+                        <Text style={[styles.label, { color: textSecondaryColor }]}>Nom</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, { backgroundColor: cardBg, color: textColor, borderColor: borderColor }]}
                             value={name}
                             onChangeText={setName}
                             placeholder="Nom de l'alter"
-                            placeholderTextColor={colors.textMuted}
+                            placeholderTextColor={textSecondaryColor}
                         />
                     </View>
 
                     <View style={styles.formGroup}>
-                        <Text style={styles.label}>Pronoms</Text>
+                        <Text style={[styles.label, { color: textSecondaryColor }]}>Pronoms</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, { backgroundColor: cardBg, color: textColor, borderColor: borderColor }]}
                             value={pronouns}
                             onChangeText={setPronouns}
                             placeholder="Ex: iel/ellui"
-                            placeholderTextColor={colors.textMuted}
+                            placeholderTextColor={textSecondaryColor}
                         />
                     </View>
 
                     {/* RÔLE MAJEUR */}
                     <View style={styles.formGroup}>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Text style={styles.label}>RÔLE MAJEUR</Text>
+                            <Text style={[styles.label, { color: textSecondaryColor }]}>RÔLE MAJEUR</Text>
                             <TouchableOpacity
                                 onPress={() => setShowMajorRoleModal(true)}
                                 style={{ marginLeft: 6, padding: 2 }}
                             >
-                                <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
+                                <Ionicons name="information-circle-outline" size={18} color={textSecondaryColor} />
                             </TouchableOpacity>
                         </View>
-                        <TouchableOpacity
-                            style={styles.input}
-                            onPress={() => setShowMajorRoleModal(true)}
-                        >
-                            <Text style={{ color: majorRole ? colors.text : colors.textMuted }}>
-                                {majorRole || 'Ex: Hôte, Protecteur...'}
-                            </Text>
-                        </TouchableOpacity>
+                        <TextInput
+                            style={[styles.input, { backgroundColor: cardBg, color: textColor, borderColor: borderColor }]}
+                            value={majorRole}
+                            onChangeText={setMajorRole}
+                            placeholder="Ex: Hôte, Protecteur..."
+                            placeholderTextColor={textSecondaryColor}
+                        />
                     </View>
 
                     {/* RÔLES SECONDAIRES */}
                     <View style={styles.formGroup}>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Text style={styles.label}>RÔLES</Text>
+                            <Text style={[styles.label, { color: textSecondaryColor }]}>RÔLES</Text>
                             <TouchableOpacity
                                 onPress={() => setShowRoleInfoModal(true)}
                                 style={{ marginLeft: 6, padding: 2 }}
                             >
-                                <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
+                                <Ionicons name="information-circle-outline" size={18} color={textSecondaryColor} />
                             </TouchableOpacity>
                         </View>
-                        <TouchableOpacity
-                            style={styles.input}
-                            onPress={() => setShowRoleInfoModal(true)}
-                        >
-                            <Text style={{ color: role ? colors.text : colors.textMuted }}>
-                                {role || 'Ex: Artiste, Non-human...'}
-                            </Text>
-                        </TouchableOpacity>
+                        <TextInput
+                            style={[styles.input, { backgroundColor: cardBg, color: textColor, borderColor: borderColor }]}
+                            value={role}
+                            onChangeText={setRole}
+                            placeholder="Ex: Artiste, Non-human..."
+                            placeholderTextColor={textSecondaryColor}
+                        />
                     </View>
 
                     {/* Date Fields */}
                     <View style={styles.dateRow}>
                         <View style={[styles.formGroup, { flex: 1, marginRight: spacing.sm }]}>
-                            <Text style={styles.label}>Date de naissance</Text>
+                            <Text style={[styles.label, { color: textSecondaryColor }]}>Date de naissance</Text>
                             <TouchableOpacity
-                                style={styles.dateInput}
+                                style={[styles.dateInput, { backgroundColor: cardBg, borderColor: borderColor }]}
                                 onPress={() => setShowBirthPicker(true)}
                             >
-                                <Ionicons name="calendar-outline" size={18} color={colors.textMuted} />
-                                <Text style={[styles.dateText, !birthDate && { color: colors.textMuted }]}>
+                                <Ionicons name="calendar-outline" size={18} color={textSecondaryColor} />
+                                <Text style={[styles.dateText, { color: birthDate ? textColor : textSecondaryColor }]}>
                                     {birthDate ? birthDate.toLocaleDateString() : 'Sélectionner'}
                                 </Text>
                             </TouchableOpacity>
                         </View>
 
                         <View style={[styles.formGroup, { flex: 1, marginLeft: spacing.sm }]}>
-                            <Text style={styles.label}>Date d&apos;arrivée</Text>
+                            <Text style={[styles.label, { color: textSecondaryColor }]}>Date d&apos;arrivée</Text>
                             <TouchableOpacity
-                                style={styles.dateInput}
+                                style={[styles.dateInput, { backgroundColor: cardBg, borderColor: borderColor }]}
                                 onPress={() => setShowArrivalPicker(true)}
                             >
-                                <Ionicons name="calendar-outline" size={18} color={colors.textMuted} />
-                                <Text style={[styles.dateText, !arrivalDate && { color: colors.textMuted }]}>
+                                <Ionicons name="calendar-outline" size={18} color={textSecondaryColor} />
+                                <Text style={[styles.dateText, { color: arrivalDate ? textColor : textSecondaryColor }]}>
                                     {arrivalDate ? arrivalDate.toLocaleDateString() : 'Sélectionner'}
                                 </Text>
                             </TouchableOpacity>
@@ -548,13 +554,13 @@ export default function EditAlterProfileScreen() {
                     </View>
 
                     <View style={styles.formGroup}>
-                        <Text style={styles.label}>Bio</Text>
+                        <Text style={[styles.label, { color: textSecondaryColor }]}>Bio</Text>
                         <TextInput
-                            style={[styles.input, styles.textArea]}
+                            style={[styles.input, styles.textArea, { backgroundColor: cardBg, color: textColor, borderColor: borderColor }]}
                             value={bio}
                             onChangeText={setBio}
                             placeholder="Une courte description..."
-                            placeholderTextColor={colors.textMuted}
+                            placeholderTextColor={textSecondaryColor}
                             multiline
                             numberOfLines={4}
                         />
@@ -567,12 +573,12 @@ export default function EditAlterProfileScreen() {
                 {/* ==================== APPEARANCE SECTION ==================== */}
                 <View style={[styles.sectionHeader, { marginTop: spacing.xl }]}>
                     <Ionicons name="color-palette-outline" size={20} color={color} />
-                    <Text style={styles.sectionHeaderText}>Apparence & Cosmétiques</Text>
+                    <Text style={[styles.sectionHeaderText, { color: textColor }]}>Apparence & Cosmétiques</Text>
                 </View>
 
                 <View style={styles.formSection}>
                     <View style={styles.formGroup}>
-                        <Text style={styles.label}>Couleur thématique</Text>
+                        <Text style={[styles.label, { color: textSecondaryColor }]}>Couleur thématique</Text>
 
                         <View style={styles.colorGrid}>
                             {freeAlterColors.map((c) => (
@@ -580,7 +586,7 @@ export default function EditAlterProfileScreen() {
                                     key={c}
                                     style={[
                                         styles.colorCircle,
-                                        { backgroundColor: c, borderWidth: c === '#FFFFFF' ? 1 : 0, borderColor: colors.border },
+                                        { backgroundColor: c, borderWidth: c === '#FFFFFF' ? 1 : 0, borderColor: borderColor },
                                         color === c && styles.colorCircleSelected
                                     ]}
                                     onPress={() => setColor(c)}
@@ -590,7 +596,7 @@ export default function EditAlterProfileScreen() {
                             ))}
                         </View>
 
-                        <Text style={[styles.colorSubLabel, { marginTop: spacing.md }]}>
+                        <Text style={[styles.colorSubLabel, { marginTop: spacing.md, color: textSecondaryColor }]}>
                             Couleurs Premium ✨ {!isPremium && '🔒'}
                         </Text>
                         <View style={styles.colorGrid}>
@@ -742,302 +748,325 @@ export default function EditAlterProfileScreen() {
                 )}
 
                 {/* Major Role Info Modal */}
-                <Modal visible={showMajorRoleModal} transparent animationType="fade">
-                    <View style={styles.modalOverlay}>
-                        <View style={[styles.datePickerContainer, { maxHeight: '80%' }]}>
-                            <View style={styles.datePickerHeader}>
-                                <Text style={styles.datePickerTitle}>Sélectionner un rôle majeur</Text>
-                                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                                    <TouchableOpacity onPress={applySelectedMajorRole}>
-                                        <Text style={[styles.doneButton, { fontWeight: 'bold' }]}>Appliquer</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity onPress={() => setShowMajorRoleModal(false)}>
-                                        <Text style={styles.doneButton}>Fermer</Text>
-                                    </TouchableOpacity>
+                {(() => {
+                    const themeColors = getThemeColors(initialAlter?.equipped_items?.theme);
+                    const modalBg = themeColors?.background || colors.backgroundCard;
+                    const modalText = themeColors?.text || colors.text;
+                    const modalTextSecondary = themeColors?.textSecondary || colors.textSecondary;
+                    const chipBg = themeColors?.backgroundCard || colors.backgroundCard;
+                    const chipBorder = themeColors?.border || colors.border;
+
+                    return (
+                        <Modal visible={showMajorRoleModal} transparent animationType="fade">
+                            <View style={styles.modalOverlay}>
+                                <View style={[styles.datePickerContainer, { maxHeight: '80%', backgroundColor: modalBg }]}>
+                                    <View style={[styles.datePickerHeader, { borderBottomColor: chipBorder }]}>
+                                        <Text style={[styles.datePickerTitle, { color: modalText }]}>Sélectionner un rôle majeur</Text>
+                                        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                                            <TouchableOpacity onPress={applySelectedMajorRole}>
+                                                <Text style={[styles.doneButton, { fontWeight: 'bold' }]}>Appliquer</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity onPress={() => setShowMajorRoleModal(false)}>
+                                                <Text style={styles.doneButton}>Fermer</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                    <ScrollView style={{ padding: spacing.lg }}>
+                                        {/* Helper component for major role chip */}
+                                        {(() => {
+                                            const MajorRoleChip = ({ roleName }: { roleName: string }) => {
+                                                const isSelected = selectedMajorRoles.includes(roleName);
+                                                return (
+                                                    <TouchableOpacity
+                                                        onPress={() => handleMajorRoleSelect(roleName)}
+                                                        onLongPress={() => handleRoleLongPress(roleName)}
+                                                        style={{
+                                                            backgroundColor: isSelected ? color : chipBg,
+                                                            paddingHorizontal: spacing.md,
+                                                            paddingVertical: spacing.sm,
+                                                            borderRadius: borderRadius.lg,
+                                                            marginRight: spacing.xs,
+                                                            marginBottom: spacing.xs,
+                                                            borderWidth: 1,
+                                                            borderColor: isSelected ? color : chipBorder
+                                                        }}
+                                                    >
+                                                        <Text style={{
+                                                            fontSize: 14,
+                                                            fontWeight: isSelected ? '600' : '500',
+                                                            color: isSelected ? 'white' : modalText
+                                                        }}>{roleName}</Text>
+                                                    </TouchableOpacity>
+                                                );
+                                            };
+
+                                            return (
+                                                <>
+                                                    {/* Protection */}
+                                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: modalText, marginBottom: spacing.sm }}>🛡️ Protection</Text>
+                                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                        <MajorRoleChip roleName="Protecteur" />
+                                                        <MajorRoleChip roleName="Protecteur émotionnel" />
+                                                        <MajorRoleChip roleName="Protecteur physique" />
+                                                        <MajorRoleChip roleName="Gatekeeper" />
+                                                        <MajorRoleChip roleName="Persecutor" />
+                                                        <MajorRoleChip roleName="Avenger" />
+                                                        <MajorRoleChip roleName="Guardian" />
+                                                    </View>
+
+                                                    {/* Gestion */}
+                                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: modalText, marginBottom: spacing.sm }}>💼 Gestion</Text>
+                                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                        <MajorRoleChip roleName="Hôte" />
+                                                        <MajorRoleChip roleName="Co-hôte" />
+                                                        <MajorRoleChip roleName="Manager" />
+                                                        <MajorRoleChip roleName="Caretaker" />
+                                                        <MajorRoleChip roleName="ISH" />
+                                                        <MajorRoleChip roleName="Mediator" />
+                                                        <MajorRoleChip roleName="Archiviste" />
+                                                        <MajorRoleChip roleName="Organisateur" />
+                                                        <MajorRoleChip roleName="Core" />
+                                                    </View>
+
+                                                    {/* Enfance */}
+                                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: modalText, marginBottom: spacing.sm }}>👶 Enfance</Text>
+                                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                        <MajorRoleChip roleName="Little" />
+                                                        <MajorRoleChip roleName="Middle" />
+                                                        <MajorRoleChip roleName="Teen" />
+                                                        <MajorRoleChip roleName="Age slider" />
+                                                        <MajorRoleChip roleName="Regressor" />
+                                                    </View>
+
+                                                    {/* Traumatismes */}
+                                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: modalText, marginBottom: spacing.sm }}>💔 Traumatismes</Text>
+                                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                        <MajorRoleChip roleName="Trauma holder" />
+                                                        <MajorRoleChip roleName="Emotional holder" />
+                                                        <MajorRoleChip roleName="Pain holder" />
+                                                        <MajorRoleChip roleName="Fear holder" />
+                                                        <MajorRoleChip roleName="Memory holder" />
+                                                        <MajorRoleChip roleName="Fragment" />
+                                                    </View>
+
+                                                    {/* Sociaux */}
+                                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: modalText, marginBottom: spacing.sm }}>🎭 Sociaux & Créatifs</Text>
+                                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                        <MajorRoleChip roleName="Social alter" />
+                                                        <MajorRoleChip roleName="Mask" />
+                                                        <MajorRoleChip roleName="Animateur/trice" />
+                                                        <MajorRoleChip roleName="Artiste" />
+                                                        <MajorRoleChip roleName="Communicateur/trice" />
+                                                        <MajorRoleChip roleName="Performer" />
+                                                    </View>
+
+                                                    {/* Spécialisés */}
+                                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: modalText, marginBottom: spacing.sm }}>⚙️ Spécialisés</Text>
+                                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                        <MajorRoleChip roleName="Travailleur/se" />
+                                                        <MajorRoleChip roleName="Étudiant(e)" />
+                                                        <MajorRoleChip roleName="Sexual alter" />
+                                                        <MajorRoleChip roleName="Romantique" />
+                                                        <MajorRoleChip roleName="Spirituel/le" />
+                                                        <MajorRoleChip roleName="Somatic" />
+                                                    </View>
+
+                                                    {/* Types particuliers */}
+                                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: modalText, marginBottom: spacing.sm }}>✨ Types particuliers</Text>
+                                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                        <MajorRoleChip roleName="Fictive" />
+                                                        <MajorRoleChip roleName="Factive" />
+                                                        <MajorRoleChip roleName="Introject" />
+                                                        <MajorRoleChip roleName="Non-human" />
+                                                        <MajorRoleChip roleName="Therian" />
+                                                        <MajorRoleChip roleName="Objet" />
+                                                        <MajorRoleChip roleName="Subsystem" />
+                                                        <MajorRoleChip roleName="Shell" />
+                                                    </View>
+
+                                                    {/* États du front */}
+                                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: modalText, marginBottom: spacing.sm }}>🔄 États du front</Text>
+                                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                        <MajorRoleChip roleName="Fronting" />
+                                                        <MajorRoleChip roleName="Co-front" />
+                                                        <MajorRoleChip roleName="Observer" />
+                                                        <MajorRoleChip roleName="Dormant" />
+                                                        <MajorRoleChip roleName="Unknown" />
+                                                    </View>
+
+                                                    <View style={{ backgroundColor: chipBg, padding: spacing.md, borderRadius: borderRadius.md, marginTop: spacing.md }}>
+                                                        <Text style={{ fontSize: 12, color: modalTextSecondary, fontStyle: 'italic' }}>💡 Ces rôles sont indicatifs ! Vous pouvez sélectionner ici OU écrire vos propres rôles dans le champ. Appui long pour voir la définition détaillée.</Text>
+                                                    </View>
+                                                </>
+                                            );
+                                        })()}
+                                    </ScrollView>
                                 </View>
                             </View>
-                            <ScrollView style={{ padding: spacing.lg }}>
-                                {/* Helper component for major role chip */}
-                                {(() => {
-                                    const MajorRoleChip = ({ roleName }: { roleName: string }) => {
-                                        const isSelected = selectedMajorRoles.includes(roleName);
-                                        return (
-                                            <TouchableOpacity
-                                                onPress={() => handleMajorRoleSelect(roleName)}
-                                                onLongPress={() => handleRoleLongPress(roleName)}
-                                                style={{
-                                                    backgroundColor: isSelected ? color : colors.backgroundCard,
-                                                    paddingHorizontal: spacing.md,
-                                                    paddingVertical: spacing.sm,
-                                                    borderRadius: borderRadius.lg,
-                                                    marginRight: spacing.xs,
-                                                    marginBottom: spacing.xs,
-                                                    borderWidth: 1,
-                                                    borderColor: isSelected ? color : colors.border
-                                                }}
-                                            >
-                                                <Text style={{
-                                                    fontSize: 14,
-                                                    fontWeight: isSelected ? '600' : '500',
-                                                    color: isSelected ? 'white' : colors.text
-                                                }}>{roleName}</Text>
-                                            </TouchableOpacity>
-                                        );
-                                    };
-
-                                    return (
-                                        <>
-                                            {/* Protection */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>🛡️ Protection</Text>
-                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
-                                                <MajorRoleChip roleName="Protecteur" />
-                                                <MajorRoleChip roleName="Protecteur émotionnel" />
-                                                <MajorRoleChip roleName="Protecteur physique" />
-                                                <MajorRoleChip roleName="Gatekeeper" />
-                                                <MajorRoleChip roleName="Persecutor" />
-                                                <MajorRoleChip roleName="Avenger" />
-                                                <MajorRoleChip roleName="Guardian" />
-                                            </View>
-
-                                            {/* Gestion */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>💼 Gestion</Text>
-                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
-                                                <MajorRoleChip roleName="Hôte" />
-                                                <MajorRoleChip roleName="Co-hôte" />
-                                                <MajorRoleChip roleName="Manager" />
-                                                <MajorRoleChip roleName="Caretaker" />
-                                                <MajorRoleChip roleName="ISH" />
-                                                <MajorRoleChip roleName="Mediator" />
-                                                <MajorRoleChip roleName="Archiviste" />
-                                                <MajorRoleChip roleName="Organisateur" />
-                                                <MajorRoleChip roleName="Core" />
-                                            </View>
-
-                                            {/* Enfance */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>👶 Enfance</Text>
-                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
-                                                <MajorRoleChip roleName="Little" />
-                                                <MajorRoleChip roleName="Middle" />
-                                                <MajorRoleChip roleName="Teen" />
-                                                <MajorRoleChip roleName="Age slider" />
-                                                <MajorRoleChip roleName="Regressor" />
-                                            </View>
-
-                                            {/* Traumatismes */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>💔 Traumatismes</Text>
-                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
-                                                <MajorRoleChip roleName="Trauma holder" />
-                                                <MajorRoleChip roleName="Emotional holder" />
-                                                <MajorRoleChip roleName="Pain holder" />
-                                                <MajorRoleChip roleName="Fear holder" />
-                                                <MajorRoleChip roleName="Memory holder" />
-                                                <MajorRoleChip roleName="Fragment" />
-                                            </View>
-
-                                            {/* Sociaux */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>🎭 Sociaux & Créatifs</Text>
-                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
-                                                <MajorRoleChip roleName="Social alter" />
-                                                <MajorRoleChip roleName="Mask" />
-                                                <MajorRoleChip roleName="Animateur/trice" />
-                                                <MajorRoleChip roleName="Artiste" />
-                                                <MajorRoleChip roleName="Communicateur/trice" />
-                                                <MajorRoleChip roleName="Performer" />
-                                            </View>
-
-                                            {/* Spécialisés */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>⚙️ Spécialisés</Text>
-                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
-                                                <MajorRoleChip roleName="Travailleur/se" />
-                                                <MajorRoleChip roleName="Étudiant(e)" />
-                                                <MajorRoleChip roleName="Sexual alter" />
-                                                <MajorRoleChip roleName="Romantique" />
-                                                <MajorRoleChip roleName="Spirituel/le" />
-                                                <MajorRoleChip roleName="Somatic" />
-                                            </View>
-
-                                            {/* Types particuliers */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>✨ Types particuliers</Text>
-                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
-                                                <MajorRoleChip roleName="Fictive" />
-                                                <MajorRoleChip roleName="Factive" />
-                                                <MajorRoleChip roleName="Introject" />
-                                                <MajorRoleChip roleName="Non-human" />
-                                                <MajorRoleChip roleName="Therian" />
-                                                <MajorRoleChip roleName="Objet" />
-                                                <MajorRoleChip roleName="Subsystem" />
-                                                <MajorRoleChip roleName="Shell" />
-                                            </View>
-
-                                            {/* États du front */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>🔄 États du front</Text>
-                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
-                                                <MajorRoleChip roleName="Fronting" />
-                                                <MajorRoleChip roleName="Co-front" />
-                                                <MajorRoleChip roleName="Observer" />
-                                                <MajorRoleChip roleName="Dormant" />
-                                                <MajorRoleChip roleName="Unknown" />
-                                            </View>
-
-                                            <View style={{ backgroundColor: colors.backgroundCard, padding: spacing.md, borderRadius: borderRadius.md, marginTop: spacing.md }}>
-                                                <Text style={{ fontSize: 12, color: colors.textSecondary, fontStyle: 'italic' }}>💡 Sélectionnez un ou plusieurs rôles majeurs pour cet alter. Appui long pour voir la définition.</Text>
-                                            </View>
-                                        </>
-                                    );
-                                })()}
-                            </ScrollView>
-                        </View>
-                    </View>
-                </Modal>
+                        </Modal>
+                    );
+                })()}
 
                 {/* Role Info Modal */}
-                <Modal visible={showRoleInfoModal} transparent animationType="fade">
-                    <View style={styles.modalOverlay}>
-                        <View style={[styles.datePickerContainer, { maxHeight: '80%' }]}>
-                            <View style={styles.datePickerHeader}>
-                                <Text style={styles.datePickerTitle}>Sélectionner des rôles</Text>
-                                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                                    <TouchableOpacity onPress={applySelectedRoles}>
-                                        <Text style={[styles.doneButton, { fontWeight: 'bold' }]}>Appliquer</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity onPress={() => setShowRoleInfoModal(false)}>
-                                        <Text style={styles.doneButton}>Fermer</Text>
-                                    </TouchableOpacity>
+                {(() => {
+                    const themeColors = getThemeColors(initialAlter?.equipped_items?.theme);
+                    const modalBg = themeColors?.background || colors.backgroundCard;
+                    const modalText = themeColors?.text || colors.text;
+                    const modalTextSecondary = themeColors?.textSecondary || colors.textSecondary;
+                    const chipBg = themeColors?.backgroundCard || colors.backgroundCard;
+                    const chipBorder = themeColors?.border || colors.border;
+
+                    return (
+                        <Modal visible={showRoleInfoModal} transparent animationType="fade">
+                            <View style={styles.modalOverlay}>
+                                <View style={[styles.datePickerContainer, { maxHeight: '80%', backgroundColor: modalBg }]}>
+                                    <View style={[styles.datePickerHeader, { borderBottomColor: chipBorder }]}>
+                                        <Text style={[styles.datePickerTitle, { color: modalText }]}>Sélectionner des rôles</Text>
+                                        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                                            <TouchableOpacity onPress={applySelectedRoles}>
+                                                <Text style={[styles.doneButton, { fontWeight: 'bold' }]}>Appliquer</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity onPress={() => setShowRoleInfoModal(false)}>
+                                                <Text style={styles.doneButton}>Fermer</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                    <ScrollView style={{ padding: spacing.lg }}>
+                                        {/* Helper component for role chip */}
+                                        {(() => {
+                                            const RoleChip = ({ roleName }: { roleName: string }) => {
+                                                const isSelected = selectedRoles.includes(roleName);
+                                                return (
+                                                    <TouchableOpacity
+                                                        onPress={() => handleRoleSelect(roleName)}
+                                                        onLongPress={() => handleRoleLongPress(roleName)}
+                                                        style={{
+                                                            backgroundColor: isSelected ? color : chipBg,
+                                                            paddingHorizontal: spacing.md,
+                                                            paddingVertical: spacing.sm,
+                                                            borderRadius: borderRadius.lg,
+                                                            marginRight: spacing.xs,
+                                                            marginBottom: spacing.xs,
+                                                            borderWidth: 1,
+                                                            borderColor: isSelected ? color : chipBorder
+                                                        }}
+                                                    >
+                                                        <Text style={{
+                                                            fontSize: 14,
+                                                            fontWeight: isSelected ? '600' : '500',
+                                                            color: isSelected ? 'white' : modalText
+                                                        }}>{roleName}</Text>
+                                                    </TouchableOpacity>
+                                                );
+                                            };
+
+                                            return (
+                                                <>
+                                                    {/* Protection */}
+                                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: modalText, marginBottom: spacing.sm }}>🛡️ Protection</Text>
+                                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                        <RoleChip roleName="Protecteur" />
+                                                        <RoleChip roleName="Protecteur émotionnel" />
+                                                        <RoleChip roleName="Protecteur physique" />
+                                                        <RoleChip roleName="Gatekeeper" />
+                                                        <RoleChip roleName="Persecutor" />
+                                                        <RoleChip roleName="Avenger" />
+                                                        <RoleChip roleName="Guardian" />
+                                                    </View>
+
+                                                    {/* Gestion */}
+                                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: modalText, marginBottom: spacing.sm }}>💼 Gestion</Text>
+                                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                        <RoleChip roleName="Hôte" />
+                                                        <RoleChip roleName="Co-hôte" />
+                                                        <RoleChip roleName="Manager" />
+                                                        <RoleChip roleName="Caretaker" />
+                                                        <RoleChip roleName="ISH" />
+                                                        <RoleChip roleName="Mediator" />
+                                                        <RoleChip roleName="Archiviste" />
+                                                        <RoleChip roleName="Organisateur" />
+                                                        <RoleChip roleName="Core" />
+                                                    </View>
+
+                                                    {/* Enfance */}
+                                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: modalText, marginBottom: spacing.sm }}>👶 Enfance</Text>
+                                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                        <RoleChip roleName="Little" />
+                                                        <RoleChip roleName="Middle" />
+                                                        <RoleChip roleName="Teen" />
+                                                        <RoleChip roleName="Age slider" />
+                                                        <RoleChip roleName="Regressor" />
+                                                    </View>
+
+                                                    {/* Traumatismes */}
+                                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: modalText, marginBottom: spacing.sm }}>💔 Traumatismes</Text>
+                                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                        <RoleChip roleName="Trauma holder" />
+                                                        <RoleChip roleName="Emotional holder" />
+                                                        <RoleChip roleName="Pain holder" />
+                                                        <RoleChip roleName="Fear holder" />
+                                                        <RoleChip roleName="Memory holder" />
+                                                        <RoleChip roleName="Fragment" />
+                                                    </View>
+
+                                                    {/* Sociaux */}
+                                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: modalText, marginBottom: spacing.sm }}>🎭 Sociaux & Créatifs</Text>
+                                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                        <RoleChip roleName="Social alter" />
+                                                        <RoleChip roleName="Mask" />
+                                                        <RoleChip roleName="Animateur/trice" />
+                                                        <RoleChip roleName="Artiste" />
+                                                        <RoleChip roleName="Communicateur/trice" />
+                                                        <RoleChip roleName="Performer" />
+                                                    </View>
+
+                                                    {/* Spécialisés */}
+                                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: modalText, marginBottom: spacing.sm }}>⚙️ Spécialisés</Text>
+                                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                        <RoleChip roleName="Travailleur/se" />
+                                                        <RoleChip roleName="Étudiant(e)" />
+                                                        <RoleChip roleName="Sexual alter" />
+                                                        <RoleChip roleName="Romantique" />
+                                                        <RoleChip roleName="Spirituel/le" />
+                                                        <RoleChip roleName="Somatic" />
+                                                    </View>
+
+                                                    {/* Types particuliers */}
+                                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: modalText, marginBottom: spacing.sm }}>✨ Types particuliers</Text>
+                                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                        <RoleChip roleName="Fictive" />
+                                                        <RoleChip roleName="Factive" />
+                                                        <RoleChip roleName="Introject" />
+                                                        <RoleChip roleName="Non-human" />
+                                                        <RoleChip roleName="Therian" />
+                                                        <RoleChip roleName="Objet" />
+                                                        <RoleChip roleName="Subsystem" />
+                                                        <RoleChip roleName="Shell" />
+                                                    </View>
+
+                                                    {/* États du front */}
+                                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: modalText, marginBottom: spacing.sm }}>🔄 États du front</Text>
+                                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                        <RoleChip roleName="Fronting" />
+                                                        <RoleChip roleName="Co-front" />
+                                                        <RoleChip roleName="Observer" />
+                                                        <RoleChip roleName="Dormant" />
+                                                        <RoleChip roleName="Unknown" />
+                                                    </View>
+
+
+                                                    <View style={{ backgroundColor: chipBg, padding: spacing.md, borderRadius: borderRadius.md, marginTop: spacing.md }}>
+                                                        <Text style={{ fontSize: 12, color: modalTextSecondary, fontStyle: 'italic' }}>💡 Cette liste est pour vous inspirer ! Vous pouvez choisir ici, écrire vos propres rôles, ou les deux. Appui long sur un rôle pour sa définition détaillée.</Text>
+                                                    </View>
+                                                </>
+                                            );
+                                        })()}
+                                    </ScrollView>
                                 </View>
                             </View>
-                            <ScrollView style={{ padding: spacing.lg }}>
-                                {/* Helper component for role chip */}
-                                {(() => {
-                                    const RoleChip = ({ roleName }: { roleName: string }) => {
-                                        const isSelected = selectedRoles.includes(roleName);
-                                        return (
-                                            <TouchableOpacity
-                                                onPress={() => handleRoleSelect(roleName)}
-                                                onLongPress={() => handleRoleLongPress(roleName)}
-                                                style={{
-                                                    backgroundColor: isSelected ? color : colors.backgroundCard,
-                                                    paddingHorizontal: spacing.md,
-                                                    paddingVertical: spacing.sm,
-                                                    borderRadius: borderRadius.lg,
-                                                    marginRight: spacing.xs,
-                                                    marginBottom: spacing.xs,
-                                                    borderWidth: 1,
-                                                    borderColor: isSelected ? color : colors.border
-                                                }}
-                                            >
-                                                <Text style={{
-                                                    fontSize: 14,
-                                                    fontWeight: isSelected ? '600' : '500',
-                                                    color: isSelected ? 'white' : colors.text
-                                                }}>{roleName}</Text>
-                                            </TouchableOpacity>
-                                        );
-                                    };
-
-                                    return (
-                                        <>
-                                            {/* Protection */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>🛡️ Protection</Text>
-                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
-                                                <RoleChip roleName="Protecteur" />
-                                                <RoleChip roleName="Protecteur émotionnel" />
-                                                <RoleChip roleName="Protecteur physique" />
-                                                <RoleChip roleName="Gatekeeper" />
-                                                <RoleChip roleName="Persecutor" />
-                                                <RoleChip roleName="Avenger" />
-                                                <RoleChip roleName="Guardian" />
-                                            </View>
-
-                                            {/* Gestion */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>💼 Gestion</Text>
-                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
-                                                <RoleChip roleName="Hôte" />
-                                                <RoleChip roleName="Co-hôte" />
-                                                <RoleChip roleName="Manager" />
-                                                <RoleChip roleName="Caretaker" />
-                                                <RoleChip roleName="ISH" />
-                                                <RoleChip roleName="Mediator" />
-                                                <RoleChip roleName="Archiviste" />
-                                                <RoleChip roleName="Organisateur" />
-                                                <RoleChip roleName="Core" />
-                                            </View>
-
-                                            {/* Enfance */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>👶 Enfance</Text>
-                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
-                                                <RoleChip roleName="Little" />
-                                                <RoleChip roleName="Middle" />
-                                                <RoleChip roleName="Teen" />
-                                                <RoleChip roleName="Age slider" />
-                                                <RoleChip roleName="Regressor" />
-                                            </View>
-
-                                            {/* Traumatismes */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>💔 Traumatismes</Text>
-                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
-                                                <RoleChip roleName="Trauma holder" />
-                                                <RoleChip roleName="Emotional holder" />
-                                                <RoleChip roleName="Pain holder" />
-                                                <RoleChip roleName="Fear holder" />
-                                                <RoleChip roleName="Memory holder" />
-                                                <RoleChip roleName="Fragment" />
-                                            </View>
-
-                                            {/* Sociaux */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>🎭 Sociaux & Créatifs</Text>
-                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
-                                                <RoleChip roleName="Social alter" />
-                                                <RoleChip roleName="Mask" />
-                                                <RoleChip roleName="Animateur/trice" />
-                                                <RoleChip roleName="Artiste" />
-                                                <RoleChip roleName="Communicateur/trice" />
-                                                <RoleChip roleName="Performer" />
-                                            </View>
-
-                                            {/* Spécialisés */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>⚙️ Spécialisés</Text>
-                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
-                                                <RoleChip roleName="Travailleur/se" />
-                                                <RoleChip roleName="Étudiant(e)" />
-                                                <RoleChip roleName="Sexual alter" />
-                                                <RoleChip roleName="Romantique" />
-                                                <RoleChip roleName="Spirituel/le" />
-                                                <RoleChip roleName="Somatic" />
-                                            </View>
-
-                                            {/* Types particuliers */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>✨ Types particuliers</Text>
-                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
-                                                <RoleChip roleName="Fictive" />
-                                                <RoleChip roleName="Factive" />
-                                                <RoleChip roleName="Introject" />
-                                                <RoleChip roleName="Non-human" />
-                                                <RoleChip roleName="Therian" />
-                                                <RoleChip roleName="Objet" />
-                                                <RoleChip roleName="Subsystem" />
-                                                <RoleChip roleName="Shell" />
-                                            </View>
-
-                                            {/* États du front */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>🔄 États du front</Text>
-                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
-                                                <RoleChip roleName="Fronting" />
-                                                <RoleChip roleName="Co-front" />
-                                                <RoleChip roleName="Observer" />
-                                                <RoleChip roleName="Dormant" />
-                                                <RoleChip roleName="Unknown" />
-                                            </View>
-
-                                            <View style={{ backgroundColor: colors.backgroundCard, padding: spacing.md, borderRadius: borderRadius.md, marginTop: spacing.md }}>
-                                                <Text style={{ fontSize: 12, color: colors.textSecondary, fontStyle: 'italic' }}>💡 Appui long sur un rôle pour voir sa définition. Sélectionnez un ou plusieurs rôles puis appuyez sur "Appliquer".</Text>
-                                            </View>
-                                        </>
-                                    );
-                                })()}
-                            </ScrollView>
-                        </View>
-                    </View>
-                </Modal>
+                        </Modal>
+                    );
+                })()}
             </ScrollView>
         </KeyboardAvoidingView >
     );
@@ -1083,12 +1112,15 @@ const styles = StyleSheet.create({
         width: 100,
         height: 100,
         borderWidth: 3,
+        borderRadius: 50,
         marginBottom: spacing.sm,
         position: 'relative',
+        overflow: 'hidden',
     },
     avatar: {
         width: '100%',
         height: '100%',
+        borderRadius: 50,
     },
     avatarPlaceholder: {
         width: '100%',

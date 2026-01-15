@@ -75,7 +75,7 @@ export const AlterEmotions: React.FC<AlterEmotionsProps> = ({ alterId, alterName
     const primaryConfig = latestEmotion ? getConfig(currentEmotionsList[0]) : null;
 
     return (
-        <ScrollView style={styles.container}>
+        <ScrollView style={[styles.container, themeColors && { backgroundColor: themeColors.background }]}>
             <Text style={[styles.title, themeColors && { color: themeColors.text }]}>Comment te sens-tu, {alterName} ?</Text>
 
             {/* Emotion Grid */}
@@ -114,7 +114,7 @@ export const AlterEmotions: React.FC<AlterEmotionsProps> = ({ alterId, alterName
             {/* Validate Button */}
             {selectedEmotions.length > 0 && (
                 <TouchableOpacity
-                    style={[styles.validateButton, isSubmitting && { opacity: 0.7 }]}
+                    style={[styles.validateButton, isSubmitting && { opacity: 0.7 }, themeColors && { backgroundColor: themeColors.primary, shadowColor: themeColors.primary }]}
                     onPress={handleSave}
                     disabled={isSubmitting}
                 >
@@ -135,7 +135,7 @@ export const AlterEmotions: React.FC<AlterEmotionsProps> = ({ alterId, alterName
                             <Text style={[styles.statusText, themeColors && { color: themeColors.text }]}>
                                 Actuellement{' '}
                                 {isCurrentMulti ? (
-                                    <Text style={{ fontWeight: 'bold', color: colors.text }}>
+                                    <Text style={{ fontWeight: 'bold', color: themeColors?.text || colors.text }}>
                                         {currentEmotionsList.map(e => getConfig(e)?.label).join(', ')}
                                     </Text>
                                 ) : (
@@ -152,9 +152,9 @@ export const AlterEmotions: React.FC<AlterEmotionsProps> = ({ alterId, alterName
                 </View>
             ) : (
                 <View style={styles.emptyState}>
-                    <Ionicons name="heart-outline" size={48} color={colors.textMuted} />
-                    <Text style={styles.emptyTitle}>Historique émotionnel</Text>
-                    <Text style={styles.emptySubtitle}>
+                    <Ionicons name="heart-outline" size={48} color={themeColors?.textMuted || colors.textMuted} />
+                    <Text style={[styles.emptyTitle, themeColors && { color: themeColors.text }]}>Historique émotionnel</Text>
+                    <Text style={[styles.emptySubtitle, themeColors && { color: themeColors.textSecondary }]}>
                         Enregistrez les émotions de {alterName} pour suivre son bien-être au fil du temps.
                     </Text>
                 </View>
@@ -163,7 +163,7 @@ export const AlterEmotions: React.FC<AlterEmotionsProps> = ({ alterId, alterName
             {/* Emotion History Section */}
             <View style={styles.historySection}>
                 <Text style={[styles.sectionTitle, themeColors && { color: themeColors.textSecondary }]}>Historique (30 derniers jours)</Text>
-                <EmotionHistory alterId={alterId} />
+                <EmotionHistory alterId={alterId} themeColors={themeColors} />
             </View>
         </ScrollView>
     );

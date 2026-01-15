@@ -62,5 +62,32 @@ export const MessagingService = {
         } catch {
             return 0;
         }
+    },
+
+    /**
+     * Marque tous les messages non-lus d'une conversation comme lus
+     */
+    markAsRead: async (currentAlterId: string, otherAlterId: string): Promise<void> => {
+        try {
+            const { writeBatch, doc } = await import('firebase/firestore');
+            const conversationId = [currentAlterId, otherAlterId].sort().join('_');
+            const q = query(
+                collection(db, 'messages'),
+                where('conversation_id', '==', conversationId),
+                where('receiver_alter_id', '==', currentAlterId),
+                where('is_read', '==', false)
+            );
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) return;
+
+            const batch = writeBatch(db);
+            snapshot.docs.forEach((docSnapshot) => {
+                batch.update(doc(db, 'messages', docSnapshot.id), { is_read: true });
+            });
+            await batch.commit();
+        } catch (error) {
+            console.error('Error marking messages as read:', error);
+        }
     }
 };

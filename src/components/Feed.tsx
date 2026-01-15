@@ -346,6 +346,7 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
                     />
                 }
                 contentContainerStyle={styles.listContent}
+                onScrollBeginDrag={() => setShowSortMenu(false)}
             />
 
             {/* Comments Modal */}

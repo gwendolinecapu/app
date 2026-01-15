@@ -119,12 +119,15 @@ export default function EditAlterProfileScreen() {
 
     // Role definitions for long press
     const roleDefinitions: Record<string, string> = {
+        // Protection
         'Protecteur': 'Protège le système des menaces extérieures et intérieures',
         'Protecteur émotionnel': 'Gère et protège contre les émotions fortes',
         'Protecteur physique': 'Prend le contrôle en situation de danger physique',
         'Gatekeeper': 'Contrôle l\'accès aux souvenirs, alters et au front',
         'Persecutor': 'Semble nuire mais agit souvent pour "protéger" à sa manière',
         'Avenger': 'Réagit face aux injustices ou abus',
+        'Guardian': 'Veille sur le système et ses membres de manière générale',
+        // Gestion
         'Hôte': 'Alter principal qui gère la vie quotidienne',
         'Co-hôte': 'Partage le rôle de l\'hôte',
         'Manager': 'Planifie, structure et prend des décisions',
@@ -132,35 +135,58 @@ export default function EditAlterProfileScreen() {
         'ISH': 'Internal Self Helper - alter très conscient, guide interne',
         'Mediator': 'Gère les conflits internes',
         'Archiviste': 'Garde et organise les souvenirs',
+        'Organisateur': 'Gère l\'organisation et la planification du quotidien',
+        'Core': 'Noyau central du système, souvent l\'alter original',
+        // Enfance
         'Little': 'Alter enfant (âge variable)',
         'Middle': 'Alter préadolescent',
+        'Teen': 'Alter adolescent',
         'Age slider': 'Alter dont l\'âge varie',
         'Regressor': 'Peut redevenir enfant sous stress',
+        // Traumatismes
         'Trauma holder': 'Porte les souvenirs traumatiques',
         'Emotional holder': 'Porte des émotions spécifiques',
         'Pain holder': 'Porte la douleur physique ou émotionnelle',
         'Fear holder': 'Porte la peur',
+        'Memory holder': 'Garde des souvenirs spécifiques (pas forcément traumatiques)',
         'Fragment': 'Partie très spécifique ou limitée',
+        // Sociaux & Créatifs
         'Social alter': 'Gère les interactions sociales',
         'Mask': 'Alter créé pour "faire semblant d\'aller bien"',
         'Entertainer': 'Humour et créativité',
+        'Animateur/trice': 'Anime et divertit, apporte de la joie',
         'Artist': 'Création artistique',
+        'Artiste': 'Création artistique et expression créative',
         'Communicator': 'Parle pour le système',
+        'Communicateur/trice': 'Gère la communication du système',
+        'Performer': 'S\'exprime à travers la performance (danse, musique, théâtre)',
+        // Spécialisés
         'Worker': 'Gère le travail et les études',
+        'Travailleur/se': 'Gère le travail et la vie professionnelle',
         'Student': 'Spécialisé dans l\'apprentissage',
+        'Étudiant(e)': 'Se concentre sur les études et l\'apprentissage',
         'Sexual alter': 'Gère la sexualité et l\'intimité',
         'Romantic': 'Gère les relations amoureuses',
+        'Romantique': 'Gère les relations affectives et romantiques',
         'Spiritual': 'Spiritualité et croyances',
-        'Fictive': 'Issu d\'un personnage fictif',
-        'Introject': 'Basé sur une personne réelle',
-        'Non-human': 'Animal, créature ou entité',
+        'Spirituel/le': 'Connecté à la spiritualité et aux croyances',
+        'Somatic': 'Gère les sensations corporelles et physiques',
+        // Types particuliers
+        'Fictive': 'Issu d\'un personnage fictif (film, livre, jeu...)',
+        'Factive': 'Basé sur une personne célèbre ou publique',
+        'Introject': 'Basé sur une personne réelle connue personnellement',
+        'Non-human': 'Animal, créature mythique ou entité non-humaine',
+        'Therian': 'S\'identifie comme un animal ou une créature',
         'Object': 'Alter objet',
+        'Objet': 'Alter qui s\'identifie comme un objet',
         'Subsystem': 'Système dans le système',
-        'Shell': 'Présence minimale ou vide',
-        'Fronting': 'Celui qui est au contrôle',
-        'Co-front': 'Plusieurs alters au front',
-        'Observer': 'Observe sans contrôler',
-        'Dormant': 'Inactif temporairement'
+        'Shell': 'Présence minimale ou vide, souvent utilisé pour masquer',
+        // États du front
+        'Fronting': 'Celui qui est actuellement au contrôle',
+        'Co-front': 'Plusieurs alters au front simultanément',
+        'Observer': 'Observe sans prendre le contrôle',
+        'Dormant': 'Inactif temporairement ou depuis longtemps',
+        'Unknown': 'Rôle inconnu ou non encore déterminé'
     };
 
     const handleRoleSelect = (roleName: string) => {
@@ -911,7 +937,7 @@ export default function EditAlterProfileScreen() {
                                     return (
                                         <>
                                             {/* Protection */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>Protection</Text>
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>🛡️ Protection</Text>
                                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
                                                 <RoleChip roleName="Protecteur" />
                                                 <RoleChip roleName="Protecteur émotionnel" />
@@ -919,10 +945,11 @@ export default function EditAlterProfileScreen() {
                                                 <RoleChip roleName="Gatekeeper" />
                                                 <RoleChip roleName="Persecutor" />
                                                 <RoleChip roleName="Avenger" />
+                                                <RoleChip roleName="Guardian" />
                                             </View>
 
                                             {/* Gestion */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>Gestion</Text>
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>💼 Gestion</Text>
                                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
                                                 <RoleChip roleName="Hôte" />
                                                 <RoleChip roleName="Co-hôte" />
@@ -931,63 +958,74 @@ export default function EditAlterProfileScreen() {
                                                 <RoleChip roleName="ISH" />
                                                 <RoleChip roleName="Mediator" />
                                                 <RoleChip roleName="Archiviste" />
+                                                <RoleChip roleName="Organisateur" />
+                                                <RoleChip roleName="Core" />
                                             </View>
 
                                             {/* Enfance */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>Enfance</Text>
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>👶 Enfance</Text>
                                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
                                                 <RoleChip roleName="Little" />
                                                 <RoleChip roleName="Middle" />
+                                                <RoleChip roleName="Teen" />
                                                 <RoleChip roleName="Age slider" />
                                                 <RoleChip roleName="Regressor" />
                                             </View>
 
                                             {/* Traumatismes */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>Traumatismes</Text>
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>💔 Traumatismes</Text>
                                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
                                                 <RoleChip roleName="Trauma holder" />
                                                 <RoleChip roleName="Emotional holder" />
                                                 <RoleChip roleName="Pain holder" />
                                                 <RoleChip roleName="Fear holder" />
+                                                <RoleChip roleName="Memory holder" />
                                                 <RoleChip roleName="Fragment" />
                                             </View>
 
                                             {/* Sociaux */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>Sociaux</Text>
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>🎭 Sociaux & Créatifs</Text>
                                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
                                                 <RoleChip roleName="Social alter" />
                                                 <RoleChip roleName="Mask" />
                                                 <RoleChip roleName="Animateur/trice" />
                                                 <RoleChip roleName="Artiste" />
                                                 <RoleChip roleName="Communicateur/trice" />
+                                                <RoleChip roleName="Performer" />
                                             </View>
 
                                             {/* Spécialisés */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>Spécialisés</Text>
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>⚙️ Spécialisés</Text>
                                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
                                                 <RoleChip roleName="Travailleur/se" />
                                                 <RoleChip roleName="Étudiant(e)" />
                                                 <RoleChip roleName="Sexual alter" />
                                                 <RoleChip roleName="Romantique" />
                                                 <RoleChip roleName="Spirituel/le" />
+                                                <RoleChip roleName="Somatic" />
                                             </View>
 
                                             {/* Types particuliers */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>Types particuliers</Text>
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>✨ Types particuliers</Text>
                                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
                                                 <RoleChip roleName="Fictive" />
+                                                <RoleChip roleName="Factive" />
                                                 <RoleChip roleName="Introject" />
                                                 <RoleChip roleName="Non-human" />
+                                                <RoleChip roleName="Therian" />
                                                 <RoleChip roleName="Objet" />
                                                 <RoleChip roleName="Subsystem" />
                                                 <RoleChip roleName="Shell" />
                                             </View>
 
                                             {/* États du front */}
-                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>États du front</Text>
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: color, marginBottom: spacing.sm }}>🔄 États du front</Text>
                                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
+                                                <RoleChip roleName="Fronting" />
                                                 <RoleChip roleName="Co-front" />
+                                                <RoleChip roleName="Observer" />
                                                 <RoleChip roleName="Dormant" />
+                                                <RoleChip roleName="Unknown" />
                                             </View>
 
                                             <View style={{ backgroundColor: colors.backgroundCard, padding: spacing.md, borderRadius: borderRadius.md, marginTop: spacing.md }}>

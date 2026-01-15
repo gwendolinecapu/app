@@ -13,9 +13,11 @@ import { EmotionService } from '../../services/emotions';
 import { Emotion, EmotionType } from '../../types';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { getEmotionConfig } from '../../lib/emotions';
+import { ThemeColors } from '../../lib/cosmetics';
 
 interface EmotionHistoryProps {
     alterId: string;
+    themeColors?: ThemeColors | null;
 }
 
 const formatTimeSince = (dateInput: any): string => {
@@ -81,7 +83,7 @@ const groupEmotionsByDate = (emotions: Emotion[]) => {
     return groups;
 };
 
-export const EmotionHistory: React.FC<EmotionHistoryProps> = ({ alterId }) => {
+export const EmotionHistory: React.FC<EmotionHistoryProps> = ({ alterId, themeColors }) => {
     const [emotions, setEmotions] = useState<Emotion[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -136,9 +138,9 @@ export const EmotionHistory: React.FC<EmotionHistoryProps> = ({ alterId }) => {
     if (emotions.length === 0) {
         return (
             <View style={styles.emptyContainer}>
-                <Ionicons name="partly-sunny-outline" size={48} color={colors.textMuted} />
-                <Text style={styles.emptyText}>Aucune émotion enregistrée</Text>
-                <Text style={styles.emptySubtext}>
+                <Ionicons name="partly-sunny-outline" size={48} color={themeColors?.textMuted || colors.textMuted} />
+                <Text style={[styles.emptyText, themeColors && { color: themeColors.textSecondary }]}>Aucune émotion enregistrée</Text>
+                <Text style={[styles.emptySubtext, themeColors && { color: themeColors.textMuted || themeColors.textSecondary }]}>
                     Les émotions seront archivées ici après 24h
                 </Text>
             </View>
@@ -148,10 +150,10 @@ export const EmotionHistory: React.FC<EmotionHistoryProps> = ({ alterId }) => {
     const groupedEmotions = groupEmotionsByDate(emotions);
 
     return (
-        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <ScrollView style={[styles.container, themeColors && { backgroundColor: themeColors.background }]} contentContainerStyle={styles.content}>
             {Object.entries(groupedEmotions).map(([groupLabel, groupEmotions]) => (
                 <View key={groupLabel} style={styles.group}>
-                    <Text style={styles.groupLabel}>{groupLabel}</Text>
+                    <Text style={[styles.groupLabel, themeColors && { color: themeColors.text }]}>{groupLabel}</Text>
                     {groupEmotions.map(emotion => {
                         const emotionsList = emotion.emotions && emotion.emotions.length > 0
                             ? emotion.emotions
@@ -164,7 +166,8 @@ export const EmotionHistory: React.FC<EmotionHistoryProps> = ({ alterId }) => {
                                 key={emotion.id}
                                 style={[
                                     styles.emotionItem,
-                                    { borderLeftColor: mainConfig?.color || colors.border }
+                                    { borderLeftColor: mainConfig?.color || colors.border },
+                                    themeColors && { backgroundColor: themeColors.backgroundCard }
                                 ]}
                                 onPress={() => handleEmotionPress(emotion)}
                             >
@@ -182,16 +185,16 @@ export const EmotionHistory: React.FC<EmotionHistoryProps> = ({ alterId }) => {
                                     })}
                                 </View>
                                 <View style={styles.emotionContent}>
-                                    <Text style={styles.emotionLabel}>
+                                    <Text style={[styles.emotionLabel, themeColors && { color: themeColors.text }]}>
                                         {emotionsList.map(e => getEmotionConfig(e)?.label).filter(Boolean).join(', ')}
                                     </Text>
                                     {emotion.note ? (
-                                        <Text style={styles.emotionNote} numberOfLines={1}>
+                                        <Text style={[styles.emotionNote, themeColors && { color: themeColors.textSecondary }]} numberOfLines={1}>
                                             "{emotion.note}"
                                         </Text>
                                     ) : null}
                                 </View>
-                                <Text style={styles.emotionTime}>{timeSince}</Text>
+                                <Text style={[styles.emotionTime, themeColors && { color: themeColors.textMuted || themeColors.textSecondary }]}>{timeSince}</Text>
                             </TouchableOpacity>
                         );
                     })}

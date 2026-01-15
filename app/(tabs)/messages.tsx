@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
     View,
     Text,
@@ -8,6 +8,7 @@ import {
     Image
 } from 'react-native';
 import { router } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { Alter } from '../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
@@ -18,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../src/lib/firebase';
 import { MessagingService } from '../../src/services/messaging';
+import { getThemeColors } from '../../src/lib/cosmetics';
 
 interface ConversationItem {
     id: string;
@@ -28,8 +30,19 @@ interface ConversationItem {
 }
 
 export default function MessagesScreen() {
-    const { alters, currentAlter, system } = useAuth();
+    const { alters, currentAlter, system, activeFront } = useAuth();
     const [activeTab, setActiveTab] = useState<'internal' | 'groups' | 'requests' | 'friends'>('internal');
+
+    // Theme colors based on active front alter (consistent with ThemeContext)
+    const frontAlter = activeFront.alters[0];
+    const themeColors = frontAlter?.equipped_items?.theme
+        ? getThemeColors(frontAlter.equipped_items.theme)
+        : null;
+    const backgroundColor = themeColors?.background || colors.background;
+    const textColor = themeColors?.text || colors.text;
+    const textSecondaryColor = themeColors?.textSecondary || colors.textSecondary;
+    const primaryColor = themeColors?.primary || frontAlter?.color || currentAlter?.color || colors.primary;
+    const cardColor = themeColors?.backgroundCard || colors.backgroundCard;
 
     // State for sorted conversations
     const [sortedInternal, setSortedInternal] = useState<ConversationItem[]>([]);
@@ -55,6 +68,19 @@ export default function MessagesScreen() {
             loadFriends();
         }
     }, [activeTab, system, currentAlter]);
+
+    // Rafraîchir les conversations quand on revient sur cet écran
+    useFocusEffect(
+        useCallback(() => {
+            if (currentAlter) {
+                if (activeTab === 'internal') {
+                    loadInternalConversations();
+                } else if (activeTab === 'friends') {
+                    loadFriends();
+                }
+            }
+        }, [currentAlter, activeTab])
+    );
 
     const loadInternalConversations = async () => {
         if (!currentAlter) return;
@@ -193,7 +219,7 @@ export default function MessagesScreen() {
 
     const renderConversation = ({ item }: { item: ConversationItem }) => (
         <TouchableOpacity
-            style={styles.conversationItem}
+            style={[styles.conversationItem, { backgroundColor: cardColor }]}
             onPress={() => {
                 if (item.id === 'system-general') {
                     router.push('/team-chat');
@@ -217,19 +243,19 @@ export default function MessagesScreen() {
             </View>
             <View style={styles.conversationContent}>
                 <View style={styles.conversationHeader}>
-                    <Text style={styles.conversationName}>{item.alter.name}</Text>
-                    {item.time ? <Text style={styles.conversationTime}>{
+                    <Text style={[styles.conversationName, { color: textColor }]}>{item.alter.name}</Text>
+                    {item.time ? <Text style={[styles.conversationTime, { color: textSecondaryColor }]}>{
                         new Date(item.time).toLocaleDateString() === new Date().toLocaleDateString()
                             ? new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                             : new Date(item.time).toLocaleDateString()
                     }</Text> : null}
                 </View>
-                <Text style={styles.lastMessage} numberOfLines={1}>
+                <Text style={[styles.lastMessage, { color: textSecondaryColor }]} numberOfLines={1}>
                     {item.lastMessage}
                 </Text>
             </View>
             {item.unread > 0 && (
-                <View style={styles.unreadBadge}>
+                <View style={[styles.unreadBadge, { backgroundColor: primaryColor }]}>
                     <Text style={styles.unreadText}>{item.unread}</Text>
                 </View>
             )}
@@ -238,7 +264,7 @@ export default function MessagesScreen() {
 
     const renderFriendConversation = ({ item }: { item: ConversationItem }) => (
         <TouchableOpacity
-            style={styles.conversationItem}
+            style={[styles.conversationItem, { backgroundColor: cardColor }]}
             onPress={() => router.push(`/conversation/${item.alter.id}?internal=false`)}
         >
             <View style={[styles.avatar, { backgroundColor: item.alter.color || colors.primary }]}>
@@ -252,14 +278,14 @@ export default function MessagesScreen() {
             </View>
             <View style={styles.conversationContent}>
                 <View style={styles.conversationHeader}>
-                    <Text style={styles.conversationName}>{item.alter.name}</Text>
-                    {item.time ? <Text style={styles.conversationTime}>{
+                    <Text style={[styles.conversationName, { color: textColor }]}>{item.alter.name}</Text>
+                    {item.time ? <Text style={[styles.conversationTime, { color: textSecondaryColor }]}>{
                         new Date(item.time).toLocaleDateString() === new Date().toLocaleDateString()
                             ? new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                             : new Date(item.time).toLocaleDateString()
                     }</Text> : null}
                 </View>
-                <Text style={styles.lastMessage} numberOfLines={1}>
+                <Text style={[styles.lastMessage, { color: textSecondaryColor }]} numberOfLines={1}>
                     {item.lastMessage}
                 </Text>
             </View>
@@ -394,15 +420,15 @@ export default function MessagesScreen() {
     const topBarAvatars = sortedInternal.slice(0, 10); // Show top 10 recent
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
             {/* Header with current alter */}
-            <View style={styles.header}>
+            <View style={[styles.header, { backgroundColor }]}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                         <TouchableOpacity onPress={() => router.back()} style={{ padding: spacing.xs }}>
-                            <Ionicons name="arrow-back" size={24} color={colors.text} />
+                            <Ionicons name="arrow-back" size={24} color={textColor} />
                         </TouchableOpacity>
-                        <Text style={styles.title}>Messages</Text>
+                        <Text style={[styles.title, { color: textColor }]}>Messages</Text>
                     </View>
                     <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
                         {activeTab === 'groups' && (
@@ -418,7 +444,7 @@ export default function MessagesScreen() {
 
                 {/* Avatar Row - Visible only on internal tab for quick access, using Sorted list */}
                 {activeTab === 'internal' && topBarAvatars.length > 0 && (
-                    <View style={styles.avatarRow}>
+                    <View style={[styles.avatarRow, { marginTop: spacing.md }]}>
                         {topBarAvatars.map((item) => (
                             <TouchableOpacity
                                 key={item.id}
@@ -454,36 +480,36 @@ export default function MessagesScreen() {
             </View>
 
             {/* Tabs */}
-            <View style={styles.tabs}>
+            <View style={[styles.tabs, { backgroundColor: cardColor }]}>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'internal' && styles.tabActive]}
+                    style={[styles.tab, activeTab === 'internal' && [styles.tabActive, { backgroundColor: primaryColor }]]}
                     onPress={() => setActiveTab('internal')}
                 >
                     <Text style={styles.tabEmoji}>💜</Text>
-                    <Text style={[styles.tabText, activeTab === 'internal' && styles.tabTextActive]}>
+                    <Text style={[styles.tabText, { color: textSecondaryColor }, activeTab === 'internal' && styles.tabTextActive]}>
                         Interne
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'friends' && styles.tabActive]}
+                    style={[styles.tab, activeTab === 'friends' && [styles.tabActive, { backgroundColor: primaryColor }]]}
                     onPress={() => setActiveTab('friends')}
                 >
                     <Text style={styles.tabEmoji}>🤝</Text>
-                    <Text style={[styles.tabText, activeTab === 'friends' && styles.tabTextActive]}>
+                    <Text style={[styles.tabText, { color: textSecondaryColor }, activeTab === 'friends' && styles.tabTextActive]}>
                         Amis
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'groups' && styles.tabActive]}
+                    style={[styles.tab, activeTab === 'groups' && [styles.tabActive, { backgroundColor: primaryColor }]]}
                     onPress={() => setActiveTab('groups')}
                 >
                     <Text style={styles.tabEmoji}>👥</Text>
-                    <Text style={[styles.tabText, activeTab === 'groups' && styles.tabTextActive]}>
+                    <Text style={[styles.tabText, { color: textSecondaryColor }, activeTab === 'groups' && styles.tabTextActive]}>
                         Groupes
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'requests' && styles.tabActive]}
+                    style={[styles.tab, activeTab === 'requests' && [styles.tabActive, { backgroundColor: primaryColor }]]}
                     onPress={() => setActiveTab('requests')}
                 >
                     <View style={{ alignItems: 'center' }}>
@@ -495,7 +521,7 @@ export default function MessagesScreen() {
                                 </View>
                             )}
                         </View>
-                        <Text style={[styles.tabText, activeTab === 'requests' && styles.tabTextActive]}>
+                        <Text style={[styles.tabText, { color: textSecondaryColor }, activeTab === 'requests' && styles.tabTextActive]}>
                             Demandes
                         </Text>
                     </View>

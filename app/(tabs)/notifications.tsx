@@ -401,19 +401,25 @@ export default function NotificationsScreen() {
 
                 // Mark all unread notifications as read
                 const unreadNotifications = notifications.filter(n => !n.isRead);
+                console.log('[Notifications] Unread notifications to mark:', unreadNotifications.length);
 
                 if (unreadNotifications.length > 0) {
-                    // Update each notification to isRead: true
+                    // Update each notification to read: true
                     await Promise.all(
                         unreadNotifications.map(async (notif) => {
                             try {
                                 // Skip friend requests as they're virtual notifications
-                                if (notif.id.startsWith('friend_')) return;
+                                if (notif.id.startsWith('friend_')) {
+                                    console.log('[Notifications] Skipping friend request:', notif.id);
+                                    return;
+                                }
 
+                                console.log('[Notifications] Marking as read:', notif.id);
                                 const notifRef = doc(db, 'notifications', notif.id);
-                                await updateDoc(notifRef, { isRead: true });
+                                await updateDoc(notifRef, { read: true });
+                                console.log('[Notifications] Marked successfully:', notif.id);
                             } catch (e) {
-                                // Ignore errors for individual notifications
+                                console.error('[Notifications] Error marking notification:', notif.id, e);
                             }
                         })
                     );

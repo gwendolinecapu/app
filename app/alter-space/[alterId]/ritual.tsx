@@ -172,19 +172,19 @@ export default function RitualScreen() {
 
             <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content}>
 
-                <View style={[styles.card, { borderColor: primaryColor }]}>
+                <View style={[styles.card, { borderColor: primaryColor, backgroundColor: themeColors?.backgroundCard || 'rgba(20,20,30,0.6)' }]}>
                     <LinearGradient
                         colors={[primaryColor + '20', 'transparent']}
                         style={StyleSheet.absoluteFill}
                     />
                     <Ionicons name="sparkles" size={32} color={primaryColor} style={styles.cardIcon} />
-                    <Text style={styles.cardTitle}>Génération d'Avatar</Text>
-                    <Text style={styles.cardDesc}>
+                    <Text style={[styles.cardTitle, { color: themeColors?.text || 'white' }]}>Génération d'Avatar</Text>
+                    <Text style={[styles.cardDesc, { color: themeColors?.textSecondary || colors.textSecondary }]}>
                         Visualisez {alter?.name || "votre alter"}. Sélectionnez plusieurs images (Face, Profil, Détails) pour un résultat plus précis.
                     </Text>
                 </View>
 
-                <Text style={styles.sectionTitle}>Références ({selectedImages.length}/5)</Text>
+                <Text style={[styles.sectionTitle, { color: themeColors?.text || colors.text }]}>Références ({selectedImages.length}/5)</Text>
 
                 {/* 1. Loading State */}
                 {/* 1. Loading State - REPLACED BY OVERLAY */}
@@ -287,7 +287,7 @@ export default function RitualScreen() {
                         >
                             <Ionicons name="images-outline" size={48} color={primaryColor} />
                             <Text style={[styles.dropZoneTitle, { color: primaryColor }]}>Sélectionner des images</Text>
-                            <Text style={styles.dropZoneDesc}>Photos claires du visage et du corps</Text>
+                            <Text style={[styles.dropZoneDesc, { color: themeColors?.textSecondary || colors.textSecondary }]}>Photos claires du visage et du corps</Text>
                         </TouchableOpacity>
                     )
                 }

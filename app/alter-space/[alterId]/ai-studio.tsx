@@ -101,6 +101,7 @@ export default function AIStudioScreen() {
                             style={[
                                 styles.featureCard,
                                 {
+                                    backgroundColor: themeColors?.backgroundCard || 'rgba(30,30,40,0.6)',
                                     opacity: feature.enabled ? 1 : 0.7,
                                     borderColor: themeColors?.border || 'rgba(255,255,255,0.1)'
                                 }
@@ -117,7 +118,7 @@ export default function AIStudioScreen() {
                                     <Text style={[styles.cardTitle, { color: themeColors?.text || colors.text }]}>{feature.title}</Text>
                                     {feature.badge && <StatusBadge status={feature.badge === 'NEW' ? 'new' : 'coming-soon'} />}
                                 </View>
-                                <Text style={styles.cardDesc}>{feature.description}</Text>
+                                <Text style={[styles.cardDesc, { color: themeColors?.textSecondary || colors.textSecondary }]}>{feature.description}</Text>
                             </View>
 
                             {feature.enabled && (
@@ -128,9 +129,9 @@ export default function AIStudioScreen() {
                 </View>
 
                 {/* Info Note */}
-                <View style={styles.noteContainer}>
-                    <Ionicons name="bulb-outline" size={20} color={colors.textSecondary} />
-                    <Text style={styles.noteText}>
+                <View style={[styles.noteContainer, { backgroundColor: themeColors?.backgroundCard || 'rgba(255,255,255,0.03)' }]}>
+                    <Ionicons name="bulb-outline" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
+                    <Text style={[styles.noteText, { color: themeColors?.textSecondary || colors.textSecondary }]}>
                         Chaque création coûte des crédits. Vous pouvez en gagner en accomplissant des tâches ou en regardant des publicités.
                     </Text>
                 </View>

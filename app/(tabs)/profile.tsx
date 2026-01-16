@@ -405,10 +405,11 @@ export default function ProfileScreen() {
                     )}
 
                     { /* Role Display avec définitions individuelles */}
-                    {currentAlter.custom_fields?.find(f => f.label === 'Role') && (() => {
-                        const roleValue = currentAlter.custom_fields?.find(f => f.label === 'Role')?.value || '';
-                        const individualRoles = roleValue.split(',').map(r => r.trim()).filter(r => r.length > 0);
+                    {(() => {
+                        const roleField = currentAlter.custom_fields?.find(f => f.label.toLowerCase() === 'role');
+                        if (!roleField) return null;
 
+                        const individualRoles = roleField.value.split(',').map(r => r.trim()).filter(r => r.length > 0);
                         if (individualRoles.length === 0) return null;
 
                         return (

@@ -271,12 +271,33 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                     </View>
                 )}
 
-                {/* SECONDARY ROLES - Collapsible menu */}
+                {/* SECONDARY ROLES - Chips with (i) icons */}
                 {alter.custom_fields?.find(f => f.label === 'Role')?.value && (
-                    <View style={{ marginBottom: 8 }}>
-                        <Text style={{ fontSize: 12, color: themeColors?.textSecondary || colors.textSecondary }}>
-                            + {alter.custom_fields.find(f => f.label === 'Role')?.value}
-                        </Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8, alignItems: 'center' }}>
+                        <Text style={{ fontSize: 12, color: themeColors?.textSecondary || colors.textSecondary }}>+</Text>
+                        {alter.custom_fields.find(f => f.label === 'Role')?.value.split(',').map((role, index) => (
+                            <AnimatedPressable
+                                key={index}
+                                style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    paddingHorizontal: 8,
+                                    paddingVertical: 4,
+                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                    borderRadius: 12,
+                                    borderWidth: 1,
+                                    borderColor: themeColors?.border || 'rgba(255, 255, 255, 0.15)',
+                                }}
+                                onPress={() => {
+                                    const roleName = role.trim();
+                                    Alert.alert(roleName, getRoleDefinition(roleName));
+                                }}
+                            >
+                                <Ionicons name="information-circle-outline" size={14} color={themeColors?.primary || colors.primary} />
+                                <Text style={{ fontSize: 12, color: themeColors?.text || colors.text }}>{role.trim()}</Text>
+                            </AnimatedPressable>
+                        ))}
                     </View>
                 )}
 

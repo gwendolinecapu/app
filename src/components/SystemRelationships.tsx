@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, Alert, Image, ScrollView, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Alter, Relationship, RelationshipType } from '../types';
 import { colors, spacing, borderRadius, typography } from '../lib/theme';
@@ -44,10 +44,15 @@ const RELATIONSHIP_ICONS: Record<RelationshipType, string> = {
 
 export const SystemRelationships = ({ alter, editable = false, themeColors }: Props) => {
     const { alters, refreshAlters, user } = useAuth();
+
+    // DEBUG: Voir les avatars des alters
+    console.log('🖼️ Alters avatars:', alters.map(a => ({ name: a.name, avatar_url: a.avatar_url, avatar: a.avatar })));
+
     const [modalVisible, setModalVisible] = useState(false);
     const [loading, setLoading] = useState(false);
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [externalProfiles, setExternalProfiles] = useState<any[]>([]); // Store external profiles
+    const [searchQuery, setSearchQuery] = useState('');
 
     const relationships = alter.relationships || [];
 
@@ -142,7 +147,7 @@ export const SystemRelationships = ({ alter, editable = false, themeColors }: Pr
         ...alters.filter(a => a.id !== alter.id).map(a => ({
             id: a.id,
             name: a.name,
-            avatar_url: a.avatar_url,
+            avatar_url: a.avatar_url || a.avatar, // Fallback sur avatar si avatar_url n'existe pas
             color: a.color || colors.primary,
             type: 'alter'
         })),
@@ -244,40 +249,105 @@ export const SystemRelationships = ({ alter, editable = false, themeColors }: Pr
                 <View style={styles.modalOverlay}>
                     <View style={[styles.modalContent, themeColors && { backgroundColor: themeColors.background }]}>
                         <Text style={[styles.modalTitle, themeColors && { color: themeColors.text }]}>Ajouter une relation</Text>
+
+                        {/* Barre de recherche */}
+                        <TextInput
+                            style={{
+                                backgroundColor: themeColors?.backgroundCard || colors.backgroundCard,
+                                borderRadius: 12,
+                                paddingHorizontal: 16,
+                                paddingVertical: 10,
+                                marginBottom: 16,
+                                color: themeColors?.text || colors.text,
+                                borderWidth: 1,
+                                borderColor: themeColors?.border || colors.border,
+                            }}
+                            placeholder="Rechercher un alter ou ami..."
+                            placeholderTextColor={themeColors?.textSecondary || colors.textSecondary}
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                        />
+
                         <FlatList
-                            data={candidates}
+                            data={candidates.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))}
                             keyExtractor={item => item.id}
                             renderItem={({ item }) => (
                                 <View style={[styles.selectItem, themeColors && { borderBottomColor: themeColors.border }]}>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                                        {/* Avatar in List */}
+                                    {/* Photo + Nom en bulle */}
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
                                         <View style={{
-                                            width: 30, height: 30, borderRadius: 15,
-                                            backgroundColor: item.color, justifyContent: 'center', alignItems: 'center', overflow: 'hidden'
+                                            width: 40, height: 40, borderRadius: 20,
+                                            backgroundColor: item.color || colors.primary, justifyContent: 'center', alignItems: 'center', overflow: 'hidden'
                                         }}>
-                                            {item.avatar_url ? (
-                                                <Image source={{ uri: item.avatar_url }} style={{ width: 30, height: 30 }} />
+                                            {(item.avatar_url || item.avatar) ? (
+                                                <Image
+                                                    source={{ uri: item.avatar_url || item.avatar }}
+                                                    style={{ width: 40, height: 40 }}
+                                                    defaultSource={{ uri: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==' }}
+                                                />
                                             ) : (
-                                                <Text style={{ color: 'white', fontWeight: 'bold' }}>{item.name[0]}</Text>
+                                                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>{item.name?.[0] || '?'}</Text>
                                             )}
                                         </View>
-                                        <View>
-                                            <Text style={[styles.selectName, themeColors && { color: themeColors.text }]}>{item.name}</Text>
-                                            {item.type === 'external' && <Text style={{ fontSize: 10, color: themeColors?.textSecondary || colors.textSecondary }}>Ami(e) / Externe</Text>}
+                                        <View style={{
+                                            backgroundColor: themeColors?.backgroundCard || 'rgba(255,255,255,0.1)',
+                                            paddingHorizontal: 12,
+                                            paddingVertical: 6,
+                                            borderRadius: 16,
+                                            marginLeft: 10,
+                                        }}>
+                                            <Text style={{
+                                                fontSize: 14,
+                                                fontWeight: '600',
+                                                color: themeColors?.text || colors.text
+                                            }}>{item.name}</Text>
+                                            {item.type === 'external' && (
+                                                <Text style={{ fontSize: 10, color: themeColors?.textSecondary || colors.textSecondary }}>Externe</Text>
+                                            )}
                                         </View>
                                     </View>
 
-                                    <View style={styles.typesRow}>
+
+                                    {/* Carrousel scrollable des types de relations */}
+                                    <ScrollView
+                                        horizontal
+                                        showsHorizontalScrollIndicator={false}
+                                        style={{ marginTop: 12 }}
+                                        contentContainerStyle={{ gap: 10, paddingHorizontal: 4 }}
+                                    >
                                         {(['friend', 'best_friend', 'partner', 'ex', 'crush', 'family', 'sibling', 'enemy', 'rival'] as RelationshipType[]).map(type => (
                                             <TouchableOpacity
                                                 key={type}
-                                                style={[styles.typeBtn, themeColors && { backgroundColor: themeColors.backgroundCard }]}
+                                                style={{
+                                                    width: 70,
+                                                    backgroundColor: themeColors?.backgroundCard || colors.backgroundCard,
+                                                    borderRadius: 10,
+                                                    paddingVertical: 8,
+                                                    paddingHorizontal: 4,
+                                                    borderWidth: 1,
+                                                    borderColor: themeColors?.border || colors.border,
+                                                    alignItems: 'center',
+                                                }}
                                                 onPress={() => handleAddRelationship(item.id, type)}
+                                                activeOpacity={0.7}
                                             >
-                                                <Ionicons name={RELATIONSHIP_ICONS[type] as any} size={20} color={themeColors?.primary || colors.primary} />
+                                                <Ionicons
+                                                    name={RELATIONSHIP_ICONS[type] as any}
+                                                    size={20}
+                                                    color={themeColors?.primary || colors.primary}
+                                                />
+                                                <Text style={{
+                                                    fontSize: 9,
+                                                    fontWeight: '600',
+                                                    color: themeColors?.text || colors.text,
+                                                    marginTop: 4,
+                                                    textAlign: 'center'
+                                                }}>
+                                                    {RELATIONSHIP_LABELS[type]}
+                                                </Text>
                                             </TouchableOpacity>
                                         ))}
-                                    </View>
+                                    </ScrollView>
                                 </View>
                             )}
                         />

@@ -17,11 +17,11 @@ export function AvatarWithLoading({
     color = colors.primary,
     style
 }: AvatarWithLoadingProps) {
-    const [loading, setLoading] = useState(!!uri);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
-    // Si pas d'URL, afficher directement le fallback
-    if (!uri) {
+    // Si pas d'URL ou erreur, afficher le fallback
+    if (!uri || error) {
         return (
             <View style={[
                 styles.fallback,
@@ -40,56 +40,29 @@ export function AvatarWithLoading({
         );
     }
 
-    // Si erreur de chargement, afficher fallback
-    if (error) {
-        return (
-            <View style={[
-                styles.fallback,
-                {
-                    width: size,
-                    height: size,
-                    borderRadius: size / 2,
-                    backgroundColor: color
-                },
-                style
-            ]}>
-                <Text style={[styles.fallbackText, { fontSize: size * 0.5 }]}>
-                    {fallbackText.charAt(0).toUpperCase()}
-                </Text>
-            </View>
-        );
-    }
-
-    // Si en cours de chargement, afficher UNIQUEMENT le spinner
-    if (loading) {
-        return (
-            <View style={[
-                styles.loadingContainer,
-                {
-                    width: size,
-                    height: size,
-                    borderRadius: size / 2,
-                    backgroundColor: colors.backgroundLight
-                },
-                style
-            ]}>
-                <ActivityIndicator size="small" color={color} />
-            </View>
-        );
-    }
-
-    // Une fois chargé, afficher UNIQUEMENT l'image
+    // Afficher l'image avec un spinner en overlay pendant le chargement
     return (
-        <Image
-            source={{ uri }}
-            style={[{ width: size, height: size, borderRadius: size / 2 }, style]}
-            onLoadStart={() => setLoading(true)}
-            onLoad={() => setLoading(false)}
-            onError={() => {
-                setLoading(false);
-                setError(true);
-            }}
-        />
+        <View style={[{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden' }, style]}>
+            <Image
+                source={{ uri }}
+                style={{ width: size, height: size, borderRadius: size / 2 }}
+                onLoadStart={() => setLoading(true)}
+                onLoad={() => setLoading(false)}
+                onError={() => {
+                    setLoading(false);
+                    setError(true);
+                }}
+            />
+            {loading && (
+                <View style={[
+                    StyleSheet.absoluteFill,
+                    styles.loadingContainer,
+                    { backgroundColor: colors.backgroundLight }
+                ]}>
+                    <ActivityIndicator size="small" color={color} />
+                </View>
+            )}
+        </View>
     );
 }
 

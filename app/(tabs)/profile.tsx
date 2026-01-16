@@ -34,31 +34,97 @@ import { getThemeColors } from '../../src/lib/cosmetics';
 import { useNotificationContext } from '../../src/contexts/NotificationContext';
 
 const ROLE_DEFINITIONS: Record<string, string> = {
-    'host': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
-    'hote': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
-    'hôte': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
-    'protector': "Protège le système, le corps ou d'autres alters des menaces ou des traumas.",
-    'protecteur': "Protège le système, le corps ou d'autres alters des menaces ou des traumas.",
-    'gatekeeper': "Contrôle les switchs (changements), l'accès aux souvenirs ou aux zones du monde intérieur.",
-    'persecutor': "Peut agir de manière nuisible envers le système, souvent par mécanisme de défense déformé ou traumatisme.",
-    'persecuteur': "Peut agir de manière nuisible envers le système, souvent par mécanisme de défense déformé ou traumatisme.",
-    'persécuteur': "Peut agir de manière nuisible envers le système, souvent par mécanisme de défense déformé ou traumatisme.",
-    'little': "Un alter enfant, souvent porteur d'innocence ou de souvenirs traumatiques précoces.",
-    'caretaker': "Prend soin des autres alters (souvent les littles) ou apaise le système.",
-    'soigneur': "Prend soin des autres alters (souvent les littles) ou apaise le système.",
-    'trauma holder': "Détient les souvenirs ou les émotions liés aux traumas pour protéger les autres.",
-    'porteur de trauma': "Détient les souvenirs ou les émotions liés aux traumas pour protéger les autres.",
-    'fictive': "Introject basé sur un personnage de fiction.",
-    'factive': "Introject basé sur une personne réelle.",
+    // Protection
+    'Protecteur': 'Rôle de défense du système. Intervient pour protéger le corps ou les autres alters contre des situations perçues comme dangereuses ou menaçantes.',
+    'Protecteur émotionnel': 'Spécialisé dans la gestion des émotions intenses. Peut "absorber" ou bloquer les émotions trop fortes pour protéger le système du surmenage émotionnel.',
+    'Protecteur physique': 'Prend le contrôle lors de situations de danger physique. Souvent plus résistant à la douleur et capable de réagir rapidement en cas d\'urgence.',
+    'Gatekeeper': 'Le "gardien des portes" du système. Contrôle qui peut fronter, quand, et gère l\'accès aux souvenirs (parfois traumatiques) pour protéger le système.',
+    'Guardian': 'Veille sur l\'ensemble du système de manière générale. Moins spécialisé que le protecteur, il surveille le bien-être global.',
+    // Persécuteurs & Antagonistes
+    'Persecutor': 'Alter qui semble nuisible mais dont les actions viennent souvent d\'une volonté de protéger à sa manière (contrôle par la peur). Peut reproduire des comportements d\'agresseurs passés.',
+    'Persécuteur': 'Alter qui semble nuisible mais dont les actions viennent souvent d\'une volonté de protéger à sa manière (contrôle par la peur). Peut reproduire des comportements d\'agresseurs passés.',
+    'Avenger': 'Le "vengeur" du système. Réagit avec colère face aux injustices ou abus. Peut vouloir se venger des responsables extérieurs.',
+    'Protecteur-Persécuteur': 'Alter hybride qui cherche à protéger le système mais utilise pour cela des méthodes agressives, punitives ou nuisibles car il pense que c\'est la seule façon efficace.',
+    'Introject Persécuteur': 'Basé sur une figure abusive passée (réelle ou perçue). Il peut reproduire les comportements, paroles ou menaces de l\'abuseur, souvent par mimétisme traumatique.',
+    'Destructeur': 'Adopte des comportements autodestructeurs ou dangereux pour le corps/système. Souvent lié à une souffrance intense, un programme ou des croyances négatives profondes.',
+    'Saboteur': 'Entrave les efforts du système (thérapie, relations, travail, bonheur). Agit souvent par peur du changement, de l\'échec ou pour maintenir le statu quo connu.',
+    'Punisseur': 'Inflige des punitions internes (douleur, insultes) ou externes aux autres alters lorsqu\'ils enfreignent des règles. Cherche souvent à "discipliner" pour éviter une punition extérieure pire.',
+    // Gestion
+    'Hôte': 'L\'alter principal qui gère la vie quotidienne la majorité du temps. C\'est souvent celui qui interagit le plus avec le monde extérieur.',
+    'Host': 'L\'alter principal qui gère la vie quotidienne la majorité du temps. C\'est souvent celui qui interagit le plus avec le monde extérieur.',
+    'Co-hôte': 'Partage les responsabilités de l\'hôte. Peut alterner avec l\'hôte principal ou fronter régulièrement pour partager la charge du quotidien.',
+    'Co-host': 'Partage les responsabilités de l\'hôte. Peut alterner avec l\'hôte principal ou fronter régulièrement pour partager la charge du quotidien.',
+    'Manager': 'Responsable de la planification et de l\'organisation. Prend des décisions importantes et structure la vie du système.',
+    'Caretaker': 'Le "soignant" du système. Prend soin des autres alters, notamment des plus vulnérables (littles). S\'assure que tout le monde va bien.',
+    'Soigneur': 'Le "soignant" du système. Prend soin des autres alters, notamment des plus vulnérables (littles). S\'assure que tout le monde va bien.',
+    'ISH': 'Internal Self Helper - Un alter très conscient du fonctionnement du système. Sert de guide interne et peut aider à la communication entre alters.',
+    'Mediator': 'Gère les conflits internes entre alters. Aide à trouver des compromis et maintient l\'harmonie dans le système.',
+    'Archiviste': 'Garde et organise les souvenirs du système. Peut avoir accès à plus de mémoires que les autres alters.',
+    'Organisateur': 'Se concentre sur l\'organisation pratique : emploi du temps, tâches à faire, gestion des responsabilités quotidiennes.',
+    'Core': 'Le "noyau" ou alter original du système. Pas toujours présent ou identifiable dans tous les systèmes. Représente parfois l\'identité d\'origine.',
+    // Enfance
+    'Little': 'Alter enfant, généralement perçu comme ayant moins de 12 ans. Peut garder l\'innocence, la curiosité, ou les traumatismes de l\'enfance.',
+    'Middle': 'Alter préadolescent (environ 9-12 ans). Entre l\'enfance et l\'adolescence, avec des caractéristiques des deux périodes.',
+    'Teen': 'Alter adolescent (13-17 ans). Peut gérer des situations que les littles ne peuvent pas, tout en ayant des besoins différents des adultes.',
+    'Age slider': 'Alter dont l\'âge perçu varie selon les situations ou le temps. Peut être enfant un jour et adulte un autre.',
+    'Regressor': 'Alter qui peut "régresser" vers un état plus jeune, souvent en réponse au stress ou au besoin de réconfort.',
+    // Traumatismes
+    'Trauma holder': 'Porte les souvenirs traumatiques pour protéger les autres alters. Peut avoir des flashbacks ou des réactions liées aux traumas.',
+    'Porteur de trauma': 'Porte les souvenirs traumatiques pour protéger les autres alters. Peut avoir des flashbacks ou des réactions liées aux traumas.',
+    'Emotional holder': 'Porte des émotions spécifiques (tristesse, colère, honte...) pour que les autres alters puissent fonctionner sans être submergés.',
+    'Pain holder': 'Porte la douleur physique ou émotionnelle. Peut ressentir plus de douleur que les autres mais les protège ainsi.',
+    'Fear holder': 'Spécialisé dans le port de la peur et de l\'anxiété. Permet aux autres alters de fonctionner sans être paralysés par la peur.',
+    'Memory holder': 'Garde des souvenirs spécifiques, pas forcément traumatiques. Peut être le seul à se souvenir de certains événements.',
+    'Fragment': 'Un alter très limité, souvent créé pour une fonction ou un souvenir très spécifique. Peut n\'avoir qu\'une personnalité partielle.',
+    // Sociaux & Créatifs
+    'Social alter': 'Spécialisé dans les interactions sociales. Gère les conversations, les relations, et peut être très à l\'aise en société.',
+    'Mask': 'Alter créé pour "faire semblant que tout va bien". Permet au système de fonctionner socialement même quand ça ne va pas.',
+    'Entertainer': 'Apporte humour, joie et divertissement. Peut alléger l\'atmosphère et aider le système à se détendre.',
+    'Animateur/trice': 'Anime les situations, apporte de l\'énergie positive. Aime divertir et faire rire les autres.',
+    'Artist': 'Alter créatif, s\'exprime à travers l\'art (dessin, peinture, écriture, musique...). La création peut être un exutoire important.',
+    'Artiste': 'Alter créatif, s\'exprime à travers l\'art (dessin, peinture, écriture, musique...). La création peut être un exutoire important.',
+    'Communicator': 'Gère la communication interne et externe. Peut exprimer ce que les autres alters n\'arrivent pas à dire.',
+    'Communicateur/trice': 'Gère la communication interne et externe. Peut exprimer ce que les autres alters n\'arrivent pas à dire.',
+    'Performer': 'S\'exprime à travers la performance : danse, musique, théâtre, sport. Aime être sur scène ou montrer ses talents.',
+    // Spécialisés
+    'Worker': 'Spécialisé dans le travail et la vie professionnelle. Compétent et concentré sur les tâches à accomplir.',
+    'Travailleur/se': 'Spécialisé dans le travail et la vie professionnelle. Compétent et concentré sur les tâches à accomplir.',
+    'Student': 'Se concentre sur les études et l\'apprentissage. Aime apprendre de nouvelles choses.',
+    'Étudiant(e)': 'Se concentre sur les études et l\'apprentissage. Aime apprendre de nouvelles choses.',
+    'Sexual alter': 'Gère la sexualité et l\'intimité du système. Peut aussi être un mécanisme de protection suite à des traumas sexuels.',
+    'Romantic': 'Gère les relations affectives et romantiques. Ressent et exprime l\'amour et l\'attachement.',
+    'Romantique': 'Gère les relations affectives et romantiques. Ressent et exprime l\'amour et l\'attachement.',
+    'Spiritual': 'Connecté à la spiritualité, la religion ou les croyances du système. Peut apporter sens et guidance.',
+    'Spirituel/le': 'Connecté à la spiritualité, la religion ou les croyances du système. Peut apporter sens et guidance.',
+    'Somatic': 'Particulièrement connecté au corps et aux sensations physiques. Peut être le seul à ressentir certaines sensations.',
+    // Types particuliers
+    'Fictive': 'Alter basé sur un personnage fictif (de film, livre, jeu vidéo, série...). A l\'apparence et parfois la personnalité du personnage.',
+    'Factive': 'Alter basé sur une personne réelle célèbre ou publique. N\'est pas cette personne mais en a des caractéristiques.',
+    'Introject': 'Alter basé sur une personne réelle connue personnellement (famille, ami, agresseur...). Créé pour diverses raisons.',
+    'Non-human': 'Alter qui ne s\'identifie pas comme humain : animal, créature mythique, robot, entité abstraite...',
+    'Therian': 'S\'identifie spécifiquement comme un animal ou une créature. Peut avoir des instincts ou comportements liés à cet animal.',
+    'Object': 'Alter qui s\'identifie comme un objet (peluche, outil, etc.). Plus rare mais valide.',
+    'Objet': 'Alter qui s\'identifie comme un objet (peluche, outil, etc.). Plus rare mais valide.',
+    'Subsystem': 'Un système dans le système. Le subsystem contient lui-même plusieurs alters interconnectés.',
+    'Shell': 'Alter avec une présence minimale, parfois "vide". Peut être utilisé pour masquer que quelqu\'un est front.',
+    // États du front
+    'Fronting': 'L\'alter qui contrôle actuellement le corps. Peut changer fréquemment ou rester stable longtemps.',
+    'Co-front': 'Situation où plusieurs alters sont présents au front simultanément, partageant le contrôle à des degrés divers.',
+    'Observer': 'Alter qui observe ce qui se passe sans prendre le contrôle. Peut être conscient de l\'extérieur sans pouvoir agir.',
+    'Dormant': 'Alter actuellement inactif, parfois depuis longtemps. Peut se "réveiller" plus tard.',
+    'Unknown': 'Pour les alters dont le rôle n\'est pas encore connu ou défini. Parfaitement valide !'
 };
 
 const getRoleDefinition = (role: string) => {
     const key = role.toLowerCase().trim();
-    // Try exact match
-    if (ROLE_DEFINITIONS[key]) return ROLE_DEFINITIONS[key];
+    // Try exact match (case insensitive)
+    const exactMatch = Object.keys(ROLE_DEFINITIONS).find(k => k.toLowerCase() === key);
+    if (exactMatch) return ROLE_DEFINITIONS[exactMatch];
+
     // Try partial match
-    const found = Object.keys(ROLE_DEFINITIONS).find(k => key.includes(k));
-    if (found) return ROLE_DEFINITIONS[found];
+    const partialMatch = Object.keys(ROLE_DEFINITIONS).find(k => key.includes(k.toLowerCase()) || k.toLowerCase().includes(key));
+    if (partialMatch) return ROLE_DEFINITIONS[partialMatch];
+
     return "Définition non disponible pour ce rôle spécifique.";
 };
 
@@ -338,22 +404,38 @@ export default function ProfileScreen() {
                         <Text style={styles.pronouns}>{currentAlter.pronouns}</Text>
                     )}
 
-                    {/* Role Display */}
-                    {currentAlter.custom_fields?.find(f => f.label === 'Role') && (
-                        <TouchableOpacity
-                            style={styles.roleBadge}
-                            activeOpacity={0.7}
-                            onPress={() => {
-                                const role = currentAlter.custom_fields?.find(f => f.label === 'Role')?.value || '';
-                                Alert.alert("Définition du rôle", getRoleDefinition(role));
-                            }}
-                        >
-                            <Ionicons name="information-circle" size={14} color={colors.primaryLight} style={{ marginRight: 4 }} />
-                            <Text style={styles.roleText}>
-                                {currentAlter.custom_fields.find(f => f.label === 'Role')?.value}
-                            </Text>
-                        </TouchableOpacity>
-                    )}
+                    { /* Role Display avec définitions individuelles */}
+                    {currentAlter.custom_fields?.find(f => f.label === 'Role') && (() => {
+                        const roleValue = currentAlter.custom_fields?.find(f => f.label === 'Role')?.value || '';
+                        const individualRoles = roleValue.split(',').map(r => r.trim()).filter(r => r.length > 0);
+
+                        if (individualRoles.length === 0) return null;
+
+                        return (
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                                <Text style={[styles.bio, { marginTop: 0, fontSize: 14, color: colors.textSecondary }]}>+</Text>
+                                {individualRoles.map((role, index) => (
+                                    <TouchableOpacity
+                                        key={index}
+                                        style={{
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            gap: 4,
+                                        }}
+                                        activeOpacity={0.7}
+                                        onPress={() => {
+                                            Alert.alert(role, getRoleDefinition(role));
+                                        }}
+                                    >
+                                        <Ionicons name="information-circle" size={14} color={colors.textSecondary} />
+                                        <Text style={[styles.bio, { marginTop: 0, color: colors.text, fontSize: 14 }]}>
+                                            {role}{index < individualRoles.length - 1 ? ',' : ''}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        );
+                    })()}
 
                     {/* Bio */}
                     {currentAlter.bio && (

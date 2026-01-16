@@ -16,20 +16,30 @@ interface Props {
 
 const RELATIONSHIP_LABELS: Record<RelationshipType, string> = {
     friend: 'Ami·e',
+    best_friend: 'Meilleur·e ami·e',
     partner: 'Partenaire',
+    ex: 'Ex',
+    crush: 'Crush',
     family: 'Famille',
-    enemy: 'Conflictuel',
+    sibling: 'Frère/Sœur',
+    enemy: 'Ennemi',
+    rival: 'Rival',
     work: 'Travail',
     other: 'Autre'
 };
 
 const RELATIONSHIP_ICONS: Record<RelationshipType, string> = {
     friend: 'heart-outline',
+    best_friend: 'heart',
     partner: 'heart',
+    ex: 'heart-dislike-outline',
+    crush: 'heart-half-outline',
     family: 'home-outline',
-    enemy: 'flash-outline',
+    sibling: 'people-outline',
+    enemy: 'skull-outline',
+    rival: 'flash-outline',
     work: 'briefcase-outline',
-    other: 'people-outline'
+    other: 'ellipsis-horizontal-outline'
 };
 
 export const SystemRelationships = ({ alter, editable = false, themeColors }: Props) => {
@@ -232,13 +242,13 @@ export const SystemRelationships = ({ alter, editable = false, themeColors }: Pr
             {/* Selection Modal */}
             <Modal visible={modalVisible} animationType="slide" transparent onRequestClose={() => setModalVisible(false)}>
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Ajouter une relation</Text>
+                    <View style={[styles.modalContent, themeColors && { backgroundColor: themeColors.background }]}>
+                        <Text style={[styles.modalTitle, themeColors && { color: themeColors.text }]}>Ajouter une relation</Text>
                         <FlatList
                             data={candidates}
                             keyExtractor={item => item.id}
                             renderItem={({ item }) => (
-                                <View style={styles.selectItem}>
+                                <View style={[styles.selectItem, themeColors && { borderBottomColor: themeColors.border }]}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                                         {/* Avatar in List */}
                                         <View style={{
@@ -252,19 +262,19 @@ export const SystemRelationships = ({ alter, editable = false, themeColors }: Pr
                                             )}
                                         </View>
                                         <View>
-                                            <Text style={styles.selectName}>{item.name}</Text>
-                                            {item.type === 'external' && <Text style={{ fontSize: 10, color: colors.textSecondary }}>Ami(e) / Externe</Text>}
+                                            <Text style={[styles.selectName, themeColors && { color: themeColors.text }]}>{item.name}</Text>
+                                            {item.type === 'external' && <Text style={{ fontSize: 10, color: themeColors?.textSecondary || colors.textSecondary }}>Ami(e) / Externe</Text>}
                                         </View>
                                     </View>
 
                                     <View style={styles.typesRow}>
-                                        {(['friend', 'partner', 'family', 'work'] as RelationshipType[]).map(type => (
+                                        {(['friend', 'best_friend', 'partner', 'ex', 'crush', 'family', 'sibling', 'enemy', 'rival'] as RelationshipType[]).map(type => (
                                             <TouchableOpacity
                                                 key={type}
-                                                style={styles.typeBtn}
+                                                style={[styles.typeBtn, themeColors && { backgroundColor: themeColors.backgroundCard }]}
                                                 onPress={() => handleAddRelationship(item.id, type)}
                                             >
-                                                <Ionicons name={RELATIONSHIP_ICONS[type] as any} size={20} color={colors.primary} />
+                                                <Ionicons name={RELATIONSHIP_ICONS[type] as any} size={20} color={themeColors?.primary || colors.primary} />
                                             </TouchableOpacity>
                                         ))}
                                     </View>
@@ -272,7 +282,7 @@ export const SystemRelationships = ({ alter, editable = false, themeColors }: Pr
                             )}
                         />
                         <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
-                            <Text style={styles.closeText}>Fermer</Text>
+                            <Text style={[styles.closeText, themeColors && { color: themeColors.textSecondary }]}>Fermer</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

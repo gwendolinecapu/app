@@ -106,7 +106,18 @@ export interface Relationship {
     description?: string;
 }
 
-export type RelationshipType = 'friend' | 'partner' | 'family' | 'enemy' | 'work' | 'other';
+export type RelationshipType =
+    | 'friend'
+    | 'best_friend'
+    | 'partner'
+    | 'ex'
+    | 'crush'
+    | 'family'
+    | 'sibling'
+    | 'enemy'
+    | 'rival'
+    | 'work'
+    | 'other';
 
 export interface Post {
     id: string;

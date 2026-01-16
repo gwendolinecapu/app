@@ -124,9 +124,15 @@ export default function EditAlterProfileScreen() {
         'Protecteur émotionnel': 'Spécialisé dans la gestion des émotions intenses. Peut "absorber" ou bloquer les émotions trop fortes pour protéger le système du surmenage émotionnel.',
         'Protecteur physique': 'Prend le contrôle lors de situations de danger physique. Souvent plus résistant à la douleur et capable de réagir rapidement en cas d\'urgence.',
         'Gatekeeper': 'Le "gardien des portes" du système. Contrôle qui peut fronter, quand, et gère l\'accès aux souvenirs (parfois traumatiques) pour protéger le système.',
-        'Persecutor': 'Alter qui semble nuisible mais dont les actions viennent souvent d\'une volonté de protéger à sa manière. Peut reproduire des comportements d\'agresseurs passés comme mécanisme de défense.',
-        'Avenger': 'Le "vengeur" du système. Réagit face aux injustices subies ou aux abus. Peut exprimer la colère que d\'autres alters ne peuvent pas gérer.',
         'Guardian': 'Veille sur l\'ensemble du système de manière générale. Moins spécialisé que le protecteur, il surveille le bien-être global.',
+        // Persécuteurs & Antagonistes
+        'Persecutor': 'Alter qui semble nuisible mais dont les actions viennent souvent d\'une volonté de protéger à sa manière (contrôle par la peur). Peut reproduire des comportements d\'agresseurs passés.',
+        'Avenger': 'Le "vengeur" du système. Réagit avec colère face aux injustices ou abus. Peut vouloir se venger des responsables extérieurs.',
+        'Protecteur-Persécuteur': 'Alter hybride qui cherche à protéger le système mais utilise pour cela des méthodes agressives, punitives ou nuisibles car il pense que c\'est la seule façon efficace.',
+        'Introject Persécuteur': 'Basé sur une figure abusive passée (réelle ou perçue). Il peut reproduire les comportements, paroles ou menaces de l\'abuseur, souvent par mimétisme traumatique.',
+        'Destructeur': 'Adopte des comportements autodestructeurs ou dangereux pour le corps/système. Souvent lié à une souffrance intense, un programme ou des croyances négatives profondes.',
+        'Saboteur': 'Entrave les efforts du système (thérapie, relations, travail, bonheur). Agit souvent par peur du changement, de l\'échec ou pour maintenir le statu quo connu.',
+        'Punisseur': 'Inflige des punitions internes (douleur, insultes) ou externes aux autres alters lorsqu\'ils enfreignent des règles. Cherche souvent à "discipliner" pour éviter une punition extérieure pire.',
         // Gestion
         'Hôte': 'L\'alter principal qui gère la vie quotidienne la majorité du temps. C\'est souvent celui qui interagit le plus avec le monde extérieur.',
         'Co-hôte': 'Partage les responsabilités de l\'hôte. Peut alterner avec l\'hôte principal ou fronter régulièrement pour partager la charge du quotidien.',
@@ -781,20 +787,20 @@ export default function EditAlterProfileScreen() {
                                                         onPress={() => handleMajorRoleSelect(roleName)}
                                                         onLongPress={() => handleRoleLongPress(roleName)}
                                                         style={{
-                                                            backgroundColor: isSelected ? color : chipBg,
+                                                            backgroundColor: isSelected ? (themeColors?.primary || colors.primary) : chipBg,
                                                             paddingHorizontal: spacing.md,
                                                             paddingVertical: spacing.sm,
                                                             borderRadius: borderRadius.lg,
                                                             marginRight: spacing.xs,
                                                             marginBottom: spacing.xs,
                                                             borderWidth: 1,
-                                                            borderColor: isSelected ? color : chipBorder
+                                                            borderColor: isSelected ? (themeColors?.primary || colors.primary) : chipBorder
                                                         }}
                                                     >
                                                         <Text style={{
                                                             fontSize: 14,
                                                             fontWeight: isSelected ? '600' : '500',
-                                                            color: isSelected ? 'white' : modalText
+                                                            color: isSelected ? '#FFFFFF' : modalText
                                                         }}>{roleName}</Text>
                                                     </TouchableOpacity>
                                                 );
@@ -809,9 +815,19 @@ export default function EditAlterProfileScreen() {
                                                         <MajorRoleChip roleName="Protecteur émotionnel" />
                                                         <MajorRoleChip roleName="Protecteur physique" />
                                                         <MajorRoleChip roleName="Gatekeeper" />
+                                                        <MajorRoleChip roleName="Guardian" />
+                                                    </View>
+
+                                                    {/* Persécuteurs */}
+                                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: modalText, marginBottom: spacing.sm }}>🌑 Persécuteurs & Antagonistes</Text>
+                                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
                                                         <MajorRoleChip roleName="Persecutor" />
                                                         <MajorRoleChip roleName="Avenger" />
-                                                        <MajorRoleChip roleName="Guardian" />
+                                                        <MajorRoleChip roleName="Protecteur-Persécuteur" />
+                                                        <MajorRoleChip roleName="Introject Persécuteur" />
+                                                        <MajorRoleChip roleName="Saboteur" />
+                                                        <MajorRoleChip roleName="Destructeur" />
+                                                        <MajorRoleChip roleName="Punisseur" />
                                                     </View>
 
                                                     {/* Gestion */}
@@ -941,20 +957,20 @@ export default function EditAlterProfileScreen() {
                                                         onPress={() => handleRoleSelect(roleName)}
                                                         onLongPress={() => handleRoleLongPress(roleName)}
                                                         style={{
-                                                            backgroundColor: isSelected ? color : chipBg,
+                                                            backgroundColor: isSelected ? (themeColors?.primary || colors.primary) : chipBg,
                                                             paddingHorizontal: spacing.md,
                                                             paddingVertical: spacing.sm,
                                                             borderRadius: borderRadius.lg,
                                                             marginRight: spacing.xs,
                                                             marginBottom: spacing.xs,
                                                             borderWidth: 1,
-                                                            borderColor: isSelected ? color : chipBorder
+                                                            borderColor: isSelected ? (themeColors?.primary || colors.primary) : chipBorder
                                                         }}
                                                     >
                                                         <Text style={{
                                                             fontSize: 14,
                                                             fontWeight: isSelected ? '600' : '500',
-                                                            color: isSelected ? 'white' : modalText
+                                                            color: isSelected ? '#FFFFFF' : modalText
                                                         }}>{roleName}</Text>
                                                     </TouchableOpacity>
                                                 );
@@ -969,9 +985,19 @@ export default function EditAlterProfileScreen() {
                                                         <RoleChip roleName="Protecteur émotionnel" />
                                                         <RoleChip roleName="Protecteur physique" />
                                                         <RoleChip roleName="Gatekeeper" />
+                                                        <RoleChip roleName="Guardian" />
+                                                    </View>
+
+                                                    {/* Persécuteurs */}
+                                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: modalText, marginBottom: spacing.sm }}>🌑 Persécuteurs & Antagonistes</Text>
+                                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.lg }}>
                                                         <RoleChip roleName="Persecutor" />
                                                         <RoleChip roleName="Avenger" />
-                                                        <RoleChip roleName="Guardian" />
+                                                        <RoleChip roleName="Protecteur-Persécuteur" />
+                                                        <RoleChip roleName="Introject Persécuteur" />
+                                                        <RoleChip roleName="Saboteur" />
+                                                        <RoleChip roleName="Destructeur" />
+                                                        <RoleChip roleName="Punisseur" />
                                                     </View>
 
                                                     {/* Gestion */}

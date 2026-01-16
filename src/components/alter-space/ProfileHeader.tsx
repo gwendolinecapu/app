@@ -18,6 +18,7 @@ import { NatureMysticFrame } from '../effects/NatureMysticFrame';
 import { StoryHighlights } from '../stories/StoryHighlights';
 
 const ROLE_DEFINITIONS: Record<string, string> = {
+    // Rôles Majeurs & Communs
     'host': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
     'hote': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
     'hôte': "L'alter qui utilise le corps le plus souvent et gère la vie quotidienne.",
@@ -28,13 +29,65 @@ const ROLE_DEFINITIONS: Record<string, string> = {
     'persecutor': "Peut agir de manière nuisible envers le système, souvent par mécanisme de défense déformé ou traumatisme.",
     'persecuteur': "Peut agir de manière nuisible envers le système, souvent par mécanisme de défense déformé ou traumatisme.",
     'persécuteur': "Peut agir de manière nuisible envers le système, souvent par mécanisme de défense déformé ou traumatisme.",
-    'little': "Un alter enfant, souvent porteur d'innocence ou de souvenirs traumatiques précoces.",
-    'caretaker': "Prend soin des autres alters (souvent les littles) ou apaise le système.",
-    'soigneur': "Prend soin des autres alters (souvent les littles) ou apaise le système.",
-    'trauma holder': "Détient les souvenirs ou les émotions liés aux traumas pour protéger les autres.",
-    'porteur de trauma': "Détient les souvenirs ou les émotions liés aux traumas pour protéger les autres.",
+    'avenger': "Cherche à se venger des abus passés. Souvent une forme de protection agressive envers ceux perçus comme des menaces.",
     'fictive': "Introject basé sur un personnage de fiction.",
     'factive': "Introject basé sur une personne réelle.",
+
+    // Soin & Gestion Interne
+    'caretaker': "Prend soin des autres alters (souvent les littles) ou apaise le système.",
+    'soigneur': "Prend soin des autres alters (souvent les littles) ou apaise le système.",
+    'ish': "Internal Self Helper - Un alter très conscient du fonctionnement du système. Sert de guide interne et peut aider à la communication entre alters.",
+    'mediator': "Gère les conflits internes entre alters. Aide à trouver des compromis et maintient l'harmonie dans le système.",
+    'archiviste': "Garde et organise les souvenirs du système. Peut avoir accès à plus de mémoires que les autres alters.",
+    'organisateur': "Se concentre sur l'organisation pratique : emploi du temps, tâches à faire, gestion des responsabilités quotidiennes.",
+    'core': "Le 'noyau' ou alter original du système. Pas toujours présent ou identifiable dans tous les systèmes. Représente parfois l'identité d'origine.",
+
+    // Enfance & Âge
+    'little': "Un alter enfant, souvent porteur d'innocence ou de souvenirs traumatiques précoces.",
+    'middle': "Alter préadolescent (environ 9-12 ans). Entre l'enfance et l'adolescence, avec des caractéristiques des deux périodes.",
+    'teen': "Alter adolescent (13-17 ans). Peut gérer des situations que les littles ne peuvent pas, tout en ayant des besoins différents des adultes.",
+    'age slider': "Alter dont l'âge perçu varie selon les situations ou le temps. Peut être enfant un jour et adulte un autre.",
+    'regressor': "Alter qui peut 'régresser' vers un état plus jeune, souvent en réponse au stress ou au besoin de réconfort.",
+
+    // Traumatismes & Mémoire
+    'trauma holder': "Détient les souvenirs ou les émotions liés aux traumas pour protéger les autres.",
+    'porteur de trauma': "Détient les souvenirs ou les émotions liés aux traumas pour protéger les autres.",
+    'emotional holder': "Porte des émotions spécifiques (tristesse, colère, honte...) pour que les autres alters puissent fonctionner sans être submergés.",
+    'pain holder': "Porte la douleur physique ou émotionnelle. Peut ressentir plus de douleur que les autres mais les protège ainsi.",
+    'fear holder': "Spécialisé dans le port de la peur et de l'anxiété. Permet aux autres alters de fonctionner sans être paralysés par la peur.",
+    'memory holder': "Garde des souvenirs spécifiques, pas forcément traumatiques. Peut être le seul à se souvenir de certains événements.",
+    'fragment': "Un alter très limité, souvent créé pour une fonction ou un souvenir très spécifique. Peut n'avoir qu'une personnalité partielle.",
+
+    // Sociaux, Artistiques & Créatifs
+    'social alter': "Spécialisé dans les interactions sociales. Gère les conversations, les relations, et peut être très à l'aise en société.",
+    'mask': "Alter créé pour 'faire semblant que tout va bien'. Permet au système de fonctionner socialement même quand ça ne va pas.",
+    'entertainer': "Apporte humour, joie et divertissement. Peut alléger l'atmosphère et aider le système à se détendre.",
+    'animateur': "Anime les situations, apporte de l'énergie positive. Aime divertir et faire rire les autres.",
+    'animatrice': "Anime les situations, apporte de l'énergie positive. Aime divertir et faire rire les autres.", // Ajout spécifique féminin
+    'animateur/trice': "Anime les situations, apporte de l'énergie positive. Aime divertir et faire rire les autres.",
+    'artist': "Alter créatif, s'exprime à travers l'art (dessin, peinture, écriture, musique...). La création peut être un exutoire important.",
+    'artiste': "Alter créatif, s'exprime à travers l'art (dessin, peinture, écriture, musique...). La création peut être un exutoire important.",
+    'communicator': "Gère la communication interne et externe. Peut exprimer ce que les autres alters n'arrivent pas à dire.",
+    'communicateur': "Gère la communication interne et externe. Peut exprimer ce que les autres alters n'arrivent pas à dire.",
+    'communicatrice': "Gère la communication interne et externe. Peut exprimer ce que les autres alters n'arrivent pas à dire.",
+    'performer': "S'exprime à travers la performance : danse, musique, théâtre, sport. Aime être sur scène ou montrer ses talents.",
+
+    // Spécialisés (Travail, Études, etc.)
+    'worker': "Spécialisé dans le travail et la vie professionnelle. Compétent et concentré sur les tâches à accomplir.",
+    'travailleur': "Spécialisé dans le travail et la vie professionnelle. Compétent et concentré sur les tâches à accomplir.",
+    'travailleuse': "Spécialisé dans le travail et la vie professionnelle. Compétent et concentré sur les tâches à accomplir.",
+    'student': "Se concentre sur les études et l'apprentissage. Aime apprendre de nouvelles choses.",
+    'étudiant': "Se concentre sur les études et l'apprentissage. Aime apprendre de nouvelles choses.",
+    'étudiante': "Se concentre sur les études et l'apprentissage. Aime apprendre de nouvelles choses.",
+
+    // Intimité & Spiritualité
+    'sexual alter': "Gère la sexualité et l'intimité du système. Peut aussi être un mécanisme de protection suite à des traumas sexuels.",
+    'romantic': "Gère les relations affectives et romantiques. Ressent et exprime l'amour et l'attachement.",
+    'romantique': "Gère les relations affectives et romantiques. Ressent et exprime l'amour et l'attachement.",
+    'spiritual': "Connecté à la spiritualité, la religion ou les croyances du système. Peut apporter sens et guidance.",
+    'spirituel': "Connecté à la spiritualité, la religion ou les croyances du système. Peut apporter sens et guidance.",
+    'spirituelle': "Connecté à la spiritualité, la religion ou les croyances du système. Peut apporter sens et guidance.",
+    'somatic': "Particulièrement connecté au corps et aux sensations physiques. Peut être le seul à ressentir certaines sensations.",
 };
 
 const getRoleDefinition = (roleName: string) => {

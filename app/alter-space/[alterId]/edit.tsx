@@ -393,9 +393,9 @@ export default function EditAlterProfileScreen() {
                 <Text style={[styles.headerTitle, { color: textColor }]}>Modifier le profil</Text>
                 <TouchableOpacity onPress={handleSave} disabled={saving}>
                     {saving ? (
-                        <ActivityIndicator size="small" color={color} />
+                        <ActivityIndicator size="small" color={textColor} />
                     ) : (
-                        <Ionicons name="checkmark" size={28} color={color} />
+                        <Ionicons name="checkmark" size={28} color={textColor} />
                     )}
                 </TouchableOpacity>
             </View>

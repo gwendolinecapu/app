@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Image, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
+import { Video, ResizeMode } from 'expo-av';
 import * as VideoThumbnails from 'expo-video-thumbnails';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../lib/theme';
@@ -7,9 +9,10 @@ import { colors } from '../../lib/theme';
 interface VideoThumbnailProps {
     mediaUrl: string;
     style?: any;
+    themeColors?: any;
 }
 
-export const VideoThumbnail: React.FC<VideoThumbnailProps> = ({ mediaUrl, style }) => {
+export const VideoThumbnail: React.FC<VideoThumbnailProps> = ({ mediaUrl, style, themeColors }) => {
     const [thumbnail, setThumbnail] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -23,8 +26,8 @@ export const VideoThumbnail: React.FC<VideoThumbnailProps> = ({ mediaUrl, style 
             setLoading(true);
             setError(false);
 
-            // Try different times in case the video is very short
-            const timesToTry = [2000, 1000, 500, 0];
+            // Try 1s first (often avoids black start frames), then 0, then others
+            const timesToTry = [1000, 0, 2000, 500];
 
             for (const time of timesToTry) {
                 try {
@@ -39,12 +42,14 @@ export const VideoThumbnail: React.FC<VideoThumbnailProps> = ({ mediaUrl, style 
                         return; // Success!
                     }
                 } catch (e) {
-                    // Silently fail - caller handles error display
+                    // Silently fail - continue to next time
+                    console.log(`Thumbnail generation failed for time ${time}:`, e);
                 }
             }
 
             // If we're here, all attempts failed
             if (isMounted) {
+                console.log("All thumbnail attempts failed, falling back to Video component");
                 setError(true);
                 setLoading(false);
             }
@@ -57,22 +62,43 @@ export const VideoThumbnail: React.FC<VideoThumbnailProps> = ({ mediaUrl, style 
         };
     }, [mediaUrl]);
 
+    // FALLBACK: If thumbnail generation failed, show the actual Video component
+    // paused at 1s (to avoid black start), muted, as a pseudo-thumbnail.
+    if (error) {
+        return (
+            <View style={[styles.container, style]}>
+                <Video
+                    source={{ uri: mediaUrl }}
+                    style={StyleSheet.absoluteFill}
+                    resizeMode={ResizeMode.COVER}
+                    shouldPlay={false}
+                    isMuted={true}
+                    positionMillis={1000}
+                    useNativeControls={false}
+                />
+                <View style={styles.overlay}>
+                    <Ionicons name="play" size={28} color="white" />
+                </View>
+            </View>
+        );
+    }
+
     return (
         <View style={[styles.container, style]}>
             {thumbnail ? (
                 <Image
                     source={{ uri: thumbnail }}
                     style={StyleSheet.absoluteFillObject}
-                    resizeMode="cover"
+                    contentFit="cover"
+                    transition={200}
                 />
             ) : (
                 <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center' }]}>
                     {loading && <ActivityIndicator color="white" size="small" />}
-                    {error && <Ionicons name="videocam-off-outline" size={24} color="#666" />}
                 </View>
             )}
 
-            {!loading && !error && (
+            {!loading && (
                 <View style={styles.overlay}>
                     <Ionicons name="play" size={28} color="white" />
                 </View>
@@ -86,6 +112,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'hidden',
+        backgroundColor: '#000',
     },
     overlay: {
         position: 'absolute',
@@ -93,5 +120,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         zIndex: 10,
         elevation: 10,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        borderRadius: 20,
+        padding: 4,
     }
 });

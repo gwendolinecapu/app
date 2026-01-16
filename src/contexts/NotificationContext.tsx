@@ -102,12 +102,14 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
 
         const unsubNotif = onSnapshot(notifQuery, (snapshot) => {
             // Filter to only count notifications for current alter
+            console.log('[NotificationContext] onSnapshot triggered, docs:', snapshot.docs.length);
             notifCount = snapshot.docs.filter(doc => {
                 const data = doc.data();
                 return data.recipientId === currentAlter.id ||
                     data.recipientId === user.uid ||
                     (!data.recipientId && data.targetSystemId === user.uid);
             }).length;
+            console.log('[NotificationContext] Filtered unread count:', notifCount);
             setUnreadCount(notifCount + requestCount);
         }, (error) => {
             console.error("Error listening to notifications:", error);

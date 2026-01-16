@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, Alert, Image, ScrollView, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, Alert, ScrollView, TextInput, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Alter, Relationship, RelationshipType } from '../types';
 import { colors, spacing, borderRadius, typography } from '../lib/theme';
@@ -44,10 +45,6 @@ const RELATIONSHIP_ICONS: Record<RelationshipType, string> = {
 
 export const SystemRelationships = ({ alter, editable = false, themeColors }: Props) => {
     const { alters, refreshAlters, user } = useAuth();
-
-    // DEBUG: Voir les avatars des alters
-    console.log('🖼️ Alters avatars:', alters.map(a => ({ name: a.name, avatar_url: a.avatar_url, avatar: a.avatar })));
-
     const [modalVisible, setModalVisible] = useState(false);
     const [loading, setLoading] = useState(false);
     const [expandedId, setExpandedId] = useState<string | null>(null);

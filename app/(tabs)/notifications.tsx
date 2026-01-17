@@ -25,6 +25,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { useNotificationContext } from '../../src/contexts/NotificationContext';
 import { FriendService, FriendRequest } from '../../src/services/friends';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { triggerHaptic } from '../../src/lib/haptics';
@@ -65,6 +66,12 @@ import { getThemeColors } from '../../src/lib/cosmetics';
 
 export default function NotificationsScreen() {
     const { currentAlter, alters, user } = useAuth();
+    const { markNotificationsAsViewed } = useNotificationContext();
+
+    // Mark notifications as viewed when screen opens (resets badge)
+    useEffect(() => {
+        markNotificationsAsViewed();
+    }, [markNotificationsAsViewed]);
 
     // Determine Theme Colors
     const themeColors = currentAlter?.equipped_items?.theme

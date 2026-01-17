@@ -222,7 +222,7 @@ export default function MessagesScreen() {
             style={[styles.conversationItem, { backgroundColor: cardColor }]}
             onPress={() => {
                 if (item.id === 'system-general') {
-                    router.push('/team-chat');
+                    router.push('/team-hub');
                 } else {
                     router.push(`/conversation/${item.alter.id}?internal=true`);
                 }
@@ -450,7 +450,7 @@ export default function MessagesScreen() {
                                 key={item.id}
                                 onPress={() => {
                                     if (item.id === 'system-general') {
-                                        router.push('/team-chat');
+                                        router.push('/team-hub');
                                     } else {
                                         router.push(`/conversation/${item.alter.id}?internal=true`);
                                     }

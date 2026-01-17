@@ -44,7 +44,7 @@ export const SystemControlBar: React.FC<SystemControlBarProps> = ({
 
                 <AnimatedPressable
                     containerStyle={styles.menuItem}
-                    onPress={() => router.push('/team-chat')}
+                    onPress={() => router.push('/team-hub')}
                 >
                     <View style={styles.iconWrapper}>
                         <Ionicons name="chatbubbles-outline" size={24} color={colors.textSecondary} />

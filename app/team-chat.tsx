@@ -300,18 +300,10 @@ export default function TeamChatScreen() {
                         {alters.length > 0 ? `${alters.length} membres` : (loading ? 'Chargement...' : 'Système')}
                     </Text>
                 </View>
-                <View style={{ flexDirection: 'row', gap: 12 }}>
-                    {/* Invite Button */}
-                    <TouchableOpacity
-                        style={styles.headerAction}
-                        onPress={openInviteModal}
-                    >
-                        <Ionicons name="person-add-outline" size={24} color={colors.text} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.headerAction}>
-                        <Ionicons name="settings-outline" size={24} color={colors.text} />
-                    </TouchableOpacity>
-                </View>
+                {/* Settings Button Only - Discussion Interne only for alters */}
+                <TouchableOpacity style={styles.headerAction}>
+                    <Ionicons name="settings-outline" size={24} color={colors.text} />
+                </TouchableOpacity>
             </View>
 
             {loading ? (

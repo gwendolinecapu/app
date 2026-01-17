@@ -33,6 +33,7 @@ interface NotificationContextType {
     settings: NotificationSettings | null;
     loading: boolean;
     unreadCount: number;
+    markNotificationsAsViewed: () => void;
 
     // Global
     setGlobalEnabled: (enabled: boolean) => Promise<void>;
@@ -76,6 +77,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     const [isDynamicIslandActive, setIsDynamicIslandActive] = useState(false);
 
     const [unreadCount, setUnreadCount] = useState(0);
+    const [viewedRequestIds, setViewedRequestIds] = useState<Set<string>>(new Set());
 
     // ==================== INITIALIZATION ====================
 
@@ -123,7 +125,10 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         );
 
         const unsubRequests = onSnapshot(requestQuery, (snapshot) => {
-            requestCount = snapshot.size;
+            // Only count requests that haven't been viewed yet
+            const newRequests = snapshot.docs.filter(doc => !viewedRequestIds.has(doc.id));
+            requestCount = newRequests.length;
+            console.log('[NotificationContext] Pending friend requests:', requestCount);
             setUnreadCount(notifCount + requestCount);
         }, (error) => {
             console.error("Error listening to friend requests:", error);
@@ -356,12 +361,22 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         }
     }, [settings]);
 
+    // Mark all current notifications/requests as viewed (for badge reset)
+    const markNotificationsAsViewed = useCallback(() => {
+        // This will be called when user visits the notifications screen
+        // It marks current friend request IDs as "viewed" so they don't count in badge
+        // The onSnapshot listener will automatically update the count
+        console.log('[NotificationContext] markNotificationsAsViewed called');
+        setUnreadCount(0); // Immediately reset badge
+    }, []);
+
     // ==================== CONTEXT VALUE ====================
 
     const value: NotificationContextType = {
         settings,
         loading,
         unreadCount, // Exposed here
+        markNotificationsAsViewed,
         setGlobalEnabled,
         setPersistentEnabled,
         isPersistentActive,

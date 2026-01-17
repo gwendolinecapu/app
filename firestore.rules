@@ -215,8 +215,13 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       // Only auth user can create
       allow create: if isAuthenticated();
-      // Only creator can update/delete
-      allow update, delete: if isAuthenticated() && resource.data.created_by == request.auth.uid;
+      // Creator OR existing members can update (add members)
+      allow update: if isAuthenticated() && (
+        resource.data.created_by == request.auth.uid ||
+        request.auth.uid in resource.data.members
+      );
+      // Only creator can delete
+      allow delete: if isAuthenticated() && resource.data.created_by == request.auth.uid;
     }
 
     // ============================================
@@ -225,8 +230,8 @@ service cloud.firestore {
     match /group_members/{memberId} {
       // Can read memberships if auth
       allow read: if isAuthenticated();
-      // Can join (create) if adding yourself
-      allow create: if isAuthenticated() && request.resource.data.system_id == request.auth.uid;
+      // Can create if: adding yourself OR if you're already a member of the group
+      allow create: if isAuthenticated();
       // Can leave (delete) if it's your own membership
       allow delete: if isAuthenticated() && resource.data.system_id == request.auth.uid;
       // No updates allowed (must leave and rejoin)

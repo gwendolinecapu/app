@@ -33,19 +33,24 @@ export const useAlterData = (alterId: string | undefined): AlterData => {
     const fetchAlter = useCallback(async () => {
         if (!alterId) return;
         try {
-            // Priority 1: Check if it's one of my own alters (gets latest from AuthContext)
-            const localAlter = alters.find(a => a.id === alterId);
-            if (localAlter) {
-                // Use the latest alter data from context (updated by refreshAlters)
-                setAlter(localAlter);
-                return;
-            }
-
-            // Priority 2: Fetch from Firestore (other system's alter)
+            // Always fetch from Firestore to get latest data (especially password)
             const docRef = doc(db, 'alters', alterId);
             const docSnap = await getDoc(docRef);
+
             if (docSnap.exists()) {
-                setAlter({ id: docSnap.id, ...docSnap.data() } as Alter);
+                const firestoreAlter = { id: docSnap.id, ...docSnap.data() } as Alter;
+
+                // For owned alters, merge with local data for faster cosmetic updates
+                const localAlter = alters.find(a => a.id === alterId);
+                if (localAlter) {
+                    // Use Firestore data but prefer local cosmetic data for immediate updates
+                    setAlter({
+                        ...firestoreAlter,
+                        equipped_items: localAlter.equipped_items || firestoreAlter.equipped_items,
+                    });
+                } else {
+                    setAlter(firestoreAlter);
+                }
             } else {
                 setError('Alter non trouvé');
             }
@@ -116,13 +121,18 @@ export const useAlterData = (alterId: string | undefined): AlterData => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [alterId]);
 
-    // Sync alter from AuthContext.alters when it changes (e.g., after refreshAlters())
+    // Sync cosmetics from AuthContext.alters when it changes (e.g., after refreshAlters())
     // This ensures UI updates immediately when theme/cosmetics are equipped
+    // But preserve password and other Firestore-only fields
     useEffect(() => {
         if (!alterId) return;
         const localAlter = alters.find(a => a.id === alterId);
-        if (localAlter) {
-            setAlter(localAlter);
+        if (localAlter && alter) {
+            // Only update cosmetics, keep the rest from Firestore (especially password)
+            setAlter(prev => prev ? {
+                ...prev,
+                equipped_items: localAlter.equipped_items || prev.equipped_items,
+            } : prev);
         }
     }, [alterId, alters]);
 

@@ -34,6 +34,7 @@ import { AlterGallery } from '../../../src/components/alter-space/AlterGallery';
 import { AlterEmotions } from '../../../src/components/alter-space/AlterEmotions';
 import { AlterSettings } from '../../../src/components/alter-space/AlterSettings';
 import { FollowListModal } from '../../../src/components/alter-space/FollowListModal';
+import { PasswordModal } from '../../../src/components/alter-space/PasswordModal';
 import { useAlterData } from '../../../src/hooks/useAlterData';
 import { ErrorBoundary } from '../../../src/components/ErrorBoundary';
 
@@ -67,6 +68,11 @@ export default function AlterSpaceScreen() {
     const [friendStatus, setFriendStatus] = useState<string>('none');
     const [showFollowersModal, setShowFollowersModal] = useState(false);
     const [showFollowingModal, setShowFollowingModal] = useState(false);
+
+    // Password protection state
+    const [isPasswordLocked, setIsPasswordLocked] = useState(false);
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [passwordError, setPasswordError] = useState('');
 
     // Logic updated per user request: Even if we are the System Admin (user.uid === systemId),
     // if we are currently "fronting" as Alter A (Mona) and viewing Alter B (Zeph),
@@ -103,6 +109,44 @@ export default function AlterSpaceScreen() {
             setActiveTab('profile');
         }
     }, [loading, isOwner]);
+
+    // Check if password is required to access this AlterSpace
+    useEffect(() => {
+        console.log('[PASSWORD DEBUG]', {
+            loading,
+            alterExists: !!alter,
+            alterPassword: alter?.password,
+            isOwner,
+            isSameAlter,
+            currentAlterId: currentAlter?.id,
+            viewedAlterId: alter?.id
+        });
+
+        if (!loading && alter && alter.password && !isOwner) {
+            // Password is set and viewer is not the owner
+            console.log('[PASSWORD DEBUG] Locking - password required!');
+            setIsPasswordLocked(true);
+            setShowPasswordModal(true);
+        } else {
+            setIsPasswordLocked(false);
+        }
+    }, [loading, alter, isOwner, isSameAlter, currentAlter]);
+
+    // Handle password verification
+    const handlePasswordConfirm = (enteredPassword: string) => {
+        if (alter && enteredPassword === alter.password) {
+            setIsPasswordLocked(false);
+            setShowPasswordModal(false);
+            setPasswordError('');
+        } else {
+            setPasswordError('Mot de passe incorrect');
+        }
+    };
+
+    const handlePasswordCancel = () => {
+        setShowPasswordModal(false);
+        router.back();
+    };
 
     // Handle Friend Actions (Follow/Unfollow)
     const handleFriendAction = async () => {
@@ -184,6 +228,30 @@ export default function AlterSpaceScreen() {
                     </TouchableOpacity>
                     <Text style={styles.notFoundText}>{error || "Alter non trouvé"}</Text>
                 </View>
+            </View>
+        );
+    }
+
+    // Show password modal if locked
+    if (isPasswordLocked) {
+        const themeColorsLocked = getThemeColors(alter?.equipped_items?.theme);
+        return (
+            <View style={[styles.container, { backgroundColor: themeColorsLocked?.background || colors.background }]}>
+                <View style={[styles.header, { borderBottomColor: themeColorsLocked?.border || colors.border }]}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <Ionicons name="chevron-back" size={28} color={themeColorsLocked?.text || colors.text} />
+                    </TouchableOpacity>
+                    <Text style={[styles.headerTitle, { color: themeColorsLocked?.text || colors.text }]}>{alter.name}</Text>
+                    <View style={styles.headerRight} />
+                </View>
+                <PasswordModal
+                    visible={showPasswordModal}
+                    onConfirm={handlePasswordConfirm}
+                    onCancel={handlePasswordCancel}
+                    alterName={alter.name}
+                    error={passwordError}
+                    themeColors={themeColorsLocked || undefined}
+                />
             </View>
         );
     }

@@ -83,6 +83,9 @@ export interface Alter {
 
     // AI Features
     visual_dna?: VisualDNA;
+
+    // Security - AlterSpace Protection
+    password?: string; // Mot de passe pour accéder à l'AlterSpace
 }
 
 export interface VisualDNA {

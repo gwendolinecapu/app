@@ -40,19 +40,6 @@ export function useFrontNotifications({
     // Helper pour obtenir l'initiale d'un alter
     const getInitial = (name: string) => name.charAt(0).toUpperCase();
 
-    // Helper pour calculer le temps depuis le switch
-    const getTimeSince = (timestamp: number): string => {
-        const now = Date.now();
-        const diff = now - timestamp;
-        const minutes = Math.floor(diff / 60000);
-        const hours = Math.floor(minutes / 60);
-
-        if (hours > 0) {
-            return `${hours}h${minutes % 60}min`;
-        }
-        return `${minutes}min`;
-    };
-
     // Met à jour la notification persistante
     useEffect(() => {
         if (!settings?.persistentNotification || !currentFront) {
@@ -104,12 +91,6 @@ export function useFrontNotifications({
             return;
         }
 
-        // Noms des co-fronteurs
-        const coFronters = frontAlterIds
-            .slice(1)
-            .map((id: string) => getAlter(id)?.name)
-            .filter(Boolean) as string[];
-
         // Démarrer/mettre à jour le Dynamic Island
         const updateDynamicIsland = async () => {
             const isActive = DynamicIslandService.getIsActive();
@@ -149,7 +130,7 @@ export function useFrontNotifications({
         }, 60000); // Toutes les minutes
 
         return () => clearInterval(interval);
-    }, [settings?.dynamicIslandEnabled, currentFront?.alterIds, currentFront?.timestamp, getAlter]);
+    }, [settings?.dynamicIslandEnabled, currentFront, getAlter]);
 
     // Envoie une notification après un switch
     const sendSwitchNotification = useCallback(

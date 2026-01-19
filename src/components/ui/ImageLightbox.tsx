@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
     View,
     Modal,
@@ -16,7 +16,6 @@ import Animated, {
     useAnimatedStyle,
     withSpring,
     withTiming,
-    runOnJS,
 } from 'react-native-reanimated';
 
 // =====================================================

@@ -97,7 +97,6 @@ export const LootBoxOpening = ({
                 setProcessing(false);
                 if (!success) {
                     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-                    alert("Pas assez de crédits !");
                     return;
                 }
             }
@@ -164,7 +163,6 @@ export const LootBoxOpening = ({
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
         } else {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            alert("Pas assez de crédits !");
         }
     };
 

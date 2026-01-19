@@ -18,7 +18,8 @@ import {
     TouchableOpacity,
     Dimensions,
     ImageBackground,
-    Platform
+    Platform,
+    Alert
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -441,7 +442,21 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                     // 1. Check Balance locally first for speed
                     if (credits < LOOT_BOX.price) {
                         // Not enough credits
-                        // TODO: trigger purchase modal?
+                        Alert.alert(
+                            "Solde insuffisant",
+                            "Vous n'avez pas assez de crédits pour ouvrir ce Booster Pack.",
+                            [
+                                { text: "Annuler", style: "cancel" },
+                                {
+                                    text: "Recharger",
+                                    onPress: () => {
+                                        setLootBoxVisible(false);
+                                        // Give time for modal to close before potential bank logic
+                                        setTimeout(() => setBankModalVisible(true), 300);
+                                    }
+                                }
+                            ]
+                        );
                         return false;
                     }
 
@@ -456,6 +471,7 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                         return success;
                     } catch (err) {
                         console.error('[ShopUI] LootBox Purchase Error:', err);
+                        Alert.alert("Erreur", "Une erreur est survenue lors de l'achat.");
                         return false;
                     }
                 }}
@@ -464,6 +480,20 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                     if (!currentAlter) return false;
                     if (credits < LOOT_BOX.price) {
                         // Not enough credits for replay
+                        Alert.alert(
+                            "Solde insuffisant",
+                            "Vous n'avez pas assez de crédits pour relancer.",
+                            [
+                                { text: "Annuler", style: "cancel" },
+                                {
+                                    text: "Recharger",
+                                    onPress: () => {
+                                        setLootBoxVisible(false);
+                                        setTimeout(() => setBankModalVisible(true), 300);
+                                    }
+                                }
+                            ]
+                        );
                         return false;
                     }
                     try {
@@ -475,6 +505,7 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                         return success;
                     } catch (err) {
                         console.error(err);
+                        Alert.alert("Erreur", "Une erreur est survenue lors de l'achat.");
                         return false;
                     }
                 }}

@@ -127,14 +127,25 @@ export const useAlterData = (alterId: string | undefined): AlterData => {
     useEffect(() => {
         if (!alterId) return;
         const localAlter = alters.find(a => a.id === alterId);
-        if (localAlter && alter) {
-            // Only update cosmetics, keep the rest from Firestore (especially password)
-            setAlter(prev => prev ? {
-                ...prev,
-                equipped_items: localAlter.equipped_items || prev.equipped_items,
-            } : prev);
+        if (localAlter) {
+            // Only update if equipped_items actually changed (prevent infinite loop)
+            setAlter(prev => {
+                if (!prev) return prev;
+
+                // Compare equipped_items to prevent unnecessary updates
+                const prevItems = JSON.stringify(prev.equipped_items || {});
+                const newItems = JSON.stringify(localAlter.equipped_items || {});
+
+                if (prevItems !== newItems) {
+                    return {
+                        ...prev,
+                        equipped_items: localAlter.equipped_items || prev.equipped_items,
+                    };
+                }
+                return prev;
+            });
         }
-    }, [alterId, alters, alter]);
+    }, [alterId, alters]); // Removed 'alter' from dependencies to prevent infinite loop
 
     return {
         alter,

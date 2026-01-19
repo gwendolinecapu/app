@@ -560,5 +560,32 @@ service cloud.firestore {
       // Doc ID format is usually ${userId}_${deviceId}
       allow write: if isAuthenticated() && tokenId.matches(request.auth.uid + '_.*');
     }
+
+    // ============================================
+    // Courses - Subjects Collection
+    // ============================================
+    match /subjects/{subjectId} {
+      allow read: if isAuthenticated() && resource.data.systemId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.systemId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.systemId == request.auth.uid;
+    }
+
+    // ============================================
+    // Courses - Categories Collection
+    // ============================================
+    match /categories/{categoryId} {
+      allow read: if isAuthenticated() && resource.data.systemId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.systemId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.systemId == request.auth.uid;
+    }
+
+    // ============================================
+    // Courses - Notes Collection
+    // ============================================
+    match /course_notes/{noteId} {
+      allow read: if isAuthenticated() && resource.data.systemId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.systemId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.systemId == request.auth.uid;
+    }
   }
 }

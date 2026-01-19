@@ -541,7 +541,6 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         height: 50, // Fixed height for absolute centering
     },
-    // Fix: Absolute center for the title
     headerTitle: {
         position: 'absolute',
         left: 0,

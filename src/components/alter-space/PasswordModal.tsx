@@ -18,20 +18,24 @@ interface PasswordModalProps {
     visible: boolean;
     onConfirm: (password: string) => void;
     onCancel: () => void;
+    onForgotPassword?: () => void;
     alterName: string;
     error?: string;
     loading?: boolean;
     themeColors?: ThemeColors;
+    isSystemOwner?: boolean;
 }
 
 export const PasswordModal: React.FC<PasswordModalProps> = ({
     visible,
     onConfirm,
     onCancel,
+    onForgotPassword,
     alterName,
     error,
     loading = false,
-    themeColors
+    themeColors,
+    isSystemOwner = false
 }) => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -101,6 +105,15 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
                     {/* Error Message */}
                     {error && (
                         <Text style={styles.errorText}>{error}</Text>
+                    )}
+
+                    {/* Forgot Password - Only for system owner */}
+                    {isSystemOwner && onForgotPassword && (
+                        <TouchableOpacity onPress={onForgotPassword} style={styles.forgotButton}>
+                            <Text style={[styles.forgotText, { color: primaryColor }]}>
+                                Mot de passe oublié ?
+                            </Text>
+                        </TouchableOpacity>
                     )}
 
                     {/* Buttons */}
@@ -194,6 +207,12 @@ const styles = StyleSheet.create({
     errorText: {
         color: colors.error,
         fontSize: 13,
+    },
+    forgotButton: {
+        marginBottom: spacing.sm,
+    },
+    forgotText: {
+        fontSize: 14,
         marginBottom: spacing.md,
         textAlign: 'center',
     },

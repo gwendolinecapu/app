@@ -1,5 +1,29 @@
 # Changelog
 
+## [2026-01-19] Sécurité & Protection Mot de Passe 🔐
+
+### Protection AlterSpace (Optionnelle)
+- **Nouveau** : Chaque alter peut choisir d'**activer ou désactiver** un mot de passe pour protéger son espace personnel.
+- **Indicateur visuel** : Badge **"Actif"** (vert) ou **"Désactivé"** (gris) affiché à côté de l'option.
+- **Paramètres** : Accessible via Menu → Paramètres → Mot de passe (icône 🔑).
+
+#### 💡 Comment ça marche ?
+1. **Activer** : Va dans ton AlterSpace → Menu → Paramètres → Mot de passe → Définis un code (minimum 4 caractères)
+2. **Accès protégé** : À chaque entrée dans l'AlterSpace, un écran de saisie du mot de passe apparaît
+3. **Tout le monde est concerné** : Même le propriétaire de l'alter doit entrer le code (comme un journal intime avec cadenas 🔒)
+4. **Désactiver** : Clique sur "Mot de passe" → "Supprimer" pour retirer la protection
+
+### Audit de Sécurité Critique
+- **Secrets retirés de Git** : Les fichiers `.env`, `GoogleService-Info.plist` et `google-services.json` ont été retirés du suivi Git.
+- **`.gitignore` mis à jour** : Protection automatique des fichiers sensibles pour éviter les fuites futures.
+- **⚠️ Action requise** : Régénérer toutes les clés API exposées (Firebase, OpenAI, Supabase, RevenueCat).
+
+### Setup Script pour Jules
+- **`setup.sh`** : Script d'installation automatique pour l'environnement de développement.
+- **`.jules/daily-prompts.md`** : 14 prompts quotidiens pour maintenance automatique (qualité, sécurité, performance, bugs, etc.).
+
+---
+
 ## [2026-01-09] Rebranding Rituel & Simplification UX 🎨
 - **Rituel (Studio de Création)**: Renommage complet de la section "Rituel" en "Studio de Création" pour une approche plus neutre et moderne.
 - **Simplification**: Suppression des descriptions textuelles "ADN Visuel" et "Rituel" pour se concentrer uniquement sur la génération visuelle.

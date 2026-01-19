@@ -118,9 +118,13 @@ export const AlterSettings: React.FC<AlterSettingsProps> = ({ alter, themeColors
                     <Ionicons name="key-outline" size={24} color={iconColor} />
                     <Text style={[styles.itemText, { color: textColor }]}>Mot de passe</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        {hasPassword && (
+                        {hasPassword ? (
                             <View style={[styles.statusBadge, { backgroundColor: `${colors.success}20` }]}>
                                 <Text style={{ color: colors.success, fontSize: 12, fontWeight: '600' }}>Actif</Text>
+                            </View>
+                        ) : (
+                            <View style={[styles.statusBadge, { backgroundColor: `${colors.textSecondary}20` }]}>
+                                <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600' }}>Désactivé</Text>
                             </View>
                         )}
                         <Ionicons name="chevron-forward" size={20} color={textSecondaryColor} />

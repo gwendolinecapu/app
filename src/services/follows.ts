@@ -19,7 +19,7 @@ import {
     writeBatch,
     addDoc,
 } from 'firebase/firestore';
-import { Follow, PublicProfile, System } from '../types';
+import { PublicProfile } from '../types';
 
 // ============================================
 // Follow Management

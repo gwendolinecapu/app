@@ -18,7 +18,7 @@ import { FriendService } from '../../src/services/friends';
 import { Ionicons } from '@expo/vector-icons';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../src/lib/firebase';
-import { MessagingService } from '../../src/services/messaging';
+import { MessagingService, ConversationMeta } from '../../src/services/messaging';
 import { getThemeColors } from '../../src/lib/cosmetics';
 
 interface ConversationItem {
@@ -89,10 +89,48 @@ export default function MessagesScreen() {
             // 1. Get all other alters
             const otherAlters = alters.filter(a => a.id !== currentAlter.id);
 
-            // 2. Fetch last message for each
+            // 2. Optimized: Fetch all conversations for currentAlter first (1 query)
+            const existingConversations = await MessagingService.getConversations(currentAlter.id);
+
+            // Map by other participant ID
+            const convoMap = new Map<string, ConversationMeta>();
+            existingConversations.forEach(c => {
+                const otherId = c.participants.find(p => p !== currentAlter.id);
+                if (otherId) convoMap.set(otherId, c);
+            });
+
+            // 3. Process each alter: use cached convo or fallback to legacy check
             const conversations = await Promise.all(otherAlters.map(async (alter) => {
+                const cached = convoMap.get(alter.id);
+
+                if (cached) {
+                    // Use cached data
+                    const unread = cached.unreadCounts ? (cached.unreadCounts[currentAlter.id] || 0) : 0;
+                    return {
+                        id: alter.id,
+                        alter,
+                        lastMessage: cached.lastMessage || 'Démarrer une conversation',
+                        time: cached.lastMessageTime || '', // Empty string = oldest sorting
+                        unread: unread,
+                        timestamp: cached.lastMessageTime ? new Date(cached.lastMessageTime).getTime() : 0
+                    } as ConversationItem & { timestamp: number };
+                }
+
+                // Fallback: Legacy Check (N+1) only for missing conversations
                 const metadata = await MessagingService.getLastMessage(currentAlter.id, alter.id);
                 const unread = await MessagingService.getUnreadCount(currentAlter.id, alter.id);
+
+                // Backfill if we found something (Lazy Migration)
+                if (metadata) {
+                    MessagingService.setConversationMetadata(currentAlter.id, alter.id, {
+                        lastMessage: metadata.lastMessage,
+                        lastMessageTime: metadata.lastMessageTime,
+                        unreadCounts: {
+                            [currentAlter.id]: unread,
+                            [alter.id]: 0 // Approximate
+                        }
+                    });
+                }
 
                 return {
                     id: alter.id,
@@ -104,7 +142,7 @@ export default function MessagesScreen() {
                 } as ConversationItem & { timestamp: number };
             }));
 
-            // 3. Add General Chat (Static for now, but could be fetched too if we had group chat logic)
+            // 4. Add General Chat (Static for now, but could be fetched too if we had group chat logic)
             // Giving it a high timestamp to pin it or fetch its actual last message if possible
             // For now, let's keep it at top or check if we want to sort it too.
             // Let's say System General is always pinned or treated normally? 
@@ -153,6 +191,14 @@ export default function MessagesScreen() {
                 return;
             }
 
+            // Optimized: Fetch all conversations for currentAlter first
+            const existingConversations = await MessagingService.getConversations(currentAlter.id);
+            const convoMap = new Map<string, ConversationMeta>();
+            existingConversations.forEach(c => {
+                const otherId = c.participants.find(p => p !== currentAlter.id);
+                if (otherId) convoMap.set(otherId, c);
+            });
+
             const friendsData = await Promise.all(uniqueFriendIds.map(async (fid) => {
                 const docRef = doc(db, 'alters', fid);
                 const docSnap = await getDoc(docRef);
@@ -165,9 +211,35 @@ export default function MessagesScreen() {
                     (alter.userId === system.id);
                 if (isInternal) return null;
 
-                // Fetch metadata
+                const cached = convoMap.get(alter.id);
+
+                if (cached) {
+                    const unread = cached.unreadCounts ? (cached.unreadCounts[currentAlter.id] || 0) : 0;
+                    return {
+                        id: alter.id,
+                        alter,
+                        lastMessage: cached.lastMessage || 'Démarrer une discussion',
+                        time: cached.lastMessageTime || '',
+                        unread,
+                        timestamp: cached.lastMessageTime ? new Date(cached.lastMessageTime).getTime() : 0
+                    } as ConversationItem & { timestamp: number };
+                }
+
+                // Fallback: Legacy Check
                 const metadata = await MessagingService.getLastMessage(currentAlter.id, alter.id);
                 const unread = await MessagingService.getUnreadCount(currentAlter.id, alter.id);
+
+                // Backfill
+                if (metadata) {
+                     MessagingService.setConversationMetadata(currentAlter.id, alter.id, {
+                        lastMessage: metadata.lastMessage,
+                        lastMessageTime: metadata.lastMessageTime,
+                        unreadCounts: {
+                            [currentAlter.id]: unread,
+                            [alter.id]: 0
+                        }
+                    });
+                }
 
                 return {
                     id: alter.id,

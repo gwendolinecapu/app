@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image } from 'react-native';
-import { colors, spacing, typography, borderRadius } from '../../lib/theme';
-import { Alter, System } from '../../types';
+import { colors, spacing, typography } from '../../lib/theme';
 
 export interface MentionSuggestion {
     id: string;

@@ -31,34 +31,7 @@ export const GroundingBreathing = () => {
     const isMounted = useRef(true);
     const animationTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    useEffect(() => {
-        isMounted.current = true;
-        const handleAppStateChange = (nextAppState: any) => {
-            if (nextAppState === 'active') {
-                isMounted.current = true;
-                startAnimationCycle();
-            } else {
-                isMounted.current = false;
-                if (animationTimeout.current) clearTimeout(animationTimeout.current);
-                cancelAnimation(scale);
-                cancelAnimation(opacity);
-            }
-        };
-
-        const subscription = AppState.addEventListener('change', handleAppStateChange);
-        
-        startAnimationCycle();
-
-        return () => {
-            isMounted.current = false;
-            if (animationTimeout.current) clearTimeout(animationTimeout.current);
-            subscription.remove();
-            cancelAnimation(scale);
-            cancelAnimation(opacity);
-        };
-    }, []);
-
-    const animatePhase = (
+    const animatePhase = useCallback((
         currentPhase: 'INHALE' | 'HOLD' | 'EXHALE',
         scaleTo: number,
         opacityTo: number,
@@ -74,9 +47,9 @@ export const GroundingBreathing = () => {
         opacity.value = withTiming(opacityTo, { duration, easing: Easing.inOut(Easing.ease) });
 
         animationTimeout.current = setTimeout(nextPhase, duration);
-    };
-    
-    const startAnimationCycle = () => {
+    }, [scale, opacity]);
+
+    const startAnimationCycle = useCallback(() => {
         if (!isMounted.current) return;
         
         scale.value = 1;
@@ -87,7 +60,34 @@ export const GroundingBreathing = () => {
         const inhaleStep = () => animatePhase('INHALE', 1.5, 0.8, INHALE_DURATION, holdStep);
         
         inhaleStep();
-    };
+    }, [animatePhase, scale, opacity]);
+
+    useEffect(() => {
+        isMounted.current = true;
+        const handleAppStateChange = (nextAppState: any) => {
+            if (nextAppState === 'active') {
+                isMounted.current = true;
+                startAnimationCycle();
+            } else {
+                isMounted.current = false;
+                if (animationTimeout.current) clearTimeout(animationTimeout.current);
+                cancelAnimation(scale);
+                cancelAnimation(opacity);
+            }
+        };
+
+        const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+        startAnimationCycle();
+
+        return () => {
+            isMounted.current = false;
+            if (animationTimeout.current) clearTimeout(animationTimeout.current);
+            subscription.remove();
+            cancelAnimation(scale);
+            cancelAnimation(opacity);
+        };
+    }, [startAnimationCycle, scale, opacity]);
 
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [{ scale: scale.value }],
@@ -103,7 +103,7 @@ export const GroundingBreathing = () => {
                 </View>
             </View>
             <View style={styles.footer}>
-                <Text style={styles.subtitle}>Technique 4-7-8 pour calmer l'anxiété</Text>
+                <Text style={styles.subtitle}>Technique 4-7-8 pour calmer l&apos;anxiété</Text>
             </View>
         </View>
     );

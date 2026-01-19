@@ -203,7 +203,6 @@ export default function CreateStoryScreen() {
                     // 2. Upload Image
                     const response = await fetch(result.assets[0].uri);
                     const blob = await response.blob();
-                    // FIX: Use 'stories/highlights' path which is allowed by security rules (unlike 'highlight-covers')
                     const storageRef = ref(storage, `stories/highlights/${Date.now()}`);
                     await uploadBytes(storageRef, blob);
                     const coverUrl = await getDownloadURL(storageRef);

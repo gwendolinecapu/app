@@ -77,6 +77,8 @@ export const Canvas = React.forwardRef<View, CanvasProps>(({ layers, backgroundC
     );
 });
 
+Canvas.displayName = 'Canvas';
+
 const styles = StyleSheet.create({
     canvas: {
         width: '100%',

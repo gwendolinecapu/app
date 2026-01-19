@@ -72,7 +72,6 @@ class DynamicIslandService {
         // Vérifier la préférence utilisateur
         const enabled = await this.isEnabled();
         if (!enabled) {
-            console.log('[DynamicIsland] Feature disabled by user');
             return false;
         }
 
@@ -91,7 +90,6 @@ class DynamicIslandService {
             });
 
             this.isActive = true;
-            console.log('[DynamicIsland] Started fronter activity for:', data.name);
             return true;
         } catch (error) {
             console.error('[DynamicIsland] Failed to start:', error);
@@ -117,7 +115,6 @@ class DynamicIslandService {
             });
 
             this.isActive = true;
-            console.log('[DynamicIsland] Updated fronter to:', data.name);
             return true;
         } catch (error) {
             console.error('[DynamicIsland] Failed to update:', error);
@@ -135,7 +132,6 @@ class DynamicIslandService {
             if (!LiveActivityModule) return false;
             await LiveActivityModule.stopFronterActivity();
             this.isActive = false;
-            console.log('[DynamicIsland] Stopped fronter activity');
             return true;
         } catch (error) {
             console.error('[DynamicIsland] Failed to stop:', error);

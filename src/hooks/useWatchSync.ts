@@ -14,7 +14,7 @@ import { Alter } from '../types';
  * Doit être utilisé dans un composant haut niveau (ex: _layout.tsx)
  */
 export function useWatchSync() {
-    const { alters, activeFront, setFronting, user } = useAuth();
+    const { alters, activeFront, setFronting } = useAuth();
 
     // Convertir les alters pour la montre (avec valeurs par défaut pour les optionnels)
     // Utiliser useMemo pour éviter les re-renders infinis
@@ -39,7 +39,7 @@ export function useWatchSync() {
         };
 
         sendAlters();
-    }, [altersForWatch.length]); // Dépendance sur la longueur pour éviter les re-renders
+    }, [altersForWatch]); // Dépendance sur l'objet memoizé
 
     // Envoyer le front actuel à la montre
     useEffect(() => {
@@ -112,7 +112,7 @@ export function useWatchSync() {
             unsubMessage();
             unsubReachability();
         };
-    }, [alters, setFronting, altersForWatch]);
+    }, [alters, setFronting, altersForWatch, activeFront?.alters]);
 
     // Fonctions exposées
     return {

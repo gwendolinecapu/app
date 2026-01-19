@@ -122,15 +122,16 @@ export default function AlterSpaceScreen() {
             viewedAlterId: alter?.id
         });
 
-        if (!loading && alter && alter.password && !isOwner) {
-            // Password is set and viewer is not the owner
-            console.log('[PASSWORD DEBUG] Locking - password required!');
+        // Password is required for EVERYONE if the alter has a password set
+        // This works like a PIN lock - even the owner must enter the password
+        if (!loading && alter && alter.password) {
+            console.log('[PASSWORD DEBUG] Locking - password required for all!');
             setIsPasswordLocked(true);
             setShowPasswordModal(true);
         } else {
             setIsPasswordLocked(false);
         }
-    }, [loading, alter, isOwner, isSameAlter, currentAlter]);
+    }, [loading, alter]);
 
     // Handle password verification
     const handlePasswordConfirm = (enteredPassword: string) => {

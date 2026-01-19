@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
-import { collection, query, where, getDocs, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
@@ -45,37 +45,33 @@ export const SystemCalendar = () => {
                 ...doc.data()
             } as FrontHistoryItem));
             setHistory(items);
-            processHistoryToMarks(items);
+
+            // Process marks inline here or useCallback
+            const marks: any = {};
+            items.forEach(item => {
+                const dateStr = new Date(item.started_at).toISOString().split('T')[0];
+
+                // Resolve alter color
+                const alter = alters.find(a => a.id === item.alter_id);
+                const color = alter?.color || colors.primary;
+
+                if (!marks[dateStr]) {
+                    marks[dateStr] = {
+                        dots: []
+                    };
+                }
+
+                // Avoid duplicate dots for same alter on same day (optional, but cleaner)
+                const hasDot = marks[dateStr].dots.find((d: any) => d.color === color);
+                if (!hasDot && marks[dateStr].dots.length < 3) {
+                    marks[dateStr].dots.push({ color: color });
+                }
+            });
+            setMarkedDates(marks);
         });
 
         return () => unsubscribe();
-    }, [user]);
-
-    const processHistoryToMarks = (items: FrontHistoryItem[]) => {
-        const marks: any = {};
-
-        items.forEach(item => {
-            const dateStr = new Date(item.started_at).toISOString().split('T')[0];
-
-            // Resolve alter color
-            const alter = alters.find(a => a.id === item.alter_id);
-            const color = alter?.color || colors.primary;
-
-            if (!marks[dateStr]) {
-                marks[dateStr] = {
-                    dots: []
-                };
-            }
-
-            // Avoid duplicate dots for same alter on same day (optional, but cleaner)
-            const hasDot = marks[dateStr].dots.find((d: any) => d.color === color);
-            if (!hasDot && marks[dateStr].dots.length < 3) {
-                marks[dateStr].dots.push({ color: color });
-            }
-        });
-
-        setMarkedDates(marks);
-    };
+    }, [user, alters]);
 
     const handleDayPress = (day: DateData) => {
         setSelectedDate(day.dateString);
@@ -83,10 +79,6 @@ export const SystemCalendar = () => {
         // Filter history for this day
         // Be careful with timezones. comparing date strings is usually safe enough if standardized.
         // History timestamps are UTC or local? Usually Date.now().
-
-        const dayStart = new Date(day.dateString).getTime(); // Local midnight? 
-        // Actually dateString is YYYY-MM-DD. 
-        // Better logic: check if ISO string starts with YYYY-MM-DD
 
         const events = history.filter(item => {
             const itemDateStr = new Date(item.started_at).toISOString().split('T')[0];

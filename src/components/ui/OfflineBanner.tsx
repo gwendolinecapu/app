@@ -1,11 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useNetInfo } from '@react-native-community/netinfo';
 import Animated, {
-    useSharedValue,
-    useAnimatedStyle,
-    withTiming,
-    withSpring,
     SlideInUp,
     SlideOutUp
 } from 'react-native-reanimated';

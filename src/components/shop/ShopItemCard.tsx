@@ -52,6 +52,7 @@ const MiniSnowfall = React.memo(() => {
         </View>
     );
 });
+MiniSnowfall.displayName = 'MiniSnowfall';
 
 const MiniFlake = React.memo(({ left, size, duration, delay }: { left: number; size: number; duration: number; delay: number }) => {
     const translateY = useSharedValue(-5);
@@ -61,7 +62,7 @@ const MiniFlake = React.memo(({ left, size, duration, delay }: { left: number; s
             withTiming(90, { duration, easing: Easing.linear }),
             -1
         ));
-    }, []);
+    }, [delay, duration, translateY]);
 
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [{ translateY: translateY.value }],
@@ -71,6 +72,7 @@ const MiniFlake = React.memo(({ left, size, duration, delay }: { left: number; s
         <Animated.View style={[miniSnowStyles.flake, animatedStyle, { left, width: size, height: size, borderRadius: size / 2 }]} />
     );
 });
+MiniFlake.displayName = 'MiniFlake';
 
 const miniSnowStyles = StyleSheet.create({
     container: {
@@ -91,9 +93,10 @@ interface ShopItemCardProps {
     isEquipped?: boolean;
     userCredits: number;
     containerStyle?: import('react-native').ViewStyle;
+    avatarUrl?: string | null; // URL de la vraie photo de profil pour preview des cadres
 }
 
-export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits, containerStyle }: ShopItemCardProps) {
+export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits, containerStyle, avatarUrl }: ShopItemCardProps) {
     const canAfford = (item.priceCredits || 0) <= userCredits;
     const isFree = (item.priceCredits || 0) === 0;
 
@@ -122,7 +125,7 @@ export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits, 
                 styles.previewContainer,
                 isSpecial && { borderColor: rarityColor, borderWidth: 2 } // Colored border around preview
             ]}>
-                <ItemPreview item={item} size="small" />
+                <ItemPreview item={item} size="small" avatarUrl={avatarUrl} />
 
                 {/* Equipped indicator */}
                 {isEquipped && (

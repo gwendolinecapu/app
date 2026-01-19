@@ -96,6 +96,16 @@ export const PostService = {
             }
 
             await Promise.all(chunks.map(async chunk => {
+        const fetchByIds = async (collectionName: string, ids: Set<string>, map: Map<string, any>) => {
+            const idArray = Array.from(ids).filter(id => !!id);
+            if (idArray.length === 0) return;
+
+            const chunks = [];
+            for (let i = 0; i < idArray.length; i += 10) {
+                chunks.push(idArray.slice(i, i + 10));
+            }
+
+            await Promise.all(chunks.map(async (chunk) => {
                 try {
                     const q = query(collection(db, collectionName), where(documentId(), 'in', chunk));
                     const snapshot = await getDocs(q);
@@ -104,6 +114,12 @@ export const PostService = {
                     });
                 } catch (e) {
                     console.warn(`Failed to fetch batch of ${collectionName}`, e);
+                        if (doc.exists()) {
+                            map.set(doc.id, doc.data());
+                        }
+                    });
+                } catch (e) {
+                    console.warn(`Failed to fetch ${collectionName} chunk`, e);
                 }
             }));
         };
@@ -111,6 +127,8 @@ export const PostService = {
         await Promise.all([
             fetchByIds(alterIds, 'alters', altersMap),
             fetchByIds(systemIds, 'systems', systemsMap)
+            fetchByIds('alters', alterIds, altersMap),
+            fetchByIds('systems', systemIds, systemsMap)
         ]);
 
         return posts.map(post => {

@@ -476,6 +476,142 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                 imageSource: require('../../assets/frames/frame_arctic_winter.png'),
             };
 
+        // ===== NOUVEAUX CADRES (Lot 1) =====
+        case 'frame_hearts_pink':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_hearts_pink.png'),
+            };
+        case 'frame_kawaii_animals':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_kawaii_animals.png'),
+            };
+        case 'frame_halloween_cats':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_halloween_cats.png'),
+            };
+        case 'frame_gothic_red':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_gothic_red.png'),
+            };
+        case 'frame_tropical_hibiscus':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_tropical_hibiscus.png'),
+            };
+
+        // ===== NOUVEAUX CADRES (Lot 2) =====
+        case 'frame_moon_stars':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_moon_stars.png'),
+            };
+        case 'frame_golden_waves':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_golden_waves.png'),
+            };
+        case 'frame_water_drops':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_water_drops.png'),
+            };
+        case 'frame_target_red':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_target_red.png'),
+            };
+        case 'frame_lavender_floral':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_lavender_floral.png'),
+            };
+        case 'frame_sparkles_gold':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_sparkles_gold.png'),
+            };
+        case 'frame_ice_crystal':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_ice_crystal.png'),
+            };
+
         default:
             return defaultStyle;
     }

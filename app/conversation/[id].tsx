@@ -16,7 +16,7 @@ import {
 import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { db } from '../../src/lib/firebase';
-import { collection, addDoc, query, where, getDocs, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, getDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, getDoc, deleteDoc } from 'firebase/firestore';
 import { Message, Alter } from '../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,6 +25,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../src/lib/firebase';
+import { MessagingService } from '../../src/services/messaging';
 
 import { GifPicker } from '../../src/components/messaging/GifPicker';
 import { PostMessageBubble } from '../../src/components/messaging/PostMessageBubble';
@@ -156,18 +157,11 @@ export default function ConversationScreen() {
             await uploadBytes(storageRef, blob);
             const downloadURL = await getDownloadURL(storageRef);
 
-            const conversationId = getConversationId(currentAlter.id, id);
-            await addDoc(collection(db, 'messages'), {
-                sender_alter_id: currentAlter.id,
-                receiver_alter_id: id,
+            await MessagingService.sendMessage(currentAlter.id, id, '📷 Image', {
                 systemId: user?.uid,
-                conversation_id: conversationId,
-                content: '📷 Image',
                 imageUrl: downloadURL,
                 type: 'image',
                 is_internal: internal === 'true',
-                is_read: false,
-                created_at: new Date().toISOString(),
                 system_tag: null,
             });
         } catch (error) {
@@ -183,17 +177,9 @@ export default function ConversationScreen() {
 
         setLoading(true);
         try {
-            const conversationId = getConversationId(currentAlter.id, id);
-
-            await addDoc(collection(db, 'messages'), {
-                sender_alter_id: currentAlter.id,
-                receiver_alter_id: id,
+            await MessagingService.sendMessage(currentAlter.id, id, newMessage.trim(), {
                 systemId: user?.uid,
-                conversation_id: conversationId,
-                content: newMessage.trim(),
                 is_internal: internal === 'true',
-                is_read: false,
-                created_at: new Date().toISOString(),
                 system_tag: null,
             });
 
@@ -211,18 +197,11 @@ export default function ConversationScreen() {
         setLoading(true);
 
         try {
-            const conversationId = getConversationId(currentAlter.id, id);
-            await addDoc(collection(db, 'messages'), {
-                sender_alter_id: currentAlter.id,
-                receiver_alter_id: id,
+            await MessagingService.sendMessage(currentAlter.id, id, 'GIF', {
                 systemId: user?.uid,
-                conversation_id: conversationId,
-                content: 'GIF',
                 imageUrl: url,
                 type: 'image', // Treating GIF as image for now
                 is_internal: internal === 'true',
-                is_read: false,
-                created_at: new Date().toISOString(),
                 system_tag: null,
             });
         } catch (error) {

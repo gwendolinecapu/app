@@ -4,7 +4,6 @@ import { Image } from 'expo-image';
 import { Video, ResizeMode } from 'expo-av';
 import * as VideoThumbnails from 'expo-video-thumbnails';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../../lib/theme';
 
 interface VideoThumbnailProps {
     mediaUrl: string;
@@ -12,7 +11,7 @@ interface VideoThumbnailProps {
     themeColors?: any;
 }
 
-export const VideoThumbnail: React.FC<VideoThumbnailProps> = ({ mediaUrl, style, themeColors }) => {
+export const VideoThumbnail: React.FC<VideoThumbnailProps> = ({ mediaUrl, style }) => {
     const [thumbnail, setThumbnail] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);

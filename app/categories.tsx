@@ -121,10 +121,7 @@ export default function CategoriesScreen() {
         const alterCount = getAlterCountForRole(item.id);
 
         return (
-            <TouchableOpacity
-                style={styles.roleItem}
-                onLongPress={() => handleDeleteRole(item)}
-            >
+            <View style={styles.roleItem}>
                 <View style={[styles.roleColor, { backgroundColor: item.color }]} />
                 <View style={styles.roleInfo}>
                     <Text style={styles.roleName}>{item.name}</Text>
@@ -134,11 +131,19 @@ export default function CategoriesScreen() {
                         </Text>
                     )}
                 </View>
-                <View style={styles.roleCount}>
-                    <Text style={styles.roleCountText}>{alterCount}</Text>
-                    <Ionicons name="people" size={16} color={colors.textSecondary} />
+                <View style={styles.roleActions}>
+                    <View style={styles.roleCount}>
+                        <Text style={styles.roleCountText}>{alterCount}</Text>
+                        <Ionicons name="people" size={16} color={colors.textSecondary} />
+                    </View>
+                    <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={() => handleDeleteRole(item)}
+                    >
+                        <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
+                    </TouchableOpacity>
                 </View>
-            </TouchableOpacity>
+            </View>
         );
     };
 
@@ -381,6 +386,14 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: colors.textSecondary,
+    },
+    roleActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+    },
+    deleteButton: {
+        padding: spacing.xs,
     },
     emptyState: {
         alignItems: 'center',

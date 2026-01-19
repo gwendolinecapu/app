@@ -189,6 +189,7 @@ export type ShopItemType =
     | 'theme'           // Thème d'application
     | 'frame'           // Cadre d'avatar
     | 'bubble'          // Bulle de chat
+    | 'accessory'       // Accessoire avatar (couronne, lunettes, etc.)
     | 'bundle'          // Pack groupé (thème + cadre + bulle)
     | 'lootbox';        // Boîte mystère
 

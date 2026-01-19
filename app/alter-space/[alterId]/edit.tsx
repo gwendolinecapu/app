@@ -21,11 +21,12 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../../src/lib/firebase';
-import { Alter } from '../../../src/types';
+import { Alter, Role } from '../../../src/types';
 import { alterColors, freeAlterColors, premiumAlterColors, colors, spacing, borderRadius, typography } from '../../../src/lib/theme';
 import PremiumService from '../../../src/services/PremiumService';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { getFrameStyle, getThemeColors } from '../../../src/lib/cosmetics';
+import { RoleService } from '../../../src/services/RoleService';
 
 export default function EditAlterProfileScreen() {
     const { alterId } = useLocalSearchParams<{ alterId: string }>();
@@ -56,6 +57,11 @@ export default function EditAlterProfileScreen() {
     const [selectedMajorRoles, setSelectedMajorRoles] = useState<string[]>([]);
 
     const [initialAlter, setInitialAlter] = useState<Alter | null>(null);
+
+    // System Categories (from /categories screen)
+    const [systemCategories, setSystemCategories] = useState<Role[]>([]);
+    const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+    const [loadingCategories, setLoadingCategories] = useState(false);
 
 
 
@@ -115,6 +121,40 @@ export default function EditAlterProfileScreen() {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Fetch system categories
+    const fetchSystemCategories = async () => {
+        if (!user?.uid) return;
+        setLoadingCategories(true);
+        try {
+            const categories = await RoleService.fetchRoles(user.uid);
+            setSystemCategories(categories);
+        } finally {
+            setLoadingCategories(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchSystemCategories();
+    }, [user?.uid]);
+
+    // Set selectedCategoryIds when alter is loaded
+    useEffect(() => {
+        if (initialAlter?.role_ids) {
+            setSelectedCategoryIds(initialAlter.role_ids);
+        }
+    }, [initialAlter]);
+
+    // Toggle category selection
+    const toggleCategorySelection = (categoryId: string) => {
+        setSelectedCategoryIds(prev => {
+            if (prev.includes(categoryId)) {
+                return prev.filter(id => id !== categoryId);
+            } else {
+                return [...prev, categoryId];
+            }
+        });
     };
 
     // Role definitions for long press - detailed explanations
@@ -342,6 +382,7 @@ export default function EditAlterProfileScreen() {
                 color,
                 avatar_url: finalAvatarUrl || '',
                 custom_fields: customFields,
+                role_ids: selectedCategoryIds, // System categories
             };
 
             if (birthDate) {
@@ -573,6 +614,56 @@ export default function EditAlterProfileScreen() {
                     </View>
                 </View>
 
+                {/* ==================== SYSTEM CATEGORIES SECTION ==================== */}
+                {systemCategories.length > 0 && (
+                    <>
+                        <View style={[styles.sectionHeader, { marginTop: spacing.xl }]}>
+                            <Ionicons name="pricetags-outline" size={20} color={color} />
+                            <Text style={[styles.sectionHeaderText, { color: textColor }]}>Catégories Système</Text>
+                        </View>
+
+                        <View style={styles.formSection}>
+                            <Text style={[styles.label, { color: textSecondaryColor, marginBottom: spacing.sm }]}>
+                                Sélectionnez les catégories pour cet alter
+                            </Text>
+                            <View style={styles.categoryGrid}>
+                                {systemCategories.map((cat) => {
+                                    const isSelected = selectedCategoryIds.includes(cat.id);
+                                    return (
+                                        <TouchableOpacity
+                                            key={cat.id}
+                                            style={[
+                                                styles.categoryChip,
+                                                {
+                                                    backgroundColor: isSelected ? cat.color : cardBg,
+                                                    borderColor: isSelected ? cat.color : borderColor,
+                                                }
+                                            ]}
+                                            onPress={() => toggleCategorySelection(cat.id)}
+                                        >
+                                            <Text style={[
+                                                styles.categoryChipText,
+                                                { color: isSelected ? 'white' : textColor }
+                                            ]}>
+                                                {cat.name}
+                                            </Text>
+                                            {isSelected && (
+                                                <Ionicons name="checkmark-circle" size={16} color="white" style={{ marginLeft: 4 }} />
+                                            )}
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                            <TouchableOpacity
+                                style={styles.manageCategoriesLink}
+                                onPress={() => router.push('/categories')}
+                            >
+                                <Ionicons name="settings-outline" size={14} color={colors.primary} />
+                                <Text style={styles.manageCategoriesText}>Gérer les catégories</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </>
+                )}
 
                 <View style={{ height: 40 }} />
 
@@ -1380,5 +1471,34 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: 'bold',
         fontSize: 14,
+    },
+    // Category styles
+    categoryGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.sm,
+    },
+    categoryChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1,
+    },
+    categoryChipText: {
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    manageCategoriesLink: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: spacing.md,
+        gap: spacing.xs,
+    },
+    manageCategoriesText: {
+        color: colors.primary,
+        fontSize: 13,
+        fontWeight: '500',
     },
 });

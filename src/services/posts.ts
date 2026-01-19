@@ -266,7 +266,7 @@ export const PostService = {
      * @param friendIds - Array of friend alter IDs
      * @param friendSystemIds - Array of friend system IDs
      */
-    fetchFeed: async (friendIds: string[], friendSystemIds: string[] = [], lastVisible: QueryDocumentSnapshot | null = null, pageSize: number = 20) => {
+    fetchFeed: async (friendIds: string[], friendSystemIds: string[] = [], lastVisible: any = null, pageSize: number = 20) => {
         try {
             // Firestore 'in' query supports max 10-30 values depending on version.
             // We need to query both friendAlters and friendSystems.
@@ -279,6 +279,16 @@ export const PostService = {
                 };
             }
 
+            // Parse cursors
+            // lastVisible can be:
+            // 1. null
+            // 2. QueryDocumentSnapshot (legacy/single stream)
+            // 3. { alters: QueryDocumentSnapshot | null, systems: QueryDocumentSnapshot | null }
+            const cursors = {
+                alters: (lastVisible && lastVisible.alters) ? lastVisible.alters : (lastVisible && typeof lastVisible.data === 'function' ? lastVisible : null),
+                systems: (lastVisible && lastVisible.systems) ? lastVisible.systems : null
+            };
+
             const promises = [];
 
             // 1. Query by Alter IDs
@@ -290,48 +300,65 @@ export const PostService = {
                     orderBy('created_at', 'desc'),
                     limit(pageSize)
                 );
-                if (lastVisible) q1 = query(q1, startAfter(lastVisible));
-                promises.push(getDocs(q1));
+                if (cursors.alters) q1 = query(q1, startAfter(cursors.alters));
+                // Tag the result with source
+                promises.push(getDocs(q1).then(snap => ({ source: 'alters', docs: snap.docs })));
             }
 
-            // 2. Query by System IDs - COMPLETELY DISABLED to enforce strict alter isolation
-            // New accounts should NOT see posts from all alters of a friend system
-            // Only explicitly followed alter IDs should appear in the feed
-            // if (friendSystemIds.length > 0) {
-            //     const targetSystemIds = friendSystemIds.slice(0, 30);
-            //     let q2 = query(
-            //         collection(db, POSTS_COLLECTION),
-            //         where('system_id', 'in', targetSystemIds),
-            //         orderBy('created_at', 'desc'),
-            //         limit(pageSize)
-            //     );
-            //     if (lastVisible) q2 = query(q2, startAfter(lastVisible));
-            //     promises.push(getDocs(q2));
-            // }
+            // 2. Query by System IDs
+            if (friendSystemIds.length > 0) {
+                const targetSystemIds = friendSystemIds.slice(0, 30);
+                let q2 = query(
+                    collection(db, POSTS_COLLECTION),
+                    where('system_id', 'in', targetSystemIds),
+                    orderBy('created_at', 'desc'),
+                    limit(pageSize)
+                );
+                if (cursors.systems) q2 = query(q2, startAfter(cursors.systems));
+                promises.push(getDocs(q2).then(snap => ({ source: 'systems', docs: snap.docs })));
+            }
 
-            const snapshots = await Promise.all(promises);
-            const allDocs = snapshots.flatMap(snap => snap.docs);
+            const results = await Promise.all(promises);
+            // const allDocs = results.flatMap(res => res.docs);
 
-            // Deduplicate by ID
-            const seen = new Set();
-            const uniqueDocs = [];
+            // Deduplicate by ID and map to source(s)
+            const uniqueDocsMap = new Map<string, QueryDocumentSnapshot>();
+            const docSources = new Map<string, Set<string>>(); // docId -> Set<'alters' | 'systems'>
 
-            // Sort merged docs by date desc manually since we merged two streams
-            allDocs.sort((a, b) => {
+            results.forEach(res => {
+                res.docs.forEach(doc => {
+                    if (!uniqueDocsMap.has(doc.id)) {
+                        uniqueDocsMap.set(doc.id, doc);
+                    }
+                    if (!docSources.has(doc.id)) {
+                        docSources.set(doc.id, new Set());
+                    }
+                    docSources.get(doc.id)!.add(res.source);
+                });
+            });
+
+            const uniqueDocs = Array.from(uniqueDocsMap.values());
+
+            // Sort merged docs by date desc
+            uniqueDocs.sort((a, b) => {
                 const dA = a.data().created_at?.toDate()?.getTime() || 0;
                 const dB = b.data().created_at?.toDate()?.getTime() || 0;
                 return dB - dA;
             });
 
-            for (const doc of allDocs) {
-                if (!seen.has(doc.id)) {
-                    seen.add(doc.id);
-                    uniqueDocs.push(doc);
-                }
-            }
-
             // Apply pagination limit to merged result
             const pagedDocs = uniqueDocs.slice(0, pageSize);
+
+            // Calculate new cursors
+            let newAltersCursor = cursors.alters;
+            let newSystemsCursor = cursors.systems;
+
+            // Find the last doc from each source in pagedDocs to update cursor
+            const lastAlterDoc = pagedDocs.slice().reverse().find(doc => docSources.get(doc.id)?.has('alters'));
+            if (lastAlterDoc) newAltersCursor = lastAlterDoc;
+
+            const lastSystemDoc = pagedDocs.slice().reverse().find(doc => docSources.get(doc.id)?.has('systems'));
+            if (lastSystemDoc) newSystemsCursor = lastSystemDoc;
 
             const posts: Post[] = pagedDocs.map(doc => {
                 const data = doc.data();
@@ -347,10 +374,10 @@ export const PostService = {
 
             return {
                 posts: enrichedPosts,
-                lastVisible: pagedDocs.length > 0 ? pagedDocs[pagedDocs.length - 1] : null // Note: This lastVisible might be from mixed queries, so pagination next step is tricky.
-                // Infinite scroll with mixed queries is complex. 
-                // Simple fix: If we have system friends, prefer system query for pagination or ignore lastVisible correctness for mixed mode?
-                // Ideally we shouldn't mix, but for now this enables visibility.
+                lastVisible: {
+                    alters: newAltersCursor,
+                    systems: newSystemsCursor
+                }
             };
         } catch (error) {
             console.error('Error fetching friend feed:', error);
@@ -361,7 +388,7 @@ export const PostService = {
     /**
      * Fetch video feed (Reels-like) from friends
      */
-    fetchVideoFeed: async (friendIds: string[], friendSystemIds: string[] = [], lastVisible: QueryDocumentSnapshot | null = null, pageSize: number = 20) => {
+    fetchVideoFeed: async (friendIds: string[], friendSystemIds: string[] = [], lastVisible: any = null, pageSize: number = 20) => {
         try {
             // We fetch a larger batch because we will filter meaningful amount of non-videos
             // Multiplier for fetching to ensure we get enough videos

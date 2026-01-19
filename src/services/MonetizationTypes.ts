@@ -1267,10 +1267,14 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         type: 'frame',
         name: 'Oreilles de Chat',
         description: 'Mignonnes oreilles roses.',
-        priceCredits: 20,
+        priceCredits: 25,
         rarity: 'rare',
         preview: '#f472b6',
         icon: 'paw-outline',
+        metadata: {
+            tags: ['animal', 'cute', 'pink', 'kawaii'],
+            isNew: true,
+        },
     },
     {
         id: 'frame_ears_dog',
@@ -1337,10 +1341,14 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         type: 'frame',
         name: 'Oreilles de Panda',
         description: 'Pelucheuses noires.',
-        priceCredits: 75,
+        priceCredits: 60,
         rarity: 'epic',
         preview: '#171717',
         icon: 'paw-outline',
+        metadata: {
+            tags: ['animal', 'cute', 'dark', 'black'],
+            isNew: true,
+        },
     },
     {
         id: 'frame_ears_tiger',
@@ -1357,10 +1365,14 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         type: 'frame',
         name: 'Oreilles de Vache',
         description: 'Tachées noir et blanc.',
-        priceCredits: 20,
+        priceCredits: 25,
         rarity: 'rare',
         preview: '#e5e7eb',
         icon: 'paw-outline',
+        metadata: {
+            tags: ['animal', 'cute', 'farm'],
+            isNew: true,
+        },
     },
 
     // ========== BULLES ==========

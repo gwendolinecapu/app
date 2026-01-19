@@ -142,9 +142,16 @@ export default function GroupChatScreen() {
                 {
                     text: 'Quitter',
                     style: 'destructive',
-                    onPress: () => {
-                        // TODO: Implement leave group logic
-                        router.back();
+                    onPress: async () => {
+                        if (!groupId || !user) return;
+                        try {
+                            await GroupService.leaveGroup(groupId, user.uid);
+                            router.back();
+                            triggerHaptic.success();
+                        } catch (error) {
+                            console.error("Error leaving group:", error);
+                            Alert.alert('Erreur', 'Impossible de quitter le groupe');
+                        }
                     }
                 }
             ]

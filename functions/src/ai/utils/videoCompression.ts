@@ -16,17 +16,24 @@ interface VideoCompressionOptions {
     preset?: string;
 }
 
+export interface CompressionResult {
+    outputPath: string;
+    cleanup: () => void;
+}
+
 /**
  * Compress video to TikTok-style quality
  * - Max 1080p resolution
  * - H.264 codec
  * - 3-5 Mbps bitrate
  * - Maintains aspect ratio
+ *
+ * Returns path to compressed file instead of buffer to save memory.
  */
 export async function compressVideo(
     inputBuffer: Buffer,
     options: VideoCompressionOptions = {}
-): Promise<Buffer> {
+): Promise<CompressionResult> {
     const {
         maxHeight = 1080,
         bitrate = '4M', // 4 Mbps - TikTok style
@@ -37,6 +44,14 @@ export async function compressVideo(
     const tempDir = os.tmpdir();
     const inputPath = path.join(tempDir, `input_${Date.now()}.mp4`);
     const outputPath = path.join(tempDir, `output_${Date.now()}.mp4`);
+
+    const cleanupFile = (file: string) => {
+        try {
+            if (fs.existsSync(file)) fs.unlinkSync(file);
+        } catch (err) {
+            console.error(`Error cleaning up file ${file}:`, err);
+        }
+    };
 
     try {
         // Write input buffer to temp file
@@ -61,20 +76,22 @@ export async function compressVideo(
                 .run();
         });
 
-        // Read compressed video
-        const compressedBuffer = fs.readFileSync(outputPath);
+        // Input is no longer needed
+        cleanupFile(inputPath);
 
-        console.log(`Video compressed: ${inputBuffer.length} → ${compressedBuffer.length} bytes (${Math.round(compressedBuffer.length / 1024 / 1024)}MB)`);
+        const stats = fs.statSync(outputPath);
+        console.log(`Video compressed: ${inputBuffer.length} → ${stats.size} bytes (${Math.round(stats.size / 1024 / 1024)}MB)`);
 
-        return compressedBuffer;
-    } finally {
-        // Cleanup temp files
-        try {
-            if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-            if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-        } catch (err) {
-            console.error('Error cleaning up temp files:', err);
-        }
+        return {
+            outputPath,
+            cleanup: () => cleanupFile(outputPath)
+        };
+
+    } catch (err) {
+        // Cleanup on error
+        cleanupFile(inputPath);
+        cleanupFile(outputPath);
+        throw err;
     }
 }
 
@@ -89,19 +106,31 @@ export async function uploadVideo(
     const bucket = admin.storage().bucket();
     const file = bucket.file(path);
 
-    let finalBuffer = buffer;
-
     if (compress) {
         // Compress to 1080p max with TikTok-style quality
-        finalBuffer = await compressVideo(buffer);
+        // This now streams the upload instead of loading the result into memory
+        const { outputPath, cleanup } = await compressVideo(buffer);
+
+        try {
+            await bucket.upload(outputPath, {
+                destination: path,
+                metadata: {
+                    contentType: 'video/mp4',
+                    cacheControl: 'public, max-age=31536000' // Cache for 1 year
+                }
+            });
+        } finally {
+            cleanup();
+        }
+    } else {
+        await file.save(buffer, {
+            metadata: {
+                contentType: 'video/mp4',
+                cacheControl: 'public, max-age=31536000' // Cache for 1 year
+            }
+        });
     }
 
-    await file.save(finalBuffer, {
-        metadata: {
-            contentType: 'video/mp4',
-            cacheControl: 'public, max-age=31536000' // Cache for 1 year
-        }
-    });
     await file.makePublic();
 
     return file.publicUrl();

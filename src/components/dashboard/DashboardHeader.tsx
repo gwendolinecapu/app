@@ -22,6 +22,8 @@ interface DashboardHeaderProps {
     deleteMode: boolean;
     onToggleDeleteMode: () => void;
     onSelectAll?: () => void;
+    onOpenCategories?: () => void;
+    activeCategory?: string | null;
 }
 
 
@@ -39,6 +41,8 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     deleteMode,
     onToggleDeleteMode,
     onSelectAll,
+    onOpenCategories,
+    activeCategory,
 }) => {
     const insets = useSafeAreaInsets(); // Added for insets
 
@@ -60,6 +64,21 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                             onPress={onSelectAll}
                         >
                             <Text style={styles.selectAllText}>Tout sélectionner</Text>
+                        </AnimatedPressable>
+                    )}
+                    {onOpenCategories && (
+                        <AnimatedPressable
+                            style={[
+                                styles.headerIconBtn,
+                                activeCategory && styles.headerIconBtnCategory
+                            ]}
+                            onPress={onOpenCategories}
+                        >
+                            <Ionicons
+                                name="pricetags"
+                                size={20}
+                                color={activeCategory ? 'white' : colors.text}
+                            />
                         </AnimatedPressable>
                     )}
                     <AnimatedPressable
@@ -147,6 +166,9 @@ const styles = StyleSheet.create({
     },
     headerIconBtnActive: {
         backgroundColor: '#FF3B30', // iOS red
+    },
+    headerIconBtnCategory: {
+        backgroundColor: '#9C27B0', // Purple for categories
     },
     selectAllBtn: {
         paddingHorizontal: 12,

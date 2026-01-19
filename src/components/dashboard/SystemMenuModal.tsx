@@ -26,7 +26,6 @@ interface MenuItem {
 }
 
 const MENU_ITEMS: MenuItem[] = [
-    { id: 'categories', label: 'Catégories', description: 'Rôles des alters', icon: 'pricetags', color: '#9C27B0', route: '/categories', status: 'new' },
     { id: 'calendar', label: 'Calendrier', description: 'RDV & Agenda', icon: 'calendar', color: '#6a11cb', route: '/calendar', status: 'beta' },
     { id: 'journal', label: 'Journal', description: 'Journal du système', icon: 'book', color: '#E91E63', route: '/(tabs)/journal' },
     { id: 'tasks', label: 'Tâches', description: 'Liste partagée', icon: 'list', color: colors.success, route: '/tasks', status: 'beta' },

@@ -26,6 +26,7 @@ import {
     ShopItem,
 } from './MonetizationTypes';
 import PremiumService from './PremiumService';
+import { AlterService } from './alters';
 
 const FIRESTORE_COLLECTION = 'user_monetization';
 const TRANSACTIONS_SUBCOLLECTION = 'credit_transactions';
@@ -359,6 +360,26 @@ class CreditService {
         } catch (error) {
             console.error('[CreditService] Failed to add credits to user:', error);
             throw error;
+        }
+    }
+
+    async addCreditsForUser(userId: string, amount: number, type: CreditTransactionType, description?: string): Promise<void> {
+        const alterId = await AlterService.findPrimaryAlterId(userId);
+
+        if (!alterId) {
+            throw new Error(`[CreditService] No primary alter found for user ${userId}.`);
+        }
+
+        try {
+            // Update Alter Doc
+            const alterRef = doc(db, 'alters', alterId);
+            await updateDoc(alterRef, { credits: increment(amount) });
+
+            // Record Transaction
+            await this.recordTransaction(alterId, amount, type, description);
+        } catch (e) {
+            console.error('[CreditService] Add credits for user failed', e);
+            throw e;
         }
     }
 

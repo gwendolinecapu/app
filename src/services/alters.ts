@@ -95,5 +95,28 @@ export const AlterService = {
             console.error('Error fetching alter by name:', error);
             return null;
         }
+    },
+
+    findPrimaryAlterId: async (userId: string): Promise<string | null> => {
+        try {
+            const altersQuery = query(
+                collection(db, 'alters'),
+                where('system_id', '==', userId),
+                orderBy('created_at', 'asc')
+            );
+            const snapshot = await getDocs(altersQuery);
+            if (snapshot.empty) {
+                return null;
+            }
+            const alters = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Alter));
+            const host = alters.find(a => a.is_host);
+            if (host) {
+                return host.id;
+            }
+            return alters[0].id;
+        } catch (error) {
+            console.error('Error finding primary alter:', error);
+            return null;
+        }
     }
 };

@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useToast } from '../components/ui/Toast';
+// import { useToast } from '../components/ui/Toast'; // Not strictly needed inside hook
 
 export function useDrafts(key: string, initialValue: string = '') {
     const [draft, setDraft] = useState(initialValue);
     const [isLoaded, setIsLoaded] = useState(false);
-    const { showToast } = useToast();
+    // const { showToast } = useToast();
 
     // Load draft on mount
     useEffect(() => {

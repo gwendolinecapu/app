@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, StyleSheet, TouchableOpacity, View, TextStyle } from 'react-native';
+import { Text, StyleSheet, TextStyle } from 'react-native';
 import { colors } from '../../lib/theme';
 
 interface RichTextProps {

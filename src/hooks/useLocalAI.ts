@@ -17,11 +17,15 @@ const { LocalAI } = NativeModules;
 const isExpoGo = Constants.appOwnership === 'expo';
 
 // Conditionally import expo-llm-mediapipe only in dev builds
-let useLLM: any = null;
+let useLLMHook: any = () => null; // Default dummy hook
+
 if (!isExpoGo) {
     try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const mediapipe = require('expo-llm-mediapipe');
-        useLLM = mediapipe.useLLM;
+        if (mediapipe?.useLLM) {
+            useLLMHook = mediapipe.useLLM;
+        }
     } catch (e) {
         console.warn('[useLocalAI] expo-llm-mediapipe not available:', e);
     }
@@ -81,7 +85,8 @@ export function useLocalAI() {
     });
 
     // Initialize expo-llm-mediapipe (only if available)
-    const llm = useLLM ? useLLM(MODEL_CONFIG) : null;
+    // Always call the hook (even if it's the dummy one) to satisfy Rules of Hooks
+    const llm = useLLMHook(MODEL_CONFIG);
 
     // ============================================
     // Check Native AI Availability
@@ -131,8 +136,6 @@ export function useLocalAI() {
                 downloadProgress: 100,
                 provider: 'gemma',
             }));
-
-            console.log('[useLocalAI] Model downloaded successfully');
         } catch (error: any) {
             setStatus(prev => ({
                 ...prev,
@@ -161,7 +164,6 @@ export function useLocalAI() {
                 isLoading: false,
                 isModelLoaded: true,
             }));
-            console.log('[useLocalAI] Model loaded into memory');
         } catch (error: any) {
             setStatus(prev => ({
                 ...prev,

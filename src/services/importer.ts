@@ -1,4 +1,4 @@
-import { collection, addDoc, query, where, getDocs, writeBatch, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, writeBatch, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Alter } from '../types';
 

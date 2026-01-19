@@ -29,7 +29,7 @@ import { LootBoxService, LOOT_BOX, REFUND_VALUES } from '../../services/LootBoxS
 import { Rarity, ShopItem } from '../../services/MonetizationTypes';
 import { ItemPreview } from './ItemPreview';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const AnimatedView = Animated.createAnimatedComponent(View);
 const AnimatedText = Animated.createAnimatedComponent(Text);
 
@@ -50,7 +50,7 @@ export const LootBoxOpening = ({
     visible,
     onClose,
     ownedItemIds,
-    userCredits,
+    userCredits, // Used in logic outside component often but kept here for potential display
     onReward,
     onPurchase,
     onReplay
@@ -84,7 +84,26 @@ export const LootBoxOpening = ({
             packOpen.value = 0;
             contentOpacity.value = 1;
         }
-    }, [visible]);
+    }, [visible, progress, scale, tearHeight, packOpen, contentOpacity]);
+
+    // Open
+    const openPack = useCallback(async (finalRarity: Rarity) => {
+        setPhase('opening');
+
+        // Split open animation
+        packOpen.value = withSpring(1, { damping: 12 });
+        tearHeight.value = withTiming(1, { duration: 200 }); // Full flash
+
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+        const result = LootBoxService.getReward(finalRarity, ownedItemIds);
+        setReward(result);
+
+        setTimeout(() => {
+            setPhase('revealed');
+            onReward(result.item);
+        }, 600);
+    }, [ownedItemIds, onReward, packOpen, tearHeight]);
 
     // ========== GAMEPLAY ==========
     const handleAction = useCallback(async () => {
@@ -137,7 +156,7 @@ export const LootBoxOpening = ({
                 setTimeout(() => openPack(nextRarity || currentRarity), 400);
             }
         }
-    }, [phase, tapsRemaining, currentRarity, processing]);
+    }, [phase, tapsRemaining, currentRarity, processing, onPurchase, openPack, progress, scale, tearHeight, shake]);
 
     const handleReplay = async () => {
         if (processing || !onReplay) return;
@@ -164,25 +183,6 @@ export const LootBoxOpening = ({
         } else {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         }
-    };
-
-    // Open
-    const openPack = async (finalRarity: Rarity) => {
-        setPhase('opening');
-
-        // Split open animation
-        packOpen.value = withSpring(1, { damping: 12 });
-        tearHeight.value = withTiming(1, { duration: 200 }); // Full flash
-
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-        const result = LootBoxService.getReward(finalRarity, ownedItemIds);
-        setReward(result);
-
-        setTimeout(() => {
-            setPhase('revealed');
-            onReward(result.item);
-        }, 600);
     };
 
     // ========== STYLES ==========

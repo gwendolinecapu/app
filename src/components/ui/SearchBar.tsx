@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, borderRadius, spacing, typography } from '../../lib/theme';
+import { colors, borderRadius, spacing } from '../../lib/theme';
 
 interface SearchBarProps {
     value: string;

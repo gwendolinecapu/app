@@ -1,5 +1,5 @@
 import { db } from '../lib/firebase';
-import { doc, getDoc, collection, query, where, documentId, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, documentId, getDocs, updateDoc, orderBy, limit } from 'firebase/firestore';
 import { Alter } from '../types';
 
 export const AlterService = {
@@ -99,21 +99,32 @@ export const AlterService = {
 
     findPrimaryAlterId: async (userId: string): Promise<string | null> => {
         try {
-            const altersQuery = query(
+            // Optimization: Try to find the host directly
+            const hostQuery = query(
                 collection(db, 'alters'),
                 where('system_id', '==', userId),
-                orderBy('created_at', 'asc')
+                where('is_host', '==', true),
+                limit(1)
             );
-            const snapshot = await getDocs(altersQuery);
-            if (snapshot.empty) {
-                return null;
+            const hostSnapshot = await getDocs(hostQuery);
+            if (!hostSnapshot.empty) {
+                return hostSnapshot.docs[0].id;
             }
-            const alters = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Alter));
-            const host = alters.find(a => a.is_host);
-            if (host) {
-                return host.id;
+
+            // Fallback: Find the oldest alter
+            const oldestQuery = query(
+                collection(db, 'alters'),
+                where('system_id', '==', userId),
+                orderBy('created_at', 'asc'),
+                limit(1)
+            );
+            const oldestSnapshot = await getDocs(oldestQuery);
+
+            if (!oldestSnapshot.empty) {
+                return oldestSnapshot.docs[0].id;
             }
-            return alters[0].id;
+
+            return null;
         } catch (error) {
             console.error('Error finding primary alter:', error);
             return null;

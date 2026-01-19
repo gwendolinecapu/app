@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { doc, getDoc, collection, query, where, orderBy, getDocs, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Alter, Post } from '../types';
 import { FriendService } from '../services/friends';
@@ -134,7 +134,7 @@ export const useAlterData = (alterId: string | undefined): AlterData => {
                 equipped_items: localAlter.equipped_items || prev.equipped_items,
             } : prev);
         }
-    }, [alterId, alters]);
+    }, [alterId, alters, alter]);
 
     return {
         alter,

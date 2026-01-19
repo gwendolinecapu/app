@@ -1,5 +1,45 @@
 # Changelog
 
+## [2026-01-19] Shop Enhancements & Bug Fixes 🛍️
+
+### Nouveaux Cosmétiques
+- **10 Cadres Oreilles d'Animaux** : Chat, Chien, Lapin, Renard, Ours, Loup, Souris, Panda, Tigre, Vache
+- **40+ Thèmes Visuels** : Ajout massif de thèmes (Gothic, Vaporwave, Steampunk, Disco 80s, Marble, Café Latté, Limonade, etc.)
+- **Total** : 55+ thèmes, 30+ cadres, 15+ bulles disponibles dans la boutique
+
+### Améliorations Boutique (Phase 1)
+- **Système de Métadonnées** : Interface `ShopItemMetadata` avec support pour :
+  - Tags de recherche/filtrage (ex: #dark, #cute, #animal)
+  - Badge "Nouveau" pour items récents
+  - Support flash sales avec discount
+- **FlashSaleService** : Service de rotation quotidienne avec seed (3-5 items en promo 30-50%)
+- **Pricing Dynamique** : Ajustements selon rareté (Rare: 20-50 crédits, Epic: 50-100 crédits)
+- **Tags Initiaux** : 3 frames d'exemple (Chat, Panda, Vache) avec tags intelligents
+
+### Corrections Critiques
+- **🐛 Fix Boucle Infinie** : `useAlterData.ts` - Résolution du "Maximum update depth exceeded"
+  - **Cause** : `alter` dans les dépendances du useEffect créait une boucle infinie
+  - **Solution** : Retrait de la dépendance + comparaison JSON pour éviter updates inutiles
+  - **Impact** : App stable, plus de crash au chargement de l'AlterSpace
+
+### Assets
+- **Frames Animal Ears** : 10 PNG avec fond transparent générés et intégrés
+- **Note** : 4 frames (Renard, Souris, Panda, Vache) ont des cercles de guidage visibles (à corriger)
+
+### Architecture
+- **Nouveau Service** : `FlashSaleService.ts` - Gestion des ventes flash quotidiennes
+- **Metadata Interface** : Extension de `ShopItem` pour enrichir l'expérience boutique
+- **Documentation** : Plan d'implémentation complet (phase 1-8) pour améliorations futures
+
+### À Venir (Planifié mais non implémenté)
+- Barre de recherche avec filtrage par tags
+- Système de favoris persisté
+- Progress bars collections (Thèmes X/55, Cadres X/30, Bulles X/15)
+- Flash Sales UI intégrée dans la boutique
+- Tags automatiques sur tous les 55+ items
+
+---
+
 ## [2026-01-19] Sécurité & Protection Mot de Passe 🔐
 
 ### Protection AlterSpace (Optionnelle)

@@ -31,6 +31,7 @@ import { colors, spacing } from '../../lib/theme';
 import { useMonetization } from '../../contexts/MonetizationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { LootBoxService, LOOT_BOX } from '../../services/LootBoxService';
+import FlashSaleService from '../../services/FlashSaleService';
 import CreditService from '../../services/CreditService';
 import { ShopItem, ShopItemType, COSMETIC_ITEMS, CREDIT_PACKS } from '../../services/MonetizationTypes';
 import { ShopItemCard } from './ShopItemCard';

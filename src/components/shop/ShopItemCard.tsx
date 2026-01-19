@@ -91,9 +91,10 @@ interface ShopItemCardProps {
     isEquipped?: boolean;
     userCredits: number;
     containerStyle?: import('react-native').ViewStyle;
+    avatarUrl?: string | null; // URL de la vraie photo de profil pour preview des cadres
 }
 
-export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits, containerStyle }: ShopItemCardProps) {
+export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits, containerStyle, avatarUrl }: ShopItemCardProps) {
     const canAfford = (item.priceCredits || 0) <= userCredits;
     const isFree = (item.priceCredits || 0) === 0;
 
@@ -122,7 +123,7 @@ export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits, 
                 styles.previewContainer,
                 isSpecial && { borderColor: rarityColor, borderWidth: 2 } // Colored border around preview
             ]}>
-                <ItemPreview item={item} size="small" />
+                <ItemPreview item={item} size="small" avatarUrl={avatarUrl} />
 
                 {/* Equipped indicator */}
                 {isEquipped && (

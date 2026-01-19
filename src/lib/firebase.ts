@@ -17,16 +17,28 @@ import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
 
-// Configuration Firebase
+// ------------------------------------------------------------------
+// SECURITY: Firebase configuration using environment variables
+// These should be set in .env file (copy from .env.example)
+// IMPORTANT: After a key leak, regenerate ALL keys in Firebase Console
+// ------------------------------------------------------------------
 const firebaseConfig = {
-    apiKey: "AIzaSyByyRNVyyz24J1JXS2J_xWb7F8PwSz6QRQ",
-    authDomain: "app-tdi.firebaseapp.com",
-    projectId: "app-tdi",
-    storageBucket: "app-tdi.firebasestorage.app",
-    messagingSenderId: "280489246228",
-    appId: "1:280489246228:web:7b5e1177e193dc20caf101",
-    measurementId: "G-Y5Y6LXVNS1"
+    apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+    measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
+
+// Validate that required config is present
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+    console.error(
+        '⚠️ Firebase config missing! Please create a .env file with your Firebase credentials.',
+        'Copy .env.example to .env and fill in your values from Firebase Console.'
+    );
+}
 
 // Initialisation (Compat Mode guarantees registration)
 let app: any; // Type 'any' to avoid compatibility issues between Modular and Compat SDKs

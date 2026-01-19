@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
+import { AppState } from 'react-native';
 import {
     User,
     createUserWithEmailAndPassword,
@@ -9,7 +9,6 @@ import {
 } from 'firebase/auth';
 import {
     doc,
-    getDoc,
     setDoc,
     collection,
     query,
@@ -193,7 +192,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return () => {
             subscription.remove();
         };
-    }, [user, activeFront.alters[0]?.id]); // Use specific ID to avoid excessive re-runs
+    }, [user, activeFront.alters]); // Changed dependency to whole array instead of [0].id to be safer
 
     const updateActiveFront = (currentAlters: Alter[]) => {
         const activeAlters = currentAlters.filter(a => a.is_active);
@@ -256,7 +255,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const signInWithGoogle = async () => {
         try {
             const GoogleAuthService = require('../services/GoogleAuthService').default;
-            const userCredential = await GoogleAuthService.signIn();
+            await GoogleAuthService.signIn();
 
             // If new user, we might want to create system data, but onAuthStateChanged handles it mostly.
             // However, onAuthStateChanged logic for creating system (lines 95-110) relies on email extraction.

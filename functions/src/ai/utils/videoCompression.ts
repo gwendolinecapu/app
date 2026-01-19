@@ -55,7 +55,7 @@ export async function compressVideo(
 
     try {
         // Write input buffer to temp file
-        fs.writeFileSync(inputPath, inputBuffer);
+        await fs.promises.writeFile(inputPath, inputBuffer);
 
         // Compress with FFmpeg
         await new Promise<void>((resolve, reject) => {
@@ -78,6 +78,8 @@ export async function compressVideo(
 
         // Input is no longer needed
         cleanupFile(inputPath);
+        // Read compressed video
+        const compressedBuffer = await fs.promises.readFile(outputPath);
 
         const stats = fs.statSync(outputPath);
         console.log(`Video compressed: ${inputBuffer.length} → ${stats.size} bytes (${Math.round(stats.size / 1024 / 1024)}MB)`);
@@ -92,6 +94,17 @@ export async function compressVideo(
         cleanupFile(inputPath);
         cleanupFile(outputPath);
         throw err;
+        return compressedBuffer;
+    } finally {
+        // Cleanup temp files
+        try {
+            await Promise.all([
+                fs.promises.unlink(inputPath).catch(() => {}),
+                fs.promises.unlink(outputPath).catch(() => {})
+            ]);
+        } catch (err) {
+            console.error('Error cleaning up temp files:', err);
+        }
     }
 }
 

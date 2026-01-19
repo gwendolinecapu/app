@@ -5,7 +5,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { PurchasesOffering } from 'react-native-purchases';
-import { doc, updateDoc, arrayUnion, setDoc } from 'firebase/firestore';
+import { doc, arrayUnion, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from './AuthContext';
 import AdMediationService from '../services/AdMediationService';
@@ -16,7 +16,6 @@ import RevenueCatService from '../services/RevenueCatService';
 import { PremiumConversionModal } from '../components/PremiumConversionModal';
 import {
     UserTier,
-    MonetizationStatus,
     RewardResult,
     NativeAdData,
     Decoration,
@@ -94,7 +93,7 @@ interface MonetizationContextType {
 const MonetizationContext = createContext<MonetizationContextType | undefined>(undefined);
 
 export function MonetizationProvider({ children }: { children: React.ReactNode }) {
-    const { user, alters, currentAlter, refreshAlters } = useAuth();
+    const { user, currentAlter, refreshAlters } = useAuth();
     const [loading, setLoading] = useState(true);
 
     // États dérivés des services
@@ -109,39 +108,9 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
     // ==================== INITIALIZATION ====================
 
-    useEffect(() => {
-        if (user?.uid) {
-            initializeServices(user.uid);
-        } else {
-            setLoading(false);
-        }
-    }, [user?.uid]);
-
-    const initializeServices = async (userId: string) => {
-        setLoading(true);
-        try {
-            // Initialiser tous les services en parallèle
-            await Promise.all([
-                AdMediationService.initialize(),
-                PremiumService.initialize(userId),
-                CreditService.initialize(userId),
-                DecorationService.initialize(userId),
-                RevenueCatService.initialize(userId),
-            ]);
-
-            // Fetch loaded offerings
-            const loadedOfferings = await RevenueCatService.getOfferings();
-            setOfferings(loadedOfferings);
-
-            // Mettre à jour les états
-            refreshState();
-
-        } catch (error) {
-            console.error('[MonetizationContext] Initialization failed:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Define refreshState first to be used in initializeServices if needed
+    // But initializeServices is async and mostly calls services.
+    // However, refreshState depends on currentAlter.
 
     const refreshState = useCallback(() => {
         setTier(PremiumService.getCurrentTier());
@@ -169,6 +138,40 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
             setOwnedItems(['theme_default', 'frame_simple', 'bubble_default', 'border_none']);
         }
     }, [currentAlter]);
+
+    const initializeServices = useCallback(async (userId: string) => {
+        setLoading(true);
+        try {
+            // Initialiser tous les services en parallèle
+            await Promise.all([
+                AdMediationService.initialize(),
+                PremiumService.initialize(userId),
+                CreditService.initialize(userId),
+                DecorationService.initialize(userId),
+                RevenueCatService.initialize(userId),
+            ]);
+
+            // Fetch loaded offerings
+            const loadedOfferings = await RevenueCatService.getOfferings();
+            setOfferings(loadedOfferings);
+
+            // Mettre à jour les états
+            refreshState();
+
+        } catch (error) {
+            console.error('[MonetizationContext] Initialization failed:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [refreshState]);
+
+    useEffect(() => {
+        if (user?.uid) {
+            initializeServices(user.uid);
+        } else {
+            setLoading(false);
+        }
+    }, [user?.uid, initializeServices]);
 
     // Re-sync whenever currentAlter changes (e.g. switch alter, or data update)
     useEffect(() => {
@@ -459,9 +462,13 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         return DecorationService.getEquippedDecorationId(alter, type);
     }, []);
 
-    const getOwnedDecorations = useCallback(async (alterId: string): Promise<Decoration[]> => {
-        return [];
-    }, []);
+    // Placeholder if not implemented in DecorationService properly or needed
+    // DecorationService.getOwnedDecorations should exist if we follow this pattern
+    // But context was calling empty function before.
+    // Let's assume it's not strictly needed if we use ownedItems state.
+    // const getOwnedDecorations = useCallback(async (alterId: string): Promise<Decoration[]> => {
+    //    return [];
+    // }, []);
 
     // ==================== ADS ====================
 
@@ -544,4 +551,3 @@ export function useMonetization() {
 }
 
 export default MonetizationContext;
-

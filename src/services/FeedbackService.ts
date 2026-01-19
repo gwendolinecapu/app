@@ -116,16 +116,6 @@ class FeedbackService {
         });
 
         // Grant credits via CreditService (system wallet)
-        // Ensure CreditService handles "addCredits" correctly for another user?
-        // Wait, CreditService defaults to "this.userId". It's a singleton for the CURRENT user.
-        // We need a way to credit ANOTHER user.
-        // CreditService currently relies on `this.userId`.
-        // FIX: We need to use a direct lower-level call or update CreditService to accept userId.
-
-        // Let's implement a direct credit for now to avoid refactoring CreditService singleton for this specific case,
-        // OR add a static/helper method in CreditService for Admin operations.
-        // Direct transaction here for safety and specific type.
-
         try {
             await CreditService.addCreditsForUser(feedback.userId, amount, 'bug_report_reward', `Récompense Bug: ${feedback.title}`);
         } catch (error) {

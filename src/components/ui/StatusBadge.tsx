@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, borderRadius, typography } from '../../lib/theme';
+import { borderRadius } from '../../lib/theme';
 
 export type StatusType = 'beta' | 'alpha' | 'coming-soon' | 'new';
 

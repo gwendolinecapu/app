@@ -19,7 +19,7 @@ export const BackgroundBubbles = () => {
     useEffect(() => {
         anim1.value = withRepeat(withSequence(withTiming(1, { duration: 15000 }), withTiming(0, { duration: 15000 })), -1, true);
         anim2.value = withRepeat(withSequence(withTiming(1, { duration: 20000 }), withTiming(0, { duration: 20000 })), -1, true);
-    }, []);
+    }, [anim1, anim2]);
 
     const circle1Style = useAnimatedStyle(() => ({
         transform: [

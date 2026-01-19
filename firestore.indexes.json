@@ -421,6 +421,20 @@
                     "order": "DESCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "roles",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "system_id",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []

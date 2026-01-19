@@ -26,12 +26,13 @@ interface MenuItem {
 }
 
 const MENU_ITEMS: MenuItem[] = [
+    { id: 'categories', label: 'Catégories', description: 'Rôles des alters', icon: 'pricetags', color: '#9C27B0', route: '/categories', status: 'new' },
     { id: 'calendar', label: 'Calendrier', description: 'RDV & Agenda', icon: 'calendar', color: '#6a11cb', route: '/calendar', status: 'beta' },
     { id: 'journal', label: 'Journal', description: 'Journal du système', icon: 'book', color: '#E91E63', route: '/(tabs)/journal' },
     { id: 'tasks', label: 'Tâches', description: 'Liste partagée', icon: 'list', color: colors.success, route: '/tasks', status: 'beta' },
     { id: 'history', label: 'Historique', description: 'Stats & Fronts', icon: 'stats-chart', color: colors.warning, route: '/history', status: 'beta' },
-    { id: 'help', label: 'Aide & SOS', description: 'Support système', icon: 'help-circle', color: colors.error, route: '/help' },
     { id: 'courses', label: 'Cours', description: 'Notes & Matières', icon: 'school', color: '#2196F3', route: '/courses', status: 'new' },
+    { id: 'help', label: 'Aide & SOS', description: 'Support système', icon: 'help-circle', color: colors.error, route: '/help' },
 ];
 
 export const SystemMenuModal: React.FC<SystemMenuModalProps> = ({ visible, onClose, hasSelection }) => {

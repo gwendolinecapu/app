@@ -12,7 +12,8 @@ import {
     getDoc,
     startAfter,
     DocumentSnapshot,
-    runTransaction
+    runTransaction,
+    QueryConstraint
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Feedback, FeedbackStatus, FeedbackType } from '../types/Feedback';
@@ -57,22 +58,22 @@ class FeedbackService {
         lastDoc?: DocumentSnapshot,
         pageSize: number = 20
     ): Promise<{ feedbacks: Feedback[]; lastDoc: DocumentSnapshot | null }> {
-        let q = query(collection(db, COLLECTION), orderBy('createdAt', 'desc'));
+        const constraints: QueryConstraint[] = [orderBy('createdAt', 'desc')];
 
         if (filter?.status) {
-            q = query(q, where('status', '==', filter.status));
-            // Note: Compound query with orderBy needs index in Firestore
+            constraints.push(where('status', '==', filter.status));
         }
         if (filter?.type) {
-            q = query(q, where('type', '==', filter.type));
+            constraints.push(where('type', '==', filter.type));
         }
 
-        q = query(q, limit(pageSize));
+        constraints.push(limit(pageSize));
 
         if (lastDoc) {
-            q = query(q, startAfter(lastDoc));
+            constraints.push(startAfter(lastDoc));
         }
 
+        const q = query(collection(db, COLLECTION), ...constraints);
         const snapshot = await getDocs(q);
         const feedbacks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Feedback));
         const newLastDoc = snapshot.docs[snapshot.docs.length - 1] || null;

@@ -1,11 +1,11 @@
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../src/contexts/ThemeContext';
 import FeedbackService from '../../../src/services/FeedbackService';
-import { Feedback } from '../../../src/types/Feedback';
+import { Feedback, FeedbackStatus, FeedbackType } from '../../../src/types/Feedback';
 
 export default function AdminFeedbackListScreen() {
     const { colors } = useTheme();
@@ -13,15 +13,17 @@ export default function AdminFeedbackListScreen() {
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [filterStatus, setFilterStatus] = useState<string | null>(null); // null = all
+    const [filterStatus, setFilterStatus] = useState<FeedbackStatus | null>(null); // null = all
+    const [filterType, setFilterType] = useState<FeedbackType | null>(null);
 
     const loadFeedbacks = async () => {
         try {
-            // TODO: Add actual filter support in Service if needed, currently fetching all
-            const { feedbacks: data } = await FeedbackService.getFeedbacks();
-            // Client side sorting: Newest first
-            const sorted = data.sort((a, b) => b.createdAt - a.createdAt);
-            setFeedbacks(sorted);
+            const filter = {
+                status: filterStatus || undefined,
+                type: filterType || undefined
+            };
+            const { feedbacks: data } = await FeedbackService.getFeedbacks(filter);
+            setFeedbacks(data);
         } catch (error) {
             console.error(error);
         } finally {
@@ -32,7 +34,7 @@ export default function AdminFeedbackListScreen() {
 
     useEffect(() => {
         loadFeedbacks();
-    }, []);
+    }, [filterStatus, filterType]);
 
     const onRefresh = () => {
         setRefreshing(true);
@@ -91,6 +93,64 @@ export default function AdminFeedbackListScreen() {
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             <Stack.Screen options={{ title: 'Admin Feedback' }} />
+
+            <View style={styles.filtersContainer}>
+                <View style={styles.filterRow}>
+                    <Text style={[styles.filterLabel, { color: colors.text }]}>Type:</Text>
+                    {(['ALL', 'BUG', 'FEATURE'] as const).map((type) => (
+                        <TouchableOpacity
+                            key={type}
+                            style={[
+                                styles.filterChip,
+                                {
+                                    backgroundColor: (type === 'ALL' && !filterType) || filterType === type
+                                        ? colors.primary
+                                        : colors.surface
+                                }
+                            ]}
+                            onPress={() => setFilterType(type === 'ALL' ? null : type as FeedbackType)}
+                        >
+                            <Text style={{
+                                color: (type === 'ALL' && !filterType) || filterType === type
+                                    ? '#FFF'
+                                    : colors.text,
+                                fontSize: 12,
+                                fontWeight: '600'
+                            }}>
+                                {type}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+                    <Text style={[styles.filterLabel, { color: colors.text }]}>Status:</Text>
+                    {(['ALL', 'NEW', 'CONFIRMED_BUG', 'DONE', 'PLANNED', 'NEED_INFO', 'NOT_A_BUG', 'DUPLICATE', 'REJECTED'] as const).map((status) => (
+                        <TouchableOpacity
+                            key={status}
+                            style={[
+                                styles.filterChip,
+                                {
+                                    backgroundColor: (status === 'ALL' && !filterStatus) || filterStatus === status
+                                        ? colors.primary
+                                        : colors.surface
+                                }
+                            ]}
+                            onPress={() => setFilterStatus(status === 'ALL' ? null : status as FeedbackStatus)}
+                        >
+                            <Text style={{
+                                color: (status === 'ALL' && !filterStatus) || filterStatus === status
+                                    ? '#FFF'
+                                    : colors.text,
+                                fontSize: 12,
+                                fontWeight: '600'
+                            }}>
+                                {status === 'ALL' ? 'All' : status}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </View>
 
             {loading ? (
                 <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
@@ -164,5 +224,25 @@ const styles = StyleSheet.create({
     rewardText: {
         fontSize: 12,
         fontWeight: 'bold',
-    }
+    },
+    filtersContainer: {
+        padding: 16,
+        paddingBottom: 0,
+        gap: 12,
+    },
+    filterRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    filterLabel: {
+        fontWeight: 'bold',
+        fontSize: 14,
+        marginRight: 4,
+    },
+    filterChip: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+    },
 });

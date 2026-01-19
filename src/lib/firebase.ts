@@ -68,13 +68,16 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 const functions = getFunctions(app, 'us-central1');
 
-// Enable Persistence (Firestore)
-enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code === 'failed-precondition') {
-        console.warn('Firestore persistence failed: Multiple tabs open');
-    } else if (err.code === 'unimplemented') {
-        console.warn('Firestore persistence not supported in this environment');
-    }
-});
+// Enable Persistence (Firestore) - only on web, native handles it differently
+if (typeof window !== 'undefined') {
+    enableIndexedDbPersistence(db).catch((err) => {
+        if (err.code === 'failed-precondition') {
+            console.warn('Firestore persistence failed: Multiple tabs open');
+        } else if (err.code === 'unimplemented') {
+            console.warn('Firestore persistence not supported in this environment');
+        }
+        // Ignore other errors (like already started)
+    });
+}
 
 export { auth, db, storage, functions };

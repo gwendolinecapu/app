@@ -1,13 +1,8 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { Audio, AVPlaybackStatus } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
-import Animated, {
-    useSharedValue,
-    useAnimatedStyle,
-    withTiming,
-} from 'react-native-reanimated';
 
 // =====================================================
 // AUDIO PLAYER
@@ -23,7 +18,6 @@ interface AudioPlayerProps {
 export const AudioPlayer = ({ uri, duration: initialDuration }: AudioPlayerProps) => {
     const soundRef = useRef<Audio.Sound | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
-    const [isLoaded, setIsLoaded] = useState(false);
     const [duration, setDuration] = useState(initialDuration || 0);
     const [position, setPosition] = useState(0);
 
@@ -39,7 +33,6 @@ export const AudioPlayer = ({ uri, duration: initialDuration }: AudioPlayerProps
                 onPlaybackStatusUpdate
             );
             soundRef.current = sound;
-            setIsLoaded(true);
 
             if (status.isLoaded && status.durationMillis) {
                 setDuration(status.durationMillis);

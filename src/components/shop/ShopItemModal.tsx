@@ -245,7 +245,7 @@ export function ShopItemModal({
                                 // Confirmation step
                                 <View style={styles.confirmContainer}>
                                     <Text style={styles.confirmText}>
-                                        Confirmer l'achat pour {item.priceCredits} 💎 ?
+                                        Confirmer l&apos;achat pour {item.priceCredits} 💎 ?
                                     </Text>
                                     <View style={styles.confirmButtons}>
                                         <TouchableOpacity

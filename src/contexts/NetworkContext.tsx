@@ -1,7 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
-import { View, Text, StyleSheet } from 'react-native';
-import { colors, typography, spacing } from '../lib/theme';
 
 interface NetworkContextType {
     isConnected: boolean | null;
@@ -39,8 +37,3 @@ export const useNetwork = () => {
     }
     return context;
 };
-
-const styles = StyleSheet.create({
-    // Styles for banner were here, now removed.
-});
-

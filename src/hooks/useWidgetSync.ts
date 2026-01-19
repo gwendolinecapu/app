@@ -15,7 +15,7 @@ import { Alter } from '../types';
  * avec les widgets iOS via App Groups
  */
 export function useWidgetSync() {
-    const { alters, activeFront, user } = useAuth();
+    const { alters, activeFront } = useAuth();
 
     // Convertir les alters pour les widgets
     const convertAltersForWidget = useCallback((alters: Alter[]): WidgetAlter[] => {

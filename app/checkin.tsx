@@ -14,39 +14,30 @@ import {
     TouchableOpacity,
     ScrollView,
     StatusBar,
+    Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 
-// Types locaux pour éviter les erreurs d'import
-interface Alter {
-    id: string;
-    name: string;
-    color: string;
-    avatarUrl?: string;
-}
-
-// Exemple de données (à remplacer par les vrais contextes)
-const mockAlters: Alter[] = [
-    { id: '1', name: 'Luna', color: '#8B5CF6' },
-    { id: '2', name: 'Alex', color: '#3B82F6' },
-    { id: '3', name: 'Maya', color: '#10B981' },
-    { id: '4', name: 'Sam', color: '#F59E0B' },
-];
+import { Alter } from '../src/types';
+import { useAuth } from '../src/contexts/AuthContext';
+import FrontingCheckInService from '../src/services/FrontingCheckInService';
+import DynamicIslandService from '../src/services/DynamicIslandService';
 
 export default function CheckInScreen() {
     const router = useRouter();
-    const [alters] = useState<Alter[]>(mockAlters);
-    const [currentFronter] = useState<Alter | null>(mockAlters[0]);
+    const { alters, activeFront, setFronting, system } = useAuth();
+
     const [selectedAlters, setSelectedAlters] = useState<string[]>([]);
     const [isCoFront, setIsCoFront] = useState(false);
 
     useEffect(() => {
         // Pré-sélectionner le fronter actuel si existant
-        if (currentFronter?.id) {
-            setSelectedAlters([currentFronter.id]);
+        if (activeFront?.alters?.length > 0) {
+            setSelectedAlters(activeFront.alters.map(a => a.id));
+            setIsCoFront(activeFront.type === 'co-front');
         }
-    }, [currentFronter]);
+    }, [activeFront]);
 
     const toggleAlter = (alterId: string) => {
         if (isCoFront) {
@@ -65,19 +56,68 @@ export default function CheckInScreen() {
     const handleConfirm = async () => {
         if (selectedAlters.length === 0) return;
 
-        const mainAlter = alters.find((a: Alter) => a.id === selectedAlters[0]);
-        if (!mainAlter) return;
+        const selectedAlterObjects = alters.filter((a: Alter) => selectedAlters.includes(a.id));
+        if (selectedAlterObjects.length === 0) return;
 
-        // TODO: Mettre à jour le front via le contexte
-        // TODO: Enregistrer le check-in
-        // TODO: Mettre à jour le Dynamic Island
+        // Déterminer le type de front
+        let type: 'single' | 'co-front' | 'blurry' = 'single';
+        if (selectedAlterObjects.length > 1) {
+             type = 'co-front';
+        }
+
+        // Mettre à jour le front via le contexte (persisté dans Firestore)
+        await setFronting(selectedAlterObjects, type);
+
+        // Enregistrer le check-in (timestamp pour les notifications)
+        await FrontingCheckInService.recordCheckIn({
+            confirmed: true,
+            changed: true,
+            newAlterId: selectedAlters[0]
+        });
+
+        // Mettre à jour le Dynamic Island
+        const mainAlter = selectedAlterObjects[0];
+        const coFronterCount = Math.max(0, selectedAlterObjects.length - 1);
+
+        await DynamicIslandService.startFronterActivity({
+            name: mainAlter.name,
+            initial: mainAlter.name.charAt(0).toUpperCase(),
+            color: mainAlter.color || '#8B5CF6',
+            coFronterCount: coFronterCount,
+            isCoFront: selectedAlterObjects.length > 1,
+            systemName: system?.username || 'Mon Système'
+        });
 
         router.back();
     };
 
     const handleSameFronter = async () => {
         // Confirmer que c'est le même fronter
+        await FrontingCheckInService.recordCheckIn({
+            confirmed: true,
+            changed: false
+        });
+
         router.back();
+    };
+
+    // Helper pour afficher l'avatar ou l'initiale
+    const renderAvatar = (alter: Alter) => {
+        if (alter.avatar || alter.avatar_url) {
+            return (
+                <Image
+                    source={{ uri: alter.avatar || alter.avatar_url }}
+                    style={[styles.avatarImage, { borderColor: alter.color || '#FFFFFF' }]}
+                />
+            );
+        }
+        return (
+            <View style={[styles.avatar, { borderColor: alter.color || '#FFFFFF' }]}>
+                <Text style={[styles.avatarText, { color: alter.color || '#FFFFFF' }]}>
+                    {alter.name.charAt(0).toUpperCase()}
+                </Text>
+            </View>
+        );
     };
 
     return (
@@ -102,7 +142,13 @@ export default function CheckInScreen() {
             <View style={styles.toggleContainer}>
                 <TouchableOpacity
                     style={[styles.toggleButton, !isCoFront && styles.toggleActive]}
-                    onPress={() => setIsCoFront(false)}
+                    onPress={() => {
+                        setIsCoFront(false);
+                        // Si on passe en solo et qu'on a plusieurs sélectionnés, on garde le premier
+                        if (selectedAlters.length > 1) {
+                            setSelectedAlters([selectedAlters[0]]);
+                        }
+                    }}
                 >
                     <Text style={[styles.toggleText, !isCoFront && styles.toggleTextActive]}>
                         Solo
@@ -126,20 +172,16 @@ export default function CheckInScreen() {
                         style={[
                             styles.alterCard,
                             selectedAlters.includes(alter.id) && {
-                                borderColor: alter.color,
+                                borderColor: alter.color || '#FFFFFF',
                                 borderWidth: 2,
                             },
                         ]}
                         onPress={() => toggleAlter(alter.id)}
                     >
-                        <View style={[styles.avatar, { borderColor: alter.color }]}>
-                            <Text style={[styles.avatarText, { color: alter.color }]}>
-                                {alter.name.charAt(0).toUpperCase()}
-                            </Text>
-                        </View>
+                        {renderAvatar(alter)}
                         <Text style={styles.alterName}>{alter.name}</Text>
                         {selectedAlters.includes(alter.id) && (
-                            <View style={[styles.checkmark, { backgroundColor: alter.color }]}>
+                            <View style={[styles.checkmark, { backgroundColor: alter.color || '#FFFFFF' }]}>
                                 <Text style={styles.checkmarkText}>✓</Text>
                             </View>
                         )}
@@ -149,13 +191,13 @@ export default function CheckInScreen() {
 
             {/* Actions */}
             <View style={styles.actions}>
-                {currentFronter && (
+                {activeFront?.alters?.length > 0 && (
                     <TouchableOpacity
                         style={styles.sameButton}
                         onPress={handleSameFronter}
                     >
                         <Text style={styles.sameButtonText}>
-                            Toujours {currentFronter.name}
+                            Toujours {activeFront.alters.map(a => a.name).join(', ')}
                         </Text>
                     </TouchableOpacity>
                 )}
@@ -255,6 +297,13 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         justifyContent: 'center',
         alignItems: 'center',
+        marginRight: 12,
+    },
+    avatarImage: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        borderWidth: 2,
         marginRight: 12,
     },
     avatarText: {

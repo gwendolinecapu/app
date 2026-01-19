@@ -115,7 +115,7 @@ export default function AlterSpaceScreen() {
         console.log('[PASSWORD DEBUG]', {
             loading,
             alterExists: !!alter,
-            alterPassword: alter?.password,
+            hasPassword: !!alter?.password,
             isOwner,
             isSameAlter,
             currentAlterId: currentAlter?.id,

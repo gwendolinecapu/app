@@ -305,6 +305,329 @@ export const getThemeColors = (themeId?: string): ThemeColors | null => {
                 textSecondary: '#668000',
                 border: '#334000'
             };
+
+        // ===== NOUVEAUX THÈMES (Saisons & Ambiances) =====
+        case 'theme_autumn':
+            return {
+                background: '#fff7ed',     // Warm Orange White
+                backgroundCard: '#ffedd5', // Light Orange
+                primary: '#ea580c',        // Burnt Orange
+                text: '#7c2d12',           // Dark Brown
+                textSecondary: '#9a3412',
+                border: '#fed7aa'
+            };
+        case 'theme_spring':
+            return {
+                background: '#f0fdf4',     // Mint White
+                backgroundCard: '#dcfce7', // Pale Green
+                primary: '#22c55e',        // Fresh Green
+                text: '#14532d',           // Forest Green
+                textSecondary: '#166534',
+                border: '#bbf7d0'
+            };
+        case 'theme_blueprint':
+            return {
+                background: '#1e3a8a',     // Blueprint Blue
+                backgroundCard: '#172554', // Darker Blue
+                primary: '#ffffff',        // White Lines
+                text: '#bfdbfe',           // Light Blue Text
+                textSecondary: '#60a5fa',
+                border: '#3b82f6'          // Grid Lines
+            };
+        case 'theme_wine':
+            return {
+                background: '#4c0519',     // Wine Red
+                backgroundCard: '#881337', // Light Wine
+                primary: '#fbbf24',        // Antique Gold
+                text: '#fff1f2',           // Rose White
+                textSecondary: '#f43f5e',
+                border: '#9f1239'
+            };
+        case 'theme_military':
+            return {
+                background: '#3f4f3a',     // Olive Green
+                backgroundCard: '#2f3b2b', // Dark Camo
+                primary: '#a3b18a',        // Sage Green
+                text: '#dad7cd',           // Beige
+                textSecondary: '#a3b18a',
+                border: '#588157'
+            };
+
+        // ===== NOUVEAUX THÈMES (Lot 2: Nature, Éléments, Urbain) =====
+        case 'theme_sakura':
+            return {
+                background: '#fff1f2',     // Rose White
+                backgroundCard: '#ffe4e6', // Pale Pink
+                primary: '#f472b6',        // Pink Blossom
+                text: '#881337',           // Dark Rose
+                textSecondary: '#9d174d',
+                border: '#fbcfe8'
+            };
+        case 'theme_lavender':
+            return {
+                background: '#f5f3ff',     // Lilac White
+                backgroundCard: '#ede9fe', // Pale Violet
+                primary: '#8b5cf6',        // Violet
+                text: '#4c1d95',           // Dark Violet
+                textSecondary: '#5b21b6',
+                border: '#ddd6fe'
+            };
+        case 'theme_honey':
+            return {
+                background: '#fffbeb',     // Amber White
+                backgroundCard: '#fef3c7', // Pale Amber
+                primary: '#f59e0b',        // Amber Gold
+                text: '#78350f',           // Dark Brown
+                textSecondary: '#92400e',
+                border: '#fcd34d'
+            };
+        case 'theme_coffee':
+            return {
+                background: '#fef2f2',     // Very pale warm
+                backgroundCard: '#f5e6d3', // Latte foam
+                primary: '#78350f',        // Coffee Bean
+                text: '#451a03',           // Dark Roast
+                textSecondary: '#78350f',
+                border: '#a8a29e'
+            };
+        case 'theme_ocean_depths':
+            return {
+                background: '#0f172a',     // Deepest Blue
+                backgroundCard: '#1e3a8a', // Ocean Blue
+                primary: '#38bdf8',        // Cyan Highlights
+                text: '#f0f9ff',           // White Foam
+                textSecondary: '#bae6fd',
+                border: '#0ea5e9'
+            };
+        case 'theme_storm':
+            return {
+                background: '#334155',     // Storm Gray
+                backgroundCard: '#475569',
+                primary: '#facc15',        // Lightning Yellow
+                text: '#f1f5f9',           // Cloud White
+                textSecondary: '#cbd5e1',
+                border: '#94a3b8'
+            };
+        case 'theme_ice_queen':
+            return {
+                background: '#f0f9ff',     // Ice White
+                backgroundCard: '#e0f2fe',
+                primary: '#0ea5e9',        // Ice Blue
+                text: '#0c4a6e',           // Deep Blue Text
+                textSecondary: '#0284c7',
+                border: '#bae6fd'
+            };
+        case 'theme_dragon_fire':
+            return {
+                background: '#1c1917',     // Coal Black
+                backgroundCard: '#292524',
+                primary: '#ef4444',        // Fire Red
+                text: '#fee2e2',           // Ash White
+                textSecondary: '#fca5a5',
+                border: '#b91c1c'
+            };
+        case 'theme_cyber_night':
+            return {
+                background: '#09090b',     // Void Black
+                backgroundCard: '#18181b', // Zing Gray
+                primary: '#d946ef',        // Neon Fuchsia
+                text: '#e879f9',           // Neon text
+                textSecondary: '#22d3ee',  // Neon Blue secondary
+                border: '#22d3ee'          // Blue Border
+            };
+        case 'theme_newspaper':
+            return {
+                background: '#e5e7eb',     // Gray Paper
+                backgroundCard: '#f3f4f6',
+                primary: '#000000',        // Ink Black
+                text: '#1f2937',           // Dark Gray Text
+                textSecondary: '#374151',
+                border: '#9ca3af'
+            };
+
+        // ===== NOUVEAUX THÈMES (Lot 3: Matières & Styles Uniques) =====
+        case 'theme_steampunk':
+            return {
+                background: '#292524',     // Dark Leather
+                backgroundCard: '#431407', // Bronze
+                primary: '#d97706',        // Brass/Copper
+                text: '#fcd34d',           // Gold text
+                textSecondary: '#a8a29e',  // Silver
+                border: '#78350f'
+            };
+        case 'theme_disco_80s':
+            return {
+                background: '#2e1065',     // Deep Purple
+                backgroundCard: '#4c1d95',
+                primary: '#e879f9',        // Neon Pink
+                text: '#22d3ee',           // Cyan
+                textSecondary: '#c084fc',
+                border: '#a855f7'
+            };
+        case 'theme_pixel_os':
+            return {
+                background: '#c0c0c0',     // Win95 Grey
+                backgroundCard: '#ffffff', // Window White
+                primary: '#000080',        // Title Bar Blue
+                text: '#000000',           // Black
+                textSecondary: '#808080',  // Dark Grey
+                border: '#000000'
+            };
+        case 'theme_marble':
+            return {
+                background: '#f5f5f5',     // Marble White
+                backgroundCard: '#ffffff',
+                primary: '#525252',        // Grey Veins
+                text: '#262626',           // Dark Stone
+                textSecondary: '#a3a3a3',
+                border: '#e5e5e5'
+            };
+        case 'theme_denim':
+            return {
+                background: '#1e3a8a',     // Dark Indigo
+                backgroundCard: '#1d4ed8', // Blue Jean
+                primary: '#f97316',        // Orange Stitching
+                text: '#eff6ff',           // White
+                textSecondary: '#93c5fd',
+                border: '#f97316'
+            };
+        case 'theme_chalkboard':
+            return {
+                background: '#064e3b',     // Blackboard Green
+                backgroundCard: '#065f46',
+                primary: '#ffffff',        // Chalk White
+                text: '#f0fdf4',
+                textSecondary: '#a7f3d0',
+                border: '#d1fae5'
+            };
+        case 'theme_neon_noir':
+            return {
+                background: '#000000',     // Pure Black
+                backgroundCard: '#171717',
+                primary: '#dc2626',        // Fatal Red
+                text: '#ffffff',
+                textSecondary: '#525252',
+                border: '#ffffff'
+            };
+        case 'theme_hacker':
+            return {
+                background: '#000000',     // Terminal Black
+                backgroundCard: '#022c22', // Very dark green
+                primary: '#22c55e',        // Matrix Green
+                text: '#4ade80',           // Light Green
+                textSecondary: '#15803d',
+                border: '#166534'
+            };
+        case 'theme_dune':
+            return {
+                background: '#7c2d12',     // Spice
+                backgroundCard: '#92400e',
+                primary: '#fcd34d',        // Sun
+                text: '#fef3c7',           // Sand
+                textSecondary: '#fbbf24',
+                border: '#d97706'
+            };
+        case 'theme_candy_cane':
+            return {
+                background: '#fff1f2',     // White/Pink
+                backgroundCard: '#ffe4e6',
+                primary: '#e11d48',        // Candy Red
+                text: '#be123c',           // Dark Red
+                textSecondary: '#fda4af',
+                border: '#f43f5e'
+            };
+
+        // ===== NOUVEAUX THÈMES (Lot 4: Gourmandise, Voyage, Science) =====
+        case 'theme_chocolate_mint':
+            return {
+                background: '#3e2723',     // Dark Chocolate
+                backgroundCard: '#4e342e',
+                primary: '#69f0ae',        // Mint Green
+                text: '#e0f2f1',           // Mint White
+                textSecondary: '#a5d6a7',
+                border: '#004d40'
+            };
+        case 'theme_strawberry_milk':
+            return {
+                background: '#fff1f2',     // Milky Pink
+                backgroundCard: '#fce7f3', // Pink
+                primary: '#f43f5e',        // Strawberry Red
+                text: '#881337',           // Dark Red
+                textSecondary: '#be123c',
+                border: '#fecdd3'
+            };
+        case 'theme_lemonade':
+            return {
+                background: '#fef9c3',     // Pale Lemon
+                backgroundCard: '#fef08a', // Yellow
+                primary: '#84cc16',        // Lime Green
+                text: '#a16207',           // Brown Sugar
+                textSecondary: '#65a30d',
+                border: '#fde047'
+            };
+        case 'theme_blueberry':
+            return {
+                background: '#1e1b4b',     // Deep Indigo
+                backgroundCard: '#312e81',
+                primary: '#818cf8',        // Peri
+                text: '#e0e7ff',           // White Indigo
+                textSecondary: '#6366f1',
+                border: '#4338ca'
+            };
+        case 'theme_egyptian_sand':
+            return {
+                background: '#451a03',     // Dark Sand
+                backgroundCard: '#78350f',
+                primary: '#fbbf24',        // Gold
+                text: '#fef3c7',           // Light Sand
+                textSecondary: '#d97706',
+                border: '#1d4ed8'          // Lapis Blue Accent
+            };
+        case 'theme_cherry_blossom_night':
+            return {
+                background: '#020617',     // Midnight
+                backgroundCard: '#1e1b4b',
+                primary: '#f472b6',        // Pink Neon
+                text: '#fce7f3',           // Pale Pink
+                textSecondary: '#db2777',
+                border: '#be185d'
+            };
+        case 'theme_jungle_deep':
+            return {
+                background: '#022c22',     // Black Green
+                backgroundCard: '#064e3b',
+                primary: '#4ade80',        // Parrot Green
+                text: '#ecfccb',           // Lime White
+                textSecondary: '#166534',
+                border: '#14532d'
+            };
+        case 'theme_biolum':
+            return {
+                background: '#000000',     // Pitch Black
+                backgroundCard: '#000000',
+                primary: '#22d3ee',        // Cyan Glow
+                text: '#ccfbf1',           // Teal White
+                textSecondary: '#0f766e',
+                border: '#2dd4bf'
+            };
+        case 'theme_mars_rover':
+            return {
+                background: '#431407',     // Red Dust
+                backgroundCard: '#7c2d12',
+                primary: '#fb923c',        // Orange Sun
+                text: '#ffedd5',           // Beige
+                textSecondary: '#c2410c',
+                border: '#9a3412'
+            };
+        case 'theme_toxic_waste':
+            return {
+                background: '#2e1065',     // Mutated Purple
+                backgroundCard: '#581c87',
+                primary: '#a3e635',        // Ooze Green
+                text: '#d9f99d',           // Pale Ooze
+                textSecondary: '#84cc16',
+                border: '#a3e635'
+            };
         default:
             // Fallback générique si on a juste la couleur preview
             return {
@@ -705,6 +1028,180 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                 imageSource: require('../../assets/frames/frame_ice_crystal.png'),
             };
 
+        // ===== NOUVEAUX CADRES (CSS Fallbacks) =====
+        case 'frame_cat_ears':
+            return {
+                containerStyle: {
+                    borderWidth: 4,
+                    borderColor: '#f472b6', // Pink
+                    padding: 2,
+                    borderRadius: size / 2, // Circle
+                    borderTopLeftRadius: 10, // Ear hint? (May look odd on circle) -> Let's stick to Circle with distinct color
+                    borderTopRightRadius: 10,
+                }
+            };
+        case 'frame_devil':
+            return {
+                containerStyle: {
+                    borderWidth: 4,
+                    borderColor: '#dc2626', // Red
+                    padding: 2,
+                    borderRadius: size / 2,
+                    borderStyle: 'dashed', // Spiky feel
+                }
+            };
+        case 'frame_angel':
+            return {
+                containerStyle: {
+                    borderWidth: 4,
+                    borderColor: '#fcd34d', // Gold
+                    padding: 4,
+                    borderRadius: size / 2,
+                    shadowColor: '#fcd34d',
+                    shadowOpacity: 0.8,
+                    shadowRadius: 10, // Glow
+                }
+            };
+        case 'frame_tech_hud':
+            return {
+                containerStyle: {
+                    borderWidth: 2,
+                    borderColor: '#0ea5e9',
+                    padding: 4,
+                    borderRadius: 4, // Square bracket feel
+                    borderStyle: 'dotted',
+                }
+            };
+        case 'frame_polaroid':
+            return {
+                containerStyle: {
+                    borderWidth: 4,
+                    borderColor: '#ffffff',
+                    borderBottomWidth: 12, // Caption area
+                    padding: 0,
+                    borderRadius: 2,
+                    backgroundColor: '#fff',
+                    shadowColor: '#000',
+                    shadowOpacity: 0.2,
+                }
+            };
+
+        // Fallbacks for the ones with potential image requirements from prev step if they were missing assets
+        // (Just to be safe, though usage implies assets might need to be there)
+
+
+        // ===== CADRES OREILLES D'ANIMAUX (Avec Images PNG) =====
+        case 'frame_ears_cat':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_cat_ears.png'),
+            };
+        case 'frame_ears_dog':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_dog_ears.png'),
+            };
+        case 'frame_ears_rabbit':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_rabbit_ears.png'),
+            };
+        case 'frame_ears_fox':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_fox_ears.png'),
+            };
+        case 'frame_ears_bear':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_bear_ears.png'),
+            };
+        case 'frame_ears_wolf':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_wolf_ears.png'),
+            };
+        case 'frame_ears_mouse':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_mouse_ears.png'),
+            };
+        case 'frame_ears_panda':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_panda_ears.png'),
+            };
+        case 'frame_ears_tiger':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_tiger_ears.png'),
+            };
+        case 'frame_ears_cow':
+            return {
+                containerStyle: {
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    padding: 0,
+                    borderRadius: size / 2,
+                    overflow: 'visible',
+                },
+                imageSource: require('../../assets/frames/frame_cow_ears.png'),
+            };
+
         default:
             return defaultStyle;
     }
@@ -799,6 +1296,61 @@ export const getBubbleStyle = (bubbleId?: string, isMine: boolean = false): Bubb
                     borderRadius: 16,
                 }
             };
+
+        // ===== NOUVELLES BULLES (Expression) =====
+        case 'bubble_thought':
+            return {
+                containerStyle: {
+                    backgroundColor: isMine ? '#ffffff' : '#f3f4f6',
+                    borderWidth: 2,
+                    borderColor: '#e5e7eb',
+                    borderRadius: 20, // Cloud-ish
+                    borderBottomLeftRadius: 0,
+                },
+                textStyle: { color: '#6b7280', fontStyle: 'italic' }
+            };
+        case 'bubble_shout':
+            return {
+                containerStyle: {
+                    backgroundColor: isMine ? '#fecaca' : '#fee2e2',
+                    borderWidth: 2,
+                    borderColor: '#ef4444',
+                    borderRadius: 4,
+                    transform: [{ rotate: '-1deg' }], // Slight chaos
+                },
+                textStyle: { fontWeight: 'bold', textTransform: 'uppercase' }
+            };
+        case 'bubble_rpg':
+            return {
+                containerStyle: {
+                    backgroundColor: '#1e3a8a', // RPG Blue
+                    borderWidth: 2,
+                    borderColor: '#ffffff',
+                    borderRadius: 4,
+                    padding: 8,
+                },
+                textStyle: { color: '#ffffff', fontFamily: 'monospace' }
+            };
+        case 'bubble_tape':
+            return {
+                containerStyle: {
+                    backgroundColor: '#fcd34d', // Yellow tape
+                    transform: [{ rotate: '1deg' }],
+                    borderRadius: 2,
+                },
+                textStyle: { color: '#000000' }
+            };
+        case 'bubble_ghost':
+            return {
+                containerStyle: {
+                    backgroundColor: 'rgba(255,255,255,0.5)',
+                    borderWidth: 1,
+                    borderColor: '#e5e7eb',
+                    borderRadius: 16,
+                },
+                textStyle: { color: '#6b7280' }
+            };
+
         default:
             return null;
     }

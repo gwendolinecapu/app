@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
-import { colors } from '../../lib/theme';
 import { triggerHaptic } from '../../lib/haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -45,7 +44,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 }),
             ]).start();
         }
-    }, [activeToast]);
+    }, [activeToast, opacityAnim, slideAnim]);
 
     const animateOut = useCallback(() => {
         Animated.parallel([

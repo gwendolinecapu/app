@@ -4,7 +4,6 @@
  */
 
 import { useEffect, useState, useCallback } from 'react';
-import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
 import NotificationService from '../services/NotificationService';
 import {
@@ -19,10 +18,25 @@ export function useNotifications() {
     const [settings, setSettings] = useState<NotificationSettings | null>(null);
     const [loading, setLoading] = useState(true);
 
-    // Charger les settings au montage
-    useEffect(() => {
-        loadSettings();
-    }, []);
+    // Helper function moved inside to be accessible by effect
+    const handleNotificationTap = useCallback((category?: string | null) => {
+        switch (category) {
+            case 'front':
+                router.push('/' as any);
+                break;
+            case 'mood':
+                router.push('/emotions/history' as any);
+                break;
+            case 'journal':
+                router.push('/journal' as any);
+                break;
+            case 'social':
+                router.push('/discover/index' as any);
+                break;
+            default:
+                router.push('/' as any);
+        }
+    }, [router]);
 
     // Écouter les réponses aux notifications
     useEffect(() => {
@@ -30,8 +44,6 @@ export function useNotifications() {
             (response) => {
                 const { actionIdentifier, notification } = response;
                 const category = notification.request.content.categoryIdentifier;
-
-
 
                 // Router vers l'écran approprié
                 switch (actionIdentifier) {
@@ -52,7 +64,12 @@ export function useNotifications() {
         );
 
         return () => subscription?.remove();
-    }, [router]);
+    }, [router, handleNotificationTap]);
+
+    // Charger les settings au montage
+    useEffect(() => {
+        loadSettings();
+    }, []);
 
     const loadSettings = async () => {
         try {
@@ -62,25 +79,6 @@ export function useNotifications() {
             console.error('[useNotifications] Failed to load settings:', error);
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleNotificationTap = (category?: string | null) => {
-        switch (category) {
-            case 'front':
-                router.push('/' as any);
-                break;
-            case 'mood':
-                router.push('/emotions/history' as any);
-                break;
-            case 'journal':
-                router.push('/journal' as any);
-                break;
-            case 'social':
-                router.push('/discover/index' as any);
-                break;
-            default:
-                router.push('/' as any);
         }
     };
 

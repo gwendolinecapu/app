@@ -17,7 +17,6 @@ import {
     ScrollView,
     TouchableOpacity,
     Dimensions,
-    ImageBackground,
     Platform,
     Alert
 } from 'react-native';
@@ -28,7 +27,7 @@ import { BlurView } from 'expo-blur';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { useRouter } from 'expo-router';
-import { colors, typography, spacing } from '../../lib/theme';
+import { colors, spacing } from '../../lib/theme';
 import { useMonetization } from '../../contexts/MonetizationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { LootBoxService, LOOT_BOX } from '../../services/LootBoxService';
@@ -37,7 +36,6 @@ import { ShopItem, ShopItemType, COSMETIC_ITEMS, CREDIT_PACKS } from '../../serv
 import { ShopItemCard } from './ShopItemCard';
 import { ShopItemModal } from './ShopItemModal';
 import { LootBoxOpening } from './LootBoxOpening';
-import { ItemPreview } from './ItemPreview';
 
 import { InventoryModal } from './InventoryModal';
 
@@ -65,7 +63,6 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
 
     const router = useRouter();
 
-    const [selectedCategory, setSelectedCategory] = useState<'daily' | 'catalog'>('daily');
     const [modalVisible, setModalVisible] = useState(false);
     const [inventoryVisible, setInventoryVisible] = useState(false);
     const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
@@ -121,22 +118,6 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
     const handleItemPress = (item: ShopItem) => {
         setSelectedItem(item);
         setModalVisible(true);
-    };
-
-    const handlePurchase = async () => {
-        if (selectedItem && currentAlter) {
-            const success = await purchaseItem(selectedItem, currentAlter.id);
-            if (success) setModalVisible(false);
-            return success;
-        }
-        return false;
-    };
-
-    const handleEquip = async () => {
-        if (selectedItem) {
-            await equipItem(selectedItem.id, selectedItem.type);
-            setModalVisible(false);
-        }
     };
 
     // Wrapper for ShopItemModal which expects (item) => Promise<boolean>

@@ -10,6 +10,7 @@ import {
     orderBy,
     getDoc,
     arrayUnion,
+    arrayRemove,
     setDoc,
     onSnapshot
 } from 'firebase/firestore';
@@ -119,6 +120,35 @@ export const GroupService = {
 
         } catch (error) {
             console.error("Erreur ajoutant membre:", error);
+            throw error;
+        }
+    },
+
+    /**
+     * Quitter un groupe
+     */
+    leaveGroup: async (groupId: string, systemId: string) => {
+        try {
+            // 1. Trouver le document membre
+            const q = query(
+                collection(db, 'group_members'),
+                where('group_id', '==', groupId),
+                where('system_id', '==', systemId)
+            );
+            const snapshot = await getDocs(q);
+
+            // 2. Supprimer de la collection group_members
+            const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+            await Promise.all(deletePromises);
+
+            // 3. Mettre à jour le tableau dénormalisé members du groupe
+            const groupRef = doc(db, 'groups', groupId);
+            await updateDoc(groupRef, {
+                members: arrayRemove(systemId)
+            });
+
+        } catch (error) {
+            console.error("Erreur quittant le groupe:", error);
             throw error;
         }
     },

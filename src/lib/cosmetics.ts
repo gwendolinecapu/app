@@ -212,6 +212,99 @@ export const getThemeColors = (themeId?: string): ThemeColors | null => {
                 textSecondary: '#c62828',  // Red
                 border: '#FFCDD2'
             };
+
+        // ===== NOUVEAUX THÈMES (Goth, Rétro, Luxe, Art) =====
+        case 'theme_gothic':
+            return {
+                background: '#000000',     // Pure Black
+                backgroundCard: '#1a0505', // Very dark red tint
+                primary: '#8a0303',        // Blood Red
+                text: '#e5e5e5',           // Off-white
+                textSecondary: '#a3a3a3',
+                border: '#4a0404'
+            };
+        case 'theme_obsidian':
+            return {
+                background: '#121212',     // Material Dark Bg
+                backgroundCard: '#1e1e1e', // Material Dark Surface
+                primary: '#ffffff',        // White Monochrome
+                text: '#ffffff',
+                textSecondary: '#a0a0a0',
+                border: '#333333'
+            };
+        case 'theme_vaporwave':
+            return {
+                background: '#2b2146',     // Deep Violet
+                backgroundCard: '#3a2e63',
+                primary: '#00ffff',        // Cyan
+                text: '#ff00ff',           // Magenta
+                textSecondary: '#cc00cc',
+                border: '#00ffff'
+            };
+        case 'theme_vintage_paper':
+            return {
+                background: '#f4e4bc',     // Parchment
+                backgroundCard: '#e6d2a4',
+                primary: '#4a3b2a',        // Brown Ink
+                text: '#2c241b',           // Dark Brown text
+                textSecondary: '#5e4b35',
+                border: '#8c704f'
+            };
+        case 'theme_retro_console':
+            return {
+                background: '#0f380f',     // Darkest Green
+                backgroundCard: '#306230', // Dark Green
+                primary: '#9bbc0f',        // Lightest Green (Backlight)
+                text: '#8bac0f',           // Light Green
+                textSecondary: '#9bbc0f',
+                border: '#8bac0f'
+            };
+        case 'theme_royal_gold':
+            return {
+                background: '#0f172a',     // Sapphire Dark Blue
+                backgroundCard: '#1e293b',
+                primary: '#d4af37',        // Metallic Gold
+                text: '#f8fafc',           // Ice White
+                textSecondary: '#94a3b8',
+                border: '#d4af37'
+            };
+        case 'theme_ethereal':
+            return {
+                background: '#f8fafc',     // Ice White
+                backgroundCard: '#ffffff',
+                primary: '#38bdf8',        // Sky Blue
+                text: '#0f172a',           // Dark Blue text for readability
+                textSecondary: '#64748b',
+                border: '#e0f2fe'
+            };
+        case 'theme_candy_pop':
+            return {
+                background: '#ffff00',     // Bright Yellow (Careful!) -> Adjusted to Pale Yellow for readability? No, POP ART!
+                // Let's tone down background for usability
+                backgroundCard: '#ffffff',
+                primary: '#ff0055',        // Hot Pink
+                text: '#000000',           // Black
+                textSecondary: '#0000ff',  // Electric Blue
+                border: '#000000'          // Comics style border
+            };
+        case 'theme_sunset':
+            return {
+                background: '#2d1b2e',     // Dark Purple horizon
+                backgroundCard: '#432c4a',
+                primary: '#ff6b6b',        // Sunset Pink/Orange
+                text: '#ffdab9',           // Peach
+                textSecondary: '#fca5a5',
+                border: '#b04b5a'
+            };
+        case 'theme_toxic':
+            return {
+                background: '#0a0a0a',     // Black
+                backgroundCard: '#1f1f1f',
+                primary: '#ccff00',        // Toxic Neon Green
+                text: '#ccff00',           // Terminal Green
+                textSecondary: '#668000',
+                border: '#334000'
+            };
         default:
             // Fallback générique si on a juste la couleur preview
             return {

@@ -33,6 +33,7 @@ import { SystemControlBar } from '../../src/components/dashboard/SystemControlBa
 import { SystemMenuModal } from '../../src/components/dashboard/SystemMenuModal';
 import { AddAlterModal } from '../../src/components/dashboard/AddAlterModal';
 import { DashboardGrid, GridItem } from '../../src/components/dashboard/DashboardGrid';
+import { CategoryFilterModal } from '../../src/components/dashboard/CategoryFilterModal';
 import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
 
 import { Alter } from '../../src/types';
@@ -72,6 +73,8 @@ export default function Dashboard() {
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(false);
     const [deleteMode, setDeleteMode] = useState(false);
+    const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+    const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
     const { width } = useWindowDimensions();
     const availableWidth = width - (CONTAINER_PADDING * 2);
@@ -101,13 +104,24 @@ export default function Dashboard() {
     const { size: BUBBLE_SIZE, spacing: BUBBLE_SPACING, columns: NUM_COLUMNS } = bubbleConfig;
 
     const filteredAlters = useMemo(() => {
-        if (!searchQuery.trim()) return alters;
-        const query = searchQuery.toLowerCase();
-        return alters.filter(alter =>
-            alter.name.toLowerCase().includes(query) ||
-            alter.pronouns?.toLowerCase().includes(query)
-        );
-    }, [alters, searchQuery]);
+        let result = alters;
+
+        // Filter by category first
+        if (activeCategory) {
+            result = result.filter(alter => alter.role_ids?.includes(activeCategory));
+        }
+
+        // Then filter by search query
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(alter =>
+                alter.name.toLowerCase().includes(query) ||
+                alter.pronouns?.toLowerCase().includes(query)
+            );
+        }
+
+        return result;
+    }, [alters, searchQuery, activeCategory]);
 
     const gridData = useMemo((): GridItem[] => {
         return [
@@ -300,6 +314,8 @@ export default function Dashboard() {
                             deleteMode={deleteMode}
                             onToggleDeleteMode={handleToggleDeleteMode}
                             onSelectAll={handleSelectAll}
+                            onOpenCategories={() => setCategoryModalVisible(true)}
+                            activeCategory={activeCategory}
                         />
 
                         <View style={{ height: 16 }} />
@@ -343,6 +359,19 @@ export default function Dashboard() {
                 visible={menuVisible}
                 onClose={handleCloseMenu}
                 hasSelection={selectedAlters.length > 0}
+            />
+
+            <CategoryFilterModal
+                visible={categoryModalVisible}
+                onClose={() => setCategoryModalVisible(false)}
+                systemId={user?.uid || ''}
+                alters={alters}
+                activeCategory={activeCategory}
+                onSelectCategory={setActiveCategory}
+                onSelectAlter={(alter) => {
+                    setFronting([alter], 'single');
+                    router.push(`/alter-space/${alter.id}` as any);
+                }}
             />
         </SafeAreaView>
     );

@@ -13,10 +13,18 @@
 3. **Tout le monde est concerné** : Même le propriétaire de l'alter doit entrer le code (comme un journal intime avec cadenas 🔒)
 4. **Désactiver** : Clique sur "Mot de passe" → "Supprimer" pour retirer la protection
 
-### Audit de Sécurité Critique
-- **Secrets retirés de Git** : Les fichiers `.env`, `GoogleService-Info.plist` et `google-services.json` ont été retirés du suivi Git.
-- **`.gitignore` mis à jour** : Protection automatique des fichiers sensibles pour éviter les fuites futures.
-- **⚠️ Action requise** : Régénérer toutes les clés API exposées (Firebase, OpenAI, Supabase, RevenueCat).
+### 🚨 Audit de Sécurité Critique (Fuite de Secrets - 19/01/2026)
+- **CRITIQUE** : 5 secrets ont été détectés comme exposés publiquement sur GitHub
+- **Actions Correctives Immédiates** :
+  - ✅ `src/lib/firebase.ts` : **Clés API hardcodées SUPPRIMÉES** - Migration vers variables d'environnement
+  - ✅ `.env.example` : Template mis à jour avec toutes les variables Firebase nécessaires
+  - ✅ `.env` : Fichier local créé (DEJA dans `.gitignore`)
+  - ✅ `.gitignore` : Confirme l'exclusion de `.env`, `google-services.json`, `GoogleService-Info.plist`
+- **⚠️ ACTION UTILISATEUR REQUISE** :
+  1. **Régénérer TOUTES les clés API** dans Firebase Console et Google Cloud Console
+  2. **Révoquer la clé OpenAI** `sk-proj-CQ-h8h3i...` sur platform.openai.com
+  3. **Mettre à jour `.env`** avec les nouvelles clés
+  4. **Optionnel** : Nettoyer l'historique Git avec `git filter-branch` ou BFG Repo Cleaner
 
 ### Setup Script pour Jules
 - **`setup.sh`** : Script d'installation automatique pour l'environnement de développement.

@@ -140,6 +140,38 @@ export default function AlterSpaceScreen() {
         router.back();
     };
 
+    // Handle forgot password - system owner can reset
+    const handleForgotPassword = async () => {
+        if (!isSystemOwner || !alter) return;
+
+        Alert.alert(
+            'Réinitialiser le mot de passe',
+            `Êtes-vous sûr de vouloir supprimer le mot de passe de ${alter.name} ?\n\nVous pourrez en définir un nouveau dans les paramètres.`,
+            [
+                { text: 'Annuler', style: 'cancel' },
+                {
+                    text: 'Supprimer',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const { doc, updateDoc } = await import('firebase/firestore');
+                            const { db } = await import('../../../src/lib/firebase');
+                            const alterRef = doc(db, 'alters', alter.id);
+                            await updateDoc(alterRef, { password: null });
+                            setIsPasswordLocked(false);
+                            setShowPasswordModal(false);
+                            setPasswordError('');
+                            Alert.alert('Succès', 'Le mot de passe a été supprimé.');
+                        } catch (error) {
+                            console.error('Error resetting password:', error);
+                            Alert.alert('Erreur', 'Impossible de réinitialiser le mot de passe.');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     // Handle Friend Actions (Follow/Unfollow)
     const handleFriendAction = async () => {
         if (!currentAlter || !alterId) return;
@@ -240,9 +272,11 @@ export default function AlterSpaceScreen() {
                     visible={showPasswordModal}
                     onConfirm={handlePasswordConfirm}
                     onCancel={handlePasswordCancel}
+                    onForgotPassword={handleForgotPassword}
                     alterName={alter.name}
                     error={passwordError}
                     themeColors={themeColorsLocked || undefined}
+                    isSystemOwner={isSystemOwner}
                 />
             </View>
         );

@@ -352,8 +352,14 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
                                 const isCurrent = index === currentIndex;
                                 const isPast = index < currentIndex;
 
-                                // Optimization: use scaleX instead of width % for native driver
-                                const scaleX = isCurrent ? progressAnim : (isPast ? 1 : 0);
+                                // Use translateX with native driver for left-to-right growth
+                                // Start at -100% (hidden left) and move to 0% (fully visible)
+                                const translateX = isCurrent
+                                    ? progressAnim.interpolate({
+                                        inputRange: [0, 1],
+                                        outputRange: ['-100%', '0%']
+                                    })
+                                    : (isPast ? '0%' : '-100%');
 
                                 return (
                                     <View key={index} style={styles.progressBarBg}>
@@ -362,11 +368,8 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
                                                 styles.progressBarFill,
                                                 {
                                                     backgroundColor: item.type === 'ad' ? colors.secondary : 'white',
-                                                    // When using scaleX, we need logic:
-                                                    // If explicit number (0 or 1), just set it.
-                                                    // If Animated.Value, allow interpolation if needed, or direct pass if compatible.
                                                     transform: [{
-                                                        scaleX: scaleX as any // TS: Animated.Value is valid for scaleX
+                                                        translateX: translateX as any
                                                     }]
                                                 },
                                             ]}
@@ -564,27 +567,6 @@ const styles = StyleSheet.create({
         flex: 1, // Fills container
         height: '100%',
         backgroundColor: 'white',
-        // Important for scaleX animation: transform origin
-        // Default origin is center, we want left-to-right
-        // React Native doesn't support 'transformOrigin' in styles easily for older versions,
-        // but let's check. If not, this might grow from center.
-        // FIX: For Left-to-Right grow with center pivot (default), we might need a workaround 
-        // OR simply set width via native driver if supported (width is NOT supported by native driver).
-        // Standard trick: Width 100%, translateX starting from -100% to 0%. 
-        // Simpler trick: Render fill as full width, animate translateX. 
-        // Actually, let's revert to JS driver for width if simple scaleX origin is tricky in RN without layout.
-        // Wait, 'width' is efficient enough for simple bars usually.
-        // BUT user asked for optimization. 
-        // Let's TRY scaleX. If it grows from center, it looks weird.
-        // To fix scaleX growing from center: 
-        // Wrap in View with alignItems: 'flex-start' ? No, transform applies to element.
-        // STANDARD FIX: translateX.
-        // Start: translateX: -width. End: translateX: 0.
-        // But width is dynamic (flex:1).
-        // fallback: Use Layout to get width? Overkill.
-        // Revert to useNativeDriver: false for width is acceptable for this specific UI if scaleX is complex.
-        // Let's stick to useNativeDriver: false for width for safety in this iteration 
-        // UNLESS we use string interpolation '0%' -> '100%'.
     },
     header: {
         flexDirection: 'row',

@@ -1,148 +1,400 @@
-# Architecture du Projet Plural Connect
+# 🏗 Architecture du Projet PluralConnect
 
-Ce document détaille l'architecture technique de l'application Plural Connect, la structure des dossiers, et l'utilité des principaux fichiers.
+> **Dernière mise à jour** : 19 janvier 2026
+> 
+> Ce document détaille l'architecture technique de l'application PluralConnect.
+> Voir aussi : [VISION.md](file:///Users/faucqueurstacy/Downloads/plural-connect/VISION.md) pour la vision produit.
 
-## 🏗 Stack Technique
+---
 
-- **Framework** : React Native avec [Expo](https://expo.dev/) (SDK 54).
-- **Langage** : TypeScript.
-- **Navigation** : `expo-router` (Routage basé sur les fichiers).
-- **Backend (BaaS)** : Firebase (Auth, Firestore, Storage, Functions).
-- **Base de données locale** : SQLite (via `expo-sqlite`).
-- **Achats In-App** : RevenueCat (`react-native-purchases`).
-- **Publicité** : Google AdMob (`react-native-google-mobile-ads`).
+## 📱 Stack Technique
+
+| Catégorie | Technologie |
+|-----------|-------------|
+| **Framework** | React Native avec [Expo](https://expo.dev/) SDK 54 |
+| **Langage** | TypeScript |
+| **Navigation** | `expo-router` (File-based routing) |
+| **Backend** | Firebase (Auth, Firestore, Storage, Functions) |
+| **Base de données** | Firestore (NoSQL) |
+| **Achats In-App** | RevenueCat (`react-native-purchases`) |
+| **Publicité** | Google AdMob (`react-native-google-mobile-ads`) |
+| **Notifications** | Firebase Cloud Messaging + Expo Notifications |
+
+---
 
 ## 📂 Structure Globale
 
 ```
-/
-├── app/                  # Routes et Écrans de l'application (expo-router)
-├── src/                  # Code source logique (Composants, Services, Hooks)
-├── functions/            # Cloud Functions Firebase (Backend serverless)
-├── assets/               # Images, Fontes, Icônes statiques
-├── components/           # (Obsolète/Legacy) - Devrait être migré dans src/components ?
-├── admin/                # Scripts d'administration ou panneau admin ?
-├── scripts/              # Scripts utilitaires (ex: génération de textures)
-└── ...fichiers de config (app.json, firebase.json, etc.)
+plural-connect/
+├── app/                    # 📱 Routes & Écrans (expo-router)
+│   ├── (auth)/            # Authentification (login, register)
+│   ├── (tabs)/            # Navigation par onglets principale
+│   ├── alter-space/       # 🌟 AlterSpace (Instagram-like par alter)
+│   ├── settings/          # Paramètres (13 sous-pages)
+│   ├── story/             # Stories (création, visualisation)
+│   └── ...                # +26 routes au total
+│
+├── src/                    # 💻 Code source logique
+│   ├── components/        # 100+ composants UI
+│   ├── services/          # 40 services métier
+│   ├── contexts/          # 6 contextes globaux
+│   ├── hooks/             # 7 hooks personnalisés
+│   ├── lib/               # Utilitaires et configuration
+│   └── types/             # Définitions TypeScript
+│
+├── functions/              # ☁️ Cloud Functions Firebase
+├── assets/                 # 🖼 Images, icônes, fonts
+└── docs/                   # 📚 Documentation
 ```
 
 ---
 
-## 📁 Détail des Dossiers et Fichiers
+## 🚀 Routes de l'Application (`app/`)
 
-### 1. `app/` (Navigation & Écrans)
-C'est le cœur de la navigation. Chaque fichier ou dossier ici correspond à une URL/Route.
+### Routes Principales
 
-- **`_layout.tsx`** : Le "Wrapper" global. Il configure les Providers (AuthContext, Theme, etc.) et la structure de navigation racine (Stack).
-- **`index.tsx`** : La route racine (`/`). Redirige généralement vers le Dashboard ou l'Onboarding.
-- **`(tabs)/`** : Dossier "Group". Les fichiers ici ne sont pas dans l'URL. Contient la navigation par onglets principale.
-    - **`_layout.tsx`** : Configure la barre d'onglets (Tab Bar) en bas de l'écran.
-    - **`dashboard.tsx`** : L'écran d'accueil principal (System Dashboard).
-- **`(auth)/`** : Routes d'authentification (Login, Register).
-- **`alter-space/[alterId]/`** : Route dynamique pour l'espace d'un alter spécifique.
-    - **`index.tsx`** : Le profil/feed de l'alter.
-    - **`_layout.tsx`** : Layout spécifique à l'espace alter (ex: Header personnalisé).
+| Route | Description | Fichier(s) clé(s) |
+|-------|-------------|-------------------|
+| `/` | Redirection initiale | `index.tsx` |
+| `/(tabs)` | Dashboard système (accueil) | `dashboard.tsx`, `_layout.tsx` |
+| `/(auth)` | Login / Register | `login.tsx`, `register.tsx` |
 
-### 2. `src/` (Logique Métier)
+### 🌟 AlterSpace (Cœur de l'app)
 
-- **`components/`** : Composants UI réutilisables.
-    - **`ui/`** : Composants de base (Boutons, Inputs, Cards).
-    - **`features/`** : Composants liés à une fonctionnalité précise (ex: `PostCard`, `AlterBubble`).
-- **`services/`** : Interaction avec le Backend et APIs tierces. **C'est ici que réside la logique complexe.**
-    - **`AuthService.ts`** : Gestion connexion/inscription Firebase Auth.
-    - **`FirestoreService.ts`** : CRUD générique pour Firestore.
-    - **`ConsentService.ts`** : Gestion du consentement GDPR (Google UMP).
-    - **`RevenueCatService.ts`** : Gestion des abonnements Premium.
-    - **`AdService.ts`** : Gestion des publicités (Bannières, Interstitiels).
-- **`contexts/`** : Gestion de l'état global.
-    - **`AuthContext.tsx`** : Stocke l'utilisateur connecté et l'état d'auth.
-    - **`ThemeContext.tsx`** : Gestion du thème (Dark/Light).
-- **`hooks/`** : Hooks React personnalisés (ex: `useAuth`, `useDebounce`).
-- **`types/`** : Définitions TypeScript globales (Interfaces Alter, User, Post...).
-- **`utils/`** : Fonctions utilitaires (formatage date, calculs...).
+| Route | Description |
+|-------|-------------|
+| `/alter-space/[alterId]` | Profil Instagram-like d'un alter |
+| `/alter-space/[alterId]/edit` | Édition du profil alter |
+| `/alter-space/[alterId]/gallery` | Galerie personnelle |
+| `/alter-space/[alterId]/journal` | Journal intime |
+| `/alter-space/[alterId]/emotions` | Suivi des émotions |
 
-### 3. `functions/` (Backend)
-Code qui tourne sur les serveurs Google (Node.js).
+### Autres Routes
 
-- **`index.ts`** : Point d'entrée des Cloud Functions.
-- **`src/`** : Logique des fonctions (Triggers Firestore, Callbacks HTTPS, Tâches planifiées).
-    - Ex: Notifications push quand un message est reçu, nettoyage de données, validation de paiements.
-
-### 4. Fichiers de Configuration (Racine)
-
-- **`app.json`** : Configuration Expo. Nom de l'app, permissions iOS/Android, identifiants Publicité, Plugins. **Crucial pour le build.**
-- **`firebase.json`** : Configuration déploiement Firebase (Règles de sécu, indexes, hébergement hosting).
-- **`firestore.rules`** : Règles de sécurité de la base de données. Définit qui peut lire/écrire quoi.
-- **`package.json`** : Dépendances npm et scripts de lancement (`npm start`).
-- **`tsconfig.json`** : Configuration TypeScript.
-- **`babel.config.js` / `metro.config.js`** : Configuration du compilateur et du bundler.
+| Catégorie | Routes |
+|-----------|--------|
+| **Social** | `/post/create`, `/discover`, `/conversation`, `/group-chat` |
+| **Stories** | `/story/create`, `/story/view` |
+| **Outils** | `/journal`, `/calendar`, `/tasks`, `/inner-world` |
+| **Crise** | `/crisis`, `/help` |
+| **Shop** | `/shop`, `/premium` |
+| **Admin** | `/admin` |
+| **Paramètres** | `/settings/*` (13 sous-pages) |
 
 ---
 
-## �️ Modèle de Données (Firestore)
+## 🧩 Composants (`src/components/`)
 
-L'application utilise une base de données NoSQL (Firestore). Voici les principales collections et leurs modèles associés (définis dans `src/types/index.ts`) :
+### Composants Racine (16 fichiers)
+
+| Composant | Description |
+|-----------|-------------|
+| `AlterBubble.tsx` | Bulle avatar d'un alter (Dashboard) |
+| `Feed.tsx` | Fil d'actualité AlterSpace |
+| `PostCard.tsx` | Carte de post (like, commentaire, partage) |
+| `StoriesBar.tsx` | Barre de stories horizontale |
+| `StoryViewer.tsx` | Visionneuse de stories plein écran |
+| `CommentsModal.tsx` | Modal des commentaires |
+| `SystemWeather.tsx` | "Météo des alters" (émotions système) |
+| `FrontingStats.tsx` | Statistiques de fronting |
+| `CreditBalance.tsx` | Affichage du solde de crédits |
+| `SharePostModal.tsx` | Partage de posts |
+| `ReportModal.tsx` | Signalement de contenu |
+
+### Sous-dossiers (20 dossiers)
+
+| Dossier | Contenu |
+|---------|---------|
+| `ui/` | 21 composants de base (Button, Input, Modal, etc.) |
+| `dashboard/` | 9 composants Dashboard système |
+| `alter-space/` | 10 composants AlterSpace |
+| `shop/` | 9 composants boutique (LootBox, ThemePreview, etc.) |
+| `messaging/` | 6 composants messagerie |
+| `effects/` | 5 effets visuels (confetti, animations) |
+| `stories/` | 4 composants stories |
+| `ads/` | 4 composants publicité |
+| `calendar/` | 2 composants calendrier |
+| `widgets/` | 2 composants widgets natifs |
+
+---
+
+## ⚙️ Services (`src/services/`) - 40 fichiers
+
+### 🔐 Authentification & Infrastructure
+
+| Service | Rôle |
+|---------|------|
+| `GoogleAuthService.ts` | Connexion Google |
+| `NotificationService.ts` | Notifications locales |
+| `PushNotificationService.ts` | Notifications push Firebase |
+| `AnalyticsService.ts` | Analytics Firebase |
+
+### 👥 Social & Contenu
+
+| Service | Rôle |
+|---------|------|
+| `posts.ts` | CRUD posts, likes, visibilité |
+| `comments.ts` | Gestion des commentaires |
+| `stories.ts` | Stories 24h |
+| `follows.ts` | Système de follow système↔système |
+| `friends.ts` | Système d'amis alter↔alter |
+| `blocking.ts` | Blocage utilisateurs |
+| `reporting.ts` | Signalement contenu |
+| `share.ts` | Partage de posts |
+| `social.ts` | Fonctions sociales générales |
+
+### 🧠 Fonctionnalités TDI
+
+| Service | Rôle |
+|---------|------|
+| `alters.ts` | Gestion des alters |
+| `systems.ts` | Gestion des systèmes |
+| `fronting.ts` | Fronting & co-fronting |
+| `FrontingCheckInService.ts` | Check-in et historique fronting |
+| `emotions.ts` | Suivi des émotions |
+| `roles.ts` | Rôles des alters (Protecteur, etc.) |
+| `groups.ts` | Groupes d'alters (catégories) |
+| `InnerWorldService.ts` | InnerWorld (headspace visuel) |
+
+### 📔 Productivité
+
+| Service | Rôle |
+|---------|------|
+| `messaging.ts` | Messagerie interne |
+| `tasks.ts` | Gestionnaire de tâches |
+| `CalendarService.ts` | Événements calendrier |
+| `help.ts` | Demandes d'aide |
+
+### 💰 Monétisation
+
+| Service | Rôle |
+|---------|------|
+| `RevenueCatService.ts` | Abonnements Premium |
+| `PremiumService.ts` | Logique Premium |
+| `CreditService.ts` | Système de crédits/streak |
+| `LootBoxService.ts` | Boîtes à récompenses |
+| `AdMediationService.ts` | Gestion publicités AdMob |
+| `ConsentService.ts` | Consentement GDPR |
+| `ShopData.ts` | Données boutique |
+| `DecorationService.ts` | Thèmes et décorations |
+| `MonetizationTypes.ts` | Types monétisation |
+
+### 🤖 IA & Avancé
+
+| Service | Rôle |
+|---------|------|
+| `LocalAIService.ts` | IA locale (résumés, suggestions) |
+| `importer.ts` | Import depuis Simply Plural, etc. |
+| `DynamicIslandService.ts` | Dynamic Island iOS |
+| `FeedbackService.ts` | Envoi de feedbacks |
+
+---
+
+## 🌐 Contextes Globaux (`src/contexts/`) - 6 fichiers
+
+| Contexte | Rôle | Taille |
+|----------|------|--------|
+| `AuthContext.tsx` | Utilisateur connecté, session | 17KB |
+| `MonetizationContext.tsx` | Crédits, Premium, streak | 20KB |
+| `NotificationContext.tsx` | Gestion notifications | 15KB |
+| `ThemeContext.tsx` | Dark/Light mode | 3.5KB |
+| `NetworkContext.tsx` | État connexion réseau | 1.5KB |
+| `SuccessAnimationContext.tsx` | Animations de réussite | 1KB |
+
+---
+
+## 🪝 Hooks Personnalisés (`src/hooks/`) - 7 fichiers
+
+| Hook | Rôle |
+|------|------|
+| `useAlterData.ts` | Données alter courant |
+| `useFrontNotifications.ts` | Notifications de fronting |
+| `useNotifications.ts` | Gestion notifications générales |
+| `useLocalAI.ts` | Fonctions IA locales |
+| `useDrafts.ts` | Brouillons de posts |
+| `useWatchSync.ts` | Sync Apple Watch |
+| `useWidgetSync.ts` | Sync widgets natifs |
+
+---
+
+## 📚 Librairies & Utilitaires (`src/lib/`) - 10 fichiers
+
+| Fichier | Rôle |
+|---------|------|
+| `firebase.ts` | Configuration Firebase |
+| `theme.ts` | Design system (couleurs, spacing) |
+| `cosmetics.ts` | Données cosmétiques (frames, thèmes) |
+| `emotions.ts` | Mapping émotions ↔ emojis |
+| `date.ts` | Formatage dates |
+| `haptics.ts` | Retours haptiques |
+| `notifications.ts` | Helpers notifications |
+| `storage.ts` | AsyncStorage helpers |
+
+---
+
+## 🗃️ Modèle de Données (Firestore)
 
 ### Collections Racines
 
-- **`systems`** (`System`) : Représente un compte utilisateur (un "système").
-    - Champs : `username`, `email`, `alter_count`, `headspace`, `isAdmin`...
-- **`alters`** (`Alter`) : Les entités distinctes au sein d'un système.
-    - Champs : `name`, `role_ids`, `avatar_url`, `is_active` (en front), `credits`, `xp`...
-- **`posts`** (`Post`) : Publications du fil d'actualité.
-    - Champs : `content`, `media_url`, `visibility` (public/amis/privé), `author_type` (single/co-front)...
-- **`public_profiles`** (`PublicProfile`) : Profil public optimisé pour la recherche et le follow.
-- **`follows`** (`Follow`) : Table de liaison pour les abonnements entre systèmes.
+| Collection | Type | Description |
+|------------|------|-------------|
+| `systems` | `System` | Comptes utilisateurs (systèmes TDI) |
+| `alters` | `Alter` | Entités au sein d'un système |
+| `posts` | `Post` | Publications du feed |
+| `stories` | `Story` | Stories éphémères 24h |
+| `public_profiles` | `PublicProfile` | Profils publics optimisés |
+| `follows` | `Follow` | Relations de suivi système↔système |
 
-### Sous-Collections & Autres
+### Interfaces Principales
 
-- **`messages`** (`Message`) : Chat interne (système) ou externe (groupes).
-- **`emotions`** (`Emotion`) : Suivi de l'humeur.
-- **`journal_entries`** (`JournalEntry`) : Pages du journal intime.
-- **`tasks`** (`Task`) : Gestionnaire de tâches avec gamification.
-- **`stories`** (`Story`) : Stories éphémères (24h).
+```typescript
+// Système (compte utilisateur)
+interface System {
+  id: string;
+  email: string;
+  username: string;
+  avatar_url?: string;
+  bio?: string;
+  headspace?: string; // 'sunny', 'cloudy', 'rainy', etc.
+  alter_count?: number;
+  isAdmin?: boolean;
+}
+
+// Alter (identité individuelle)
+interface Alter {
+  id: string;
+  name: string;
+  pronouns?: string;
+  bio?: string;
+  avatar_url?: string;
+  color?: string;
+  role_ids?: string[];
+  is_active: boolean; // En front actuellement
+  is_host?: boolean;
+  password?: string; // Protection AlterSpace
+  credits?: number;
+  equipped_items?: { frame?: string; theme?: string; bubble?: string };
+  // + triggers, safety_notes, relationships, etc.
+}
+
+// Post
+interface Post {
+  id: string;
+  system_id: string;
+  alter_id?: string;
+  author_type: 'single' | 'co-front' | 'blurry';
+  content: string;
+  media_urls?: string[];
+  visibility: 'private' | 'system' | 'friends' | 'public';
+  likes: string[];
+  comments_count: number;
+}
+
+// Story
+interface Story {
+  id: string;
+  author_id: string; // Alter ID
+  system_id: string;
+  media_url: string;
+  media_type: 'image' | 'video';
+  expires_at: string; // 24h après création
+  viewers: string[];
+}
+```
+
+### Collections Secondaires
+
+| Collection | Description |
+|------------|-------------|
+| `messages` | Chat interne/externe |
+| `conversations` | Threads de conversation |
+| `groups` | Groupes de discussion |
+| `emotions` | Suivi émotionnel |
+| `journal_entries` | Entrées de journal |
+| `tasks` | Tâches avec gamification |
+| `fronting_history` | Historique de fronting |
+| `roles` | Rôles personnalisés |
+| `inner_worlds` | InnerWorld (headspace) |
+| `inner_world_shapes` | Éléments du headspace |
+| `help_requests` | Demandes d'aide |
 
 ---
 
-## 🧠 Services Principaux (`src/services/`)
+## ☁️ Cloud Functions (`functions/`)
 
-Les services encapsulent la logique métier et les appels API.
+Fonctions serverless exécutées sur Firebase :
 
-### Noyau & Infrastructure
-- **`AuthService.ts`** : Inscription, Connexion (Email/Password, Google), Gestion de session.
-- **`FirestoreService.ts`** : Méthodes `get`, `add`, `update`, `delete`, `query` génériques.
-- **`NotificationService.ts`** : Gestion centralisée des notifications locales et push.
-- **`Context/ThemeContext.tsx`** : Gestion du mode Sombre/Clair.
-
-### Fonctionnalités Métier
-- **`FrontingCheckInService.ts`** : Gère l'historique de qui est "au front" (aux commandes).
-- **`SocialService.ts`** / **`PostsService.ts`** : Création de posts, likes, commentaires.
-- **`FeedbackService.ts`** : Envoi de bugs/idées par les utilisateurs.
-- **`CalendarService.ts`** : Gestion des événements du système.
-
-### Monétisation & Ads
-- **`MonetizationContext.tsx`** : Gère le solde de Crédits et les abonnements.
-- **`AdMediationService.ts`** : Wrapper sécurisé pour Google Mobile Ads (AdMob).
-- **`RevenueCatService.ts`** : Gestion des achats In-App (Abonnements Premium).
-- **`ConsentService.ts`** : Gestion du consentement GDPR (Google UMP message).
-
-### Modules Spécifiques
-- **`DynamicIslandService.ts`** : Interacton avec la Dynamic Island (iOS).
-- **`WidgetBridge.ts`** : Communication avec les Widgets natifs (iOS/Android).
+| Fonction | Trigger | Description |
+|----------|---------|-------------|
+| Notifications push | Firestore `onCreate` | Envoi notif quand nouveau message |
+| Nettoyage stories | Scheduled | Supprime stories > 24h |
+| Statistiques | Firestore trigger | Met à jour les compteurs |
+| Validation paiements | HTTPS | Vérifie les achats RevenueCat |
 
 ---
 
-## �🔄 Flux de Données Typique
+## 🔄 Flux de Données
 
-1.  **Utilisateur** interagit avec un **Composant** (dans `app/` ou `src/components`).
-2.  Le Composant appelle un **Service** (dans `src/services`).
-3.  Le Service parle à **Firebase/API**.
-4.  Les données sont mises à jour dans un **Contexte** (`src/contexts`) ou retournées au composant.
-5.  L'UI se met à jour.
+```mermaid
+graph LR
+    A[Utilisateur] --> B[Composant UI]
+    B --> C[Service]
+    C --> D[Firebase/API]
+    D --> E[Contexte Global]
+    E --> B
+```
 
-## 🛠 Bonnes Pratiques dans ce Projet
+1. **Utilisateur** interagit avec un **Composant** (`app/` ou `src/components`)
+2. Le Composant appelle un **Service** (`src/services`)
+3. Le Service communique avec **Firebase**
+4. Les données sont stockées dans un **Contexte** (`src/contexts`)
+5. L'UI se met à jour automatiquement
 
-- **Préfixe `use`** : Pour les hooks.
-- **Services** : Toujours passer par un Service pour toucher à la DB, jamais directement dans le composant.
-- **Types** : Toujours typer les props et les retours de fonctions.
-- **Styles** : Utiliser `StyleSheet.create` ou les constantes de design system.
+---
+
+## 🔐 Fichiers de Configuration (Racine)
+
+| Fichier | Rôle |
+|---------|------|
+| `app.json` | Configuration Expo (nom, permissions, plugins) |
+| `firebase.json` | Config déploiement Firebase |
+| `firestore.rules` | Règles de sécurité Firestore |
+| `firestore.indexes.json` | Index composites Firestore |
+| `storage.rules` | Règles Firebase Storage |
+| `eas.json` | Configuration EAS Build |
+| `package.json` | Dépendances npm |
+| `tsconfig.json` | Configuration TypeScript |
+
+---
+
+## ✅ Bonnes Pratiques
+
+### Conventions de Code
+
+- **Préfixe `use`** pour les hooks
+- **Services** : Toujours passer par un service pour Firestore (jamais directement dans le composant)
+- **Types** : Typer props et retours de fonctions
+- **Styles** : Utiliser `StyleSheet.create()` ou design system (`src/lib/theme.ts`)
+
+### Architecture AlterSpace vs Dashboard
+
+| Dashboard | AlterSpace |
+|-----------|------------|
+| Espace système commun | Espace personnel par alter |
+| Fronting, journal système | Feed, journal, galerie personnel |
+| Paramètres globaux | Personnalisation individuelle |
+| `app/(tabs)/dashboard.tsx` | `app/alter-space/[alterId]/` |
+
+### Fichiers à Consulter
+
+| Contexte | Fichier |
+|----------|---------|
+| Vision produit | `VISION.md` |
+| Architecture technique | `ARCHITECTURE.md` (ce fichier) |
+| Terminologie | `project.md` |
+| Tests | `docs/TESTS_FONCTIONNELS_100.md` |
+| Changelog | `CHANGELOG.md` |
+
+---
+
+*Ce document doit être mis à jour à chaque modification structurelle majeure.*

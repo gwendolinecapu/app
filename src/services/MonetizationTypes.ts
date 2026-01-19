@@ -193,6 +193,14 @@ export type ShopItemType =
     | 'bundle'          // Pack groupé (thème + cadre + bulle)
     | 'lootbox';        // Boîte mystère
 
+/** Métadonnées enrichies pour les items de boutique */
+export interface ShopItemMetadata {
+    tags?: string[];          // Tags pour filtrage (ex: #dark, #cute, #retro)
+    isNew?: boolean;          // Badge "Nouveau" (items ajoutés récemment)
+    discount?: number;        // % de réduction pour flash sales
+    originalPrice?: number;   // Prix original si discount actif
+}
+
 /** Produit en boutique */
 export interface ShopItem {
     id: string;
@@ -213,6 +221,8 @@ export interface ShopItem {
     isPremium?: boolean;        // Inclus dans le premium
     isAnimated?: boolean;       // Contient une animation (Badge Luxe)
     rarity?: Rarity;            // Rareté (common, rare, epic, legendary, mythic)
+    // Extended Metadata (Phase 1: Shop Enhancements)
+    metadata?: ShopItemMetadata; // Tags, isNew, discount pour enrichir l'expérience boutique
 }
 
 /** Packs de crédits IAP */

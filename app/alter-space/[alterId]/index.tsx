@@ -110,22 +110,13 @@ export default function AlterSpaceScreen() {
         }
     }, [loading, isOwner]);
 
+
     // Check if password is required to access this AlterSpace
     useEffect(() => {
-        console.log('[PASSWORD DEBUG]', {
-            loading,
-            alterExists: !!alter,
-            hasPassword: !!alter?.password,
-            isOwner,
-            isSameAlter,
-            currentAlterId: currentAlter?.id,
-            viewedAlterId: alter?.id
-        });
-
+        // SECURITY: Removed debug logging that exposed sensitive password data
         // Password is required for EVERYONE if the alter has a password set
         // This works like a PIN lock - even the owner must enter the password
         if (!loading && alter && alter.password) {
-            console.log('[PASSWORD DEBUG] Locking - password required for all!');
             setIsPasswordLocked(true);
             setShowPasswordModal(true);
         } else {

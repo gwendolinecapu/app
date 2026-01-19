@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# SECURITY: Explicit permissions following least-privilege principle
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   build:
     name: Build and analyse default scheme using xcodebuild command

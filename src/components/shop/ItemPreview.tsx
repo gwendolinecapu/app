@@ -83,9 +83,10 @@ const snowStyles = StyleSheet.create({
 interface ItemPreviewProps {
     item: ShopItem;
     size?: 'small' | 'medium' | 'large';
+    avatarUrl?: string | null; // URL de la vraie photo de profil
 }
 
-export const ItemPreview = React.memo(({ item, size = 'small' }: ItemPreviewProps) => {
+export const ItemPreview = React.memo(({ item, size = 'small', avatarUrl }: ItemPreviewProps) => {
     const isAnimated = item.isAnimated || item.id.includes('anim_') || item.id === 'frame_tropical' || item.id === 'frame_flames' || item.id === 'frame_nature_mystic';
 
     // Scale factor based on size
@@ -96,7 +97,7 @@ export const ItemPreview = React.memo(({ item, size = 'small' }: ItemPreviewProp
     }
 
     if (item.type === 'frame') {
-        return <FramePreview item={item} scale={scale} isAnimated={isAnimated} />;
+        return <FramePreview item={item} scale={scale} isAnimated={isAnimated} avatarUrl={avatarUrl} />;
     }
 
     if (item.type === 'bubble') {
@@ -177,7 +178,7 @@ const ThemePreview = React.memo(({ item, scale, isAnimated }: { item: ShopItem; 
 
 // ==================== FRAME PREVIEW ====================
 
-const FramePreview = React.memo(({ item, scale, isAnimated }: { item: ShopItem; scale: number; isAnimated: boolean }) => {
+const FramePreview = React.memo(({ item, scale, isAnimated, avatarUrl }: { item: ShopItem; scale: number; isAnimated: boolean; avatarUrl?: string | null }) => {
     // Special Sakura frame
     if (item.id === 'frame_anim_sakura') {
         return (
@@ -227,12 +228,20 @@ const FramePreview = React.memo(({ item, scale, isAnimated }: { item: ShopItem; 
                 // If it has an image source, we often want transparent backgrounds so the image is the frame
                 frameStyle.imageSource ? { backgroundColor: 'transparent', borderWidth: 0, overflow: 'visible' } : undefined
             ]}>
-                <LinearGradient
-                    colors={['#3b82f6', '#8b5cf6']}
-                    style={[styles.avatarGradient, isSquare && { borderRadius: 8 }]}
-                >
-                    <Text style={styles.avatarInitial}>A</Text>
-                </LinearGradient>
+                {avatarUrl ? (
+                    <Image
+                        source={{ uri: avatarUrl }}
+                        style={[styles.avatarImage, isSquare && { borderRadius: 8 }]}
+                        contentFit="cover"
+                    />
+                ) : (
+                    <LinearGradient
+                        colors={['#3b82f6', '#8b5cf6']}
+                        style={[styles.avatarGradient, isSquare && { borderRadius: 8 }]}
+                    >
+                        <Text style={styles.avatarInitial}>A</Text>
+                    </LinearGradient>
+                )}
 
                 {/* Image Overlay using Standard React Native Image (More reliable for local assets) */}
                 {frameStyle.imageSource && (
@@ -333,6 +342,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.background,
     },
     avatarGradient: { flex: 1, borderRadius: 24, justifyContent: 'center', alignItems: 'center' },
+    avatarImage: { flex: 1, width: '100%', height: '100%', borderRadius: 24 },
     avatarInitial: { color: '#FFF', fontSize: 20, fontWeight: 'bold' },
 
     // Bubble preview

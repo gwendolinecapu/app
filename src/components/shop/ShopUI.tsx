@@ -318,6 +318,7 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                                     isOwned={isOwned(item.id)}
                                     isEquipped={isEquipped(item.id, item.type)}
                                     onPress={handleItemPress}
+                                    avatarUrl={currentAlter?.avatar_url}
                                 />
                             </View>
                         </Animated.View>
@@ -373,6 +374,7 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                                         isOwned={isOwned(item.id)}
                                         isEquipped={isEquipped(item.id, item.type)}
                                         onPress={handleItemPress}
+                                        avatarUrl={currentAlter?.avatar_url}
                                     />
                                 </View>
                             ))}

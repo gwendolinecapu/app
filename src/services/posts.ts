@@ -14,7 +14,8 @@ import {
     arrayUnion,
     arrayRemove,
     QueryDocumentSnapshot,
-    deleteDoc
+    deleteDoc,
+    documentId
 } from 'firebase/firestore';
 import { db, storage } from '../lib/firebase';
 import { Post } from '../types';
@@ -85,31 +86,31 @@ export const PostService = {
         const altersMap = new Map<string, any>();
         const systemsMap = new Map<string, any>();
 
+        const fetchByIds = async (ids: Set<string>, collectionName: string, map: Map<string, any>) => {
+            const idList = Array.from(ids).filter(id => id);
+            if (idList.length === 0) return;
+
+            const chunks = [];
+            for (let i = 0; i < idList.length; i += 10) {
+                chunks.push(idList.slice(i, i + 10));
+            }
+
+            await Promise.all(chunks.map(async chunk => {
+                try {
+                    const q = query(collection(db, collectionName), where(documentId(), 'in', chunk));
+                    const snapshot = await getDocs(q);
+                    snapshot.forEach(doc => {
+                        map.set(doc.id, doc.data());
+                    });
+                } catch (e) {
+                    console.warn(`Failed to fetch batch of ${collectionName}`, e);
+                }
+            }));
+        };
+
         await Promise.all([
-            // Fetch Alters
-            ...Array.from(alterIds).map(async (id) => {
-                try {
-                    if (!id) return;
-                    const alterDoc = await getDoc(doc(db, 'alters', id));
-                    if (alterDoc.exists()) {
-                        altersMap.set(id, alterDoc.data());
-                    }
-                } catch (e) {
-                    console.warn(`Failed to fetch author alter ${id}`, e);
-                }
-            }),
-            // Fetch Systems
-            ...Array.from(systemIds).map(async (id) => {
-                try {
-                    if (!id) return;
-                    const systemDoc = await getDoc(doc(db, 'systems', id));
-                    if (systemDoc.exists()) {
-                        systemsMap.set(id, systemDoc.data());
-                    }
-                } catch (e) {
-                    console.warn(`Failed to fetch author system ${id}`, e);
-                }
-            })
+            fetchByIds(alterIds, 'alters', altersMap),
+            fetchByIds(systemIds, 'systems', systemsMap)
         ]);
 
         return posts.map(post => {

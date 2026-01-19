@@ -1,6 +1,8 @@
 import { NativeModules, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
+import { GemmaTokenizer } from '@xenova/transformers';
+import { InferenceSession, Tensor } from 'onnxruntime-react-native';
 
 const { LocalAI } = NativeModules;
 
@@ -16,7 +18,20 @@ const getModelFile = () => `${getModelDir()}${MODEL_ID}.onnx`;
 
 // Hugging Face model URL (ONNX quantized version)
 const MODEL_URL = 'https://huggingface.co/google/gemma-3n-E2B-it-ONNX/resolve/main/model_q4.onnx';
+const TOKENIZER_URL = 'https://huggingface.co/google/gemma-3n-E2B-it-ONNX/resolve/main/tokenizer.json';
+const TOKENIZER_CONFIG_URL = 'https://huggingface.co/google/gemma-3n-E2B-it-ONNX/resolve/main/tokenizer_config.json';
+
+const getTokenizerFile = () => `${getModelDir()}tokenizer.json`;
+const getTokenizerConfigFile = () => `${getModelDir()}tokenizer_config.json`;
+
 const MODEL_SIZE_MB = 400; // Approximate size for progress estimation
+
+// ============================================
+// State
+// ============================================
+
+let tokenizer: GemmaTokenizer | null = null;
+let inferenceSession: InferenceSession | null = null;
 
 // ============================================
 // Types
@@ -91,8 +106,10 @@ export const LocalAIService = {
      */
     isModelInstalled: async (): Promise<boolean> => {
         try {
-            const info = await FileSystem.getInfoAsync(getModelFile());
-            return info.exists;
+            const modelInfo = await FileSystem.getInfoAsync(getModelFile());
+            const tokenizerInfo = await FileSystem.getInfoAsync(getTokenizerFile());
+            const tokenizerConfigInfo = await FileSystem.getInfoAsync(getTokenizerConfigFile());
+            return modelInfo.exists && tokenizerInfo.exists && tokenizerConfigInfo.exists;
         } catch {
             return false;
         }
@@ -109,19 +126,30 @@ export const LocalAIService = {
             await FileSystem.makeDirectoryAsync(getModelDir(), { intermediates: true });
         }
 
-        // Download with progress
-        const downloadResumable = FileSystem.createDownloadResumable(
-            MODEL_URL,
-            getModelFile(),
-            {},
-            (downloadProgress) => {
-                const progress = (downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite) * 100;
-                onProgress?.(Math.round(progress));
-            }
-        );
+        // Helper to download a file
+        const downloadFile = async (url: string, file: string, reportProgress: boolean = false) => {
+            const downloadResumable = FileSystem.createDownloadResumable(
+                url,
+                file,
+                {},
+                (downloadProgress) => {
+                    if (reportProgress && onProgress) {
+                        const progress = (downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite) * 100;
+                        onProgress(Math.round(progress));
+                    }
+                }
+            );
+            return downloadResumable.downloadAsync();
+        };
 
         try {
-            const result = await downloadResumable.downloadAsync();
+            // Download tokenizer files first (small)
+            await downloadFile(TOKENIZER_URL, getTokenizerFile());
+            await downloadFile(TOKENIZER_CONFIG_URL, getTokenizerConfigFile());
+
+            // Download model (large, reports progress)
+            const result = await downloadFile(MODEL_URL, getModelFile(), true);
+
             if (result?.uri) {
                 await AsyncStorage.setItem(MODEL_STORAGE_KEY, 'true');
                 console.log('[LocalAI] Model downloaded successfully:', result.uri);
@@ -138,6 +166,8 @@ export const LocalAIService = {
     deleteModel: async (): Promise<void> => {
         try {
             await FileSystem.deleteAsync(getModelFile(), { idempotent: true });
+            await FileSystem.deleteAsync(getTokenizerFile(), { idempotent: true });
+            await FileSystem.deleteAsync(getTokenizerConfigFile(), { idempotent: true });
             await AsyncStorage.removeItem(MODEL_STORAGE_KEY);
             console.log('[LocalAI] Model deleted');
         } catch (error) {
@@ -149,6 +179,21 @@ export const LocalAIService = {
      * Get estimated model size in MB.
      */
     getModelSizeMB: (): number => MODEL_SIZE_MB,
+
+    /**
+     * Load resources (model and tokenizer) into memory.
+     */
+    loadResources: async () => {
+        if (!tokenizer) {
+            const tokenizerJson = JSON.parse(await FileSystem.readAsStringAsync(getTokenizerFile()));
+            const tokenizerConfig = JSON.parse(await FileSystem.readAsStringAsync(getTokenizerConfigFile()));
+            tokenizer = new GemmaTokenizer(tokenizerJson, tokenizerConfig);
+        }
+        if (!inferenceSession) {
+            // @ts-ignore
+            inferenceSession = await InferenceSession.create(getModelFile());
+        }
+    },
 
     /**
      * Summarizes the provided text using on-device models.
@@ -177,9 +222,63 @@ export const LocalAIService = {
         const modelInstalled = await LocalAIService.isModelInstalled();
         if (modelInstalled) {
             try {
-                // TODO: Integrate ONNX Runtime inference here
-                // For now, return enhanced mock with period context
-                const summary = await mockSummarizeWithPeriod(text, periodLabel);
+                await LocalAIService.loadResources();
+                if (!tokenizer || !inferenceSession) throw new Error("Failed to load resources");
+
+                // Construct prompt with period context and explicit French instruction to match app localization
+                const prompt = `<start_of_turn>user\nSummarize the following journal entries for this ${period || 'period'} in French:\n${text}<end_of_turn>\n<start_of_turn>model\n`;
+                const { input_ids } = tokenizer(prompt, { return_tensor: false, padding: true, truncation: true });
+
+                // Convert to BigInt64Array for ONNX
+                const inputIdsBigInt = input_ids.map((id: number) => BigInt(id));
+                let sequence = [...inputIdsBigInt];
+
+                const maxNewTokens = 200;
+
+                // Simple greedy generation loop
+                for (let i = 0; i < maxNewTokens; i++) {
+                    // Yield to event loop every 5 tokens to avoid blocking UI
+                    if (i % 5 === 0) await new Promise(resolve => setTimeout(resolve, 0));
+
+                    const inputTensor = new Tensor('int64', new BigInt64Array(sequence), [1, sequence.length]);
+                    const attentionMask = new Tensor('int64', new BigInt64Array(new Array(sequence.length).fill(1n)), [1, sequence.length]);
+
+                    const feeds = {
+                        input_ids: inputTensor,
+                        attention_mask: attentionMask
+                    };
+
+                    const results = await inferenceSession.run(feeds);
+                    const logits = results.logits; // [1, seq_len, vocab_size]
+
+                    const vocabSize = logits.dims[2];
+                    const seqLen = logits.dims[1];
+                    const lastTokenOffset = (seqLen - 1) * vocabSize;
+                    const lastTokenLogits = logits.data.slice(lastTokenOffset, lastTokenOffset + vocabSize) as Float32Array;
+
+                    let maxLogit = -Infinity;
+                    let nextToken = -1;
+
+                    for (let j = 0; j < lastTokenLogits.length; j++) {
+                        if (lastTokenLogits[j] > maxLogit) {
+                            maxLogit = lastTokenLogits[j];
+                            nextToken = j;
+                        }
+                    }
+
+                    if (nextToken === tokenizer.eos_token_id) break;
+
+                    sequence.push(BigInt(nextToken));
+                }
+
+                const newTokens = sequence.slice(inputIdsBigInt.length).map(n => Number(n));
+                const generatedText = tokenizer.decode(newTokens, { skip_special_tokens: true });
+
+                // Format output to match the mock style (preserving the header/footer)
+                const header = `📊 **Résumé de ta ${periodLabel}**\n\n`;
+                const footer = `\n\n_Généré par Gemma localement_ 🔒`;
+                const summary = header + generatedText + footer;
+
                 return { summary, provider: 'gemma' };
             } catch (e) {
                 console.error('[LocalAI] ONNX inference failed:', e);

@@ -52,6 +52,7 @@ const MiniSnowfall = React.memo(() => {
         </View>
     );
 });
+MiniSnowfall.displayName = 'MiniSnowfall';
 
 const MiniFlake = React.memo(({ left, size, duration, delay }: { left: number; size: number; duration: number; delay: number }) => {
     const translateY = useSharedValue(-5);
@@ -61,7 +62,7 @@ const MiniFlake = React.memo(({ left, size, duration, delay }: { left: number; s
             withTiming(90, { duration, easing: Easing.linear }),
             -1
         ));
-    }, []);
+    }, [delay, duration, translateY]);
 
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [{ translateY: translateY.value }],
@@ -71,6 +72,7 @@ const MiniFlake = React.memo(({ left, size, duration, delay }: { left: number; s
         <Animated.View style={[miniSnowStyles.flake, animatedStyle, { left, width: size, height: size, borderRadius: size / 2 }]} />
     );
 });
+MiniFlake.displayName = 'MiniFlake';
 
 const miniSnowStyles = StyleSheet.create({
     container: {

@@ -9,7 +9,7 @@ import {
     NativeSyntheticEvent,
     NativeScrollEvent,
 } from 'react-native';
-import { colors, spacing } from '../../lib/theme';
+import { colors } from '../../lib/theme';
 
 // =====================================================
 // IMAGE CAROUSEL

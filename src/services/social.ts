@@ -1,3 +1,6 @@
+import { Alter } from '../types';
+import { AlterService } from './alters';
+
 // Safely import CookieManager to avoid crashes in Expo Go or if native module is missing
 let CookieManager: any;
 try {
@@ -12,8 +15,6 @@ try {
         set: async () => { },
     };
 }
-import { Alter } from '../types';
-import { AlterService } from './alters';
 
 export type SupportedPlatform = 'tiktok' | 'instagram' | 'twitter' | 'youtube';
 

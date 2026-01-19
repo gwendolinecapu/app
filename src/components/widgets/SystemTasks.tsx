@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, ActivityIndicator, Alert, Modal, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { formatRelativeTime } from '../../lib/date';
 import { TaskService } from '../../services/tasks';
 import { Task, Alter } from '../../types';
-import { useAlterData } from '../../hooks/useAlterData';
 
 // Constants for Dropdowns
 const CATEGORIES = [
@@ -39,11 +37,7 @@ export const SystemTasks = () => {
     // UI State
     const [showOptions, setShowOptions] = useState(false);
 
-    useEffect(() => {
-        loadTasks();
-    }, [user]);
-
-    const loadTasks = async () => {
+    const loadTasks = React.useCallback(async () => {
         if (!user) return;
         try {
             const data = await TaskService.getTasks(user.uid, 'all');
@@ -53,7 +47,11 @@ export const SystemTasks = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user]);
+
+    useEffect(() => {
+        loadTasks();
+    }, [user, loadTasks]);
 
     const handleAddTask = async () => {
         if (!newTask.trim() || !user) return;

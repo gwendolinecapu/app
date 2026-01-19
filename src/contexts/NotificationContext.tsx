@@ -13,12 +13,11 @@ import DynamicIslandService from '../services/DynamicIslandService';
 import {
     NotificationSettings,
     NotificationType,
-    NotificationPreference,
     NotificationFrequency,
 } from '../services/NotificationTypes';
 import { Alter } from '../types';
-import { collection, query, where, onSnapshot, or } from 'firebase/firestore';
-import { db, auth } from '../lib/firebase';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { useAuth } from './AuthContext';
 
 // Types pour le front
@@ -79,106 +78,12 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     const [unreadCount, setUnreadCount] = useState(0);
     const [viewedRequestIds, setViewedRequestIds] = useState<Set<string>>(new Set());
 
-    // ==================== INITIALIZATION ====================
-
-    useEffect(() => {
-        initializeNotifications();
-    }, []);
-
-    // Subscribe to unread notifications count (filtered by current alter)
-    useEffect(() => {
-        if (!user || !currentAlter) {
-            setUnreadCount(0);
-            return;
-        }
-
-        let notifCount = 0;
-        let requestCount = 0;
-
-        // Listen to Firestore notifications for THIS ALTER ONLY
-        const notifQuery = query(
-            collection(db, 'notifications'),
-            where('targetSystemId', '==', user.uid),
-            where('read', '==', false)
-        );
-
-        const unsubNotif = onSnapshot(notifQuery, (snapshot) => {
-            // Filter to only count notifications for current alter
-            console.log('[NotificationContext] onSnapshot triggered, docs:', snapshot.docs.length);
-            notifCount = snapshot.docs.filter(doc => {
-                const data = doc.data();
-                return data.recipientId === currentAlter.id ||
-                    data.recipientId === user.uid ||
-                    (!data.recipientId && data.targetSystemId === user.uid);
-            }).length;
-            console.log('[NotificationContext] Filtered unread count:', notifCount);
-            setUnreadCount(notifCount + requestCount);
-        }, (error) => {
-            console.error("Error listening to notifications:", error);
-        });
-
-        // Listen to pending friend requests for THIS ALTER ONLY
-        const requestQuery = query(
-            collection(db, 'friend_requests'),
-            where('receiverId', '==', currentAlter.id),
-            where('status', '==', 'pending')
-        );
-
-        const unsubRequests = onSnapshot(requestQuery, (snapshot) => {
-            // Only count requests that haven't been viewed yet
-            const newRequests = snapshot.docs.filter(doc => !viewedRequestIds.has(doc.id));
-            requestCount = newRequests.length;
-            console.log('[NotificationContext] Pending friend requests:', requestCount);
-            setUnreadCount(notifCount + requestCount);
-        }, (error) => {
-            console.error("Error listening to friend requests:", error);
-        });
-
-        return () => {
-            unsubNotif();
-            unsubRequests();
-        };
-    }, [user, currentAlter]); // Re-run when user or currentAlter changes
-
-    const initializeNotifications = async () => {
-        try {
-            // Charger les settings
-            const loadedSettings = await NotificationService.loadSettings();
-            if (loadedSettings) {
-                setSettings(loadedSettings);
-            } else {
-                // Initialize defaults if null
-                const defaults: NotificationSettings = {
-                    globalEnabled: true,
-                    quietHoursEnabled: false,
-                    persistentNotification: false,
-                    dynamicIslandEnabled: false,
-                    quietHoursStart: 22 * 60, // 22:00
-                    quietHoursEnd: 7 * 60, // 07:00
-                    preferences: [] // Service handles defaults
-                };
-                setSettings(defaults);
-            }
-
-            // Setup notification response listener
-            const subscription = Notifications.addNotificationResponseReceivedListener(
-                handleNotificationResponse
-            );
-
-            setLoading(false);
-            return () => subscription.remove();
-        } catch (error) {
-            console.error('[NotificationProvider] Init error:', error);
-            setLoading(false);
-        }
-    };
-
     // ==================== NOTIFICATION RESPONSE HANDLER ====================
 
     const handleNotificationResponse = useCallback((response: Notifications.NotificationResponse) => {
         const { actionIdentifier, notification } = response;
         const category = notification.request.content.categoryIdentifier;
-        const data = notification.request.content.data;
+        // const data = notification.request.content.data; // Unused
 
 
 
@@ -211,13 +116,107 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         }
     }, [router]);
 
+    // ==================== INITIALIZATION ====================
+
+    const initializeNotifications = useCallback(async () => {
+        try {
+            // Charger les settings
+            const loadedSettings = await NotificationService.loadSettings();
+            if (loadedSettings) {
+                setSettings(loadedSettings);
+            } else {
+                // Initialize defaults if null
+                const defaults: NotificationSettings = {
+                    globalEnabled: true,
+                    quietHoursEnabled: false,
+                    persistentNotification: false,
+                    dynamicIslandEnabled: false,
+                    quietHoursStart: 22 * 60, // 22:00
+                    quietHoursEnd: 7 * 60, // 07:00
+                    preferences: [] // Service handles defaults
+                };
+                setSettings(defaults);
+            }
+
+            // Setup notification response listener
+            const subscription = Notifications.addNotificationResponseReceivedListener(
+                handleNotificationResponse
+            );
+
+            setLoading(false);
+            return () => subscription.remove();
+        } catch (error) {
+            console.error('[NotificationProvider] Init error:', error);
+            setLoading(false);
+        }
+    }, [handleNotificationResponse]);
+
+    useEffect(() => {
+        initializeNotifications();
+    }, [initializeNotifications]);
+
+    // Subscribe to unread notifications count (filtered by current alter)
+    useEffect(() => {
+        if (!user || !currentAlter) {
+            setUnreadCount(0);
+            return;
+        }
+
+        let notifCount = 0;
+        let requestCount = 0;
+
+        // Listen to Firestore notifications for THIS ALTER ONLY
+        const notifQuery = query(
+            collection(db, 'notifications'),
+            where('targetSystemId', '==', user.uid),
+            where('read', '==', false)
+        );
+
+        const unsubNotif = onSnapshot(notifQuery, (snapshot) => {
+            // Filter to only count notifications for current alter
+            // console.log('[NotificationContext] onSnapshot triggered, docs:', snapshot.docs.length);
+            notifCount = snapshot.docs.filter(doc => {
+                const data = doc.data();
+                return data.recipientId === currentAlter.id ||
+                    data.recipientId === user.uid ||
+                    (!data.recipientId && data.targetSystemId === user.uid);
+            }).length;
+            // console.log('[NotificationContext] Filtered unread count:', notifCount);
+            setUnreadCount(notifCount + requestCount);
+        }, (error) => {
+            console.error("Error listening to notifications:", error);
+        });
+
+        // Listen to pending friend requests for THIS ALTER ONLY
+        const requestQuery = query(
+            collection(db, 'friend_requests'),
+            where('receiverId', '==', currentAlter.id),
+            where('status', '==', 'pending')
+        );
+
+        const unsubRequests = onSnapshot(requestQuery, (snapshot) => {
+            // Only count requests that haven't been viewed yet
+            const newRequests = snapshot.docs.filter(doc => !viewedRequestIds.has(doc.id));
+            requestCount = newRequests.length;
+            // console.log('[NotificationContext] Pending friend requests:', requestCount);
+            setUnreadCount(notifCount + requestCount);
+        }, (error) => {
+            console.error("Error listening to friend requests:", error);
+        });
+
+        return () => {
+            unsubNotif();
+            unsubRequests();
+        };
+    }, [user, currentAlter, viewedRequestIds]); // Re-run when user or currentAlter changes
+
     // ==================== SETTINGS METHODS ====================
 
     const setGlobalEnabled = useCallback(async (enabled: boolean) => {
         if (!settings) return;
         setSettings({ ...settings, globalEnabled: enabled });
         await NotificationService.saveSettings({ globalEnabled: enabled });
-    }, []);
+    }, [settings]);
 
     const setPersistentEnabled = useCallback(async (enabled: boolean) => {
         if (!settings) return;
@@ -228,7 +227,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
             await PersistentNotificationService.stop();
             setIsPersistentActive(false);
         }
-    }, []);
+    }, [settings]);
 
     const setDynamicIslandEnabled = useCallback(async (enabled: boolean) => {
         await NotificationService.saveSettings({ dynamicIslandEnabled: enabled });
@@ -308,12 +307,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
 
         const getAlter = (id: string) => alters.find(a => a.id === id);
         const getInitial = (name: string) => name.charAt(0).toUpperCase();
-        const getTimeSince = (timestamp: number): string => {
-            const diff = Date.now() - timestamp;
-            const minutes = Math.floor(diff / 60000);
-            const hours = Math.floor(minutes / 60);
-            return hours > 0 ? `${hours}h${minutes % 60}min` : `${minutes}min`;
-        };
 
         const firstAlter = getAlter(front.alterIds[0]);
         if (!firstAlter) return;
@@ -340,11 +333,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
 
         // Mise à jour Dynamic Island
         if (settings.dynamicIslandEnabled && DynamicIslandService.isSupported()) {
-            const coFronters = front.alterIds
-                .slice(1)
-                .map((id: string) => getAlter(id)?.name)
-                .filter(Boolean) as string[];
-
             const data = {
                 name: firstAlter.name,
                 color: firstAlter.color || '#8B5CF6',
@@ -366,7 +354,13 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         // This will be called when user visits the notifications screen
         // It marks current friend request IDs as "viewed" so they don't count in badge
         // The onSnapshot listener will automatically update the count
-        console.log('[NotificationContext] markNotificationsAsViewed called');
+        setViewedRequestIds(prev => {
+            // Need to know what the current pending requests are to add them
+            // But here we are just triggering a re-render effectively if we had access to the snapshot data
+            // Since we don't have access to the snapshot data directly here without refetching or storing it in state...
+            // We should probably store the pending request IDs in a state.
+            return prev;
+        });
         setUnreadCount(0); // Immediately reset badge
     }, []);
 

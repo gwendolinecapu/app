@@ -126,7 +126,13 @@ class FeedbackService {
         // OR add a static/helper method in CreditService for Admin operations.
         // Direct transaction here for safety and specific type.
 
-        await CreditService.addCreditsToUser(feedback.userId, amount, 'bug_report_reward', `Récompense Bug: ${feedback.title}`);
+        try {
+            await CreditService.addCreditsForUser(feedback.userId, amount, 'bug_report_reward', `Récompense Bug: ${feedback.title}`);
+        } catch (error) {
+            console.error(`Failed to reward reporter for feedback ${feedbackId}:`, error);
+            // Optionally re-throw or handle the error in a way that makes sense for the application.
+            // For now, we are just logging the error.
+        }
     }
 
     async getFeedbackById(id: string): Promise<Feedback | null> {

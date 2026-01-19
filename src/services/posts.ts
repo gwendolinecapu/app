@@ -86,6 +86,16 @@ export const PostService = {
         const altersMap = new Map<string, any>();
         const systemsMap = new Map<string, any>();
 
+        const fetchByIds = async (ids: Set<string>, collectionName: string, map: Map<string, any>) => {
+            const idList = Array.from(ids).filter(id => id);
+            if (idList.length === 0) return;
+
+            const chunks = [];
+            for (let i = 0; i < idList.length; i += 10) {
+                chunks.push(idList.slice(i, i + 10));
+            }
+
+            await Promise.all(chunks.map(async chunk => {
         const fetchByIds = async (collectionName: string, ids: Set<string>, map: Map<string, any>) => {
             const idArray = Array.from(ids).filter(id => !!id);
             if (idArray.length === 0) return;
@@ -100,6 +110,10 @@ export const PostService = {
                     const q = query(collection(db, collectionName), where(documentId(), 'in', chunk));
                     const snapshot = await getDocs(q);
                     snapshot.forEach(doc => {
+                        map.set(doc.id, doc.data());
+                    });
+                } catch (e) {
+                    console.warn(`Failed to fetch batch of ${collectionName}`, e);
                         if (doc.exists()) {
                             map.set(doc.id, doc.data());
                         }
@@ -111,6 +125,8 @@ export const PostService = {
         };
 
         await Promise.all([
+            fetchByIds(alterIds, 'alters', altersMap),
+            fetchByIds(systemIds, 'systems', systemsMap)
             fetchByIds('alters', alterIds, altersMap),
             fetchByIds('systems', systemIds, systemsMap)
         ]);

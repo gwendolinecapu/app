@@ -31,6 +31,12 @@
 - **Metadata Interface** : Extension de `ShopItem` pour enrichir l'expérience boutique
 - **Documentation** : Plan d'implémentation complet (phase 1-8) pour améliorations futures
 
+### ✨ Nouveautés IA & Outils
+- **Local AI (Gemma)** : Implémentation du résumeur de journal local (`LocalAIService.ts`) utilisant le modèle Gemma ONNX (ou Apple/Gemini natif).
+- **Inner World (Release)** : La fonctionnalité de création d'espace mental (`app/inner-world/`) est désormais accessible, permettant de placer des formes et images.
+- **Team Chat** : Canal de communication interne dédié au système (`app/team-chat.tsx`).
+- **Tools Hub** : Nouvelle page centralisant les outils (`app/tools/`).
+
 ### À Venir (Planifié mais non implémenté)
 - Barre de recherche avec filtrage par tags
 - Système de favoris persisté

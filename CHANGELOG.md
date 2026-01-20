@@ -46,6 +46,32 @@
 
 ---
 
+## [2026-01-20] Shop 2.0 - TCG & Daily Rewards Update 🃏 🔥
+### Features Majeures
+- **Loot Box 2.0 (Booster Pack)** : Remplacement de l'ancien système par une expérience TCG complète.
+  - **3 Tiers** : Basic (Standard), Standard (5 items), Elite (9 items + garanties).
+  - **UX Immersive** : Animation "Swipe to Tear" pour ouvrir le booster, révélation de cartes une par une avec effet 3D flip.
+  - **Système de Dust** : Conversion automatique des doublons en "Poussière d'étoile" (Dust).
+  - **Shop UI** : Nouvelle section "Packs Extension" avec designs de boosters différenciés.
+
+### Technique
+- **LootBoxService** : Réécriture complète pour supporter les tiers, les garanties de rareté (ex: Elite = 1 Epique+ garantie) et le calcul de Dust.
+- **MonetizationContext** : Ajout de la gestion du `dust` et méthode `addDust`.
+- **Securité UX** : Protection contre la fermeture accidentelle du modal pendant l'animation d'ouverture (pour éviter la perte de crédits).
+
+### Daily Rewards (Système de Flammes) 🔥
+- **Streak System** : Nouveau système de série de connexions avec récompenses progressives (1-180 jours).
+- **Récompenses Améliorées** :
+  - Crédits quotidiens (progressifs).
+  - **Packs Gratuits** : Semaine (J7, 14...), Mois (J30...), et Milestone (J180 = Elite).
+- **Interface Visuelle** : Timeline scrollable montrant les jours passés, présent et futur.
+- **Bonus Premium** : Double crédits et meilleurs packs (ex: Pack Standard au lieu de Basic).
+- **Intégration** : Réclamation fluide avec ouverture automatique des packs gagnés.
+- **Robustesse** : Gestion UTC critique pour garantir les streaks quel que soit le fuseau horaire.
+- **Feedback** : Alertes visuelles explicites lors des gains de crédits.
+
+---
+
 ## [2026-01-19] Sécurité & Protection Mot de Passe 🔐
 
 ### Protection AlterSpace (Optionnelle)

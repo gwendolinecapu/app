@@ -82,6 +82,20 @@ export interface MonetizationStatus {
     decorations: string[];              // IDs des décorations possédées
     silentTrialStartDate: number | null;// Début du trial silencieux (sans CB)
     hasSeenConversionModal: boolean;    // A vu la popup de conversion fin trial
+    dust: number;                       // Poussière d'étoile (via doublons)
+    currentStreak: number;              // Série de connexion actuelle
+}
+
+export interface DailyReward {
+    day: number;
+    credits: number;
+    packTier?: LootBoxTier;
+    isPremium: boolean;
+}
+
+export interface StreakConfig {
+    day: number;
+    reward: DailyReward;
 }
 
 /** Configuration premium par défaut */
@@ -99,6 +113,8 @@ export const DEFAULT_MONETIZATION_STATUS: MonetizationStatus = {
     decorations: [],
     silentTrialStartDate: null,
     hasSeenConversionModal: false,
+    dust: 0,
+    currentStreak: 0,
 };
 
 // ==================== CRÉDITS ====================
@@ -160,7 +176,98 @@ export const AD_CONFIG = {
 // ==================== CREDITS & COSTS ====================
 
 export const REWARD_AD_AMOUNT = 10; // Crédits gagnés par pub regardée (Updated)
-export const LOOT_BOX_PRICE = 30; // Coût d'une Loot Box
+export const LOOT_BOX_PRICE = 30; // Legacy (replaced by PACK_TIERS)
+
+// ==================== LOOT BOX 2.0 (TCG SYSTEM) ====================
+
+export type LootBoxTier = 'basic' | 'standard' | 'elite';
+
+export interface PackConfig {
+    id: LootBoxTier;
+    name: string;
+    price: number;
+    cardCount: {
+        min: number;
+        max: number;
+        probabilities: { [count: number]: number }; // % chance for each count
+    };
+    rarityGuarantees: {
+        minRarity?: Rarity; // Rarity minimale garantie
+        count?: number; // Combien de cartes ont cette garantie
+    };
+    dropRates: {
+        [key in Rarity]: number; // % chance for each rarity
+    };
+}
+
+export const DUST_CONVERSION_RATES: Record<Rarity, number> = {
+    common: 5,
+    rare: 20,
+    epic: 100,
+    legendary: 500,
+    mythic: 2000,
+};
+
+export const PACK_TIERS: Record<LootBoxTier, PackConfig> = {
+    basic: {
+        id: 'basic',
+        name: 'Basic Pack',
+        price: 30,
+        cardCount: {
+            min: 1,
+            max: 3,
+            probabilities: { 1: 0.90, 2: 0.09, 3: 0.01 }
+        },
+        rarityGuarantees: {},
+        dropRates: {
+            common: 0.85,
+            // rare merged with uncommon logic: 10% uncommon + 4% rare from plan = 14% rare
+            rare: 0.14,
+            epic: 0.009,
+            legendary: 0.001,
+            mythic: 0,
+        }
+    },
+    standard: {
+        id: 'standard',
+        name: 'Standard Pack',
+        price: 100,
+        cardCount: {
+            min: 3,
+            max: 6,
+            probabilities: { 3: 0.80, 4: 0.15, 5: 0.04, 6: 0.01 }
+        },
+        rarityGuarantees: {},
+        dropRates: {
+            common: 0.70,
+            rare: 0.25,
+            epic: 0.045,
+            legendary: 0.005,
+            mythic: 0,
+        }
+    },
+    elite: {
+        id: 'elite',
+        name: 'Elite Pack',
+        price: 250,
+        cardCount: {
+            min: 5,
+            max: 8,
+            probabilities: { 5: 0.70, 6: 0.20, 7: 0.08, 8: 0.02 }
+        },
+        rarityGuarantees: {
+            minRarity: 'rare',
+            count: 1
+        },
+        dropRates: {
+            common: 0.50,
+            rare: 0.40,
+            epic: 0.08,
+            legendary: 0.019,
+            mythic: 0.001,
+        }
+    }
+};
 
 /** Configuration des gains de crédits */
 export const CREDIT_REWARDS = {

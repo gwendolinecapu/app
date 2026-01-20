@@ -202,4 +202,4 @@ const itemsWithTags = COSMETIC_ITEMS.map((item) => {
 });
 
 console.log(`\n✨ Total: ${itemsWithTags.length} items taggés!`);
-console.log('\nCOPY-PASTE ce résultat dans COSMETIC_ITEMS pour l'appliquer.');
+console.log('\nCOPY-PASTE ce résultat dans COSMETIC_ITEMS pour l\'appliquer.');

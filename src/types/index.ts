@@ -210,6 +210,13 @@ export interface GroupMember {
     joined_at: number;
 }
 
+export interface TypingStatus {
+    group_id: string;
+    system_id: string;
+    username: string;
+    last_typed: number;
+}
+
 export interface Conversation {
     id: string;
     is_internal: boolean;

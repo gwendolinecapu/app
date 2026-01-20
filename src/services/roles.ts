@@ -1,3 +1,7 @@
+/**
+ * @deprecated This service is deprecated in favor of `RoleService.ts` which offers better sorting and type safety.
+ * Only `initializeDefaultRoles` might still be useful during system creation.
+ */
 import {
     collection,
     addDoc,

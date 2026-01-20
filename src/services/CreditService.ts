@@ -152,7 +152,11 @@ class CreditService {
         }
 
         const today = new Date().toISOString().split('T')[0];
-        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+        // Calculate yesterday correctly
+        const yesterdayDate = new Date();
+        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+        const yesterday = yesterdayDate.toISOString().split('T')[0];
 
         const alterRef = doc(db, 'alters', alterId);
         const alterSnap = await getDoc(alterRef);
@@ -336,8 +340,11 @@ class CreditService {
 
     /**
      * ADMIN: Ajoute des crédits à n'importe quel utilisateur
+     * @deprecated Use addCreditsForUser instead to target primary alter, or addCredits with known alterId.
+     * This method writes to the legacy 'user_monetization' collection which is not displayed in the UI.
      */
     async addCreditsToUser(targetUserId: string, amount: number, type: CreditTransactionType, description?: string): Promise<void> {
+        console.warn('[CreditService] addCreditsToUser is deprecated and writes to legacy collection. Please use addCreditsForUser.');
         try {
             // Transaction Firestore
             const transaction: Omit<CreditTransaction, 'id'> = {

@@ -16,14 +16,13 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, getDocs, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, getDocs, limit , getDoc, doc } from 'firebase/firestore';
 import { db } from '../src/lib/firebase';
 import { useAuth } from '../src/contexts/AuthContext';
 import { colors, spacing, borderRadius, typography } from '../src/lib/theme';
 import { Message, Alter } from '../src/types';
 import { triggerHaptic } from '../src/lib/haptics';
 import { FriendService } from '../src/services/friends';
-import { getDoc, doc } from 'firebase/firestore';
 
 export default function TeamChatScreen() {
     const insets = useSafeAreaInsets();

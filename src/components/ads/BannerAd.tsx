@@ -9,11 +9,11 @@ import { colors, spacing } from '../../lib/theme';
 import { useMonetization } from '../../contexts/MonetizationContext';
 import { BannerPlacement } from '../../services/MonetizationTypes';
 
+import { BannerAd as AdMobBanner, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+
 interface BannerAdProps {
     placement: BannerPlacement;
 }
-
-import { BannerAd as AdMobBanner, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
 export function BannerAd({ placement }: BannerAdProps) {
     const { isAdFree } = useMonetization();

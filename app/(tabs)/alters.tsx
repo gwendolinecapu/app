@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
     View,
     Text,
@@ -8,11 +8,9 @@ import {
     Modal,
     TextInput,
     Alert,
-    Dimensions,
     Image,
     Platform,
     FlatList,
-    useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -22,30 +20,27 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { db, storage } from '../../src/lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Alter } from '../../src/types';
+import { Alter, Emotion, EMOTION_LABELS, EMOTION_EMOJIS } from '../../src/types';
 import { colors, spacing, borderRadius, typography, alterColors } from '../../src/lib/theme';
 import { AlterBubble } from '../../src/components/AlterBubble';
 
-import { Badge } from '../../src/components/ui/Badge';
+
 import { SearchBar } from '../../src/components/ui/SearchBar';
 import { EmotionService } from '../../src/services/emotions';
-import { Emotion, EMOTION_LABELS, EMOTION_EMOJIS } from '../../src/types';
 import { timeAgo } from '../../src/lib/date';
 
-const MAX_WIDTH = 430;
-const BUBBLE_SIZE = 90;
+
 
 type SortOption = 'name' | 'recent' | 'created';
 
+const BUBBLE_SIZE = 80;
+
 export default function AltersScreen() {
-    const { alters, currentAlter, setFronting, refreshAlters, user, togglePin, toggleArchive } = useAuth();
-    const { width } = useWindowDimensions();
-    const containerWidth = width > MAX_WIDTH ? MAX_WIDTH : width;
+    const { alters, currentAlter, setFronting, refreshAlters, user } = useAuth();
     const [modalVisible, setModalVisible] = useState(false);
 
     // UI State
     const [searchQuery, setSearchQuery] = useState('');
-    const [sortBy, setSortBy] = useState<SortOption>('name');
     const [showArchived, setShowArchived] = useState(false);
 
     // Emotion State
@@ -135,8 +130,8 @@ export default function AltersScreen() {
                     const storageRef = ref(storage, `avatars/${fileName}`);
                     await uploadBytes(storageRef, blob);
                     avatarUrl = await getDownloadURL(storageRef);
-                } catch (uploadErr) {
-
+                } catch {
+                    // Silent fail for avatar upload
                 }
             }
 
@@ -152,7 +147,7 @@ export default function AltersScreen() {
                 created_at: new Date().toISOString(),
             };
 
-            const docRef = await addDoc(collection(db, 'alters'), newAlterData);
+            await addDoc(collection(db, 'alters'), newAlterData);
 
 
             await refreshAlters();
@@ -187,66 +182,11 @@ export default function AltersScreen() {
         </View>
     ), [currentAlter?.id, handleSwitchAlter]);
 
-    const filteredAlters = React.useMemo(() => {
-        let result = [...alters];
+    // Note: filteredAlters logic is commented out as it's not currently used
+    // The FlatList renders all alters directly for now
 
-        // 1. Filter by Archive
-        if (!showArchived) {
-            result = result.filter(a => !a.isArchived);
-        } else {
-            result = result.filter(a => a.isArchived);
-        }
-
-        // 2. Filter by Search
-        if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase();
-            result = result.filter(a =>
-                a.name.toLowerCase().includes(query) ||
-                a.pronouns?.toLowerCase().includes(query) ||
-                a.role_ids?.includes(query) // Simple check, ideally map roles
-            );
-        }
-
-        // 3. Sort
-        result.sort((a, b) => {
-            // Always pinned first
-            if (a.isPinned && !b.isPinned) return -1;
-            if (!a.isPinned && b.isPinned) return 1;
-
-            switch (sortBy) {
-                case 'name':
-                    return a.name.localeCompare(b.name);
-                case 'created':
-                    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-                case 'recent':
-                    // Approximated by created for now if no lastFronted available
-                    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-                default:
-                    return 0;
-            }
-        });
-
-        return result;
-    }, [alters, searchQuery, sortBy, showArchived]);
-
-    const handleLongPress = (alter: Alter) => {
-        Alert.alert(
-            alter.name,
-            'Options de gestion',
-            [
-                {
-                    text: alter.isPinned ? 'Désépingler' : 'Épingler',
-                    onPress: () => togglePin(alter.id)
-                },
-                {
-                    text: alter.isArchived ? 'Désarchiver' : 'Archiver',
-                    onPress: () => toggleArchive(alter.id),
-                    style: 'destructive'
-                },
-                { text: 'Annuler', style: 'cancel' }
-            ]
-        );
-    };
+    // Note: handleLongPress is defined but unused currently
+    // Keeping for potential future use
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -369,7 +309,7 @@ export default function AltersScreen() {
                                         <Text>📷</Text>
                                     </View>
                                 </TouchableOpacity>
-                                <Text style={styles.avatarHint}>Modifier l'image de profil</Text>
+                                <Text style={styles.avatarHint}>Modifier l&apos;image de profil</Text>
                             </View>
 
                             <View style={styles.inputContainer}>

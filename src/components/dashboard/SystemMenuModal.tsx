@@ -5,15 +5,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
 import { triggerHaptic } from '../../lib/haptics';
 import { router } from 'expo-router';
-import { StatusBadge } from '../ui/StatusBadge';
+import { StatusBadge, StatusType } from '../ui/StatusBadge';
+
 
 interface SystemMenuModalProps {
     visible: boolean;
     onClose: () => void;
     hasSelection: boolean;
 }
-
-import { StatusType } from '../ui/StatusBadge';
 
 interface MenuItem {
     id: string;
@@ -31,6 +30,7 @@ const MENU_ITEMS: MenuItem[] = [
     { id: 'tasks', label: 'Tâches', description: 'Liste partagée', icon: 'list', color: colors.success, route: '/tasks', status: 'beta' },
     { id: 'history', label: 'Historique', description: 'Stats & Fronts', icon: 'stats-chart', color: colors.warning, route: '/history', status: 'beta' },
     { id: 'courses', label: 'Cours', description: 'Notes & Matières', icon: 'school', color: '#2196F3', route: '/courses', status: 'new' },
+    { id: 'subsystems', label: 'Sous-systèmes', description: 'Organiser les alters', icon: 'folder-open', color: '#9C27B0', route: '/settings/subsystems', status: 'new' },
     { id: 'help', label: 'Aide & SOS', description: 'Support système', icon: 'help-circle', color: colors.error, route: '/help' },
 ];
 

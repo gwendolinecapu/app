@@ -2,7 +2,7 @@
  * Écran principal du Journal
  * Liste les entrées de journal avec option de création
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
     View,
     Text,
@@ -23,9 +23,9 @@ import { formatDistanceToNow, startOfDay, startOfWeek, startOfMonth, isAfter } f
 import { fr } from 'date-fns/locale';
 import { SecureContainer } from '../../src/components/security/SecureContainer';
 
-type SummaryPeriod = 'day' | 'week' | 'month';
-
 import { SummaryModal } from '../../src/components/journal/SummaryModal';
+
+type SummaryPeriod = 'day' | 'week' | 'month';
 
 type JournalTab = 'private' | 'public';
 

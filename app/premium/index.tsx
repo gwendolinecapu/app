@@ -32,6 +32,12 @@ import { triggerHaptic } from '../../src/lib/haptics';
 import { useMonetization } from '../../src/contexts/MonetizationContext';
 import { PREMIUM_PACKS } from '../../src/services/MonetizationTypes';
 
+// ==================== MAIN COMPONENT ====================
+
+// ==================== MAIN COMPONENT ====================
+
+import { PACKAGE_TYPE, PurchasesPackage } from 'react-native-purchases';
+
 const { width, height } = Dimensions.get('window');
 
 // ==================== TYPES ====================
@@ -264,12 +270,6 @@ const PricingCard = ({
         </TouchableOpacity>
     );
 };
-
-// ==================== MAIN COMPONENT ====================
-
-// ==================== MAIN COMPONENT ====================
-
-import { PACKAGE_TYPE, PurchasesPackage } from 'react-native-purchases';
 
 export default function PremiumScreen() {
     const router = useRouter();

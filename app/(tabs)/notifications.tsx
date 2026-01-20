@@ -16,7 +16,6 @@ import {
     StyleSheet,
     RefreshControl,
     Image,
-    SectionList,
     Alert,
 } from 'react-native';
 import { collection, query, where, getDocs, orderBy, limit, writeBatch, deleteDoc, doc } from 'firebase/firestore';
@@ -32,6 +31,8 @@ import { triggerHaptic } from '../../src/lib/haptics';
 import { timeAgo } from '../../src/lib/date';
 import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
 import { AvatarWithLoading } from '../../src/components/ui/AvatarWithLoading';
+
+import { getThemeColors } from '../../src/lib/cosmetics';
 
 // Types pour les différentes notifications
 type NotificationType = 'friend_request' | 'follow' | 'like' | 'comment' | 'mention' | 'system' | 'friend_request_accepted' | 'FRIEND_REQUEST_ACCEPTED' | 'friend_new';
@@ -56,13 +57,6 @@ interface Notification {
     targetAvatar?: string; // For double avatar display
     isProfileDeleted?: boolean; // NEW: Flag for deleted profiles
 }
-
-interface NotificationSection {
-    title: string;
-    data: Notification[];
-}
-
-import { getThemeColors } from '../../src/lib/cosmetics';
 
 export default function NotificationsScreen() {
     const { currentAlter, alters, user } = useAuth();
@@ -765,7 +759,7 @@ export default function NotificationsScreen() {
             <Ionicons name="notifications-off-outline" size={64} color={textSecondaryColor} />
             <Text style={[styles.emptyTitle, { color: textColor }]}>Aucune notification</Text>
             <Text style={[styles.emptySubtitle, { color: textSecondaryColor }]}>
-                Les demandes d'amis, likes et commentaires apparaîtront ici
+                Les demandes d&apos;amis, likes et commentaires apparaîtront ici
             </Text>
         </View>
     );

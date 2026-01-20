@@ -199,6 +199,25 @@ service cloud.firestore {
     }
 
     // ============================================
+    // Subsystems Collection
+    // Pour organiser les alters en groupes (sous-systèmes)
+    // ============================================
+    match /subsystems/{subsystemId} {
+      // Read: owner can read their subsystems
+      allow read: if isAuthenticated() && 
+        resource.data.parent_system_id == request.auth.uid;
+      
+      // Create: owner can create subsystems
+      allow create: if isAuthenticated() && 
+        request.resource.data.parent_system_id == request.auth.uid;
+      
+      // Update/Delete: owner only
+      allow update, delete: if isAuthenticated() && 
+        resource.data.parent_system_id == request.auth.uid;
+    }
+
+
+    // ============================================
     // Help Requests Collection
     // ============================================
     match /help_requests/{requestId} {

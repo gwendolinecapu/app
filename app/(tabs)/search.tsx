@@ -34,7 +34,7 @@ interface SearchResult {
 }
 
 export default function SearchScreen() {
-    const { system, currentAlter, alters } = useAuth();
+    const { system, currentAlter } = useAuth();
     const toast = useToast();
     const [searchQuery, setSearchQuery] = useState('');
     const [results, setResults] = useState<SearchResult[]>([]);
@@ -58,6 +58,7 @@ export default function SearchScreen() {
         }, 500);
 
         return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchQuery]);
 
     const performSearch = async () => {
@@ -139,7 +140,8 @@ export default function SearchScreen() {
             setFriendStatuses(statuses);
         };
         checkStatuses();
-    }, [results, currentAlter]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [results, currentAlter?.id]);
 
     // Load suggestions (public alters from other systems)
     useEffect(() => {
@@ -172,7 +174,8 @@ export default function SearchScreen() {
             }
         };
         loadSuggestions();
-    }, [system]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [system?.id]);
 
     // Send friend request
     // Send friend request or follow system
@@ -390,7 +393,7 @@ export default function SearchScreen() {
                         <Ionicons name="people-outline" size={64} color={colors.textMuted} />
                         <Text style={styles.emptyTitle}>Chercher des amis</Text>
                         <Text style={styles.emptySubtitle}>
-                            Recherchez d'autres systèmes par pseudo ou email pour les ajouter en ami
+                            Recherchez d&apos;autres systèmes par pseudo ou email pour les ajouter en ami
                         </Text>
                     </View>
                 </View>

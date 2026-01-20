@@ -48,7 +48,7 @@ if (Platform.OS === 'web') {
     // Native: Use modular auth with persistence
     try {
         // Explicitly try to initialize with React Native Persistence first
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
+         
         const { getReactNativePersistence } = require('firebase/auth');
         auth = initializeAuth(app, {
             persistence: getReactNativePersistence(AsyncStorage)

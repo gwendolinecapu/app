@@ -20,16 +20,21 @@ import {
     RefreshControl,
     Dimensions,
     Animated,
-} from 'react-native';
+ Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LineChart, PieChart, BarChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
-import { Modal } from 'react-native';
 import { format, subDays, startOfDay, endOfDay, isAfter, isBefore, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
+
+import { useAuth } from '../../src/contexts/AuthContext';
+import { FrontingService } from '../../src/services/fronting';
+import { EmotionService } from '../../src/services/emotions';
+import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
+import { EmotionType, EMOTION_EMOJIS, EMOTION_LABELS } from '../../src/types';
 
 // Configuration calendrier en français
 LocaleConfig.locales['fr'] = {
@@ -40,12 +45,6 @@ LocaleConfig.locales['fr'] = {
     today: "Aujourd'hui"
 };
 LocaleConfig.defaultLocale = 'fr';
-
-import { useAuth } from '../../src/contexts/AuthContext';
-import { FrontingService } from '../../src/services/fronting';
-import { EmotionService } from '../../src/services/emotions';
-import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
-import { EmotionType, EMOTION_EMOJIS, EMOTION_LABELS } from '../../src/types';
 
 const { width } = Dimensions.get('window');
 

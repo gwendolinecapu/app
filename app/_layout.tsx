@@ -6,13 +6,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-// Ignore specific warnings
-LogBox.ignoreLogs([
-    'CookieManager',
-    'Selector unknown',
-    'Non-serializable values were found in the navigation state',
-]);
-
 import { AuthProvider } from '../src/contexts/AuthContext';
 import { ThemeProvider } from '../src/contexts/ThemeContext';
 import { NotificationProvider } from '../src/contexts/NotificationContext';
@@ -26,6 +19,13 @@ import { SuccessAnimationProvider } from '../src/contexts/SuccessAnimationContex
 import { colors, typography } from '../src/lib/theme';
 
 import { BiometricGuard } from '../src/components/auth/BiometricGuard';
+
+// Ignore specific warnings
+LogBox.ignoreLogs([
+    'CookieManager',
+    'Selector unknown',
+    'Non-serializable values were found in the navigation state',
+]);
 
 export default function RootLayout() {
     return (

@@ -1,17 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet, TextInput, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Dimensions , LayoutAnimation, Platform, UIManager } from 'react-native';
 import { AnimatedPressable } from '../ui/AnimatedPressable';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../lib/theme';
-import { LayoutAnimation, Platform, UIManager } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { ModeIndicator } from './ModeIndicator';
+import { AlterWeatherBar } from './AlterWeatherBar';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
-
-import { ModeIndicator } from './ModeIndicator';
-import { AlterWeatherBar } from './AlterWeatherBar';
 
 interface DashboardHeaderProps {
     searchQuery: string;

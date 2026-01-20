@@ -9,14 +9,14 @@ import { useToast } from '../ui/Toast';
 import { triggerHaptic } from '../../lib/haptics';
 import { timeAgo } from '../../lib/date';
 
+import { EMOTION_CONFIG, getEmotionConfig } from '../../lib/emotions';
+import { EmotionHistory } from './EmotionHistory';
+
 interface AlterEmotionsProps {
     alterId: string;
     alterName: string;
     themeColors?: ThemeColors | null;
 }
-
-import { EMOTION_CONFIG, getEmotionConfig } from '../../lib/emotions';
-import { EmotionHistory } from './EmotionHistory';
 
 export const AlterEmotions: React.FC<AlterEmotionsProps> = ({ alterId, alterName, themeColors }) => {
     const [latestEmotion, setLatestEmotion] = useState<Emotion | null>(null);

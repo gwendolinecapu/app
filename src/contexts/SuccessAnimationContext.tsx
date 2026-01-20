@@ -17,12 +17,25 @@ export const useSuccessAnimation = () => {
 
 export const SuccessAnimationProvider = ({ children }: { children: React.ReactNode }) => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const animationTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // MEMORY LEAK FIX: Cleanup animation timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const play = useCallback(() => {
     setIsPlaying(true);
     // Reset after animation duration
-    setTimeout(() => {
-        setIsPlaying(false);
+    if (animationTimeoutRef.current) {
+      clearTimeout(animationTimeoutRef.current);
+    }
+    animationTimeoutRef.current = setTimeout(() => {
+      setIsPlaying(false);
     }, 3000); // Lottie animation is ~3s
   }, []);
 

@@ -435,6 +435,20 @@
                     "order": "DESCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "subsystems",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "parent_system_id",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "order",
+                    "order": "ASCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []

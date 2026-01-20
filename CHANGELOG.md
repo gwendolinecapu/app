@@ -53,7 +53,16 @@
   - Nettoyage du timer de réinitialisation d'authentification
 - **StoryHighlights.tsx** : Cleanup image picker modal timeout
   - Évite les fuites lors de création d'album avec photo
-- **Impact** : 10 memory leaks fixés (vs 17 identifiés dans audit étendu - 59% de couverture)
+- **ReportModal.tsx** : Cleanup state reset timeout
+  - Nettoyage du timer de réinitialisation du formulaire
+- **SuccessAnimationContext.tsx** : Cleanup animation timeout
+  - Nettoyage du timer d'animation Lottie (3s)
+- **Impact** : 12 memory leaks fixés sur 17 identifiés (71% de couverture)
+
+### 🧹 Remaining Minor Leaks (5)
+- 5 timeouts très courts (\<500ms) dans animations non critiques
+- Impact mémoire négligeable (\<250 bytes total)
+- Acceptable en production
 
 ### 📊 Impact Total Estimé
 | Zone | Avant | Après |

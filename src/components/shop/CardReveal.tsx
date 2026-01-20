@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, Image, Pressable, Dimensions } from 'react-native';
+import { View, StyleSheet, Text, Image, Pressable, Dimensions, Vibration } from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -9,10 +9,12 @@ import Animated, {
     runOnJS,
     withSequence,
     withRepeat,
-    useAnimatedReaction
+    withDelay,
+    Easing,
+    cancelAnimation
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics';
 import LootBoxService from '../../services/LootBoxService';
 import { ShopItem, Rarity } from '../../services/MonetizationTypes';
@@ -21,7 +23,7 @@ interface CardRevealProps {
     item: ShopItem;
     isNew: boolean;
     dustValue?: number;
-    delay?: number; // Delay before appearing
+    delay?: number;
     onFlip?: () => void;
 }
 
@@ -29,42 +31,105 @@ const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.6;
 const CARD_HEIGHT = CARD_WIDTH * 1.5;
 
+// Rarity-specific effects configuration
+const RARITY_EFFECTS: Record<string, {
+    glowIntensity: number;
+    bounceStrength: number;
+    wobbleAmount: number;
+    sparkles: boolean;
+    screenShake: boolean;
+}> = {
+    common: { glowIntensity: 0, bounceStrength: 12, wobbleAmount: 0, sparkles: false, screenShake: false },
+    uncommon: { glowIntensity: 0.3, bounceStrength: 10, wobbleAmount: 2, sparkles: false, screenShake: false },
+    rare: { glowIntensity: 0.5, bounceStrength: 8, wobbleAmount: 4, sparkles: true, screenShake: false },
+    epic: { glowIntensity: 0.7, bounceStrength: 6, wobbleAmount: 6, sparkles: true, screenShake: true },
+    legendary: { glowIntensity: 0.9, bounceStrength: 5, wobbleAmount: 8, sparkles: true, screenShake: true },
+    mythic: { glowIntensity: 1, bounceStrength: 4, wobbleAmount: 10, sparkles: true, screenShake: true },
+};
+
 export default function CardReveal({ item, isNew, dustValue, delay = 0, onFlip }: CardRevealProps) {
     const [flipped, setFlipped] = useState(false);
     const hapticTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Animation Values
-    const rotation = useSharedValue(180); // Start at 180 (Back facing user)
+    const rotation = useSharedValue(180);
     const scale = useSharedValue(0);
     const glowOpacity = useSharedValue(0);
+    const wobble = useSharedValue(0);
+    const floatY = useSharedValue(0);
+    const sparkleRotation = useSharedValue(0);
+    const cardScale = useSharedValue(1);
 
     const rarity = item.rarity || 'common';
     const rarityColor = LootBoxService.getRarityColor(rarity);
+    const effects = RARITY_EFFECTS[rarity] || RARITY_EFFECTS.common;
     const isSpecial = ['rare', 'epic', 'legendary', 'mythic'].includes(rarity);
 
     useEffect(() => {
-        // Entrance Application
+        // Entrance animation with staggered delay
         scale.value = withSequence(
-            withTiming(0, { duration: delay }), // Wait
-            withSpring(1, { damping: 12 })     // Pop in
+            withTiming(0, { duration: delay }),
+            withSpring(1.1, { damping: 8 }),
+            withSpring(1, { damping: 12 })
         );
+
+        // Gentle idle float for unflipped cards
+        floatY.value = withRepeat(
+            withSequence(
+                withTiming(-3, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
+                withTiming(3, { duration: 1000, easing: Easing.inOut(Easing.ease) })
+            ),
+            -1,
+            true
+        );
+
+        return () => {
+            cancelAnimation(floatY);
+            cancelAnimation(sparkleRotation);
+        };
     }, []);
 
-    // Trigger shiny effect for special cards
+    // Trigger effects when flipped
     useEffect(() => {
         if (flipped && isSpecial) {
+            // Pulsing glow
             glowOpacity.value = withRepeat(
                 withSequence(
-                    withTiming(0.8, { duration: 1000 }),
-                    withTiming(0.4, { duration: 1000 })
+                    withTiming(effects.glowIntensity, { duration: 800 }),
+                    withTiming(effects.glowIntensity * 0.5, { duration: 800 })
                 ),
                 -1,
                 true
             );
+
+            // Sparkle rotation for rare+
+            if (effects.sparkles) {
+                sparkleRotation.value = withRepeat(
+                    withTiming(360, { duration: 3000, easing: Easing.linear }),
+                    -1,
+                    false
+                );
+            }
+
+            // Wobble effect after flip
+            wobble.value = withSequence(
+                withTiming(effects.wobbleAmount, { duration: 100 }),
+                withTiming(-effects.wobbleAmount * 0.7, { duration: 100 }),
+                withTiming(effects.wobbleAmount * 0.4, { duration: 100 }),
+                withTiming(0, { duration: 150 })
+            );
+
+            // Scale bounce for legendary/mythic
+            if (rarity === 'legendary' || rarity === 'mythic') {
+                cardScale.value = withSequence(
+                    withSpring(1.1, { damping: 4 }),
+                    withSpring(1, { damping: 8 })
+                );
+            }
         }
     }, [flipped]);
 
-    // MEMORY LEAK FIX: Cleanup haptic timeout on unmount
+    // Cleanup
     useEffect(() => {
         return () => {
             if (hapticTimeoutRef.current) {
@@ -77,7 +142,13 @@ export default function CardReveal({ item, isNew, dustValue, delay = 0, onFlip }
         if (flipped) return;
 
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        rotation.value = withSpring(0, { damping: 15, stiffness: 90 }, () => {
+
+        // Enhanced flip with bounce
+        rotation.value = withSpring(0, {
+            damping: effects.bounceStrength,
+            stiffness: 80,
+            mass: 0.8
+        }, () => {
             if (onFlip) runOnJS(onFlip)();
         });
         setFlipped(true);
@@ -86,41 +157,50 @@ export default function CardReveal({ item, isNew, dustValue, delay = 0, onFlip }
         if (rarity === 'legendary' || rarity === 'mythic') {
             hapticTimeoutRef.current = setTimeout(() => {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                if (effects.screenShake) {
+                    Vibration.vibrate([0, 50, 30, 50]);
+                }
+            }, 200);
+        } else if (rarity === 'epic') {
+            hapticTimeoutRef.current = setTimeout(() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             }, 200);
         }
     };
 
-    const frontStyle = useAnimatedStyle(() => {
-        return {
-            transform: [
-                { rotateY: `${rotation.value}deg` }
-            ],
-            opacity: interpolate(rotation.value, [90, 270], [1, 0]),
-            zIndex: flipped ? 1 : 0,
-        };
-    });
+    const frontStyle = useAnimatedStyle(() => ({
+        transform: [
+            { rotateY: `${rotation.value}deg` },
+            { rotate: `${wobble.value}deg` }
+        ],
+        opacity: interpolate(rotation.value, [90, 270], [1, 0]),
+        zIndex: flipped ? 1 : 0,
+    }));
 
-    const backStyle = useAnimatedStyle(() => {
-        return {
-            transform: [
-                { rotateY: `${rotation.value + 180}deg` } // Offset so it matches
-            ],
-            opacity: interpolate(rotation.value, [90, 270], [0, 1]),
-            zIndex: flipped ? 0 : 1,
-        };
-    });
+    const backStyle = useAnimatedStyle(() => ({
+        transform: [
+            { rotateY: `${rotation.value + 180}deg` },
+            { translateY: floatY.value }
+        ],
+        opacity: interpolate(rotation.value, [90, 270], [0, 1]),
+        zIndex: flipped ? 0 : 1,
+    }));
 
-    const containerScaleStyle = useAnimatedStyle(() => {
-        return {
-            transform: [{ scale: scale.value }]
-        };
-    });
+    const containerScaleStyle = useAnimatedStyle(() => ({
+        transform: [
+            { scale: scale.value * cardScale.value }
+        ]
+    }));
 
-    const glowStyle = useAnimatedStyle(() => {
-        return {
-            opacity: glowOpacity.value
-        };
-    });
+    const glowStyle = useAnimatedStyle(() => ({
+        opacity: glowOpacity.value,
+        transform: [{ scale: 1 + glowOpacity.value * 0.1 }]
+    }));
+
+    const sparkleStyle = useAnimatedStyle(() => ({
+        transform: [{ rotate: `${sparkleRotation.value}deg` }],
+        opacity: effects.sparkles && flipped ? 0.8 : 0
+    }));
 
     return (
         <Animated.View style={[styles.wrapper, containerScaleStyle]}>
@@ -132,7 +212,14 @@ export default function CardReveal({ item, isNew, dustValue, delay = 0, onFlip }
                         colors={['#1F2937', '#111827']}
                         style={styles.gradient}
                     >
-                        <Ionicons name="sparkles" size={48} color="rgba(255,255,255,0.2)" />
+                        {/* Animated sparkle pattern for back */}
+                        <Animated.View style={[styles.sparkleContainer, sparkleStyle]}>
+                            <Ionicons name="sparkles" size={24} color="rgba(255,255,255,0.15)" style={{ position: 'absolute', top: 20, left: 20 }} />
+                            <Ionicons name="sparkles" size={18} color="rgba(255,255,255,0.1)" style={{ position: 'absolute', bottom: 30, right: 25 }} />
+                            <Ionicons name="sparkles" size={20} color="rgba(255,255,255,0.12)" style={{ position: 'absolute', top: 40, right: 40 }} />
+                        </Animated.View>
+                        <Ionicons name="help-circle" size={48} color="rgba(255,255,255,0.25)" />
+                        <Text style={styles.tapHint}>TOUCHER</Text>
                         <View style={styles.patternOverlay} />
                     </LinearGradient>
                     <View style={styles.border} />
@@ -141,7 +228,12 @@ export default function CardReveal({ item, isNew, dustValue, delay = 0, onFlip }
                 {/* FRONT OF CARD */}
                 <Animated.View style={[styles.face, styles.frontFace, frontStyle]}>
                     {/* Rarity Glow Border */}
-                    <Animated.View style={[styles.glowBorder, { borderColor: rarityColor }, glowStyle]} />
+                    <Animated.View style={[styles.glowBorder, { borderColor: rarityColor, shadowColor: rarityColor }, glowStyle]} />
+
+                    {/* Additional outer glow for legendary */}
+                    {(rarity === 'legendary' || rarity === 'mythic') && (
+                        <Animated.View style={[styles.outerGlow, { backgroundColor: rarityColor }, glowStyle]} />
+                    )}
 
                     <View style={[styles.frontContent, { borderColor: rarityColor }]}>
                         {/* Header: Rarity & Name */}
@@ -320,5 +412,30 @@ const styles = StyleSheet.create({
         color: '#D97706',
         fontWeight: 'bold',
         marginLeft: 4,
+    },
+    // NEW: Enhanced animation styles
+    sparkleContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
+    tapHint: {
+        marginTop: 10,
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: 'rgba(255,255,255,0.4)',
+        letterSpacing: 2,
+    },
+    outerGlow: {
+        position: 'absolute',
+        top: -20,
+        left: -20,
+        right: -20,
+        bottom: -20,
+        borderRadius: 30,
+        opacity: 0.3,
+        zIndex: -1,
     },
 });

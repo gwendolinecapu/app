@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import { colors as defaultColors } from '../lib/theme';
+import { COSMETIC_ITEMS } from '../services/MonetizationTypes';
 
 type ThemeColors = typeof defaultColors;
 
@@ -31,9 +32,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             // 1. Check for Equipped Theme
             const equippedThemeId = alter.equipped_items?.theme;
             if (equippedThemeId) {
-                // Determine color from theme ID (using MonetizationTypes or Decorations)
-                const COSEMETIC_ITEMS = require('../services/MonetizationTypes').COSMETIC_ITEMS;
-                const themeItem = COSEMETIC_ITEMS.find((i: any) => i.id === equippedThemeId);
+                // Use statically imported COSMETIC_ITEMS for performance
+                const themeItem = COSMETIC_ITEMS.find((i: any) => i.id === equippedThemeId);
 
                 if (themeItem && themeItem.preview) {
                     currentPrimary = themeItem.preview;
@@ -55,8 +55,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             // Same logic for co-front (first alter priority)
             const equippedThemeId = alter.equipped_items?.theme;
             if (equippedThemeId) {
-                const COSEMETIC_ITEMS = require('../services/MonetizationTypes').COSMETIC_ITEMS;
-                const themeItem = COSEMETIC_ITEMS.find((i: any) => i.id === equippedThemeId);
+                const themeItem = COSMETIC_ITEMS.find((i: any) => i.id === equippedThemeId);
 
                 if (themeItem && themeItem.preview) {
                     currentPrimary = themeItem.preview;

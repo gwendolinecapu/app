@@ -451,30 +451,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             triggerHaptic.selection();
         }
     };
+    // ==================== PERFORMANCE FIX ====================
+    // Memoize context value to prevent cascade re-renders
+    // All functions (signUp, signIn, etc.) are stable as they don't depend on state
+    const contextValue = React.useMemo(() => ({
+        user,
+        system: systemData,
+        activeFront,
+        alters,
+        loading,
+        signUp,
+        signIn,
+        signOut,
+        deleteAccount,
+        setFronting,
+        refreshAlters,
+        togglePin,
+        toggleArchive,
+        updateHeadspace,
+        currentAlter: activeFront.alters[0] || null,
+        isBiometricEnabled,
+        toggleBiometric,
+        signInWithGoogle
+    }), [user, systemData, activeFront, alters, loading, isBiometricEnabled]);
 
     return (
-        <AuthContext.Provider
-            value={{
-                user,
-                system: systemData,
-                activeFront,
-                alters,
-                loading,
-                signUp,
-                signIn,
-                signOut,
-                deleteAccount,
-                setFronting,
-                refreshAlters,
-                togglePin,
-                toggleArchive,
-                updateHeadspace,
-                currentAlter: activeFront.alters[0] || null,
-                isBiometricEnabled,
-                toggleBiometric,
-                signInWithGoogle
-            }}
-        >
+        <AuthContext.Provider value={contextValue}>
             {children}
         </AuthContext.Provider>
     );

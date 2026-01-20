@@ -501,9 +501,9 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         return AdMediationService.getPreloadedNativeAd();
     }, [isAdFree]);
 
-    // ==================== CONTEXT VALUE ====================
-
-    const value: MonetizationContextType = {
+    // ==================== CONTEXT VALUE (MEMOIZED) ====================
+    // PERFORMANCE FIX: Memoize to prevent cascade re-renders
+    const contextValue = React.useMemo<MonetizationContextType>(() => ({
         loading,
         tier,
         credits,
@@ -530,7 +530,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         watchRewardAd,
         claimRewardAd,
 
-        checkDailyLogin: canClaimDaily, // Keeping compatible signature
+        checkDailyLogin: canClaimDaily,
         currentStreak,
         claimDailyLogin,
 
@@ -555,10 +555,15 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         addDust,
         addToInventory,
         offerings,
-    };
+    }), [
+        loading, tier, credits, dust, isPremium, isTrialActive, trialDaysRemaining,
+        premiumDaysRemaining, canUseFreeMont, isSilentTrialActive, shouldShowConversionModal,
+        isAdFree, adFreeDaysRemaining, canWatchRewardAd, rewardAdsRemaining,
+        adFreeProgress, premiumProgress, currentStreak, ownedItems, equippedItems, offerings
+    ]);
 
     return (
-        <MonetizationContext.Provider value={value}>
+        <MonetizationContext.Provider value={contextValue}>
             {children}
             <PremiumConversionModal
                 visible={isConversionModalVisible || shouldShowConversionModal}

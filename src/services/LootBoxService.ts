@@ -43,6 +43,21 @@ const ITEMS_BY_RARITY: Record<Rarity, ShopItem[]> = {
     mythic: COSMETIC_ITEMS.filter(item => item.rarity === 'mythic'),
 };
 
+/**
+ * Générateur de nombres aléatoires sécurisé (cryptographiquement)
+ * Empêche la prédiction des tirages côté client
+ */
+const secureRandom = (): number => {
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        const array = new Uint32Array(1);
+        crypto.getRandomValues(array);
+        return array[0] / 0xFFFFFFFF;
+    }
+    // Fallback pour les environnements sans crypto (dev)
+    console.warn('[LootBox] crypto.getRandomValues non disponible, utilisation de Math.random()');
+    return Math.random();
+};
+
 export const LootBoxService = {
     /**
      * Ouvre un Booster Pack
@@ -81,7 +96,7 @@ export const LootBoxService = {
             const actualPool = (pool && pool.length > 0) ? pool : ITEMS_BY_RARITY['common'];
 
             // Sélection item aléatoire
-            const item = actualPool[Math.floor(Math.random() * actualPool.length)];
+            const item = actualPool[Math.floor(secureRandom() * actualPool.length)];
 
             // Check doublon (Possédé AVANT ou tiré DANS CE PACK)
             const isDuplicate = ownedItemIds.includes(item.id) || currentSessionIds.has(item.id);
@@ -116,7 +131,7 @@ export const LootBoxService = {
      * Détermine le nombre de cartes selon les probabilités
      */
     rollCardCount(probabilities: { [count: number]: number }): number {
-        const rand = Math.random();
+        const rand = secureRandom();
         let cumulative = 0;
 
         for (const [countStr, probability] of Object.entries(probabilities)) {
@@ -134,7 +149,7 @@ export const LootBoxService = {
      * Détermine une rareté selon les taux de drop
      */
     rollRarity(rates: { [key in Rarity]: number }): Rarity {
-        const rand = Math.random();
+        const rand = secureRandom();
         let cumulative = 0;
 
         const rarities: Rarity[] = ['common', 'rare', 'epic', 'legendary', 'mythic'];

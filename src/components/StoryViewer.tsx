@@ -56,6 +56,7 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
     // Custom Modal State
     const [createHighlightModalVisible, setCreateHighlightModalVisible] = useState(false);
     const [newHighlightTitle, setNewHighlightTitle] = useState('');
+    const createHighlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const createNewHighlightWithStory = (story: Story) => {
         setNewHighlightTitle('');
@@ -70,7 +71,7 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
         setCreateHighlightModalVisible(false);
 
         // Wait for modal transition
-        setTimeout(async () => {
+        createHighlightTimeoutRef.current = setTimeout(async () => {
             try {
                 await StoriesService.createHighlight(
                     story.system_id,
@@ -179,6 +180,10 @@ export const StoryViewer = ({ visible, stories, initialIndex = 0, onClose }: Sto
 
         return () => {
             progressAnim.stopAnimation();
+            // MEMORY LEAK FIX: Cleanup createHighlight timeout
+            if (createHighlightTimeoutRef.current) {
+                clearTimeout(createHighlightTimeoutRef.current);
+            }
         };
     }, [visible, currentIndex, currentItem, startProgress, progressAnim]);
 

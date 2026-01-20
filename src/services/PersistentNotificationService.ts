@@ -16,11 +16,11 @@ const STORAGE_KEY = '@persistent_notification_data';
 interface PersistentNotificationData {
     currentAlterName: string;
     currentAlterColor: string;
-    favoriteAlters: Array<{
+    favoriteAlters: {
         id: string;
         name: string;
         color: string;
-    }>;
+    }[];
 }
 
 class PersistentNotificationService {

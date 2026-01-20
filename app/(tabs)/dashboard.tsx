@@ -20,13 +20,12 @@ import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { db, storage } from '../../src/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc , deleteDoc, doc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useScrollToTop } from '@react-navigation/native';
 import { triggerHaptic } from '../../src/lib/haptics';
-import { deleteDoc, doc } from 'firebase/firestore';
 
 import { DashboardHeader } from '../../src/components/dashboard/DashboardHeader';
 import { SystemControlBar } from '../../src/components/dashboard/SystemControlBar';

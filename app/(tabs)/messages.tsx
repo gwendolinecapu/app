@@ -48,8 +48,8 @@ export default function MessagesScreen() {
     const [sortedInternal, setSortedInternal] = useState<ConversationItem[]>([]);
     const [sortedFriends, setSortedFriends] = useState<ConversationItem[]>([]);
 
-    const [groups, setGroups] = useState<Array<{ id: string; name: string; description?: string }>>([]);
-    const [requests, setRequests] = useState<Array<{ id: string; senderId: string; senderName?: string; receiverId: string }>>([]);
+    const [groups, setGroups] = useState<{ id: string; name: string; description?: string }[]>([]);
+    const [requests, setRequests] = useState<{ id: string; senderId: string; senderName?: string; receiverId: string }[]>([]);
 
     const [loadingInternal, setLoadingInternal] = useState(false);
     const [loadingFriends, setLoadingFriends] = useState(false);
@@ -57,6 +57,8 @@ export default function MessagesScreen() {
     const [loadingRequests, setLoadingRequests] = useState(false);
 
 
+    // Load data based on active tab - dependencies are minimal to avoid infinite loops
+    // The actual data loading functions use current state internally
     React.useEffect(() => {
         if (activeTab === 'internal' && currentAlter) {
             loadInternalConversations();
@@ -67,7 +69,8 @@ export default function MessagesScreen() {
         } else if (activeTab === 'friends' && currentAlter) {
             loadFriends();
         }
-    }, [activeTab, system, currentAlter]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab, system?.id, currentAlter?.id]);
 
     // Rafraîchir les conversations quand on revient sur cet écran
     useFocusEffect(
@@ -79,7 +82,8 @@ export default function MessagesScreen() {
                     loadFriends();
                 }
             }
-        }, [currentAlter, activeTab])
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [currentAlter?.id, activeTab])
     );
 
     const loadInternalConversations = async () => {
@@ -231,7 +235,7 @@ export default function MessagesScreen() {
 
                 // Backfill
                 if (metadata) {
-                     MessagingService.setConversationMetadata(currentAlter.id, alter.id, {
+                    MessagingService.setConversationMetadata(currentAlter.id, alter.id, {
                         lastMessage: metadata.lastMessage,
                         lastMessageTime: metadata.lastMessageTime,
                         unreadCounts: {

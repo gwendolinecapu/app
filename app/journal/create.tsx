@@ -16,7 +16,7 @@ import {
     Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router , useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useDrafts } from '../../src/hooks/useDrafts';
 import { db } from '../../src/lib/firebase';
@@ -24,12 +24,11 @@ import { collection, addDoc } from 'firebase/firestore';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { EmotionType, EMOTION_EMOJIS, EMOTION_LABELS } from '../../src/types';
 
+
 const MOODS: EmotionType[] = [
     'happy', 'sad', 'anxious', 'angry',
     'tired', 'calm', 'confused', 'excited'
 ];
-
-import { useLocalSearchParams } from 'expo-router';
 
 export default function CreateJournalEntryScreen() {
     const { currentAlter, system } = useAuth();

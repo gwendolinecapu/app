@@ -5,13 +5,12 @@ import {
     TouchableOpacity,
     StyleSheet,
     ScrollView,
-    Dimensions,
     Modal,
     FlatList,
     RefreshControl,
     Image,
     useWindowDimensions,
-} from 'react-native';
+ Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,7 +28,6 @@ import { triggerHaptic } from '../../src/lib/haptics';
 import { SkeletonProfile } from '../../src/components/ui/Skeleton';
 import { EmptyState } from '../../src/components/ui/EmptyState';
 import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
-import { Alert } from 'react-native';
 import { getThemeColors } from '../../src/lib/cosmetics';
 import { useNotificationContext } from '../../src/contexts/NotificationContext';
 
@@ -131,10 +129,9 @@ const getRoleDefinition = (role: string) => {
 const getGridSize = (width: number) => (width - 4) / 3;
 
 export default function ProfileScreen() {
-    const { currentAlter, system, alters, user } = useAuth();
+    const { currentAlter, system, user } = useAuth();
     const { unreadCount } = useNotificationContext();
     const { width } = useWindowDimensions();
-    const GRID_SIZE = getGridSize(width);
     const [posts, setPosts] = useState<Post[]>([]);
     const [stats, setStats] = useState({ posts: 0, followers: 0, following: 0 });
     const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
@@ -155,7 +152,8 @@ export default function ProfileScreen() {
         } else {
             setLoading(false);
         }
-    }, [currentAlter, user]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentAlter?.id, user?.uid]);
 
     const loadProfileData = async () => {
         setLoading(true);
@@ -167,7 +165,8 @@ export default function ProfileScreen() {
         setRefreshing(true);
         await Promise.all([fetchPosts(), fetchFollowStats()]);
         setRefreshing(false);
-    }, [currentAlter, user]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentAlter?.id, user?.uid]);
 
     const fetchPosts = async () => {
         if (!currentAlter || !user) return;

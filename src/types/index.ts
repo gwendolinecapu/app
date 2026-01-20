@@ -10,6 +10,11 @@ export interface System {
     created_at: string;
     alter_count?: number; // Pre-filled from onboarding
     isAdmin?: boolean; // Admin privilege
+
+    // Subsystems (Phase: Organisation hiérarchique)
+    display_name?: string; // Nom du système parent (ex: "Système A&B")
+    has_subsystems?: boolean; // Flag pour optimisation
+    default_subsystem_id?: string; // Subsystem ouvert par défaut
 }
 
 // Rôle d'un alter dans le système (ex: Protecteur, Gatekeeper)
@@ -20,6 +25,22 @@ export interface Role {
     color: string; // Hex color code for badge
     description?: string;
     createdAt: number;
+}
+
+// Sous-système pour organiser les alters en groupes
+export interface Subsystem {
+    id: string;
+    parent_system_id: string; // Référence au System parent
+    name: string; // Ex: "Système A", "Système B", "Système Principal"
+    description?: string;
+    color: string; // Couleur hex pour identification visuelle
+    avatar_url?: string; // Avatar optionnel du subsystem
+    alter_count: number; // Nombre d'alters dans ce subsystem
+    created_at: string;
+    updated_at: string;
+    last_accessed_at: string; // Pour tri par récence
+    order: number; // Ordre d'affichage personnalisé
+    is_default?: boolean; // Si c'est le subsystem par défaut
 }
 
 export interface Alter {
@@ -87,6 +108,9 @@ export interface Alter {
 
     // Security - AlterSpace Protection
     password?: string; // Mot de passe pour accéder à l'AlterSpace
+
+    // Subsystems (Phase: Organisation hiérarchique)
+    subsystem_id?: string; // ID du subsystem auquel appartient l'alter
 }
 
 export interface VisualDNA {

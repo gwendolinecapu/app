@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { colors, spacing, typography } from '../lib/theme';
-import { getFrameStyle } from '../lib/cosmetics';
+import { getFrameStyle , getCosmeticItem } from '../lib/cosmetics';
 import { StoriesService } from '../services/stories';
 import { Story } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,7 +23,6 @@ import { TropicalFrame } from './effects/TropicalLeaves';
 import { FlameFrame } from './effects/FlameFrame';
 import { NatureMysticFrame } from './effects/NatureMysticFrame';
 import { FriendService } from '../services/friends';
-import { getCosmeticItem } from '../lib/cosmetics';
 
 // =====================================================
 // STORIES BAR

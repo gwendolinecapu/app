@@ -6,13 +6,13 @@ import { SocialSessionService, SupportedPlatform } from '../../services/social';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+import { getThemeColors } from '../../lib/cosmetics';
+
 interface Props {
     alter: Alter;
     platform: SupportedPlatform;
     initialUrl?: string;
 }
-
-import { getThemeColors } from '../../lib/cosmetics';
 const PLATFORM_URLS: Record<SupportedPlatform, string> = {
     tiktok: 'https://www.tiktok.com',
     instagram: 'https://www.instagram.com',

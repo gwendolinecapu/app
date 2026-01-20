@@ -13,18 +13,16 @@ import {
     Alert,
     ActionSheetIOS,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams , useRouter } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { db } from '../../src/lib/firebase';
+import { db , storage } from '../../src/lib/firebase';
 import { collection, query, where, getDocs, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, getDoc, deleteDoc } from 'firebase/firestore';
 import { Message, Alter } from '../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '../../src/lib/firebase';
 import { MessagingService } from '../../src/services/messaging';
 
 import { GifPicker } from '../../src/components/messaging/GifPicker';

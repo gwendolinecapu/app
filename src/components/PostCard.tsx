@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { RichText } from './ui/RichText';
 import { AlterService } from '../services/alters';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions , Alert, ActionSheetIOS, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { TapGestureHandler, State } from 'react-native-gesture-handler';
@@ -20,7 +20,6 @@ import { ShareService } from '../services/share';
 import { AnimatedPressable } from './ui/AnimatedPressable';
 import { ReportModal } from './ReportModal';
 import { ReportingService, ReportReason } from '../services/reporting';
-import { Alert, ActionSheetIOS, Platform } from 'react-native';
 
 interface PostCardProps {
     post: Post;

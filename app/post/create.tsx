@@ -29,9 +29,9 @@ import { AlterService } from '../../src/services/alters';
 import { useSuccessAnimation } from '../../src/contexts/SuccessAnimationContext';
 import { MagicPostGenerator } from '../../src/components/posts/MagicPostGenerator';
 
-type PostType = 'text' | 'photo' | 'video' | 'audio';
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+type PostType = 'text' | 'photo' | 'video' | 'audio';
 
 const DRAFT_STORAGE_KEY = 'post_draft_v1';
 

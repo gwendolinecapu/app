@@ -172,7 +172,8 @@ plural-connect/
 | `RevenueCatService.ts` | Abonnements Premium |
 | `PremiumService.ts` | Logique Premium |
 | `CreditService.ts` | Système de crédits/streak |
-| `LootBoxService.ts` | Boîtes à récompenses |
+ | `LootBoxService.ts` | Boîtes à récompenses (Coffres évolutifs) |
+ | `FlashSaleService.ts` | Ventes flash quotidiennes |
 | `AdMediationService.ts` | Gestion publicités AdMob |
 | `ConsentService.ts` | Consentement GDPR |
 | `ShopData.ts` | Données boutique |
@@ -183,9 +184,9 @@ plural-connect/
 
 | Service | Rôle |
 |---------|------|
-| `LocalAIService.ts` | IA locale (résumés, suggestions) |
+ | `LocalAIService.ts` | IA locale (résumés, suggestions - Gemma/Native) |
 | `importer.ts` | Import depuis Simply Plural, etc. |
-| `DynamicIslandService.ts` | Dynamic Island iOS |
+ | `DynamicIslandService.ts` | Dynamic Island iOS (Live Activities) |
 | `FeedbackService.ts` | Envoi de feedbacks |
 
 ---

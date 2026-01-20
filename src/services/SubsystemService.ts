@@ -37,12 +37,11 @@ export class SubsystemService {
         }
 
         const now = new Date().toISOString();
-        const subsystemData: Omit<Subsystem, 'id'> = {
+        const subsystemData: Partial<Omit<Subsystem, 'id'>> = {
             parent_system_id: parentSystemId,
             name: name.trim(),
             description: description?.trim() || '',
             color: color || '#7C3AED',
-            avatar_url: undefined,
             alter_count: 0,
             created_at: now,
             updated_at: now,

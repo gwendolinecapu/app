@@ -1,5 +1,29 @@
 # Changelog
 
+## [2026-01-20] Loot Box Animation Enhancements 🎬
+
+### 🎬 Animations Loot Box Améliorées
+- **BoosterPack.tsx** :
+  - Animation de flottement (idle hover) pour le pack
+  - Effet shimmer/brillance qui parcourt le pack
+  - Shake progressif pendant le swipe
+  - Flash lumineux à l'ouverture
+  - Glow pulsant pour le tier Elite
+  - Différenciation visuelle par tier (couleurs, vitesse shimmer)
+- **CardReveal.tsx** :
+  - Effets par rareté (wobble, bounce, glow, sparkles)
+  - Vibration écran pour legendary/mythic
+  - Animation de flottement pour les cartes non révélées
+  - Indication "TOUCHER" sur le dos de la carte
+  - Outer glow pour legendary/mythic
+  - Configuration RARITY_EFFECTS pour chaque niveau
+- **LootBoxOpening.tsx** :
+  - Rayons animés en arrière-plan (12 rayons rotatifs)
+  - Explosion de particules à l'ouverture (8-20 selon tier)
+  - Thème couleur par tier (basic=gris, standard=bleu, elite=or)
+  - Bouton "TOUT RÉCUPÉRER" coloré selon le tier
+  - Transitions améliorées entre phases
+
 ## [2026-01-20] Security & Performance Major Update 🔐⚡
 
 ### 🔐 Sécurité - Loot Box

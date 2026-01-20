@@ -25,6 +25,8 @@ interface CardRevealProps {
     dustValue?: number;
     delay?: number;
     onFlip?: () => void;
+    autoFlip?: boolean; // NEW: Auto-flip après le delay (style Supercell)
+    isActive?: boolean; // NEW: Card is currently in focus for reveal
 }
 
 const { width } = Dimensions.get('window');
@@ -47,9 +49,10 @@ const RARITY_EFFECTS: Record<string, {
     mythic: { glowIntensity: 1, bounceStrength: 4, wobbleAmount: 10, sparkles: true, screenShake: true },
 };
 
-export default function CardReveal({ item, isNew, dustValue, delay = 0, onFlip }: CardRevealProps) {
+export default function CardReveal({ item, isNew, dustValue, delay = 0, onFlip, autoFlip = false, isActive = true }: CardRevealProps) {
     const [flipped, setFlipped] = useState(false);
     const hapticTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+    const autoFlipTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Animation Values
     const rotation = useSharedValue(180);
@@ -59,6 +62,7 @@ export default function CardReveal({ item, isNew, dustValue, delay = 0, onFlip }
     const floatY = useSharedValue(0);
     const sparkleRotation = useSharedValue(0);
     const cardScale = useSharedValue(1);
+    const pulseScale = useSharedValue(1); // NEW: Pulse animation for active card
 
     const rarity = item.rarity || 'common';
     const rarityColor = LootBoxService.getRarityColor(rarity);
@@ -86,8 +90,43 @@ export default function CardReveal({ item, isNew, dustValue, delay = 0, onFlip }
         return () => {
             cancelAnimation(floatY);
             cancelAnimation(sparkleRotation);
+            cancelAnimation(pulseScale);
+            if (autoFlipTimeoutRef.current) {
+                clearTimeout(autoFlipTimeoutRef.current);
+            }
         };
     }, []);
+
+    // NEW: Auto-flip logic for first card
+    useEffect(() => {
+        if (autoFlip && !flipped && isActive) {
+            autoFlipTimeoutRef.current = setTimeout(() => {
+                handleFlip();
+            }, delay + 500); // Wait for entrance animation + 500ms
+        }
+
+        return () => {
+            if (autoFlipTimeoutRef.current) {
+                clearTimeout(autoFlipTimeoutRef.current);
+            }
+        };
+    }, [autoFlip, isActive]);
+
+    // NEW: Pulse animation for active card waiting to be tapped
+    useEffect(() => {
+        if (isActive && !flipped && !autoFlip) {
+            pulseScale.value = withRepeat(
+                withSequence(
+                    withTiming(1.05, { duration: 600 }),
+                    withTiming(1, { duration: 600 })
+                ),
+                -1,
+                true
+            );
+        } else {
+            pulseScale.value = withTiming(1, { duration: 200 });
+        }
+    }, [isActive, flipped]);
 
     // Trigger effects when flipped
     useEffect(() => {
@@ -188,7 +227,7 @@ export default function CardReveal({ item, isNew, dustValue, delay = 0, onFlip }
 
     const containerScaleStyle = useAnimatedStyle(() => ({
         transform: [
-            { scale: scale.value * cardScale.value }
+            { scale: scale.value * cardScale.value * pulseScale.value }
         ]
     }));
 

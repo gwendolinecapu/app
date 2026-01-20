@@ -26,9 +26,18 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const slideAnim = useRef(new Animated.Value(-100)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
+    const isAnimatingRef = useRef(false);
 
     useEffect(() => {
-        if (activeToast) {
+        if (activeToast && !isAnimatingRef.current) {
+            // Stop any running animations first
+            slideAnim.stopAnimation();
+            opacityAnim.stopAnimation();
+
+            // Reset to initial state before animating in
+            slideAnim.setValue(-100);
+            opacityAnim.setValue(0);
+
             // Animate in
             Animated.parallel([
                 Animated.spring(slideAnim, {
@@ -54,6 +63,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     }, [activeToast, opacityAnim, slideAnim]);
 
     const animateOut = useCallback(() => {
+        if (isAnimatingRef.current) return; // Prevent double animation
+        isAnimatingRef.current = true;
+
         Animated.parallel([
             Animated.timing(slideAnim, {
                 toValue: -100,
@@ -68,12 +80,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         ]).start(() => {
             setActiveToast(null);
             slideAnim.setValue(-100);
+            isAnimatingRef.current = false;
         });
     }, [slideAnim, opacityAnim]);
 
     const showToast = useCallback((message: string, type: ToastType = 'info', duration: number = 3000) => {
         // Clear existing timeout if any
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+        // Force reset animation state
+        isAnimatingRef.current = false;
 
         // Haptic feedback based on type
         switch (type) {
@@ -105,7 +121,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         <ToastContext.Provider value={{ showToast, hideToast }}>
             {children}
             {activeToast && (
-                <View style={[styles.container, { top: insets.top + 10 }]}>
+                <View style={[styles.container, { top: insets.top + 10 }]} pointerEvents="box-none">
                     <Animated.View
                         style={[
                             styles.toast,
@@ -116,14 +132,20 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                             }
                         ]}
                     >
-                        <View style={styles.iconContainer}>
-                            <Ionicons
-                                name={getIconName(activeToast.type)}
-                                size={24}
-                                color="#FFF"
-                            />
+                        {/* Tap to dismiss - Fix for stuck toast */}
+                        <View
+                            style={styles.touchableArea}
+                            onTouchEnd={hideToast}
+                        >
+                            <View style={styles.iconContainer}>
+                                <Ionicons
+                                    name={getIconName(activeToast.type)}
+                                    size={24}
+                                    color="#FFF"
+                                />
+                            </View>
+                            <Text style={styles.message}>{activeToast.message}</Text>
                         </View>
-                        <Text style={styles.message}>{activeToast.message}</Text>
                     </Animated.View>
                 </View>
             )}
@@ -193,5 +215,11 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
         flex: 1,
-    }
+    },
+    // Style for tap-to-dismiss touchable area - fixes stuck toast bug
+    touchableArea: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
 });

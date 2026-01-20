@@ -31,6 +31,7 @@ const CARD_HEIGHT = CARD_WIDTH * 1.5;
 
 export default function CardReveal({ item, isNew, dustValue, delay = 0, onFlip }: CardRevealProps) {
     const [flipped, setFlipped] = useState(false);
+    const hapticTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Animation Values
     const rotation = useSharedValue(180); // Start at 180 (Back facing user)
@@ -63,6 +64,15 @@ export default function CardReveal({ item, isNew, dustValue, delay = 0, onFlip }
         }
     }, [flipped]);
 
+    // MEMORY LEAK FIX: Cleanup haptic timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (hapticTimeoutRef.current) {
+                clearTimeout(hapticTimeoutRef.current);
+            }
+        };
+    }, []);
+
     const handleFlip = () => {
         if (flipped) return;
 
@@ -74,7 +84,7 @@ export default function CardReveal({ item, isNew, dustValue, delay = 0, onFlip }
 
         // Heavy haptics for legendary
         if (rarity === 'legendary' || rarity === 'mythic') {
-            setTimeout(() => {
+            hapticTimeoutRef.current = setTimeout(() => {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             }, 200);
         }

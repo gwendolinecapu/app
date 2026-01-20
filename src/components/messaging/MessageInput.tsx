@@ -58,6 +58,15 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         }
     };
 
+    // MEMORY LEAK FIX: Cleanup typing timeout on unmount
+    React.useEffect(() => {
+        return () => {
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+            }
+        };
+    }, []);
+
     return (
         <View style={styles.container}>
             {/* Attachment Menu Modal (simple overlay for now) */}

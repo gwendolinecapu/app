@@ -27,11 +27,21 @@ export function DailyStreakUI({ alterId, onOpenPack }: DailyStreakUIProps) {
     const [canClaim, setCanClaim] = useState(false);
     const [claiming, setClaiming] = useState(false);
     const scrollViewRef = useRef<ScrollView>(null);
+    const packOpenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Initial check
     useEffect(() => {
         checkStatus();
     }, [alterId, currentStreak]);
+
+    // MEMORY LEAK FIX: Cleanup pack open timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (packOpenTimeoutRef.current) {
+                clearTimeout(packOpenTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const checkStatus = async () => {
         if (alterId) {
@@ -55,7 +65,7 @@ export function DailyStreakUI({ alterId, onOpenPack }: DailyStreakUIProps) {
 
             // If reward includes a pack, trigger opening
             if (reward.packTier) {
-                setTimeout(() => {
+                packOpenTimeoutRef.current = setTimeout(() => {
                     onOpenPack(reward.packTier!);
                 }, 500);
             } else {

@@ -14,6 +14,7 @@ admin.initializeApp();
 const SECRETS = ["GOOGLE_AI_API_KEY", "BYTEPLUS_API_KEY"];
 
 export { processAIJob, startAIJob, cancelAIJob, retryAIJob };
+export * from './integrations/github';
 
 export const performBirthRitual = functions.runWith({
     secrets: SECRETS,

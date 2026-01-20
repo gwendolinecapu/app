@@ -44,6 +44,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 }),
             ]).start();
         }
+
+        // MEMORY LEAK FIX: Cleanup timeout on unmount or when activeToast changes
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
     }, [activeToast, opacityAnim, slideAnim]);
 
     const animateOut = useCallback(() => {

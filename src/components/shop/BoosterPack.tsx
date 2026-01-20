@@ -42,9 +42,10 @@ const TIER_CONFIG: Record<LootBoxTier, { colors: string[], icon: string, label: 
     }
 };
 
-export default function BoosterPack({ tier, onOpen }: BoosterPackProps) {
+export default React.memo(function BoosterPack({ tier, onOpen }: BoosterPackProps) {
     const config = TIER_CONFIG[tier];
     const [opened, setOpened] = useState(false);
+    const [isOpening, setIsOpening] = useState(false); // Anti-spam lock
 
     // Animation values
     const tearProgress = useSharedValue(0); // 0 -> 1 (swiped across)
@@ -64,8 +65,9 @@ export default function BoosterPack({ tier, onOpen }: BoosterPackProps) {
             }
         })
         .onEnd(() => {
-            if (tearProgress.value > 0.7) {
+            if (tearProgress.value > 0.7 && !isOpening) {
                 // Completed
+                runOnJS(setIsOpening)(true); // Lock pour éviter double-opening
                 tearProgress.value = withTiming(1, { duration: 200 });
                 runOnJS(setOpened)(true);
                 runOnJS(Haptics.notificationAsync)(Haptics.NotificationFeedbackType.Success);
@@ -139,7 +141,7 @@ export default function BoosterPack({ tier, onOpen }: BoosterPackProps) {
             </Animated.View>
         </GestureDetector>
     );
-}
+});
 
 const styles = StyleSheet.create({
     container: {

@@ -32,6 +32,7 @@ export default function LootBoxOpening({ visible, tier, onClose }: LootBoxOpenin
     const [phase, setPhase] = useState<'pack' | 'cards' | 'summary'>('pack');
     const [result, setResult] = useState<PackResult | null>(null);
     const [cardsRevealedCount, setCardsRevealedCount] = useState(0);
+    const phaseTransitionTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Reset when opening
     useEffect(() => {
@@ -41,6 +42,15 @@ export default function LootBoxOpening({ visible, tier, onClose }: LootBoxOpenin
             setCardsRevealedCount(0);
         }
     }, [visible]);
+
+    // MEMORY LEAK FIX: Cleanup phase transition timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (phaseTransitionTimeoutRef.current) {
+                clearTimeout(phaseTransitionTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const handlePackOpen = useCallback(() => {
         // 1. Generate Result
@@ -63,7 +73,7 @@ export default function LootBoxOpening({ visible, tier, onClose }: LootBoxOpenin
         saveRewards();
 
         // 3. Transition to Cards phase
-        setTimeout(() => {
+        phaseTransitionTimeoutRef.current = setTimeout(() => {
             setPhase('cards');
         }, 500);
     }, [tier, ownedItems, addToInventory, addDust]);

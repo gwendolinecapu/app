@@ -347,6 +347,11 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
                 }
                 contentContainerStyle={styles.listContent}
                 onScrollBeginDrag={() => setShowSortMenu(false)}
+                // === PERFORMANCE OPTIMIZATIONS ===
+                removeClippedSubviews={true}
+                maxToRenderPerBatch={10}
+                windowSize={5}
+                initialNumToRender={8}
             />
 
             {/* Comments Modal */}

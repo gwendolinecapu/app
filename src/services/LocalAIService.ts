@@ -13,7 +13,10 @@ const { LocalAI } = NativeModules;
 const MODEL_ID = 'gemma-3n-e2b-it';
 const MODEL_STORAGE_KEY = '@local_ai_model_installed';
 // Helper getters for model paths (documentDirectory can be null on web)
-const getModelDir = () => `${(FileSystem as any).documentDirectory || ''}models/`;
+const getModelDir = () => {
+    if (Platform.OS === 'web') return 'models/';
+    return `${(FileSystem as any).documentDirectory || ''}models/`;
+};
 const getModelFile = () => `${getModelDir()}${MODEL_ID}.onnx`;
 
 // Hugging Face model URL (ONNX quantized version)
@@ -61,6 +64,16 @@ export const LocalAIService = {
      * Get current AI status and provider.
      */
     getStatus: async (): Promise<ModelStatus> => {
+        // Web check: always mock
+        if (Platform.OS === 'web') {
+            return {
+                isInstalled: __DEV__, // Only "installed" if dev mock is acceptable
+                isDownloading: false,
+                downloadProgress: 0,
+                provider: 'mock',
+            };
+        }
+
         // 1. Check native modules first
         if (LocalAI) {
             try {
@@ -93,6 +106,7 @@ export const LocalAIService = {
      * Check if native AI (Apple Intelligence / Gemini Nano) is available.
      */
     isNativeAvailable: async (): Promise<boolean> => {
+        if (Platform.OS === 'web') return false;
         if (!LocalAI) return false;
         try {
             return await LocalAI.isAvailable();
@@ -105,6 +119,7 @@ export const LocalAIService = {
      * Check if the Gemma ONNX model is installed locally.
      */
     isModelInstalled: async (): Promise<boolean> => {
+        if (Platform.OS === 'web') return false;
         try {
             const modelInfo = await FileSystem.getInfoAsync(getModelFile());
             const tokenizerInfo = await FileSystem.getInfoAsync(getTokenizerFile());
@@ -120,6 +135,10 @@ export const LocalAIService = {
      * @param onProgress Callback for download progress (0-100)
      */
     downloadModel: async (onProgress?: DownloadProgressCallback): Promise<void> => {
+        if (Platform.OS === 'web') {
+            throw new Error("Le téléchargement de modèles n'est pas supporté sur le web.");
+        }
+
         // Ensure model directory exists
         const dirInfo = await FileSystem.getInfoAsync(getModelDir());
         if (!dirInfo.exists) {
@@ -164,6 +183,7 @@ export const LocalAIService = {
      * Delete the downloaded model to free up space.
      */
     deleteModel: async (): Promise<void> => {
+        if (Platform.OS === 'web') return;
         try {
             await FileSystem.deleteAsync(getModelFile(), { idempotent: true });
             await FileSystem.deleteAsync(getTokenizerFile(), { idempotent: true });
@@ -184,6 +204,7 @@ export const LocalAIService = {
      * Load resources (model and tokenizer) into memory.
      */
     loadResources: async () => {
+        if (Platform.OS === 'web') return;
         if (!tokenizer) {
             const tokenizerJson = JSON.parse(await FileSystem.readAsStringAsync(getTokenizerFile()));
             const tokenizerConfig = JSON.parse(await FileSystem.readAsStringAsync(getTokenizerConfigFile()));
@@ -201,6 +222,13 @@ export const LocalAIService = {
      */
     summarize: async (text: string, period?: 'day' | 'week' | 'month'): Promise<{ summary: string; provider: AIProvider }> => {
         const periodLabel = period === 'day' ? 'journée' : period === 'week' ? 'semaine' : 'mois';
+
+        if (Platform.OS === 'web') {
+             return {
+                summary: await mockSummarizeWithPeriod(text, periodLabel),
+                provider: 'mock',
+            };
+        }
 
         // 1. Try native module first (Apple Intelligence / Gemini Nano)
         if (LocalAI) {

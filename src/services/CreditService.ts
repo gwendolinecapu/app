@@ -236,7 +236,6 @@ class CreditService {
      */
     async purchaseItem(alterId: string, item: ShopItem, applyEffect: boolean = true): Promise<boolean> {
         if (!item.priceCredits) {
-            // Free items should be handled by caller usually, but if 0 cost passed here:
             if (applyEffect) {
                 return this.applyItemEffect(item);
             }
@@ -249,8 +248,8 @@ class CreditService {
             return false;
         }
 
-        // Retirer les crédits
-        await this.spendCredits(
+        // 1. DEDUCT CREDITS
+        const deductSuccess = await this.spendCredits(
             alterId,
             item.priceCredits,
             this.getTransactionType(item.type),
@@ -258,8 +257,28 @@ class CreditService {
             item.id
         );
 
+        if (!deductSuccess) return false;
+
+        // 2. APPLY EFFECT
         if (applyEffect) {
-            return this.applyItemEffect(item);
+            try {
+                const effectSuccess = await this.applyItemEffect(item);
+                if (!effectSuccess) {
+                    throw new Error("Failed to apply item effect");
+                }
+                return true;
+            } catch (error) {
+                console.error('[CreditService] Effect failed, refunding...', error);
+
+                // 3. REFUND ON FAILURE
+                await this.addCredits(
+                    alterId,
+                    item.priceCredits,
+                    'refund',
+                    `Remboursement (Erreur): ${item.name}`
+                );
+                return false;
+            }
         }
 
         return true;
@@ -374,7 +393,7 @@ class CreditService {
         type: CreditTransactionType,
         description?: string,
         itemId?: string
-    ): Promise<void> {
+    ): Promise<boolean> {
         try {
             // Update Alter Doc
             const alterRef = doc(db, 'alters', alterId);
@@ -382,8 +401,10 @@ class CreditService {
 
             // Record Transaction
             await this.recordTransaction(alterId, -amount, type, description, itemId);
+            return true;
         } catch (e) {
             console.error('[CreditService] Spend credits failed', e);
+            return false;
         }
     }
 

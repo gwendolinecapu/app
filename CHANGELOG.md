@@ -47,7 +47,13 @@
   - Nettoyage du timer de transition pack → cards
 - **DailyStreakUI.tsx** : Cleanup pack opening trigger timeout
   - Évite les fuites lors de réclamation de récompense
-- **Impact** : 7 memory leaks fixés (vs 17 identifiés dans audit étendu)
+- **VideoPlayer.tsx** : Cleanup controls auto-hide timeout
+  - Nettoyage du timer d'auto-masquage des contrôles (3s)
+- **BiometricGuard.tsx** : Cleanup auth reset timeout
+  - Nettoyage du timer de réinitialisation d'authentification
+- **StoryHighlights.tsx** : Cleanup image picker modal timeout
+  - Évite les fuites lors de création d'album avec photo
+- **Impact** : 10 memory leaks fixés (vs 17 identifiés dans audit étendu - 59% de couverture)
 
 ### 📊 Impact Total Estimé
 | Zone | Avant | Après |

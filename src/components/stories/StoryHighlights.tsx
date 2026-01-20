@@ -23,6 +23,7 @@ export const StoryHighlights: React.FC<StoryHighlightsProps> = ({ authorId, syst
     const { alters, currentAlter } = useAuth();
     const [highlights, setHighlights] = useState<StoryHighlight[]>([]);
     const [loading, setLoading] = useState(true);
+    const imagePickerTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Custom Modal State
     const [modalVisible, setModalVisible] = useState(false);
@@ -45,6 +46,15 @@ export const StoryHighlights: React.FC<StoryHighlightsProps> = ({ authorId, syst
         loadHighlights();
     }, [authorId, refreshTrigger]);
 
+    // MEMORY LEAK FIX: Cleanup image picker timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (imagePickerTimeoutRef.current) {
+                clearTimeout(imagePickerTimeoutRef.current);
+            }
+        };
+    }, []);
+
     const handleCreateHighlight = () => {
         setNewHighlightTitle('');
         setModalVisible(true);
@@ -57,7 +67,7 @@ export const StoryHighlights: React.FC<StoryHighlightsProps> = ({ authorId, syst
         setModalVisible(false);
 
         // Wait for modal to close
-        setTimeout(async () => {
+        imagePickerTimeoutRef.current = setTimeout(async () => {
             try {
                 // Pick a cover image
                 const result = await ImagePicker.launchImageLibraryAsync({

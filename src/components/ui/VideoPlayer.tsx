@@ -23,6 +23,7 @@ export const VideoPlayer = ({ uri, autoPlay = true, style, onPress }: VideoPlaye
     const videoRef = useRef<Video>(null);
     const [status, setStatus] = useState<AVPlaybackStatus | null>(null);
     const [showControls, setShowControls] = useState(false);
+    const controlsTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const isPlaying = status?.isLoaded && status.isPlaying;
     const isMuted = status?.isLoaded && status.isMuted;
@@ -32,6 +33,15 @@ export const VideoPlayer = ({ uri, autoPlay = true, style, onPress }: VideoPlaye
 
     // Check if video is loading
     const isLoading = !status || !status.isLoaded || (status.isLoaded && status.isBuffering);
+
+    // MEMORY LEAK FIX: Cleanup controls timeout on unmount
+    React.useEffect(() => {
+        return () => {
+            if (controlsTimeoutRef.current) {
+                clearTimeout(controlsTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const togglePlay = useCallback(async () => {
         if (!videoRef.current) return;
@@ -54,7 +64,10 @@ export const VideoPlayer = ({ uri, autoPlay = true, style, onPress }: VideoPlaye
         }
         setShowControls(prev => !prev);
         // Auto-hide after 3s
-        setTimeout(() => setShowControls(false), 3000);
+        if (controlsTimeoutRef.current) {
+            clearTimeout(controlsTimeoutRef.current);
+        }
+        controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 3000);
     };
 
     const formatTime = (ms: number) => {

@@ -15,6 +15,7 @@ export function BiometricGuard({ children }: BiometricGuardProps) {
     const [hasHardware, setHasHardware] = useState(false);
     const appState = useRef(AppState.currentState);
     const isAuthenticating = useRef(false);
+    const authResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         const init = async () => {
@@ -50,6 +51,15 @@ export function BiometricGuard({ children }: BiometricGuardProps) {
             subscription.remove();
         };
     }, [user?.uid, isBiometricEnabled]); // Removed 'user' object dependency
+
+    // MEMORY LEAK FIX: Cleanup auth reset timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (authResetTimeoutRef.current) {
+                clearTimeout(authResetTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const checkHardware = async () => {
         const hasHard = await LocalAuthentication.hasHardwareAsync();
@@ -101,7 +111,10 @@ export function BiometricGuard({ children }: BiometricGuardProps) {
                 // Let's verify error type.
                 setIsLocked(false); // Valid for now to match previous behavior, but suboptimal security.
             } finally {
-                setTimeout(() => {
+                if (authResetTimeoutRef.current) {
+                    clearTimeout(authResetTimeoutRef.current);
+                }
+                authResetTimeoutRef.current = setTimeout(() => {
                     isAuthenticating.current = false;
                 }, 500);
             }

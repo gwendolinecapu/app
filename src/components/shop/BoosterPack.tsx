@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, Dimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -8,7 +8,11 @@ import Animated, {
     runOnJS,
     interpolate,
     Extrapolate,
-    withTiming
+    withTiming,
+    withRepeat,
+    withSequence,
+    Easing,
+    cancelAnimation
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,86 +28,182 @@ const { width } = Dimensions.get('window');
 const PACK_WIDTH = width * 0.7;
 const PACK_HEIGHT = PACK_WIDTH * 1.4;
 
-const TIER_CONFIG: Record<LootBoxTier, { colors: string[], icon: string, label: string }> = {
+const TIER_CONFIG: Record<LootBoxTier, {
+    colors: string[],
+    glowColor: string,
+    icon: string,
+    label: string,
+    shimmerSpeed: number
+}> = {
     basic: {
-        colors: ['#9CA3AF', '#4B5563'], // Gray
+        colors: ['#9CA3AF', '#4B5563'],
+        glowColor: 'rgba(156, 163, 175, 0.4)',
         icon: 'cube-outline',
-        label: 'BASIC'
+        label: 'BASIC',
+        shimmerSpeed: 3000
     },
     standard: {
-        colors: ['#60A5FA', '#2563EB'], // Blue
+        colors: ['#60A5FA', '#2563EB'],
+        glowColor: 'rgba(96, 165, 250, 0.5)',
         icon: 'layers-outline',
-        label: 'STANDARD'
+        label: 'STANDARD',
+        shimmerSpeed: 2500
     },
     elite: {
-        colors: ['#FCD34D', '#D97706'], // Gold
+        colors: ['#FCD34D', '#F59E0B', '#D97706'],
+        glowColor: 'rgba(252, 211, 77, 0.6)',
         icon: 'star',
-        label: 'ELITE'
+        label: 'ELITE',
+        shimmerSpeed: 2000
     }
 };
 
 export default React.memo(function BoosterPack({ tier, onOpen }: BoosterPackProps) {
     const config = TIER_CONFIG[tier];
     const [opened, setOpened] = useState(false);
-    const [isOpening, setIsOpening] = useState(false); // Anti-spam lock
+    const [isOpening, setIsOpening] = useState(false);
 
     // Animation values
-    const tearProgress = useSharedValue(0); // 0 -> 1 (swiped across)
+    const tearProgress = useSharedValue(0);
     const packOpenScale = useSharedValue(1);
     const packOpacity = useSharedValue(1);
+
+    // NEW: Enhanced animations
+    const floatY = useSharedValue(0);
+    const floatRotate = useSharedValue(0);
+    const shimmerX = useSharedValue(-PACK_WIDTH);
+    const shake = useSharedValue(0);
+    const glowScale = useSharedValue(1);
+    const flashOpacity = useSharedValue(0);
+
+    // Floating idle animation
+    useEffect(() => {
+        // Gentle floating up and down
+        floatY.value = withRepeat(
+            withSequence(
+                withTiming(-8, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+                withTiming(8, { duration: 1500, easing: Easing.inOut(Easing.ease) })
+            ),
+            -1,
+            true
+        );
+
+        // Subtle rotation oscillation
+        floatRotate.value = withRepeat(
+            withSequence(
+                withTiming(-2, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+                withTiming(2, { duration: 2000, easing: Easing.inOut(Easing.ease) })
+            ),
+            -1,
+            true
+        );
+
+        // Shimmer effect moving across the pack
+        shimmerX.value = withRepeat(
+            withTiming(PACK_WIDTH * 2, { duration: config.shimmerSpeed, easing: Easing.linear }),
+            -1,
+            false
+        );
+
+        // Glow pulsing for Elite tier
+        if (tier === 'elite') {
+            glowScale.value = withRepeat(
+                withSequence(
+                    withTiming(1.05, { duration: 1000 }),
+                    withTiming(1, { duration: 1000 })
+                ),
+                -1,
+                true
+            );
+        }
+
+        return () => {
+            cancelAnimation(floatY);
+            cancelAnimation(floatRotate);
+            cancelAnimation(shimmerX);
+            cancelAnimation(glowScale);
+        };
+    }, [tier]);
 
     const pan = Gesture.Pan()
         .onChange((event) => {
             if (opened) return;
-            // Only consider horizontal movement
             const progress = (event.translationX + PACK_WIDTH / 2) / PACK_WIDTH;
             tearProgress.value = Math.max(0, Math.min(1, progress));
 
-            // Haptics based on progress milestones to simulate "ripping" texture
-            if (Math.random() > 0.8) {
+            // Shake intensity based on progress
+            shake.value = interpolate(progress, [0, 0.5, 0.7], [0, 3, 8]);
+
+            // Haptic feedback at milestones
+            if (Math.random() > 0.85) {
                 runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
             }
         })
         .onEnd(() => {
             if (tearProgress.value > 0.7 && !isOpening) {
-                // Completed
-                runOnJS(setIsOpening)(true); // Lock pour éviter double-opening
+                runOnJS(setIsOpening)(true);
                 tearProgress.value = withTiming(1, { duration: 200 });
                 runOnJS(setOpened)(true);
                 runOnJS(Haptics.notificationAsync)(Haptics.NotificationFeedbackType.Success);
 
-                // Trigger opening sequence
-                packOpenScale.value = withTiming(1.1, { duration: 300 }, () => {
-                    packOpacity.value = withTiming(0, { duration: 300 }, () => {
-                        runOnJS(onOpen)();
-                    });
+                // Flash effect on open
+                flashOpacity.value = withSequence(
+                    withTiming(1, { duration: 100 }),
+                    withTiming(0, { duration: 300 })
+                );
+
+                // Opening sequence with enhanced animation
+                packOpenScale.value = withSequence(
+                    withSpring(1.15, { damping: 8 }),
+                    withTiming(0.95, { duration: 150 }),
+                    withSpring(1.1, { damping: 10 })
+                );
+                packOpacity.value = withTiming(0, { duration: 400 }, () => {
+                    runOnJS(onOpen)();
                 });
             } else {
-                // Reset
                 tearProgress.value = withSpring(0);
+                shake.value = withTiming(0, { duration: 200 });
             }
         });
 
-    const topPieceStyle = useAnimatedStyle(() => {
-        return {
-            transform: [
-                { translateX: interpolate(tearProgress.value, [0, 1], [0, PACK_WIDTH], Extrapolate.CLAMP) },
-                { rotate: `${interpolate(tearProgress.value, [0, 1], [0, 15])}deg` }
-            ],
-            opacity: interpolate(tearProgress.value, [0.8, 1], [1, 0])
-        };
-    });
+    const topPieceStyle = useAnimatedStyle(() => ({
+        transform: [
+            { translateX: interpolate(tearProgress.value, [0, 1], [0, PACK_WIDTH], Extrapolate.CLAMP) },
+            { rotate: `${interpolate(tearProgress.value, [0, 1], [0, 20])}deg` },
+            { translateY: interpolate(tearProgress.value, [0.5, 1], [0, -30]) }
+        ],
+        opacity: interpolate(tearProgress.value, [0.8, 1], [1, 0])
+    }));
 
-    const containerStyle = useAnimatedStyle(() => {
-        return {
-            transform: [{ scale: packOpenScale.value }],
-            opacity: packOpacity.value
-        };
-    });
+    const containerStyle = useAnimatedStyle(() => ({
+        transform: [
+            { scale: packOpenScale.value },
+            { translateY: floatY.value },
+            { rotate: `${floatRotate.value}deg` },
+            { translateX: shake.value * (Math.random() > 0.5 ? 1 : -1) }
+        ],
+        opacity: packOpacity.value
+    }));
+
+    const shimmerStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: shimmerX.value }]
+    }));
+
+    const glowStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: glowScale.value }],
+        opacity: tier === 'elite' ? 0.6 : 0.3
+    }));
+
+    const flashStyle = useAnimatedStyle(() => ({
+        opacity: flashOpacity.value
+    }));
 
     return (
         <GestureDetector gesture={pan}>
             <Animated.View style={[styles.container, containerStyle]}>
+                {/* Glow effect behind pack */}
+                <Animated.View style={[styles.glowEffect, { backgroundColor: config.glowColor }, glowStyle]} />
 
                 {/* Main Body of the Pack */}
                 <View style={styles.packBody}>
@@ -113,6 +213,16 @@ export default React.memo(function BoosterPack({ tier, onOpen }: BoosterPackProp
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                     >
+                        {/* Shimmer overlay */}
+                        <Animated.View style={[styles.shimmerOverlay, shimmerStyle]}>
+                            <LinearGradient
+                                colors={['transparent', 'rgba(255,255,255,0.4)', 'transparent']}
+                                start={{ x: 0, y: 0.5 }}
+                                end={{ x: 1, y: 0.5 }}
+                                style={styles.shimmerGradient}
+                            />
+                        </Animated.View>
+
                         <View style={styles.packContent}>
                             <Ionicons name={config.icon as any} size={64} color="white" style={styles.icon} />
                             <Text style={styles.label}>{config.label}</Text>
@@ -126,7 +236,7 @@ export default React.memo(function BoosterPack({ tier, onOpen }: BoosterPackProp
                     </LinearGradient>
                 </View>
 
-                {/* Tear Strip (Top Part) */}
+                {/* Tear Strip */}
                 <Animated.View style={[styles.tearStrip, topPieceStyle]}>
                     <LinearGradient
                         colors={[config.colors[0], '#ffffff', config.colors[0]]}
@@ -138,6 +248,8 @@ export default React.memo(function BoosterPack({ tier, onOpen }: BoosterPackProp
                     </LinearGradient>
                 </Animated.View>
 
+                {/* Flash overlay on open */}
+                <Animated.View style={[styles.flashOverlay, flashStyle]} />
             </Animated.View>
         </GestureDetector>
     );
@@ -234,5 +346,33 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.1)',
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(0,0,0,0.2)',
+    },
+    // NEW: Enhanced animation styles
+    glowEffect: {
+        position: 'absolute',
+        width: PACK_WIDTH * 1.3,
+        height: PACK_HEIGHT * 1.3,
+        borderRadius: 30,
+        zIndex: -1,
+    },
+    shimmerOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: PACK_WIDTH,
+        height: '100%',
+        zIndex: 10,
+        pointerEvents: 'none',
+    },
+    shimmerGradient: {
+        width: PACK_WIDTH * 0.5,
+        height: '100%',
+    },
+    flashOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'white',
+        borderRadius: 12,
+        zIndex: 100,
+        pointerEvents: 'none',
     },
 });

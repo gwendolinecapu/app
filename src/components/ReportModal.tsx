@@ -23,6 +23,16 @@ export function ReportModal({ isVisible, onClose, onSubmit }: ReportModalProps) 
     const [selectedReason, setSelectedReason] = useState<ReportReason | null>(null);
     const [details, setDetails] = useState('');
     const [loading, setLoading] = useState(false);
+    const resetTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // MEMORY LEAK FIX: Cleanup reset timeout on unmount
+    React.useEffect(() => {
+        return () => {
+            if (resetTimeoutRef.current) {
+                clearTimeout(resetTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const handleSubmit = async () => {
         if (!selectedReason) {
@@ -38,7 +48,10 @@ export function ReportModal({ isVisible, onClose, onSubmit }: ReportModalProps) 
         } finally {
             setLoading(false);
             // Reset state after close
-            setTimeout(() => {
+            if (resetTimeoutRef.current) {
+                clearTimeout(resetTimeoutRef.current);
+            }
+            resetTimeoutRef.current = setTimeout(() => {
                 setSelectedReason(null);
                 setDetails('');
             }, 500);

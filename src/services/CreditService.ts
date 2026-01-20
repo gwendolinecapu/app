@@ -27,6 +27,8 @@ import {
 } from './MonetizationTypes';
 import PremiumService from './PremiumService';
 import { AlterService } from './alters';
+import { DailyRewardService } from './DailyRewardService';
+import { DailyReward } from './MonetizationTypes';
 
 const FIRESTORE_COLLECTION = 'user_monetization';
 const TRANSACTIONS_SUBCOLLECTION = 'credit_transactions';
@@ -141,74 +143,50 @@ class CreditService {
     /**
      * Réclame le bonus de connexion quotidienne pour un alter
      */
-    async claimDailyLogin(alterId: string): Promise<{ amount: number; streak: number; streakBonus: number }> {
+    async claimDailyLogin(alterId: string): Promise<DailyReward> {
         if (!this.userId) throw new Error("User not initialized");
 
         const canClaim = await this.canClaimDailyLogin(alterId);
         if (!canClaim) {
-            // Retrieve current streak from alter to return it? 
-            // For now return 0s
-            return { amount: 0, streak: 0, streakBonus: 0 };
+            // Should not happen if UI checks. Return empty/dummy.
+            return { day: 0, credits: 0, isPremium: false };
         }
 
         const today = new Date().toISOString().split('T')[0];
-
-        // Calculate yesterday correctly
-        const yesterdayDate = new Date();
-        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-        const yesterday = yesterdayDate.toISOString().split('T')[0];
-
         const alterRef = doc(db, 'alters', alterId);
         const alterSnap = await getDoc(alterRef);
         const alterData = alterSnap.data() || {};
 
-        const lastClaim = alterData.last_daily_reward;
-        let currentStreak = alterData.daily_reward_streak || 0;
+        const lastClaim = alterData.last_daily_reward; // Date string
+        const currentStreak = alterData.daily_reward_streak || 0;
 
-        // Calculer le streak
-        if (lastClaim === yesterday) {
-            currentStreak++;
-        } else {
-            currentStreak = 1;
-        }
+        // Use Service for Streak Logic
+        // Convert YYYY-MM-DD string to timestamp for service? 
+        // Service expects timestamp number.
+        const lastClaimTimestamp = lastClaim ? new Date(lastClaim).getTime() : null;
+        const newStreak = DailyRewardService.calculateStreak(lastClaimTimestamp, currentStreak);
 
-        // Bonus quotidien (premium system-wide influence)
         const isPremium = PremiumService.isPremium();
-        const dailyAmount = isPremium
-            ? CREDIT_REWARDS.DAILY_LOGIN_PREMIUM
-            : CREDIT_REWARDS.DAILY_LOGIN_FREE;
 
-        // Bonus streak
-        let streakBonus = 0;
-        if (currentStreak === 7) {
-            streakBonus = CREDIT_REWARDS.STREAK_7_DAYS;
-        } else if (currentStreak === 30) {
-            streakBonus = CREDIT_REWARDS.STREAK_30_DAYS;
-        }
+        // Calculate Reward
+        const reward = DailyRewardService.getRewardConfig(newStreak, isPremium);
 
-        const totalAmount = dailyAmount + streakBonus;
-
-        // Ajouter les crédits (Wallet ALTER)
+        // Add Credits
         await this.addCredits(
             alterId,
-            totalAmount,
+            reward.credits,
             isPremium ? 'daily_login_premium' : 'daily_login',
-            `Connexion jour ${currentStreak} (${alterData.name || 'Alter'})`
+            `Connexion jour ${newStreak} (${alterData.name || 'Alter'})`
         );
 
-        // Mettre à jour l'alter
+        // Update Alter Data
         await updateDoc(alterRef, {
             last_daily_reward: today,
-            daily_reward_streak: currentStreak
+            daily_reward_streak: newStreak
         });
 
-        // We don't update System lastDailyClaimDate anymore, as it is per-alter.
-
-        return {
-            amount: dailyAmount,
-            streak: currentStreak,
-            streakBonus,
-        };
+        // Return full reward object (including packTier if any)
+        return reward;
     }
 
     /**
@@ -340,11 +318,8 @@ class CreditService {
 
     /**
      * ADMIN: Ajoute des crédits à n'importe quel utilisateur
-     * @deprecated Use addCreditsForUser instead to target primary alter, or addCredits with known alterId.
-     * This method writes to the legacy 'user_monetization' collection which is not displayed in the UI.
      */
     async addCreditsToUser(targetUserId: string, amount: number, type: CreditTransactionType, description?: string): Promise<void> {
-        console.warn('[CreditService] addCreditsToUser is deprecated and writes to legacy collection. Please use addCreditsForUser.');
         try {
             // Transaction Firestore
             const transaction: Omit<CreditTransaction, 'id'> = {

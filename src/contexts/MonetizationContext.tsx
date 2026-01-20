@@ -23,6 +23,7 @@ import {
     CREDIT_ITEMS,
     CREDIT_PACKS,
     COSMETIC_ITEMS,
+    DailyReward,
 } from '../services/MonetizationTypes';
 
 interface MonetizationContextType {
@@ -30,6 +31,7 @@ interface MonetizationContextType {
     loading: boolean;
     tier: UserTier;
     credits: number;
+    dust: number;
 
     // Premium
     isPremium: boolean;
@@ -59,9 +61,8 @@ interface MonetizationContextType {
     // Crédits
     // checkDailyLogin is likely not used directly in UI as much as claim button
     checkDailyLogin: (alterId: string) => Promise<boolean>;
-
     currentStreak: number;
-    claimDailyLogin: (alterId: string) => Promise<{ amount: number; streak: number; streakBonus: number }>;
+    claimDailyLogin: (alterId: string) => Promise<DailyReward>;
 
     shopItems: ShopItem[];
     ownedItems: string[]; // IDs only
@@ -86,6 +87,7 @@ interface MonetizationContextType {
     // Refresh
     refresh: () => Promise<void>;
     addCredits: (amount: number, reason: string) => Promise<boolean>;
+    addDust: (amount: number) => Promise<boolean>;
     addToInventory: (itemId: string) => Promise<boolean>; // Add item without spending credits (for loot box)
     offerings: PurchasesOffering | null;
 }
@@ -99,6 +101,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     // États dérivés des services
     const [tier, setTier] = useState<UserTier>('free');
     const [credits, setCredits] = useState(0);
+    const [dust, setDust] = useState(0);
     const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
     const [isConversionModalVisible, setConversionModalVisible] = useState(false);
 
@@ -119,6 +122,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         if (currentAlter) {
             // Sync Credits
             setCredits(currentAlter.credits || 0);
+            setDust(currentAlter.dust || 0);
 
             // Sync Inventory
             const defaults = ['theme_default', 'frame_simple', 'bubble_default', 'border_none'];
@@ -135,6 +139,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         } else {
             // Reset to defaults if no alter (shouldn't happen in app usage but safe)
             setCredits(0);
+            setDust(0);
             setOwnedItems(['theme_default', 'frame_simple', 'bubble_default', 'border_none']);
         }
     }, [currentAlter]);
@@ -212,6 +217,25 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
             return false;
         }
     }, [currentAlter]);
+
+    const addDust = useCallback(async (amount: number): Promise<boolean> => {
+        if (!currentAlter) return false;
+        try {
+            const alterRef = doc(db, 'alters', currentAlter.id);
+            // Increment dust
+            const newDust = (currentAlter.dust || 0) + amount;
+
+            await setDoc(alterRef, { dust: newDust }, { merge: true });
+
+            // Local update
+            setDust(newDust);
+            refreshAlters();
+            return true;
+        } catch (error) {
+            console.error('[MonetizationContext] Failed to add dust:', error);
+            return false;
+        }
+    }, [currentAlter, refreshAlters]);
 
     /**
      * Ajoute un item à l'inventaire de l'alter sans dépenser de crédits
@@ -483,6 +507,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         loading,
         tier,
         credits,
+        dust,
 
         isPremium,
         isTrialActive,
@@ -527,6 +552,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         getNativeAd,
         refresh,
         addCredits,
+        addDust,
         addToInventory,
         offerings,
     };

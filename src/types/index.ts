@@ -54,6 +54,7 @@ export interface Alter {
     // Monetization & Inventory (Alter-specific)
     owned_items?: string[]; // IDs of items owned by this alter
     credits?: number; // Current credit balance
+    dust?: number; // Poussière d'étoile (via doublons)
     last_daily_reward?: string; // Date (YYYY-MM-DD) of last claim
     last_reward_ad?: number; // Timestamp of last ad watch
 

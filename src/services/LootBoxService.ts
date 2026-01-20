@@ -1,50 +1,40 @@
 /**
  * LootBoxService.ts
  * 
- * Système de "Chain Upgrade" (Style Clash Royale / Brawl Stars)
+ * Système de Loot Box 2.0 (Type TCG / Booster Packs)
  * 
- * Flow:
- * 1. Le joueur achète le coffre (prix fixe)
- * 2. Le coffre commence en rareté COMMUNE
- * 3. À chaque tap, probabilité d'UPGRADE le coffre vers la rareté supérieure
- * 4. Si l'upgrade échoue, le coffre s'ouvre avec la rareté actuelle
+ * Features:
+ * - 3 Tiers de packs (Basic, Standard, Elite)
+ * - Quantité de cartes variable (RNG)
+ * - Garanties de rareté
+ * - Système de Dust pour les doublons
  */
 
-import { ShopItem, Rarity, COSMETIC_ITEMS, LOOT_BOX_PRICE, RARITY_COLORS } from './MonetizationTypes';
+import {
+    ShopItem,
+    Rarity,
+    COSMETIC_ITEMS,
+    LootBoxTier,
+    PACK_TIERS,
+    DUST_CONVERSION_RATES
+} from './MonetizationTypes';
 
-// ==================== CONFIGURATION ====================
+/** Résultat d'une carte tirée */
+export interface CardResult {
+    item: ShopItem;
+    isNew: boolean;
+    dustValue?: number; // Si doublon, valeur en dust
+    isGuaranteed?: boolean; // Si obtenue via garantie
+}
 
-export const LOOT_BOX = {
-    id: 'chain_chest',
-    name: 'Coffre Évolutif',
-    price: LOOT_BOX_PRICE, // Uses centralized price (30)
-    description: 'Une chance d\'améliorer la rareté à chaque coup !',
-    color: RARITY_COLORS.common, // Starts at Common
-};
+/** Résultat de l'ouverture d'un pack */
+export interface PackResult {
+    tier: LootBoxTier;
+    cards: CardResult[];
+    totalDust: number;
+}
 
-/**
- * Probabilités d'upgrade vers la rareté SUIVANTE
- */
-const UPGRADE_CHANCES: Record<Rarity, number> = {
-    common: 0.30,   // 30% chance to pass Common -> Rare
-    rare: 0.30,     // 30% chance to pass Rare -> Epic
-    epic: 0.30,     // 30% chance to pass Epic -> Legendary
-    legendary: 0.30,// 30% chance to pass Legendary -> Mythic
-    mythic: 0,      // Max level
-};
-
-export const REFUND_VALUES: Record<Rarity, number> = {
-    common: 1, // Reduced refunds to match lower prices
-    rare: 10,  // 50% of 20
-    epic: 35,  // ~50% of 75
-    legendary: 125, // 50% of 250
-    mythic: 500 // 50% of 1000
-};
-
-/**
- * Items groupés par rareté
- * Uses the explicit 'rarity' field from ShopItem
- */
+/** Items groupés par rareté (Cached) */
 const ITEMS_BY_RARITY: Record<Rarity, ShopItem[]> = {
     common: COSMETIC_ITEMS.filter(item => (item.rarity || 'common') === 'common'),
     rare: COSMETIC_ITEMS.filter(item => item.rarity === 'rare'),
@@ -55,71 +45,153 @@ const ITEMS_BY_RARITY: Record<Rarity, ShopItem[]> = {
 
 export const LootBoxService = {
     /**
-     * Tente d'améliorer le coffre
-     * Retourne la nouvelle rareté si succès, ou null si échec (doit ouvrir)
+     * Ouvre un Booster Pack
      */
-    tryUpgrade(currentRarity: Rarity): Rarity | null {
-        // Empêcher upgrade si déjà au max
-        if (currentRarity === 'mythic') return null;
+    openPack(tier: LootBoxTier, ownedItemIds: string[] = []): PackResult {
+        const config = PACK_TIERS[tier];
 
-        const chance = UPGRADE_CHANCES[currentRarity];
-        const attempt = Math.random();
+        // 1. Déterminer le nombre de cartes (Weighted RNG)
+        const cardCount = this.rollCardCount(config.cardCount.probabilities);
 
-        if (attempt <= chance) {
-            // Success! Return next rarity
-            if (currentRarity === 'common') return 'rare';
-            if (currentRarity === 'rare') return 'epic';
-            if (currentRarity === 'epic') return 'legendary';
-            if (currentRarity === 'legendary') return 'mythic';
+        // 2. Générer les raretés initiales
+        let rarities: Rarity[] = [];
+        for (let i = 0; i < cardCount; i++) {
+            rarities.push(this.rollRarity(config.dropRates));
         }
 
-        // Failed upgrade
-        return null;
+        // 3. Appliquer les garanties de rareté
+        if (config.rarityGuarantees.minRarity) {
+            rarities = this.applyGuarantees(
+                rarities,
+                config.rarityGuarantees.minRarity,
+                config.rarityGuarantees.count || 1
+            );
+        }
+
+        // 4. Sélectionner les items spécifiques
+        const results: CardResult[] = [];
+        const currentSessionIds = new Set<string>(); // Pour éviter doublons dans le MEME pack
+
+        let totalDust = 0;
+
+        for (const rarity of rarities) {
+            const pool = ITEMS_BY_RARITY[rarity];
+
+            // Fallback si pool vide (ex: pas encore de Mythic) -> Common
+            const actualPool = (pool && pool.length > 0) ? pool : ITEMS_BY_RARITY['common'];
+
+            // Sélection item aléatoire
+            const item = actualPool[Math.floor(Math.random() * actualPool.length)];
+
+            // Check doublon (Possédé AVANT ou tiré DANS CE PACK)
+            const isDuplicate = ownedItemIds.includes(item.id) || currentSessionIds.has(item.id);
+
+            let dustValue = 0;
+            if (isDuplicate) {
+                dustValue = DUST_CONVERSION_RATES[item.rarity || 'common'];
+                totalDust += dustValue;
+            }
+
+            currentSessionIds.add(item.id);
+
+            results.push({
+                item,
+                isNew: !isDuplicate,
+                dustValue: isDuplicate ? dustValue : undefined
+            });
+        }
+
+        // Trier par rareté pour le reveal (Communs d'abord, Légendaires à la fin)
+        const rarityOrder: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3, mythic: 4 };
+        results.sort((a, b) => rarityOrder[a.item.rarity || 'common'] - rarityOrder[b.item.rarity || 'common']);
+
+        return {
+            tier,
+            cards: results,
+            totalDust
+        };
     },
 
     /**
-     * Obtient une récompense pour une rareté donnée
-     * (Un seul item)
+     * Détermine le nombre de cartes selon les probabilités
      */
-    getReward(rarity: Rarity, ownedItemIds: string[] = []): { item: ShopItem, isNew: boolean } {
-        // Filtrer les items de cette rareté
-        const pool = ITEMS_BY_RARITY[rarity];
+    rollCardCount(probabilities: { [count: number]: number }): number {
+        const rand = Math.random();
+        let cumulative = 0;
 
-        // Ensure pool exists
-        if (!pool || pool.length === 0) {
-            // Fallback to common if pool is empty
-            const fallbackPool = ITEMS_BY_RARITY['common'];
-            const fallbackItem = fallbackPool[Math.floor(Math.random() * fallbackPool.length)];
-            return { item: fallbackItem, isNew: !ownedItemIds.includes(fallbackItem.id) };
+        for (const [countStr, probability] of Object.entries(probabilities)) {
+            cumulative += probability;
+            if (rand < cumulative) {
+                return parseInt(countStr);
+            }
         }
 
-        // Essayer de trouver un item non possédé
-        const unowned = pool.filter(item => !ownedItemIds.includes(item.id));
+        // Fallback (devrait pas arriver si probas s'additionnent à 1)
+        return parseInt(Object.keys(probabilities)[0]);
+    },
 
-        let selectedItem: ShopItem;
-        let isNew = false;
+    /**
+     * Détermine une rareté selon les taux de drop
+     */
+    rollRarity(rates: { [key in Rarity]: number }): Rarity {
+        const rand = Math.random();
+        let cumulative = 0;
 
-        if (unowned.length > 0) {
-            // Priorité aux nouveaux items
-            selectedItem = unowned[Math.floor(Math.random() * unowned.length)];
-            isNew = true;
-        } else {
-            // Fallback: item déjà possédé (sera converti en crédits visuellement ou juste "doublon")
-            selectedItem = pool[Math.floor(Math.random() * pool.length)];
-            isNew = false;
+        const rarities: Rarity[] = ['common', 'rare', 'epic', 'legendary', 'mythic'];
+
+        for (const rarity of rarities) {
+            const val = rates[rarity] || 0;
+            cumulative += val;
+            if (rand < cumulative) {
+                return rarity;
+            }
         }
 
-        return { item: selectedItem, isNew };
+        return 'common';
+    },
+
+    /**
+     * Assure qu'au moins N cartes sont de rareté X ou supérieure
+     */
+    applyGuarantees(currentRarities: Rarity[], minRarity: Rarity, count: number): Rarity[] {
+        const rarityValue: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3, mythic: 4 };
+        const minVal = rarityValue[minRarity];
+
+        let qualifiedCount = currentRarities.filter(r => rarityValue[r] >= minVal).length;
+
+        if (qualifiedCount >= count) return currentRarities;
+
+        // Upgrade nécessaire
+        const sortedIndices = currentRarities
+            .map((r, i) => ({ r, i, val: rarityValue[r] }))
+            .sort((a, b) => a.val - b.val); // Trier du plus faible au plus fort
+
+        const newRarities = [...currentRarities];
+
+        // Upgrade les N pires cartes
+        for (let k = 0; k < (count - qualifiedCount); k++) {
+            const targetIndex = sortedIndices[k].i;
+            newRarities[targetIndex] = minRarity;
+        }
+
+        return newRarities;
     },
 
     /**
      * Couleur associée à une rareté
      */
-    getRarityColor(rarity: Rarity): string {
-        return RARITY_COLORS[rarity];
+    getRarityColor(rarity?: Rarity): string {
+        switch (rarity) {
+            case 'common': return '#9CA3AF'; // Gray 400
+            case 'rare': return '#3B82F6';   // Blue 500
+            case 'epic': return '#A855F7';   // Purple 500
+            case 'legendary': return '#EAB308'; // Yellow 500
+            case 'mythic': return '#EC4899'; // Pink 500
+            default: return '#9CA3AF';
+        }
     },
 
-    getRarityName(rarity: Rarity): string {
+    getRarityLabel(rarity?: Rarity): string {
         switch (rarity) {
             case 'common': return 'Commun';
             case 'rare': return 'Rare';
@@ -132,27 +204,24 @@ export const LootBoxService = {
 
     /**
      * Retourne 3 items aléatoires basés sur la date du jour
-     * (Rotation quotidienne stable)
+     * (Legacy mais utilisé pour la boutique quotidienne)
      */
     getDailyItems(): ShopItem[] {
-        const dateStr = new Date().toISOString().split('T')[0]; // "2023-10-27"
+        const dateStr = new Date().toISOString().split('T')[0];
         const seed = dateStr.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-
-        // Pseudo-random generator seeded by date
         const prng = (offset: number) => {
             const x = Math.sin(seed + offset) * 10000;
             return x - Math.floor(x);
         };
 
         const dailyItems: ShopItem[] = [];
-        const pool = [...COSMETIC_ITEMS]; // Copy
+        const pool = [...COSMETIC_ITEMS];
 
-        // Pick 3 unique items
         for (let i = 0; i < 3; i++) {
             if (pool.length === 0) break;
             const index = Math.floor(prng(i) * pool.length);
             dailyItems.push(pool[index]);
-            pool.splice(index, 1); // Avoid duplicates
+            pool.splice(index, 1);
         }
 
         return dailyItems;

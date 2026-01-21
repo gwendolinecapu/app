@@ -58,12 +58,24 @@ export const MessagingService = {
     ) => {
         try {
             const conversationId = [senderId, receiverId].sort().join('_');
+
+            // 🔒 Chiffrement E2E si activé
+            const { EncryptionService } = await import('./EncryptionService');
+            const isEncryptionEnabled = extra.systemId
+                ? await EncryptionService.isEncryptionEnabled(extra.systemId)
+                : false;
+
+            const finalContent = isEncryptionEnabled && extra.type !== 'image'
+                ? await EncryptionService.encrypt(content, extra.systemId!)
+                : content;
+
             const messageData = {
                 sender_alter_id: senderId,
                 receiver_alter_id: receiverId,
                 conversation_id: conversationId,
-                content: content,
+                content: finalContent,
                 is_read: false,
+                is_encrypted: isEncryptionEnabled && extra.type !== 'image', // 🔒 Indicateur de chiffrement
                 created_at: new Date().toISOString(),
                 ...extra
             };
@@ -73,10 +85,15 @@ export const MessagingService = {
             // Update conversation metadata
             const convRef = doc(db, 'conversations', conversationId);
 
+            // 🔒 FIX: Utiliser un placeholder pour lastMessage si chiffré (évite fuite de données)
+            const displayMessage = isEncryptionEnabled && extra.type !== 'image'
+                ? '🔒 Message chiffré'
+                : (extra.type === 'image' ? '📷 Image' : content);
+
             const updateData: any = {
                 id: conversationId,
                 participants: [senderId, receiverId],
-                lastMessage: extra.type === 'image' ? '📷 Image' : content,
+                lastMessage: displayMessage, // 🔒 Plus de fuite !
                 lastMessageTime: messageData.created_at,
                 unreadCounts: {
                     [receiverId]: increment(1),

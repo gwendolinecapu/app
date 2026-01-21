@@ -201,6 +201,7 @@ export interface Message {
     type: 'text' | 'image' | 'poll' | 'note' | 'post';
     is_internal: boolean;
     is_read: boolean;
+    is_encrypted?: boolean; // 🔒 Si true, le contenu est chiffré end-to-end
     created_at: string;
     system_tag?: string; // Tag optionnel (ex: "[Leo]")
     media_url?: string; // URL de l'image/média si type === 'image'

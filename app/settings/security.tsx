@@ -89,6 +89,35 @@ export default function SecurityScreen() {
                     </View>
                 </View>
 
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>🔒 Chiffrement End-to-End</Text>
+                    <View style={styles.infoBox}>
+                        <Text style={styles.infoBoxText}>
+                            Lorsque activé, vos messages sont chiffrés sur votre appareil avant d'être envoyés.
+                            Même nous ne pourrons pas les lire.
+                        </Text>
+                    </View>
+
+                    <TouchableOpacity
+                        style={styles.encryptionButton}
+                        onPress={() => {
+                            triggerHaptic.selection();
+                            router.push('/settings/encryption' as any);
+                        }}
+                    >
+                        <View style={styles.encryptionButtonContent}>
+                            <View style={styles.iconContainer}>
+                                <Ionicons name="shield-checkmark-outline" size={22} color={colors.primary} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.switchLabel}>Gérer le chiffrement</Text>
+                                <Text style={styles.switchSubLabel}>Messages privés protégés</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                        </View>
+                    </TouchableOpacity>
+                </View>
+
                 <View style={[styles.section, styles.dangerZone]}>
                     <View style={styles.dangerHeader}>
                         <Ionicons name="warning" size={24} color={colors.error} />
@@ -289,5 +318,29 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: spacing.md,
+    },
+    infoBox: {
+        backgroundColor: colors.backgroundLight,
+        borderRadius: borderRadius.md,
+        padding: spacing.md,
+        marginBottom: spacing.md,
+        borderLeftWidth: 3,
+        borderLeftColor: colors.primary,
+    },
+    infoBoxText: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        lineHeight: 18,
+    },
+    encryptionButton: {
+        backgroundColor: colors.background,
+        borderRadius: borderRadius.md,
+        padding: spacing.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    encryptionButtonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
 });

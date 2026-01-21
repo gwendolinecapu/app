@@ -1,5 +1,62 @@
 # Changelog
 
+## [2026-01-21] End-to-End Encryption (E2EE) Implementation 🔐
+
+### 🔒 Chiffrement End-to-End (v2 - CORRIGÉ)
+- **Nouveau Service** : `EncryptionService.ts` - Chiffrement XOR avec clé dérivée
+  - ❌ ~~SHA-256 digest simulant chiffrement (VULNÉRABLE)~~ → ✅ Vrai chiffrement XOR dérivé
+  - Clé unique dérivée par message via SHA-256(masterKey + IV)
+  - Vérification d'intégrité via HMAC
+  - Support Unicode complet (emojis, accents, caractères spéciaux)
+  - Fallback localStorage pour Web (expo-secure-store incompatible)
+  - Génération de clés sécurisées via `crypto.getRandomValues()`
+  - Stockage dans Keychain iOS / Keystore Android (`expo-secure-store`)
+
+### 🔐 Corrections de Sécurité Critiques
+- **FIX DATA LEAK** : `lastMessage` affichait le contenu en CLAIR dans les métadonnées
+  - Avant : `lastMessage: content` → Fuite de données !
+  - Après : `lastMessage: "🔒 Message chiffré"` si E2E activé
+- **FIX UNICODE** : `btoa/atob` crashait avec emojis → Utilisation de `TextEncoder/TextDecoder`
+- **FIX WEB** : Ajout d'un fallback `localStorage` pour les plateformes Web
+
+### 📱 Intégration Messages Privés
+- **Type `Message`** : Ajout du champ `is_encrypted` (boolean)
+- **MessagingService** : Chiffrement automatique avant envoi si activé
+  - Import dynamique pour optimiser les performances
+  - Gestion gracieuse des erreurs de chiffrement
+  - Images/médias non chiffrés (limitation actuelle)
+- **ConversationScreen** : Déchiffrement automatique à l'affichage
+  - Badge visuel 🔒 pour messages chiffrés
+  - Message de fallback si clé manquante
+  - Gestion asynchrone sans blocage de l'UI
+
+### ⚙️ Paramètres Utilisateur
+- **`/settings/security`** : Nouvelle section "Chiffrement End-to-End"
+  - Bouton "Gérer le chiffrement" avec navigation dédiée
+  - Explication pédagogique du fonctionnement
+- **`/settings/encryption`** : Écran de configuration complet
+  - Toggle activation/désactivation avec alertes de confirmation
+  - Indicateur de statut (Activé ✅ / Désactivé 🔓)
+  - 4 cartes explicatives (XOR dérivé, local, zero-knowledge, clé sécurisée)
+  - Section "Important à savoir" avec avertissements
+
+### ⚠️ Limitations Connues (Documentation Honnête)
+- **XOR avec clé dérivée** : Moins sécurisé qu'AES-GCM natif (expo-crypto ne le supporte pas)
+- **Même clé par système** : Pas de clé unique par conversation (prévu v3)
+- **Web** : Utilise localStorage (moins sécurisé que Keychain/Keystore)
+- **Anciens messages** : Restent non chiffrés (migration manuelle requise)
+- **Images/GIFs** : Non chiffrés actuellement
+
+### 🎯 Impact Utilisateur
+| Avant | Après |
+|-------|-------|
+| Faux chiffrement (base64 lisible) | Vrai chiffrement XOR dérivé |
+| lastMessage en clair | lastMessage = "🔒 Message chiffré" |
+| Crash avec emojis | Support Unicode complet |
+| Pas de Web | Fallback localStorage |
+
+---
+
 ## [2026-01-20] Loot Box Animation Enhancements 🎬
 
 ### 🎬 Animations Loot Box Améliorées

@@ -13,9 +13,9 @@ import {
     Alert,
     ActionSheetIOS,
 } from 'react-native';
-import { useLocalSearchParams , useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { db , storage } from '../../src/lib/firebase';
+import { db, storage } from '../../src/lib/firebase';
 import { collection, query, where, getDocs, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, getDoc, deleteDoc } from 'firebase/firestore';
 import { Message, Alter } from '../../src/types';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
@@ -76,24 +76,39 @@ export default function ConversationScreen() {
             where('conversation_id', '==', conversationId)
         );
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+        const unsubscribe = onSnapshot(q, async (snapshot) => {
             const data: Message[] = [];
-            snapshot.docs.forEach((docSnap) => {
+
+            // Import du service de chiffrement
+            const { EncryptionService } = await import('../../src/services/EncryptionService');
+
+            for (const docSnap of snapshot.docs) {
                 const msg = { id: docSnap.id, ...docSnap.data() } as Message;
+
+                // 🔒 Déchiffrer le contenu si nécessaire
+                if (msg.is_encrypted && user?.uid) {
+                    try {
+                        msg.content = await EncryptionService.decrypt(msg.content, user.uid);
+                    } catch (error) {
+                        console.error('[ConversationScreen] Erreur déchiffrement:', error);
+                        msg.content = '🔒 [Message chiffré - clé manquante]';
+                    }
+                }
+
                 data.push(msg);
 
                 // Mark as read if not mine
                 if (msg.receiver_alter_id === currentAlter.id && !msg.is_read) {
                     markMessageAsRead(docSnap.id);
                 }
-            });
+            }
             // Client-side sort to fix missing index error
             data.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
             setMessages(data);
         });
 
         return () => unsubscribe();
-    }, [currentAlter, id]);
+    }, [currentAlter, id, user?.uid]);
 
     const markMessageAsRead = async (messageId: string) => {
         try {
@@ -332,6 +347,9 @@ export default function ConversationScreen() {
                                 minute: '2-digit',
                             })}
                         </Text>
+                        {item.is_encrypted && (
+                            <Text style={styles.encryptedBadge}> 🔒</Text>
+                        )}
                         {isMine && (
                             <Text style={styles.readStatus}>
                                 {item.is_read ? ' ✓✓' : ' ✓'}
@@ -640,6 +658,11 @@ const styles = StyleSheet.create({
         fontSize: 10,
         color: 'rgba(255,255,255,0.7)',
         marginLeft: 4,
+    },
+    encryptedBadge: {
+        fontSize: 10,
+        marginLeft: 4,
+        opacity: 0.8,
     },
     reactionsContainer: {
         position: 'absolute',

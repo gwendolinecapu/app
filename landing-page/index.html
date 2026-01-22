@@ -1,26 +1,61 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PluralConnect - L'app TDI qui vous comprend vraiment</title>
-    <meta name="description" content="La première application conçue PAR et POUR les systèmes pluriels. Gérez vos alters, partagez vos moments, connectez-vous en toute sécurité.">
-    
-    <!-- SEO -->
+    <meta name="description"
+        content="La première application conçue PAR et POUR les systèmes pluriels. Gérez vos alters, partagez vos moments, connectez-vous en toute sécurité.">
+
+    <!-- SEO & OG Tags -->
     <meta property="og:title" content="PluralConnect - L'app TDI qui vous comprend vraiment">
     <meta property="og:description" content="Inscription anticipée - Surprise exclusive pour les 500 premiers !">
+    <meta property="og:image" content="./logo.png">
     <meta property="og:type" content="website">
-    
+    <meta name="twitter:card" content="summary_large_image">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="./logo.png">
+    <link rel="apple-touch-icon" href="./logo.png">
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { getFirestore, collection, addDoc, doc, getDoc, setDoc, onSnapshot, runTransaction, increment } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+        // Firebase config - CORRECT PROJECT: app-tdi
+        const firebaseConfig = {
+            apiKey: "AIzaSyDdteIZYO8VJEyXYPAvHzkiOjXW17s5exc",
+            authDomain: "app-tdi.firebaseapp.com",
+            projectId: "app-tdi",
+            storageBucket: "app-tdi.firebasestorage.app",
+            messagingSenderId: "280489246228",
+            appId: "1:280489246228:web:7b5e1177e193dc20caf101",
+            measurementId: "G-Y5Y6LXVNS1"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Make available globally
+        window.firebaseDB = db;
+        window.firebaseUtils = { collection, addDoc, doc, getDoc, setDoc, onSnapshot, runTransaction, increment };
+    </script>
+
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <!-- Animated Background -->
     <div class="bg-gradient"></div>
@@ -29,15 +64,18 @@
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-content">
-            <div class="logo">
-                <span class="logo-icon">🌈</span>
+            <a href="#" class="logo">
+                <img src="./logo.png" alt="PluralConnect" class="logo-image">
                 <span class="logo-text">PluralConnect</span>
-            </div>
+            </a>
             <div class="nav-links">
                 <a href="#features">Fonctionnalités</a>
                 <a href="#why">Pourquoi nous ?</a>
                 <a href="#signup" class="nav-cta">Inscription</a>
             </div>
+            <button class="mobile-menu" id="mobile-menu">
+                <i class="fas fa-bars"></i>
+            </button>
         </div>
     </nav>
 
@@ -46,16 +84,19 @@
         <div class="hero-content">
             <div class="badge-container">
                 <span class="badge pulse">🚀 Bientôt disponible</span>
-                <span class="badge secondary">500 places Early Access</span>
+                <span class="badge badge-counter" id="early-bird-badge">
+                    <i class="fas fa-fire"></i>
+                    <span id="spots-badge">...</span> places Early Bird
+                </span>
             </div>
-            
+
             <h1 class="hero-title">
-                L'application TDI qui vous 
+                L'application TDI qui vous
                 <span class="gradient-text">comprend vraiment</span>
             </h1>
-            
+
             <p class="hero-subtitle">
-                Créée PAR et POUR les systèmes pluriels. Gérez vos alters, 
+                Créée <strong>PAR</strong> et <strong>POUR</strong> les systèmes pluriels. Gérez vos alters,
                 partagez vos moments, connectez-vous en toute sécurité.
             </p>
 
@@ -76,54 +117,93 @@
                 </p>
             </div>
 
-            <div class="social-proof">
-                <div class="avatars">
-                    <div class="avatar" style="--i: 0">👤</div>
-                    <div class="avatar" style="--i: 1">🌸</div>
-                    <div class="avatar" style="--i: 2">⭐</div>
-                    <div class="avatar" style="--i: 3">🎭</div>
-                    <div class="avatar" style="--i: 4">💜</div>
+            <!-- Real-time Counter -->
+            <div class="live-counter">
+                <div class="counter-content">
+                    <div class="counter-item">
+                        <div class="counter-value" id="signup-count">
+                            <span class="counter-loader"><i class="fas fa-spinner fa-spin"></i></span>
+                        </div>
+                        <div class="counter-label">Inscrits</div>
+                    </div>
+                    <div class="counter-divider"></div>
+                    <div class="counter-item highlight">
+                        <div class="counter-value" id="spots-left">
+                            <span class="counter-loader"><i class="fas fa-spinner fa-spin"></i></span>
+                        </div>
+                        <div class="counter-label">Places restantes</div>
+                    </div>
+                    <div class="counter-divider"></div>
+                    <div class="counter-item">
+                        <div class="counter-value">500</div>
+                        <div class="counter-label">Objectif</div>
+                    </div>
                 </div>
-                <p><span id="signup-count">247</span>+ personnes déjà inscrites</p>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+                </div>
+                <p class="counter-status" id="counter-status">
+                    <i class="fas fa-circle-notch fa-spin"></i> Chargement...
+                </p>
             </div>
         </div>
 
         <div class="hero-visual">
             <div class="phone-mockup">
+                <div class="phone-notch"></div>
                 <div class="phone-screen">
                     <div class="app-preview">
                         <div class="preview-header">
-                            <span class="preview-avatar">🦋</span>
-                            <span class="preview-name">Luna</span>
-                            <span class="preview-status">En front</span>
+                            <img src="./logo.png" alt="" class="preview-logo">
+                            <div class="preview-user">
+                                <span class="preview-name">Luna</span>
+                                <span class="preview-status-dot"></span>
+                                <span class="preview-status">En front</span>
+                            </div>
                         </div>
                         <div class="preview-content">
                             <div class="preview-card">
-                                <div class="card-emoji">✨</div>
-                                <span>Nouveau post créé</span>
+                                <div class="card-emoji">🦊🌸</div>
+                                <div class="card-info">
+                                    <span class="card-title">Felix & Sakura en co-front</span>
+                                    <span class="card-sub">Depuis 2h30 · Mode collaboratif</span>
+                                </div>
+                            </div>
+                            <div class="preview-card accent">
+                                <div class="card-emoji">📔</div>
+                                <div class="card-info">
+                                    <span class="card-title">Journal système</span>
+                                    <span class="card-sub">"Bonne journée à tous !" - Alex</span>
+                                </div>
                             </div>
                             <div class="preview-card">
-                                <div class="card-emoji">💬</div>
-                                <span>3 messages</span>
+                                <div class="card-emoji">🌌</div>
+                                <div class="card-info">
+                                    <span class="card-title">Nouveau thème débloqué</span>
+                                    <span class="card-sub">Cosmos · Pack Elite</span>
+                                </div>
                             </div>
-                            <div class="preview-card">
-                                <div class="card-emoji">🎨</div>
-                                <span>Thème personnalisé</span>
-                            </div>
+                        </div>
+                        <div class="preview-nav">
+                            <div class="nav-item active"><i class="fas fa-home"></i></div>
+                            <div class="nav-item"><i class="fas fa-users"></i></div>
+                            <div class="nav-item"><i class="fas fa-plus-circle"></i></div>
+                            <div class="nav-item"><i class="fas fa-comment"></i></div>
+                            <div class="nav-item"><i class="fas fa-user"></i></div>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="floating-elements">
-                <div class="floating-card" style="--delay: 0s; --x: -60px; --y: -40px;">
+                <div class="floating-card" style="--delay: 0s; --x: -80px; --y: -60px;">
                     <i class="fas fa-shield-halved"></i>
                     <span>Chiffrage E2E</span>
                 </div>
-                <div class="floating-card" style="--delay: 0.5s; --x: 80px; --y: 20px;">
+                <div class="floating-card" style="--delay: 0.5s; --x: 100px; --y: 30px;">
                     <i class="fas fa-palette"></i>
                     <span>50+ Thèmes</span>
                 </div>
-                <div class="floating-card" style="--delay: 1s; --x: -40px; --y: 100px;">
+                <div class="floating-card" style="--delay: 1s; --x: -50px; --y: 140px;">
                     <i class="fas fa-users"></i>
                     <span>Co-Fronting</span>
                 </div>
@@ -154,7 +234,8 @@
                     <i class="fas fa-exchange-alt"></i>
                 </div>
                 <h3>Suivi du Fronting</h3>
-                <p>Trackez qui est en front, gérez le co-fronting, visualisez l'historique avec des stats.</p>
+                <p>Trackez qui est en front, gérez le co-fronting, visualisez l'historique avec des stats détaillées.
+                </p>
             </div>
 
             <div class="feature-card">
@@ -162,7 +243,7 @@
                     <i class="fas fa-book-open"></i>
                 </div>
                 <h3>Journal Partagé</h3>
-                <p>Communiquez entre alters avec un journal interne sécurisé et privé.</p>
+                <p>Communiquez entre alters avec un journal interne sécurisé et entièrement privé.</p>
             </div>
 
             <div class="feature-card">
@@ -170,15 +251,15 @@
                     <i class="fas fa-shield-alt"></i>
                 </div>
                 <h3>Sécurité Maximale</h3>
-                <p>Chiffrement E2E, mots de passe par espace, protection biométrique.</p>
+                <p>Chiffrement E2E, mots de passe par espace, protection biométrique. Vos données restent vôtres.</p>
             </div>
 
             <div class="feature-card">
                 <div class="feature-icon">
-                    <i class="fas fa-magic"></i>
+                    <i class="fas fa-wand-magic-sparkles"></i>
                 </div>
                 <h3>IA Éthique</h3>
-                <p>Génération d'avatars, résumés intelligents. Tout reste privé et local.</p>
+                <p>Génération d'avatars, résumés intelligents. Tout reste privé, local, et respectueux des artistes.</p>
             </div>
 
             <div class="feature-card">
@@ -186,15 +267,15 @@
                     <i class="fas fa-palette"></i>
                 </div>
                 <h3>Personnalisation Totale</h3>
-                <p>50+ thèmes, cadres, bulles. Chaque alter exprime sa personnalité.</p>
+                <p>50+ thèmes, cadres, bulles. Chaque alter peut exprimer librement sa personnalité unique.</p>
             </div>
 
             <div class="feature-card">
                 <div class="feature-icon">
-                    <i class="fas fa-users"></i>
+                    <i class="fas fa-globe"></i>
                 </div>
-                <h3>Réseau Social</h3>
-                <p>Connectez-vous avec d'autres systèmes, partagez (si vous le souhaitez).</p>
+                <h3>Réseau Social Sécurisé</h3>
+                <p>Connectez-vous avec d'autres systèmes, partagez (si vous le souhaitez) en toute sécurité.</p>
             </div>
 
             <div class="feature-card">
@@ -202,7 +283,7 @@
                     <i class="fas fa-file-import"></i>
                 </div>
                 <h3>Import Simply Plural</h3>
-                <p>Migrez facilement depuis Simply Plural. Vos données en 1 clic.</p>
+                <p>Migrez facilement depuis Simply Plural. Importez toutes vos données en 1 clic.</p>
             </div>
         </div>
     </section>
@@ -213,42 +294,46 @@
             <div class="why-text">
                 <span class="section-badge">Notre différence</span>
                 <h2>Pourquoi PluralConnect ?</h2>
-                
+
                 <div class="why-points">
                     <div class="why-point">
                         <div class="why-icon">💜</div>
                         <div>
                             <h4>Créé PAR la communauté</h4>
-                            <p>Développé avec des systèmes pluriels, pas juste pour eux.</p>
+                            <p>Développé avec des systèmes pluriels, pas juste pour eux. Chaque fonctionnalité vient
+                                d'un vrai besoin.</p>
                         </div>
                     </div>
-                    
+
                     <div class="why-point">
                         <div class="why-icon">🎮</div>
                         <div>
                             <h4>Fun, pas juste pratique</h4>
-                            <p>Une app où on a ENVIE de venir, pas une corvée médicale.</p>
+                            <p>Une app où on a ENVIE de venir, pas une corvée médicale. Gamification, thèmes,
+                                personnalisation !</p>
                         </div>
                     </div>
-                    
+
                     <div class="why-point">
                         <div class="why-icon">🔒</div>
                         <div>
                             <h4>Privacy-first</h4>
-                            <p>Vos données vous appartiennent. Chiffrement bout-en-bout.</p>
+                            <p>Vos données vous appartiennent. Chiffrement bout-en-bout. Aucune vente de données.
+                                Jamais.</p>
                         </div>
                     </div>
-                    
+
                     <div class="why-point">
                         <div class="why-icon">🌱</div>
                         <div>
                             <h4>Éthique & Transparent</h4>
-                            <p>Pas de dark patterns, monétisation respectueuse, open sur nos pratiques.</p>
+                            <p>Pas de dark patterns, monétisation respectueuse, compensation carbone pour l'IA, open sur
+                                nos pratiques.</p>
                         </div>
                     </div>
                 </div>
             </div>
-            
+
             <div class="why-visual">
                 <div class="comparison-card">
                     <div class="comp-header bad">
@@ -262,7 +347,7 @@
                         <li><i class="fas fa-times"></i> Données sur leurs serveurs</li>
                     </ul>
                 </div>
-                
+
                 <div class="comparison-card good">
                     <div class="comp-header good">
                         <i class="fas fa-check-circle"></i>
@@ -279,45 +364,57 @@
         </div>
     </section>
 
-    <!-- Early Access Section -->
+    <!-- Early Access Section with Real Counter -->
     <section id="signup" class="signup-section">
         <div class="signup-container">
             <div class="signup-glow"></div>
-            
+
             <div class="signup-content">
-                <div class="countdown-badge">
+                <!-- Live Counter Badge -->
+                <div class="countdown-badge" id="countdown-badge">
                     <i class="fas fa-hourglass-half"></i>
-                    <span>Plus que <strong id="spots-left">253</strong> places Early Bird</span>
+                    <span>Plus que <strong id="spots-left-main">...</strong> places Early Bird !</span>
                 </div>
-                
+
                 <h2>Rejoignez les 500 premiers</h2>
                 <p class="signup-subtitle">
-                    Inscrivez-vous maintenant et débloquez une <strong>surprise exclusive</strong> 
+                    Inscrivez-vous maintenant et débloquez une <strong>surprise exclusive</strong>
                     à la sortie de l'app. Votre email = votre compte prêt à l'emploi !
                 </p>
 
+                <!-- Surprise Preview -->
                 <div class="surprise-preview">
                     <div class="surprise-item">
                         <div class="surprise-icon">🎨</div>
-                        <span>Thème Exclusif</span>
+                        <div class="surprise-info">
+                            <span class="surprise-title">Thème Pioneer</span>
+                            <span class="surprise-desc">Exclusif early adopters</span>
+                        </div>
                     </div>
                     <div class="surprise-item">
                         <div class="surprise-icon">💎</div>
-                        <span>500 Crédits</span>
+                        <div class="surprise-info">
+                            <span class="surprise-title">500 Crédits</span>
+                            <span class="surprise-desc">Valeur 4.99€</span>
+                        </div>
                     </div>
                     <div class="surprise-item">
                         <div class="surprise-icon">⭐</div>
-                        <span>Badge Pioneer</span>
+                        <div class="surprise-info">
+                            <span class="surprise-title">Badge Pioneer</span>
+                            <span class="surprise-desc">Permanent sur profil</span>
+                        </div>
                     </div>
                 </div>
 
+                <!-- Main Form -->
                 <form id="main-form" class="main-email-form">
                     <div class="form-row">
                         <div class="input-group">
                             <i class="fas fa-envelope"></i>
                             <input type="email" placeholder="votre@email.com" required id="main-email">
                         </div>
-                        <button type="submit" class="btn-glow">
+                        <button type="submit" class="btn-glow" id="submit-btn">
                             <span>Réserver ma place</span>
                             <i class="fas fa-rocket"></i>
                         </button>
@@ -328,11 +425,25 @@
                     </p>
                 </form>
 
+                <!-- Success Message -->
                 <div id="success-message" class="success-message hidden">
                     <div class="success-content">
                         <div class="success-icon">🎉</div>
-                        <h3>Vous êtes inscrit·e !</h3>
-                        <p>Vérifiez votre email pour confirmer. Votre surprise vous attend !</p>
+                        <h3>Félicitations, vous êtes inscrit·e !</h3>
+                        <p class="success-position">Vous êtes le <strong id="user-position">n°...</strong> inscrit !</p>
+                        <div class="success-rewards" id="success-rewards">
+                            <!-- Dynamically filled based on position -->
+                        </div>
+                        <p class="success-note">Un email de confirmation arrive dans quelques minutes.</p>
+                    </div>
+                </div>
+
+                <!-- Already Registered Message -->
+                <div id="already-message" class="already-message hidden">
+                    <div class="already-content">
+                        <div class="already-icon">👋</div>
+                        <h3>Vous êtes déjà inscrit·e !</h3>
+                        <p>Cet email est déjà enregistré. On vous contactera bientôt !</p>
                     </div>
                 </div>
             </div>
@@ -343,11 +454,11 @@
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-brand">
-                <span class="logo-icon">🌈</span>
+                <img src="./logo.png" alt="PluralConnect" class="footer-logo">
                 <span class="logo-text">PluralConnect</span>
                 <p>L'app TDI pensée pour vous.</p>
             </div>
-            
+
             <div class="footer-links">
                 <div class="footer-column">
                     <h4>À propos</h4>
@@ -365,14 +476,14 @@
                     <h4>Contact</h4>
                     <a href="mailto:hello@pluralconnect.app">hello@pluralconnect.app</a>
                     <div class="social-links">
-                        <a href="#"><i class="fab fa-twitter"></i></a>
-                        <a href="#"><i class="fab fa-discord"></i></a>
-                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" aria-label="Discord"><i class="fab fa-discord"></i></a>
+                        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
                     </div>
                 </div>
             </div>
         </div>
-        
+
         <div class="footer-bottom">
             <p>© 2026 PluralConnect. Fait avec 💜 pour la communauté plurielle.</p>
         </div>
@@ -380,4 +491,5 @@
 
     <script src="script.js"></script>
 </body>
+
 </html>

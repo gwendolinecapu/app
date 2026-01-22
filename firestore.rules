@@ -596,5 +596,38 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.resource.data.systemId == request.auth.uid;
       allow update, delete: if isAuthenticated() && resource.data.systemId == request.auth.uid;
     }
+
+    // ============================================
+    // Landing Page - Early Signups Collection
+    // Public write for email collection (no auth required)
+    // Read restricted to admins only
+    // ============================================
+    match /early_signups/{signupId} {
+      // Anyone can create a signup (landing page visitors)
+      allow create: if true;
+      
+      // Allow update if the document already exists (idempotent)
+      // This prevents duplicate signups from the same email
+      allow update: if true;
+      
+      // Only admins can read signups
+      allow read: if isAdmin();
+      
+      // No one can delete
+      allow delete: if false;
+    }
+
+    // ============================================
+    // Landing Page - Stats Collection
+    // Counter document for real-time signup count
+    // ============================================
+    match /landing_stats/{statId} {
+      // Anyone can read stats (for real-time counter)
+      allow read: if true;
+      
+      // Anyone can write (for incrementing counter)
+      // In production, use Cloud Functions for atomic updates
+      allow write: if true;
+    }
   }
 }

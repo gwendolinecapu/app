@@ -1,75 +1,172 @@
 /**
  * PluralConnect Landing Page - JavaScript
  * 
- * Handles:
- * - Email form submissions (saves to Firebase)
+ * Features:
+ * - Real-time Firebase counter for signups
+ * - Email form with duplicate detection
+ * - Automatic early bird reward calculation
  * - Particle animations
- * - Dynamic counters
  * - Smooth interactions
  */
 
-// ==================== FIREBASE CONFIG ====================
-// Import Firebase from CDN (add to HTML if using modules)
-// For now, we'll use a simple REST API approach to Firestore
-
-const FIREBASE_PROJECT_ID = 'pluralconnect-app'; // Replace with your actual project ID
-const FIRESTORE_URL = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
+// ==================== CONSTANTS ====================
+const MAX_EARLY_BIRD = 500;
+const REWARDS = {
+    PIONEER_THEME: { name: 'Thème Pioneer Exclusif', icon: '🎨', tier: 500 },
+    CREDITS_500: { name: '500 Crédits Bonus', icon: '💎', tier: 500 },
+    BADGE_PIONEER: { name: 'Badge Pioneer Permanent', icon: '⭐', tier: 500 },
+    EXTRA_CREDITS: { name: '+200 Crédits Extra', icon: '🌟', tier: 100 },
+    BETA_ACCESS: { name: 'Accès Beta Privée', icon: '🚀', tier: 50 }
+};
 
 // ==================== STATE ====================
-let signupCount = 247; // Initial count (fetched from Firestore on load)
-const MAX_EARLY_BIRD = 500;
+let signupCount = 0;
+let isFirebaseReady = false;
+let db = null;
 
-// ==================== PARTICLES ====================
-function createParticles() {
-    const container = document.getElementById('particles');
-    if (!container) return;
+// ==================== FIREBASE INITIALIZATION ====================
+function waitForFirebase() {
+    return new Promise((resolve) => {
+        const check = () => {
+            if (window.firebaseDB && window.firebaseUtils) {
+                db = window.firebaseDB;
+                isFirebaseReady = true;
+                resolve(true);
+            } else {
+                setTimeout(check, 100);
+            }
+        };
+        check();
 
-    const particleCount = 30;
+        // Timeout after 5s
+        setTimeout(() => {
+            if (!isFirebaseReady) {
+                console.warn('Firebase not available, using fallback');
+                resolve(false);
+            }
+        }, 5000);
+    });
+}
 
-    for (let i = 0; i < particleCount; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'particle';
+// ==================== REAL-TIME COUNTER ====================
+async function initRealTimeCounter() {
+    await waitForFirebase();
 
-        // Random position
-        particle.style.left = `${Math.random() * 100}%`;
-        particle.style.top = `${Math.random() * 100}%`;
+    if (!isFirebaseReady) {
+        // Fallback: use localStorage count
+        const localSignups = JSON.parse(localStorage.getItem('pluralconnect_signups') || '[]');
+        signupCount = localSignups.length;
+        updateCounterUI(signupCount);
+        return;
+    }
 
-        // Random size
-        const size = Math.random() * 4 + 2;
-        particle.style.width = `${size}px`;
-        particle.style.height = `${size}px`;
+    const { doc, onSnapshot, setDoc, getDoc } = window.firebaseUtils;
 
-        // Random animation duration and delay
-        particle.style.animationDuration = `${Math.random() * 20 + 10}s`;
-        particle.style.animationDelay = `${Math.random() * 10}s`;
+    // Reference to counter document
+    const counterRef = doc(db, 'landing_stats', 'signup_counter');
 
-        // Random color (purple/pink gradient)
-        const hue = Math.random() * 60 + 260; // 260-320 (purple to pink)
-        particle.style.background = `hsl(${hue}, 70%, 60%)`;
+    // Initialize counter if doesn't exist
+    try {
+        const counterSnap = await getDoc(counterRef);
+        if (!counterSnap.exists()) {
+            await setDoc(counterRef, { count: 0, lastUpdated: new Date().toISOString() });
+        }
+    } catch (e) {
+        console.log('Counter init check:', e.message);
+    }
 
-        container.appendChild(particle);
+    // Real-time listener
+    onSnapshot(counterRef, (doc) => {
+        if (doc.exists()) {
+            signupCount = doc.data().count || 0;
+            updateCounterUI(signupCount);
+        }
+    }, (error) => {
+        console.error('Counter listener error:', error);
+        // Fallback to static display
+        updateCounterUI(signupCount);
+    });
+}
+
+function updateCounterUI(count) {
+    const spotsLeft = Math.max(0, MAX_EARLY_BIRD - count);
+    const progress = Math.min((count / MAX_EARLY_BIRD) * 100, 100);
+
+    // Update all counter elements
+    const elements = {
+        'signup-count': count.toString(),
+        'spots-left': spotsLeft.toString(),
+        'spots-left-main': spotsLeft.toString(),
+        'spots-badge': spotsLeft.toString()
+    };
+
+    Object.entries(elements).forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) {
+            // Animate the number
+            animateValue(el, parseInt(el.textContent) || 0, parseInt(value), 500);
+        }
+    });
+
+    // Update progress bar
+    const progressBar = document.getElementById('progress-bar');
+    if (progressBar) {
+        progressBar.style.width = `${progress}%`;
+
+        // Change color based on progress
+        if (progress >= 90) {
+            progressBar.style.background = 'linear-gradient(90deg, #EF4444, #F59E0B)';
+        } else if (progress >= 70) {
+            progressBar.style.background = 'linear-gradient(90deg, #F59E0B, #FBBF24)';
+        }
+    }
+
+    // Update status text
+    const statusEl = document.getElementById('counter-status');
+    if (statusEl) {
+        if (spotsLeft === 0) {
+            statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Objectif atteint ! Les inscriptions restent ouvertes.';
+            statusEl.style.color = '#10B981';
+        } else if (spotsLeft <= 50) {
+            statusEl.innerHTML = `<i class="fas fa-fire"></i> Plus que ${spotsLeft} places ! Dépêchez-vous !`;
+            statusEl.style.color = '#EF4444';
+        } else if (spotsLeft <= 100) {
+            statusEl.innerHTML = `<i class="fas fa-clock"></i> ${spotsLeft} places Early Bird restantes`;
+            statusEl.style.color = '#F59E0B';
+        } else {
+            statusEl.innerHTML = `<i class="fas fa-circle-check"></i> En temps réel · ${count} inscrits`;
+            statusEl.style.color = '#10B981';
+        }
+    }
+
+    // Update early bird badge visibility
+    const badge = document.getElementById('early-bird-badge');
+    if (badge && spotsLeft === 0) {
+        badge.innerHTML = '<i class="fas fa-trophy"></i> Objectif atteint !';
+        badge.classList.add('completed');
     }
 }
 
-// ==================== COUNTER ANIMATION ====================
-function animateCounter(element, target, duration = 2000) {
-    if (!element) return;
+function animateValue(element, start, end, duration) {
+    if (start === end) {
+        element.textContent = end;
+        return;
+    }
 
-    const start = 0;
     const startTime = performance.now();
 
     function update(currentTime) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
-
-        // Easing function (ease-out)
         const easeOut = 1 - Math.pow(1 - progress, 3);
-        const current = Math.floor(start + (target - start) * easeOut);
+        const current = Math.floor(start + (end - start) * easeOut);
 
-        element.textContent = current.toLocaleString();
+        element.textContent = current;
 
         if (progress < 1) {
             requestAnimationFrame(update);
+        } else {
+            element.textContent = end;
         }
     }
 
@@ -77,162 +174,251 @@ function animateCounter(element, target, duration = 2000) {
 }
 
 // ==================== FORM HANDLING ====================
-async function handleFormSubmit(event, formType) {
+async function handleFormSubmit(event, formId) {
     event.preventDefault();
 
     const form = event.target;
     const emailInput = form.querySelector('input[type="email"]');
     const submitButton = form.querySelector('button[type="submit"]');
-    const email = emailInput.value.trim();
+    const email = emailInput.value.trim().toLowerCase();
 
     if (!email || !isValidEmail(email)) {
-        showError(emailInput, 'Email invalide');
+        shakeInput(emailInput);
         return;
     }
 
-    // Disable form during submission
+    // Disable form
     submitButton.disabled = true;
+    const originalContent = submitButton.innerHTML;
     submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Inscription...';
 
     try {
-        // Save to localStorage as backup
-        saveToLocalStorage(email);
+        const result = await registerEmail(email);
 
-        // Try to save to Firebase
-        await saveToFirebase(email);
-
-        // Update counter
-        signupCount++;
-        updateCounters();
-
-        // Show success
-        if (formType === 'main') {
-            showSuccessMessage();
-            form.style.display = 'none';
+        if (result.alreadyExists) {
+            showAlreadyRegistered(formId);
         } else {
-            showToast('🎉 Inscription réussie ! Vérifiez votre email.');
-            emailInput.value = '';
+            showSuccess(formId, result.position);
         }
+
+        emailInput.value = '';
 
     } catch (error) {
         console.error('Signup error:', error);
-        // Still show success if localStorage worked
-        showToast('✅ Inscrit ! Nous vous contacterons bientôt.');
-        emailInput.value = '';
+        showToast('❌ Erreur lors de l\'inscription. Réessayez.', 'error');
     } finally {
         submitButton.disabled = false;
-        submitButton.innerHTML = '<span>Réserver ma place</span><i class="fas fa-rocket"></i>';
+        submitButton.innerHTML = originalContent;
     }
 }
 
-function isValidEmail(email) {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
+async function registerEmail(email) {
+    // Save to localStorage first (backup)
+    saveToLocalStorage(email);
+
+    if (!isFirebaseReady) {
+        return { success: true, position: signupCount + 1, alreadyExists: false };
+    }
+
+    const { doc, getDoc, setDoc, runTransaction } = window.firebaseUtils;
+
+    // Check if email already exists
+    const emailHash = btoa(email).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
+    const signupRef = doc(db, 'early_signups', emailHash);
+
+    const existingDoc = await getDoc(signupRef);
+    if (existingDoc.exists()) {
+        return { success: true, position: existingDoc.data().position || 0, alreadyExists: true };
+    }
+
+    // Get current count and increment atomically
+    const counterRef = doc(db, 'landing_stats', 'signup_counter');
+
+    let newPosition = 0;
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const counterDoc = await transaction.get(counterRef);
+            const currentCount = counterDoc.exists() ? (counterDoc.data().count || 0) : 0;
+            newPosition = currentCount + 1;
+
+            // Update counter
+            transaction.set(counterRef, {
+                count: newPosition,
+                lastUpdated: new Date().toISOString()
+            });
+
+            // Create signup record
+            transaction.set(signupRef, {
+                email: email,
+                position: newPosition,
+                isEarlyBird: newPosition <= MAX_EARLY_BIRD,
+                rewards: calculateRewards(newPosition),
+                registeredAt: new Date().toISOString(),
+                source: 'landing_page'
+            });
+        });
+    } catch (e) {
+        console.error('Transaction failed:', e);
+        // Fallback: just save the signup
+        await setDoc(signupRef, {
+            email: email,
+            registeredAt: new Date().toISOString(),
+            source: 'landing_page'
+        });
+        newPosition = signupCount + 1;
+    }
+
+    return { success: true, position: newPosition, alreadyExists: false };
 }
 
-function showError(input, message) {
-    input.style.borderColor = '#EF4444';
-    input.style.animation = 'shake 0.5s ease-in-out';
+function calculateRewards(position) {
+    const rewards = [];
 
-    setTimeout(() => {
-        input.style.borderColor = '';
-        input.style.animation = '';
-    }, 2000);
+    // All early birds get these
+    if (position <= MAX_EARLY_BIRD) {
+        rewards.push('pioneer_theme', 'credits_500', 'badge_pioneer');
+    }
+
+    // Top 100 get extra
+    if (position <= 100) {
+        rewards.push('extra_credits');
+    }
+
+    // Top 50 get beta access
+    if (position <= 50) {
+        rewards.push('beta_access');
+    }
+
+    return rewards;
 }
 
-// ==================== STORAGE ====================
 function saveToLocalStorage(email) {
     const signups = JSON.parse(localStorage.getItem('pluralconnect_signups') || '[]');
-
     if (!signups.includes(email)) {
         signups.push(email);
         localStorage.setItem('pluralconnect_signups', JSON.stringify(signups));
     }
 }
 
-async function saveToFirebase(email) {
-    // Create document data
-    const data = {
-        fields: {
-            email: { stringValue: email },
-            timestamp: { timestampValue: new Date().toISOString() },
-            source: { stringValue: 'landing_page' },
-            earlyBird: { booleanValue: signupCount < MAX_EARLY_BIRD }
-        }
-    };
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
 
-    // Generate document ID from email hash
-    const docId = btoa(email).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
-
-    const response = await fetch(`${FIRESTORE_URL}/early_signups/${docId}`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    });
-
-    if (!response.ok) {
-        throw new Error('Firebase save failed');
-    }
-
-    return response.json();
+function shakeInput(input) {
+    input.style.borderColor = '#EF4444';
+    input.style.animation = 'shake 0.5s ease-in-out';
+    setTimeout(() => {
+        input.style.borderColor = '';
+        input.style.animation = '';
+    }, 2000);
 }
 
 // ==================== UI UPDATES ====================
-function updateCounters() {
-    const signupCountEl = document.getElementById('signup-count');
-    const spotsLeftEl = document.getElementById('spots-left');
-
-    if (signupCountEl) {
-        signupCountEl.textContent = signupCount;
-    }
-
-    if (spotsLeftEl) {
-        spotsLeftEl.textContent = Math.max(0, MAX_EARLY_BIRD - signupCount);
-    }
-}
-
-function showSuccessMessage() {
+function showSuccess(formId, position) {
+    const form = document.getElementById(formId === 'hero' ? 'hero-form' : 'main-form');
     const successEl = document.getElementById('success-message');
-    if (successEl) {
+    const alreadyEl = document.getElementById('already-message');
+
+    if (formId === 'main' && successEl) {
+        if (form) form.style.display = 'none';
+        if (alreadyEl) alreadyEl.classList.add('hidden');
+
+        // Set position
+        const positionEl = document.getElementById('user-position');
+        if (positionEl) positionEl.textContent = `n°${position}`;
+
+        // Set rewards based on position
+        const rewardsEl = document.getElementById('success-rewards');
+        if (rewardsEl) {
+            const rewards = calculateRewards(position);
+            rewardsEl.innerHTML = rewards.map(r => {
+                const reward = REWARDS[r.toUpperCase()] || { name: r, icon: '🎁' };
+                return `<div class="reward-badge"><span class="reward-icon">${reward.icon}</span><span>${reward.name}</span></div>`;
+            }).join('');
+        }
+
         successEl.classList.remove('hidden');
         successEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+        showToast(`🎉 Inscrit ! Vous êtes n°${position}`, 'success');
     }
 }
 
-function showToast(message) {
-    // Create toast element
+function showAlreadyRegistered(formId) {
+    if (formId === 'main') {
+        const form = document.getElementById('main-form');
+        const successEl = document.getElementById('success-message');
+        const alreadyEl = document.getElementById('already-message');
+
+        if (form) form.style.display = 'none';
+        if (successEl) successEl.classList.add('hidden');
+        if (alreadyEl) {
+            alreadyEl.classList.remove('hidden');
+            alreadyEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    } else {
+        showToast('👋 Vous êtes déjà inscrit·e !', 'info');
+    }
+}
+
+function showToast(message, type = 'success') {
     const toast = document.createElement('div');
-    toast.className = 'toast';
+    toast.className = `toast toast-${type}`;
     toast.innerHTML = message;
+
+    const bgColor = type === 'error' ? '#EF4444' : type === 'info' ? '#3B82F6' : '#8B5CF6';
+
     toast.style.cssText = `
         position: fixed;
         bottom: 24px;
         left: 50%;
         transform: translateX(-50%);
-        background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+        background: ${bgColor};
         color: white;
         padding: 16px 32px;
         border-radius: 12px;
         font-weight: 600;
-        box-shadow: 0 10px 40px rgba(139, 92, 246, 0.4);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
         z-index: 9999;
-        animation: slideUp 0.5s ease-out, fadeOut 0.5s ease-in 3s forwards;
+        animation: slideUp 0.5s ease-out;
     `;
 
     document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.5s ease-in forwards';
+        setTimeout(() => toast.remove(), 500);
+    }, 3500);
+}
 
-    setTimeout(() => toast.remove(), 4000);
+// ==================== PARTICLES ====================
+function createParticles() {
+    const container = document.getElementById('particles');
+    if (!container) return;
+
+    for (let i = 0; i < 40; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+
+        particle.style.left = `${Math.random() * 100}%`;
+        particle.style.top = `${Math.random() * 100}%`;
+
+        const size = Math.random() * 4 + 2;
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+
+        particle.style.animationDuration = `${Math.random() * 20 + 10}s`;
+        particle.style.animationDelay = `${Math.random() * 10}s`;
+
+        const hue = Math.random() * 60 + 260;
+        particle.style.background = `hsl(${hue}, 70%, 60%)`;
+
+        container.appendChild(particle);
+    }
 }
 
 // ==================== SCROLL ANIMATIONS ====================
 function initScrollAnimations() {
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    };
-
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -240,28 +426,54 @@ function initScrollAnimations() {
                 observer.unobserve(entry.target);
             }
         });
-    }, observerOptions);
+    }, { threshold: 0.1 });
 
-    // Observe feature cards
-    document.querySelectorAll('.feature-card').forEach(card => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(30px)';
-        card.style.transition = 'all 0.6s ease-out';
-        observer.observe(card);
-    });
-
-    // Observe why points
-    document.querySelectorAll('.why-point').forEach((point, index) => {
-        point.style.opacity = '0';
-        point.style.transform = 'translateX(-30px)';
-        point.style.transition = `all 0.6s ease-out ${index * 0.1}s`;
-        observer.observe(point);
+    document.querySelectorAll('.feature-card, .why-point, .comparison-card').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(30px)';
+        el.style.transition = 'all 0.6s ease-out';
+        observer.observe(el);
     });
 }
 
-// Add animate-in class styles
-const style = document.createElement('style');
-style.textContent = `
+// ==================== NAVBAR ====================
+function initNavbar() {
+    const navbar = document.querySelector('.navbar');
+
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 50) {
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+    });
+
+    // Mobile menu
+    const mobileBtn = document.getElementById('mobile-menu');
+    const navLinks = document.querySelector('.nav-links');
+
+    if (mobileBtn && navLinks) {
+        mobileBtn.addEventListener('click', () => {
+            navLinks.classList.toggle('open');
+        });
+    }
+
+    // Smooth scroll
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                navLinks.classList.remove('open');
+            }
+        });
+    });
+}
+
+// ==================== STYLES ====================
+const dynamicStyles = document.createElement('style');
+dynamicStyles.textContent = `
     .animate-in {
         opacity: 1 !important;
         transform: translate(0) !important;
@@ -281,48 +493,39 @@ style.textContent = `
     @keyframes fadeOut {
         to { opacity: 0; transform: translateX(-50%) translateY(-20px); }
     }
+    
+    .navbar.scrolled {
+        background: rgba(15, 23, 42, 0.98) !important;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    }
+    
+    .reward-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: rgba(139, 92, 246, 0.1);
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        border-radius: 100px;
+        margin: 4px;
+        font-size: 0.9rem;
+    }
+    
+    .reward-icon {
+        font-size: 1.2rem;
+    }
 `;
-document.head.appendChild(style);
-
-// ==================== NAVBAR SCROLL EFFECT ====================
-function initNavbarScroll() {
-    const navbar = document.querySelector('.navbar');
-
-    window.addEventListener('scroll', () => {
-        if (window.scrollY > 50) {
-            navbar.style.background = 'rgba(15, 23, 42, 0.95)';
-            navbar.style.boxShadow = '0 4px 24px rgba(0, 0, 0, 0.3)';
-        } else {
-            navbar.style.background = 'rgba(15, 23, 42, 0.8)';
-            navbar.style.boxShadow = 'none';
-        }
-    });
-}
-
-// ==================== SMOOTH SCROLL ====================
-function initSmoothScroll() {
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        });
-    });
-}
+document.head.appendChild(dynamicStyles);
 
 // ==================== INIT ====================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🌈 PluralConnect Landing Page Loading...');
+
     // Create particles
     createParticles();
 
-    // Animate counters on load
-    const signupCountEl = document.getElementById('signup-count');
-    const spotsLeftEl = document.getElementById('spots-left');
-
-    if (signupCountEl) animateCounter(signupCountEl, signupCount);
-    if (spotsLeftEl) animateCounter(spotsLeftEl, MAX_EARLY_BIRD - signupCount);
+    // Init real-time counter
+    await initRealTimeCounter();
 
     // Form handlers
     const heroForm = document.getElementById('hero-form');
@@ -336,30 +539,9 @@ document.addEventListener('DOMContentLoaded', () => {
         mainForm.addEventListener('submit', (e) => handleFormSubmit(e, 'main'));
     }
 
-    // Initialize animations
+    // Init animations
     initScrollAnimations();
-    initNavbarScroll();
-    initSmoothScroll();
+    initNavbar();
 
-    // Log ready
-    console.log('🌈 PluralConnect Landing Page Ready!');
+    console.log('✅ PluralConnect Landing Page Ready!');
 });
-
-// ==================== OPTIONAL: FETCH REAL COUNT ====================
-async function fetchSignupCount() {
-    try {
-        const response = await fetch(`${FIRESTORE_URL}/stats/signups`);
-        if (response.ok) {
-            const data = await response.json();
-            if (data.fields?.count?.integerValue) {
-                signupCount = parseInt(data.fields.count.integerValue);
-                updateCounters();
-            }
-        }
-    } catch (error) {
-        console.log('Using default signup count');
-    }
-}
-
-// Uncomment to fetch real count:
-// fetchSignupCount();

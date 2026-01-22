@@ -102,6 +102,9 @@
 
             <div class="hero-cta">
                 <form id="hero-form" class="email-form">
+                    <!-- Honeypot anti-spam (hidden from users) -->
+                    <input type="text" name="website" style="position:absolute;left:-9999px" tabindex="-1"
+                        autocomplete="off" aria-hidden="true">
                     <div class="input-wrapper">
                         <i class="fas fa-envelope"></i>
                         <input type="email" placeholder="votre@email.com" required id="hero-email">
@@ -409,6 +412,9 @@
 
                 <!-- Main Form -->
                 <form id="main-form" class="main-email-form">
+                    <!-- Honeypot anti-spam (hidden from users) -->
+                    <input type="text" name="website" style="position:absolute;left:-9999px" tabindex="-1"
+                        autocomplete="off" aria-hidden="true">
                     <div class="form-row">
                         <div class="input-group">
                             <i class="fas fa-envelope"></i>

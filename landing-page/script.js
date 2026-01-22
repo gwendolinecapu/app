@@ -301,8 +301,39 @@ function saveToLocalStorage(email) {
     }
 }
 
+/**
+ * Strict email validation
+ * - RFC 5321 compliant regex
+ * - Blocks disposable email domains
+ * - Length validation (min 6, max 254)
+ */
 function isValidEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    // Length checks (RFC 5321)
+    if (email.length < 6 || email.length > 254) return false;
+
+    // Strict regex - RFC 5321 compliant
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+
+    if (!emailRegex.test(email)) return false;
+
+    // Block disposable/temporary email domains
+    const disposableDomains = [
+        'guerrillamail.com', 'temp-mail.org', '10minutemail.com',
+        'mailinator.com', 'throwaway.email', 'tempmail.com',
+        'trashmail.com', 'yopmail.com', 'sharklasers.com'
+    ];
+
+    const domain = email.split('@')[1];
+    if (disposableDomains.includes(domain)) {
+        return false;
+    }
+
+    // Block common test domains
+    if (domain === 'test.com' || domain === 'example.com' || domain.endsWith('.test')) {
+        return false;
+    }
+
+    return true;
 }
 
 function shakeInput(input) {

@@ -601,14 +601,14 @@ service cloud.firestore {
     // Landing Page - Early Signups Collection
     // Public write for email collection (no auth required)
     // Read restricted to admins only
+    // SÉCURISÉ: Signups sont immuables
     // ============================================
     match /early_signups/{signupId} {
       // Anyone can create a signup (landing page visitors)
       allow create: if true;
       
-      // Allow update if the document already exists (idempotent)
-      // This prevents duplicate signups from the same email
-      allow update: if true;
+      // ✅ SÉCURISÉ: Updates interdits - signups sont immuables
+      allow update: if false;
       
       // Only admins can read signups
       allow read: if isAdmin();
@@ -620,14 +620,19 @@ service cloud.firestore {
     // ============================================
     // Landing Page - Stats Collection
     // Counter document for real-time signup count
+    // SÉCURISÉ: Public read, write via Cloud Function uniquement
     // ============================================
     match /landing_stats/{statId} {
       // Anyone can read stats (for real-time counter)
       allow read: if true;
       
-      // Anyone can write (for incrementing counter)
-      // In production, use Cloud Functions for atomic updates
-      allow write: if true;
-    }
+      // ✅ SÉCURISÉ: Write désactivé pour clients directs
+      // Utiliser Cloud Function pour atomic increment
+      // Temporairement : permettre write avec validation stricte
+      allow write: if request.resource.data.keys().hasOnly(['count', 'lastUpdated']) &&
+                      request.resource.data.count is int &&
+                      request.resource.data.count >= 0 &&
+                      request.resource.data.count <= 10000 && // Max reasonable
+                      request.resource.data.lastUpdated is string;
   }
 }

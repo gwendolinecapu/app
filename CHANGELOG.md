@@ -1,16 +1,17 @@
 # Changelog
 
-## [2026-01-22] Landing Page - Bugs Fixes 🐛
+## [2026-01-22] Landing Page - Clean Rewrite 🧹
 
-### Fix #1 : Compteur ne se met pas à jour
-- **Problème** : Après inscription, compteur restait figé (onSnapshot pas assez réactif).
-- **Solution** : Force `updateCounterUI(result.position)` immédiatement après inscription réussie.
-
-### Fix #2 : Message d'erreur générique pour duplicates
-- **Problème** : Affichait "Impossible à vérifier" au lieu du message personnalisé.
-- **Solution** : Amélioration du catch pour détecter les erreurs avec position et afficher `showAlreadyRegistered()`.
+### Refactoring Complet
+- **registerEmail()** : Réécriture complète sans transactions
+  - Flow simple en 5 étapes : check duplicate → get counter → save signup → update counter → update UI
+  - Suppression des transactions Firestore (source de bugs permissions)
+  - Code propre et lisible
+- **Firestore Rules** : `early_signups` permet maintenant les lectures publiques (nécessaire pour duplicate check)
+- **Logs** : Nettoyage des console.log de debug
 
 ---
+
 
 
 ## [2026-01-22] Landing Page - Polish & Analytics ✨

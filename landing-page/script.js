@@ -71,32 +71,25 @@ async function initRealTimeCounter() {
     // Initialize counter if doesn't exist
     try {
         const counterSnap = await getDoc(counterRef);
-        console.log('[DEBUG] Counter snap exists:', counterSnap.exists());
         if (counterSnap.exists()) {
-            console.log('[DEBUG] Counter data:', counterSnap.data());
-            // Immediately update UI with fetched data
             signupCount = counterSnap.data().count || 0;
             updateCounterUI(signupCount);
         } else {
-            console.log('[DEBUG] Counter does not exist, creating...');
             await setDoc(counterRef, { count: 0, lastUpdated: new Date().toISOString() });
+            updateCounterUI(0);
         }
     } catch (e) {
-        console.error('[DEBUG] Counter init error:', e);
+        console.error('[Counter Error]', e);
     }
 
     // Real-time listener for future updates
     onSnapshot(counterRef, (docSnap) => {
         if (docSnap.exists()) {
-            const newCount = docSnap.data().count || 0;
-            console.log('[DEBUG] onSnapshot update:', newCount);
-            signupCount = newCount;
+            signupCount = docSnap.data().count || 0;
             updateCounterUI(signupCount);
         }
     }, (error) => {
-        console.error('[DEBUG] Counter listener error:', error);
-        // Fallback to static display
-        updateCounterUI(signupCount);
+        console.error('[Counter Listener Error]', error);
     });
 }
 
@@ -261,110 +254,57 @@ async function registerEmail(email) {
         return { success: true, position: signupCount + 1, alreadyExists: false };
     }
 
-    const { doc, getDoc, setDoc, runTransaction } = window.firebaseUtils;
+    const { doc, getDoc, setDoc } = window.firebaseUtils;
 
-    // ✅ IMPROVED: Better email hashing for unique ID
-    // Use email directly as key after sanitizing special chars
+    // Create unique key from email
     const emailKey = email.replace(/[.@]/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
     const signupRef = doc(db, 'early_signups', emailKey);
-
-    // ✅ Check if email already exists BEFORE transaction
-    try {
-        const existingDoc = await getDoc(signupRef);
-        if (existingDoc.exists()) {
-            const existingData = existingDoc.data();
-            // Email already registered
-            return {
-                success: true,
-                position: existingData.position || 0,
-                alreadyExists: true,
-                email: existingData.email
-            };
-        }
-    } catch (error) {
-        console.error('Error checking existing signup:', error);
-        // Continue anyway - transaction will handle it
-    }
-
-    // Get current count and increment atomically
     const counterRef = doc(db, 'landing_stats', 'signup_counter');
 
-    let newPosition = 0;
-
     try {
-        console.log('[DEBUG] Starting transaction...');
-        await runTransaction(db, async (transaction) => {
-            const counterDoc = await transaction.get(counterRef);
-            const currentCount = counterDoc.exists() ? (counterDoc.data().count || 0) : 0;
-            newPosition = currentCount + 1;
-            console.log('[DEBUG] Transaction - currentCount:', currentCount, 'newPosition:', newPosition);
+        // Step 1: Check if email already exists
+        const existingDoc = await getDoc(signupRef);
 
-            // ✅ Double-check no one created this email during transaction
-            const signupCheck = await transaction.get(signupRef);
-            if (signupCheck.exists()) {
-                console.log('[DEBUG] Email already exists in transaction check');
-                throw new Error('EMAIL_ALREADY_EXISTS');
-            }
+        if (existingDoc.exists()) {
+            return {
+                success: true,
+                position: existingDoc.data().position || 0,
+                alreadyExists: true
+            };
+        }
 
-            // Update counter
-            console.log('[DEBUG] Setting counter to:', newPosition);
-            transaction.set(counterRef, {
-                count: newPosition,
-                lastUpdated: new Date().toISOString()
-            });
+        // Step 2: Get current counter
+        const counterSnap = await getDoc(counterRef);
+        const currentCount = counterSnap.exists() ? (counterSnap.data().count || 0) : 0;
+        const newPosition = currentCount + 1;
 
-            // Create signup record
-            console.log('[DEBUG] Creating signup record for:', email);
-            transaction.set(signupRef, {
-                email: email,
-                position: newPosition,
-                isEarlyBird: newPosition <= MAX_EARLY_BIRD,
-                rewards: calculateRewards(newPosition),
-                registeredAt: new Date().toISOString(),
-                source: 'landing_page',
-                emailKey: emailKey // Store key for reference
-            });
+        // Step 3: Save signup
+        await setDoc(signupRef, {
+            email: email,
+            position: newPosition,
+            isEarlyBird: newPosition <= MAX_EARLY_BIRD,
+            rewards: calculateRewards(newPosition),
+            registeredAt: new Date().toISOString(),
+            source: 'landing_page'
         });
 
-        console.log('[DEBUG] Transaction SUCCESS! Position:', newPosition);
-        // New signup registered
+        // Step 4: Update counter
+        await setDoc(counterRef, {
+            count: newPosition,
+            lastUpdated: new Date().toISOString()
+        });
+
+        // Step 5: Update local state
+        signupCount = newPosition;
+
         return { success: true, position: newPosition, alreadyExists: false };
 
-    } catch (e) {
-        console.error('[DEBUG] Transaction FAILED:', e.message, e);
-
-        // Check if error is duplicate email
-        if (e.message === 'EMAIL_ALREADY_EXISTS') {
-            const existingDoc = await getDoc(signupRef);
-            if (existingDoc.exists()) {
-                return {
-                    success: true,
-                    position: existingDoc.data().position || 0,
-                    alreadyExists: true
-                };
-            }
-        }
-
-        console.error('[DEBUG] Trying fallback save...');
-
-        // Fallback: just save the signup (without atomic counter)
-        try {
-            await setDoc(signupRef, {
-                email: email,
-                registeredAt: new Date().toISOString(),
-                source: 'landing_page',
-                position: signupCount + 1
-            });
-            console.log('[DEBUG] Fallback save SUCCESS');
-            return { success: true, position: signupCount + 1, alreadyExists: false };
-        } catch (fallbackError) {
-            console.error('[DEBUG] Fallback save FAILED:', fallbackError);
-            // Throw error with more context for duplicate detection
-            const err = new Error('📧 Impossible de finaliser l\'inscription. L\'email est peut-être déjà enregistré.');
-            throw err;
-        }
+    } catch (error) {
+        console.error('[Registration Error]', error);
+        throw new Error('📧 Inscription échouée. Veuillez réessayer.');
     }
 }
+
 
 function calculateRewards(position) {
     const rewards = [];

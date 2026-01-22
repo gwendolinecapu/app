@@ -485,7 +485,7 @@ export default function AlterSpaceScreen() {
             case 'emotions':
                 return <AlterEmotions alterId={alter.id} alterName={alter.name} themeColors={themeColors} />;
             case 'settings':
-                return <AlterSettings alter={alter} themeColors={themeColors} />;
+                return <AlterSettings alter={alter} themeColors={themeColors ?? undefined} />;
             default:
                 return null;
         }

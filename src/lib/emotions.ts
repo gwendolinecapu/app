@@ -26,6 +26,10 @@ export const EMOTION_CONFIG: EmotionConfig[] = [
     { type: 'guilt', icon: 'cloud-outline', emoji: '😔', label: 'Coupable', color: '#B2BEC3' },
     { type: 'hurt', icon: 'bandage-outline', emoji: '🤕', label: 'Blessé', color: '#FD79A8' },
     { type: 'sick', icon: 'medkit-outline', emoji: '🤢', label: 'Malade', color: '#00B894' },
+    { type: 'fuzzy', icon: 'help-outline', emoji: '❓', label: 'Flou', color: '#A0A0A0' },
+    { type: 'numb', icon: 'remove-circle-outline', emoji: '🫥', label: 'Détaché', color: '#95A5A6' },
+    { type: 'overwhelmed', icon: 'thunderstorm-outline', emoji: '🤯', label: 'Submergé', color: '#E056FD' },
+    { type: 'hopeful', icon: 'sunny-outline', emoji: '🌟', label: 'Optimiste', color: '#F9CA24' },
 ];
 
 export const getEmotionConfig = (type: EmotionType) => EMOTION_CONFIG.find(e => e.type === type);

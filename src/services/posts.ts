@@ -80,8 +80,8 @@ export const PostService = {
      * Enrich posts with author details (alter name/avatar)
      */
     _enrichPostsWithAuthors: async (posts: Post[]): Promise<Post[]> => {
-        const alterIds = new Set(posts.map(p => p.alter_id).filter(id => id));
-        const systemIds = new Set(posts.map(p => p.system_id).filter(id => id));
+        const alterIds = new Set(posts.map(p => p.alter_id).filter((id): id is string => !!id));
+        const systemIds = new Set(posts.map(p => p.system_id).filter((id): id is string => !!id));
 
         const altersMap = new Map<string, any>();
         const systemsMap = new Map<string, any>();

@@ -73,13 +73,13 @@ export default function CreateHelpRequestScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="close" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Demander de l'Aide</Text>
+                <Text style={styles.title}>Demander de l&apos;Aide</Text>
                 <View style={{ width: 40 }} />
             </View>
 
             <ScrollView style={styles.content}>
                 <Text style={styles.instruction}>
-                    Quel type d'aide recherchez-vous ?
+                    Quel type d&apos;aide recherchez-vous ?
                 </Text>
 
                 <View style={styles.typesContainer}>
@@ -122,7 +122,7 @@ export default function CreateHelpRequestScreen() {
                 </TouchableOpacity>
 
                 <Text style={styles.note}>
-                    Cette demande sera visible par les autres membres du système afin qu'ils puissent intervenir.
+                    Cette demande sera visible par les autres membres du système afin qu&apos;ils puissent intervenir.
                 </Text>
             </ScrollView>
         </View>

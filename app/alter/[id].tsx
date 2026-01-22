@@ -393,7 +393,7 @@ export default function AlterProfileScreen() {
                         </View>
 
                         <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Comment m'aider au front ?</Text>
+                            <Text style={styles.label}>Comment m&apos;aider au front ?</Text>
                             <TextInput
                                 style={[styles.input, styles.inputMultiline]}
                                 value={frontingHelp}
@@ -434,7 +434,7 @@ export default function AlterProfileScreen() {
 
                         {/* Likes */}
                         <View style={styles.inputContainer}>
-                            <Text style={styles.label}>J'aime</Text>
+                            <Text style={styles.label}>J&apos;aime</Text>
                             <View style={styles.addItemRow}>
                                 <TextInput
                                     style={[styles.input, { flex: 1, marginBottom: 0 }]}
@@ -462,7 +462,7 @@ export default function AlterProfileScreen() {
 
                         {/* Dislikes */}
                         <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Je n'aime pas</Text>
+                            <Text style={styles.label}>Je n&apos;aime pas</Text>
                             <View style={styles.addItemRow}>
                                 <TextInput
                                     style={[styles.input, { flex: 1, marginBottom: 0 }]}
@@ -586,7 +586,7 @@ export default function AlterProfileScreen() {
 
                                 {alter.fronting_help && (
                                     <View style={styles.infoBlock}>
-                                        <Text style={styles.infoLabel}>🤝 Comment m'aider :</Text>
+                                        <Text style={styles.infoLabel}>🤝 Comment m&apos;aider :</Text>
                                         <Text style={styles.infoText}>{alter.fronting_help}</Text>
                                     </View>
                                 )}
@@ -620,7 +620,7 @@ export default function AlterProfileScreen() {
                                 <View style={styles.likesDislikesContainer}>
                                     {alter.likes && alter.likes.length > 0 && (
                                         <View style={styles.column}>
-                                            <Text style={styles.columnHeader}>👍 J'aime</Text>
+                                            <Text style={styles.columnHeader}>👍 J&apos;aime</Text>
                                             {alter.likes.map((l, i) => (
                                                 <Text key={i} style={styles.listItem}>• {l}</Text>
                                             ))}
@@ -628,7 +628,7 @@ export default function AlterProfileScreen() {
                                     )}
                                     {alter.dislikes && alter.dislikes.length > 0 && (
                                         <View style={styles.column}>
-                                            <Text style={styles.columnHeader}>👎 J'aime pas</Text>
+                                            <Text style={styles.columnHeader}>👎 J&apos;aime pas</Text>
                                             {alter.dislikes.map((d, i) => (
                                                 <Text key={i} style={styles.listItem}>• {d}</Text>
                                             ))}

@@ -22,7 +22,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../../src/lib/firebase';
 import { Alter, Role } from '../../../src/types';
-import { alterColors, freeAlterColors, premiumAlterColors, colors, spacing, borderRadius, typography } from '../../../src/lib/theme';
+import { freeAlterColors, premiumAlterColors, colors, spacing, borderRadius, typography } from '../../../src/lib/theme';
 import PremiumService from '../../../src/services/PremiumService';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { getFrameStyle, getThemeColors } from '../../../src/lib/cosmetics';
@@ -801,7 +801,7 @@ export default function EditAlterProfileScreen() {
                     <View style={styles.modalOverlay}>
                         <View style={styles.datePickerContainer}>
                             <View style={styles.datePickerHeader}>
-                                <Text style={styles.datePickerTitle}>Date d'arrivée</Text>
+                                <Text style={styles.datePickerTitle}>Date d&apos;arrivée</Text>
                                 <TouchableOpacity onPress={() => setShowArrivalPicker(false)}>
                                     <Text style={styles.doneButton}>OK</Text>
                                 </TouchableOpacity>

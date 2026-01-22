@@ -3,8 +3,9 @@ import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useMonetization } from '../../contexts/MonetizationContext';
-import { colors, spacing, borderRadius, typography } from '../../lib/theme';
+import { colors, spacing, borderRadius } from '../../lib/theme';
 import { useAuth } from '../../contexts/AuthContext';
+import { DailyReward } from '../../services/MonetizationTypes';
 
 interface DailyRewardCardProps {
     alterId?: string;
@@ -17,14 +18,14 @@ export function DailyRewardCard({ alterId }: DailyRewardCardProps) {
         currentStreak,
         loading: contextLoading
     } = useMonetization();
-    const { user, currentAlter } = useAuth();
+    const { currentAlter } = useAuth();
 
     // Use currentAlter if no alterId provided
     const effectiveAlterId = alterId || currentAlter?.id || 'default';
 
     const [canClaim, setCanClaim] = useState(false);
     const [claiming, setClaiming] = useState(false);
-    const [reward, setReward] = useState<{ amount: number, streak: number } | null>(null);
+    const [reward, setReward] = useState<DailyReward | null>(null);
 
     useEffect(() => {
         checkStatus();
@@ -63,7 +64,7 @@ export function DailyRewardCard({ alterId }: DailyRewardCardProps) {
                     <View style={styles.textContainer}>
                         <Text style={styles.title}>Récompense récupérée !</Text>
                         <Text style={styles.subtitle}>
-                            +{reward.amount}💎 • Série {reward.streak} jours 🔥
+                            +{reward.credits}💎 • Série {reward.day} jours 🔥
                         </Text>
                     </View>
                 </View>

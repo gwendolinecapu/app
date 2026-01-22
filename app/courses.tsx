@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../src/lib/theme';
 import { useAuth } from '../src/contexts/AuthContext';
 import { db } from '../src/lib/firebase';
-import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { triggerHaptic } from '../src/lib/haptics';
 
 // Types
@@ -236,7 +236,7 @@ export default function CoursesScreen() {
                             await deleteDoc(doc(db, 'subjects', subject.id));
                             setSelectedSubject(null);
                             fetchSubjects();
-                        } catch (error) {
+                        } catch {
                             Alert.alert('Erreur', 'Impossible de supprimer');
                         }
                     }

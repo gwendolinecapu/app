@@ -226,6 +226,7 @@ export interface Group {
     created_at: number;
     type: 'private' | 'public';
     members?: string[]; // IDs des systèmes membres (dénormalisation pour requêtes simples)
+    memberCount?: number; // Nombre de membres (computed)
 }
 
 export interface GroupMember {
@@ -299,7 +300,11 @@ export type EmotionType =
     | 'love'      // 🥰
     | 'sick'      // 🤢
     | 'guilt'     // 😔
-    | 'hurt';     // 🤕
+    | 'hurt'      // 🤕
+    | 'fuzzy'     // ❓ - Flou (quand on ne sait pas)
+    | 'numb'      // 🫥 - Engourdi/Détaché
+    | 'overwhelmed' // 🤯 - Submergé
+    | 'hopeful';  // 🌟 - Optimiste
 
 /**
  * Mapping émotion -> emoji pour l'affichage
@@ -321,6 +326,10 @@ export const EMOTION_EMOJIS: Record<EmotionType, string> = {
     sick: '🤢',
     guilt: '😔',
     hurt: '🤕',
+    fuzzy: '❓',
+    numb: '🫥',
+    overwhelmed: '🤯',
+    hopeful: '🌟',
 };
 
 /**
@@ -343,6 +352,10 @@ export const EMOTION_LABELS: Record<EmotionType, string> = {
     sick: 'Malade',
     guilt: 'Coupable',
     hurt: 'Blessé',
+    fuzzy: 'Flou',
+    numb: 'Détaché',
+    overwhelmed: 'Submergé',
+    hopeful: 'Optimiste',
 };
 
 /**

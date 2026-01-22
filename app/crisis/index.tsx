@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -8,7 +8,7 @@ import { colors, spacing, typography, borderRadius } from '../../src/lib/theme';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function CrisisModeScreen() {
-    const { user, alters } = useAuth();
+    const { alters } = useAuth();
     const [selectedAlterId, setSelectedAlterId] = useState<string | null>(null);
 
     // Find active alter or host by default
@@ -38,7 +38,7 @@ export default function CrisisModeScreen() {
                             } else {
                                 Alert.alert('Erreur', 'Impossible de passer l\'appel sur cet appareil.');
                             }
-                        } catch (err) {
+                        } catch {
                             Alert.alert('Erreur', 'Impossible de lancer l\'appel.');
                         }
                     }
@@ -118,7 +118,7 @@ export default function CrisisModeScreen() {
                                 <Text style={styles.infoText}>{activeAlter.fronting_help}</Text>
                             </View>
                         ) : (
-                            <Text style={styles.emptyText}>Pas d'instructions d'aide spécifiques.</Text>
+                            <Text style={styles.emptyText}>Pas d&apos;instructions d&apos;aide spécifiques.</Text>
                         )}
 
                         {activeAlter.triggers && activeAlter.triggers.length > 0 && (
@@ -152,7 +152,7 @@ export default function CrisisModeScreen() {
                     onPress={() => router.push('/help/create')}
                 >
                     <Ionicons name="hand-left-outline" size={24} color="white" />
-                    <Text style={styles.internalHelpText}>DEMANDER DE L'AIDE AU SYSTÈME</Text>
+                    <Text style={styles.internalHelpText}>DEMANDER DE L&apos;AIDE AU SYSTÈME</Text>
                 </TouchableOpacity>
 
                 {/* 5. Emergency Button */}

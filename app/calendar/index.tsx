@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { Agenda, LocaleConfig } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
@@ -8,10 +8,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../../src/contexts/AuthContext';
-import { CalendarService, CalendarEvent } from '../../src/services/CalendarService';
+import { CalendarService } from '../../src/services/CalendarService';
 import { EventCreationModal } from '../../src/components/calendar/EventCreationModal';
 import { EventDetailsModal } from '../../src/components/calendar/EventDetailsModal';
-import { useToast } from '../../src/components/ui/Toast';
+
 
 // Configure French Locale
 LocaleConfig.locales['fr'] = {
@@ -40,7 +40,7 @@ export default function CalendarScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [items, setItems] = useState<{ [key: string]: any[] }>({});
-    const [refreshing, setRefreshing] = useState(false);
+    const [, setRefreshing] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<any>(null);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -49,6 +49,7 @@ export default function CalendarScreen() {
         if (user) {
             loadEvents();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     const loadEvents = async () => {

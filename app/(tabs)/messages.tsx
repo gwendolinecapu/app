@@ -606,9 +606,9 @@ export default function MessagesScreen() {
 
             {/* Conversations List */}
             <FlatList
-                data={activeTab === 'internal' ? sortedInternal : activeTab === 'friends' ? sortedFriends : activeTab === 'groups' ? groups : requests}
+                data={activeTab === 'internal' ? sortedInternal : activeTab === 'friends' ? sortedFriends : activeTab === 'groups' ? groups : requests as any}
                 renderItem={(activeTab === 'internal' ? renderConversation : activeTab === 'friends' ? renderFriendConversation : activeTab === 'groups' ? renderGroup : renderRequest) as any}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item: any) => item.id}
                 ListEmptyComponent={renderEmptyState}
                 contentContainerStyle={styles.listContent}
                 refreshing={activeTab === 'groups' ? loadingGroups : activeTab === 'requests' ? loadingRequests : (activeTab === 'internal' ? loadingInternal : loadingFriends)}

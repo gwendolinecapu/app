@@ -6,11 +6,9 @@ import {
     TouchableOpacity,
     ScrollView,
     Alert,
-    ActivityIndicator,
     Image,
     Dimensions,
-    Modal,
-    Platform
+    Modal
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,7 +23,7 @@ import { storage, functions } from '../../../src/lib/firebase';
 import { colors, spacing, typography, borderRadius } from '../../../src/lib/theme';
 import { getThemeColors } from '../../../src/lib/cosmetics';
 import { useAlterData } from '../../../src/hooks/useAlterData';
-import { useAuth } from '../../../src/contexts/AuthContext';
+
 import { MagicalLoadingView } from '../../../src/components/shared/MagicalLoadingView';
 import { AI_COSTS } from '../../../src/services/MonetizationTypes';
 import { triggerHaptic } from '../../../src/lib/haptics';

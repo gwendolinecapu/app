@@ -31,12 +31,13 @@ import { getThemeColors } from '../../src/lib/cosmetics';
 
 const { width } = Dimensions.get('window');
 
-// Liste des émotions disponibles
+// Liste des émotions disponibles (4x5 = 20 émotions)
 const EMOTIONS: EmotionType[] = [
     'happy', 'love', 'excited', 'proud',
     'calm', 'bored', 'tired', 'sad',
     'anxious', 'fear', 'confused', 'angry',
-    'shame', 'guilt', 'hurt', 'sick'
+    'shame', 'guilt', 'hurt', 'sick',
+    'fuzzy', 'numb', 'overwhelmed', 'hopeful'
 ];
 
 export default function EmotionsScreen() {
@@ -174,7 +175,7 @@ export default function EmotionsScreen() {
                 {/* Header */}
                 <View style={[styles.header, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }]}>
                     <View style={{ flexDirection: 'row', gap: 10 }}>
-                        <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 5 }}>
+                        <TouchableOpacity onPress={() => router.push('/dashboard')} style={{ marginTop: 5 }}>
                             <Ionicons name="arrow-back" size={24} color={textColor} />
                         </TouchableOpacity>
                         <View>

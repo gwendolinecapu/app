@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { colors, spacing, typography, borderRadius } from '../../src/lib/theme';
@@ -20,7 +20,7 @@ export default function DissociationGuideScreen() {
 
                 {/* Introduction */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Qu'est-ce que la dissociation ?</Text>
+                    <Text style={styles.sectionTitle}>Qu&apos;est-ce que la dissociation ?</Text>
                     <Text style={styles.text}>
                         La dissociation est un mécanisme de défense qui crée une déconnexion entre les pensées, les souvenirs, les émotions, les actions ou le sens de l&apos;identité.
                     </Text>
@@ -33,10 +33,10 @@ export default function DissociationGuideScreen() {
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
                         <Ionicons name="leaf" size={24} color={colors.primary} />
-                        <Text style={styles.sectionTitle}>Techniques d'Ancrage</Text>
+                        <Text style={styles.sectionTitle}>Techniques d&apos;Ancrage</Text>
                     </View>
                     <Text style={styles.description}>
-                        L'ancrage (grounding) aide à se reconnecter au présent et à la réalité physique.
+                        L&apos;ancrage (grounding) aide à se reconnecter au présent et à la réalité physique.
                     </Text>
 
                     <View style={styles.card}>
@@ -70,7 +70,7 @@ export default function DissociationGuideScreen() {
                         <Text style={styles.cardTitle}>Stimulation Sensorielle</Text>
                         <View style={styles.list}>
                             <Text style={styles.listItem}>❄️ Tenez un glaçon dans votre main</Text>
-                            <Text style={styles.listItem}>🚿 Passez de l'eau froide sur vos poignets</Text>
+                            <Text style={styles.listItem}>🚿 Passez de l&apos;eau froide sur vos poignets</Text>
                             <Text style={styles.listItem}>🦶 Marchez pieds nus sur le sol</Text>
                             <Text style={styles.listItem}>🛋️ Touchez une texture rugueuse ou douce</Text>
                         </View>
@@ -84,12 +84,12 @@ export default function DissociationGuideScreen() {
                         <Text style={styles.sectionTitle}>Communication Interne</Text>
                     </View>
                     <Text style={styles.text}>
-                        Si vous sentez une "switch" ou une confusion :
+                        Si vous sentez une &quot;switch&quot; ou une confusion :
                     </Text>
                     <View style={styles.card}>
                         <Text style={styles.cardText}>
-                            • Essayez de dire à l'intérieur : "Nous sommes en sécurité maintenant."{'\n'}
-                            • Demandez doucement : "Qui a besoin d'aide ?" ou "De quoi avons-nous besoin ?"
+                            • Essayez de dire à l&apos;intérieur : &quot;Nous sommes en sécurité maintenant.&quot;{'\n'}
+                            • Demandez doucement : &quot;Qui a besoin d&apos;aide ?&quot; ou &quot;De quoi avons-nous besoin ?&quot;
                         </Text>
                     </View>
                 </View>

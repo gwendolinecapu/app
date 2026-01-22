@@ -29,6 +29,7 @@ export default function HelpRequestsListScreen() {
 
     useEffect(() => {
         loadRequests();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [system]);
 
     const handleResolve = async (id: string) => {
@@ -43,7 +44,7 @@ export default function HelpRequestsListScreen() {
                         try {
                             await HelpService.resolveRequest(id);
                             loadRequests();
-                        } catch (error) {
+                        } catch {
                             Alert.alert("Erreur", "Impossible de mettre à jour la demande.");
                         }
                     }
@@ -103,7 +104,7 @@ export default function HelpRequestsListScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Demandes d'Aide</Text>
+                <Text style={styles.title}>Demandes d&apos;Aide</Text>
                 <TouchableOpacity
                     style={styles.addButton}
                     onPress={() => router.push('/help/create')}

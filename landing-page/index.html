@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PluralConnect - L'app TDI qui vous comprend vraiment</title>
+    <meta name="description" content="La première application conçue PAR et POUR les systèmes pluriels. Gérez vos alters, partagez vos moments, connectez-vous en toute sécurité.">
+    
+    <!-- SEO -->
+    <meta property="og:title" content="PluralConnect - L'app TDI qui vous comprend vraiment">
+    <meta property="og:description" content="Inscription anticipée - Surprise exclusive pour les 500 premiers !">
+    <meta property="og:type" content="website">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-gradient"></div>
+    <div class="particles" id="particles"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo">
+                <span class="logo-icon">🌈</span>
+                <span class="logo-text">PluralConnect</span>
+            </div>
+            <div class="nav-links">
+                <a href="#features">Fonctionnalités</a>
+                <a href="#why">Pourquoi nous ?</a>
+                <a href="#signup" class="nav-cta">Inscription</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="badge-container">
+                <span class="badge pulse">🚀 Bientôt disponible</span>
+                <span class="badge secondary">500 places Early Access</span>
+            </div>
+            
+            <h1 class="hero-title">
+                L'application TDI qui vous 
+                <span class="gradient-text">comprend vraiment</span>
+            </h1>
+            
+            <p class="hero-subtitle">
+                Créée PAR et POUR les systèmes pluriels. Gérez vos alters, 
+                partagez vos moments, connectez-vous en toute sécurité.
+            </p>
+
+            <div class="hero-cta">
+                <form id="hero-form" class="email-form">
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" placeholder="votre@email.com" required id="hero-email">
+                    </div>
+                    <button type="submit" class="btn-primary">
+                        <span>Je m'inscris</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </form>
+                <p class="form-note">
+                    <i class="fas fa-gift"></i>
+                    <strong>Surprise exclusive</strong> pour les 500 premiers inscrits !
+                </p>
+            </div>
+
+            <div class="social-proof">
+                <div class="avatars">
+                    <div class="avatar" style="--i: 0">👤</div>
+                    <div class="avatar" style="--i: 1">🌸</div>
+                    <div class="avatar" style="--i: 2">⭐</div>
+                    <div class="avatar" style="--i: 3">🎭</div>
+                    <div class="avatar" style="--i: 4">💜</div>
+                </div>
+                <p><span id="signup-count">247</span>+ personnes déjà inscrites</p>
+            </div>
+        </div>
+
+        <div class="hero-visual">
+            <div class="phone-mockup">
+                <div class="phone-screen">
+                    <div class="app-preview">
+                        <div class="preview-header">
+                            <span class="preview-avatar">🦋</span>
+                            <span class="preview-name">Luna</span>
+                            <span class="preview-status">En front</span>
+                        </div>
+                        <div class="preview-content">
+                            <div class="preview-card">
+                                <div class="card-emoji">✨</div>
+                                <span>Nouveau post créé</span>
+                            </div>
+                            <div class="preview-card">
+                                <div class="card-emoji">💬</div>
+                                <span>3 messages</span>
+                            </div>
+                            <div class="preview-card">
+                                <div class="card-emoji">🎨</div>
+                                <span>Thème personnalisé</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="floating-elements">
+                <div class="floating-card" style="--delay: 0s; --x: -60px; --y: -40px;">
+                    <i class="fas fa-shield-halved"></i>
+                    <span>Chiffrage E2E</span>
+                </div>
+                <div class="floating-card" style="--delay: 0.5s; --x: 80px; --y: 20px;">
+                    <i class="fas fa-palette"></i>
+                    <span>50+ Thèmes</span>
+                </div>
+                <div class="floating-card" style="--delay: 1s; --x: -40px; --y: 100px;">
+                    <i class="fas fa-users"></i>
+                    <span>Co-Fronting</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="section-header">
+            <span class="section-badge">Fonctionnalités</span>
+            <h2>Tout ce dont votre système a besoin</h2>
+            <p>Une application complète pensée pour le quotidien pluriel</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card featured">
+                <div class="feature-icon">
+                    <i class="fas fa-user-astronaut"></i>
+                </div>
+                <h3>AlterSpace Personnel</h3>
+                <p>Chaque alter a son propre espace style Instagram. Posts, stories, personnalisation complète.</p>
+                <div class="feature-tag">⭐ Exclusif</div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-exchange-alt"></i>
+                </div>
+                <h3>Suivi du Fronting</h3>
+                <p>Trackez qui est en front, gérez le co-fronting, visualisez l'historique avec des stats.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-book-open"></i>
+                </div>
+                <h3>Journal Partagé</h3>
+                <p>Communiquez entre alters avec un journal interne sécurisé et privé.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3>Sécurité Maximale</h3>
+                <p>Chiffrement E2E, mots de passe par espace, protection biométrique.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-magic"></i>
+                </div>
+                <h3>IA Éthique</h3>
+                <p>Génération d'avatars, résumés intelligents. Tout reste privé et local.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-palette"></i>
+                </div>
+                <h3>Personnalisation Totale</h3>
+                <p>50+ thèmes, cadres, bulles. Chaque alter exprime sa personnalité.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3>Réseau Social</h3>
+                <p>Connectez-vous avec d'autres systèmes, partagez (si vous le souhaitez).</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-file-import"></i>
+                </div>
+                <h3>Import Simply Plural</h3>
+                <p>Migrez facilement depuis Simply Plural. Vos données en 1 clic.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Us Section -->
+    <section id="why" class="why-section">
+        <div class="why-content">
+            <div class="why-text">
+                <span class="section-badge">Notre différence</span>
+                <h2>Pourquoi PluralConnect ?</h2>
+                
+                <div class="why-points">
+                    <div class="why-point">
+                        <div class="why-icon">💜</div>
+                        <div>
+                            <h4>Créé PAR la communauté</h4>
+                            <p>Développé avec des systèmes pluriels, pas juste pour eux.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="why-point">
+                        <div class="why-icon">🎮</div>
+                        <div>
+                            <h4>Fun, pas juste pratique</h4>
+                            <p>Une app où on a ENVIE de venir, pas une corvée médicale.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="why-point">
+                        <div class="why-icon">🔒</div>
+                        <div>
+                            <h4>Privacy-first</h4>
+                            <p>Vos données vous appartiennent. Chiffrement bout-en-bout.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="why-point">
+                        <div class="why-icon">🌱</div>
+                        <div>
+                            <h4>Éthique & Transparent</h4>
+                            <p>Pas de dark patterns, monétisation respectueuse, open sur nos pratiques.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="why-visual">
+                <div class="comparison-card">
+                    <div class="comp-header bad">
+                        <i class="fas fa-times-circle"></i>
+                        <span>Les autres apps</span>
+                    </div>
+                    <ul class="comp-list">
+                        <li><i class="fas fa-times"></i> Interface clinique froide</li>
+                        <li><i class="fas fa-times"></i> Fonctionnalités basiques</li>
+                        <li><i class="fas fa-times"></i> Pas de personnalisation</li>
+                        <li><i class="fas fa-times"></i> Données sur leurs serveurs</li>
+                    </ul>
+                </div>
+                
+                <div class="comparison-card good">
+                    <div class="comp-header good">
+                        <i class="fas fa-check-circle"></i>
+                        <span>PluralConnect</span>
+                    </div>
+                    <ul class="comp-list">
+                        <li><i class="fas fa-check"></i> Design moderne & fun</li>
+                        <li><i class="fas fa-check"></i> AlterSpace + IA + Social</li>
+                        <li><i class="fas fa-check"></i> 50+ thèmes personnalisables</li>
+                        <li><i class="fas fa-check"></i> Chiffrement E2E local</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Early Access Section -->
+    <section id="signup" class="signup-section">
+        <div class="signup-container">
+            <div class="signup-glow"></div>
+            
+            <div class="signup-content">
+                <div class="countdown-badge">
+                    <i class="fas fa-hourglass-half"></i>
+                    <span>Plus que <strong id="spots-left">253</strong> places Early Bird</span>
+                </div>
+                
+                <h2>Rejoignez les 500 premiers</h2>
+                <p class="signup-subtitle">
+                    Inscrivez-vous maintenant et débloquez une <strong>surprise exclusive</strong> 
+                    à la sortie de l'app. Votre email = votre compte prêt à l'emploi !
+                </p>
+
+                <div class="surprise-preview">
+                    <div class="surprise-item">
+                        <div class="surprise-icon">🎨</div>
+                        <span>Thème Exclusif</span>
+                    </div>
+                    <div class="surprise-item">
+                        <div class="surprise-icon">💎</div>
+                        <span>500 Crédits</span>
+                    </div>
+                    <div class="surprise-item">
+                        <div class="surprise-icon">⭐</div>
+                        <span>Badge Pioneer</span>
+                    </div>
+                </div>
+
+                <form id="main-form" class="main-email-form">
+                    <div class="form-row">
+                        <div class="input-group">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" placeholder="votre@email.com" required id="main-email">
+                        </div>
+                        <button type="submit" class="btn-glow">
+                            <span>Réserver ma place</span>
+                            <i class="fas fa-rocket"></i>
+                        </button>
+                    </div>
+                    <p class="privacy-note">
+                        <i class="fas fa-lock"></i>
+                        Pas de spam. Juste l'annonce de sortie + votre surprise.
+                    </p>
+                </form>
+
+                <div id="success-message" class="success-message hidden">
+                    <div class="success-content">
+                        <div class="success-icon">🎉</div>
+                        <h3>Vous êtes inscrit·e !</h3>
+                        <p>Vérifiez votre email pour confirmer. Votre surprise vous attend !</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <span class="logo-icon">🌈</span>
+                <span class="logo-text">PluralConnect</span>
+                <p>L'app TDI pensée pour vous.</p>
+            </div>
+            
+            <div class="footer-links">
+                <div class="footer-column">
+                    <h4>À propos</h4>
+                    <a href="#features">Fonctionnalités</a>
+                    <a href="#why">Notre mission</a>
+                    <a href="#signup">Early Access</a>
+                </div>
+                <div class="footer-column">
+                    <h4>Légal</h4>
+                    <a href="#">Confidentialité</a>
+                    <a href="#">CGU</a>
+                    <a href="#">Cookies</a>
+                </div>
+                <div class="footer-column">
+                    <h4>Contact</h4>
+                    <a href="mailto:hello@pluralconnect.app">hello@pluralconnect.app</a>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-discord"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>© 2026 PluralConnect. Fait avec 💜 pour la communauté plurielle.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

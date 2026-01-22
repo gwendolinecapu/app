@@ -214,9 +214,9 @@ export const PACK_TIERS: Record<LootBoxTier, PackConfig> = {
         name: 'Basic Pack',
         price: 30,
         cardCount: {
-            min: 1,
-            max: 3,
-            probabilities: { 1: 0.90, 2: 0.09, 3: 0.01 }
+            min: 3,
+            max: 5,
+            probabilities: { 3: 0.70, 4: 0.25, 5: 0.05 }
         },
         rarityGuarantees: {},
         dropRates: {
@@ -468,7 +468,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         type: 'theme',
         name: 'Océan',
         description: 'Bleu profond.',
-        priceCredits: 1,
+        priceCredits: 10,
         rarity: 'common',
         preview: '#0077b6',
     },
@@ -477,7 +477,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         type: 'theme',
         name: 'Forêt',
         description: 'Vert naturel.',
-        priceCredits: 1,
+        priceCredits: 10,
         rarity: 'common',
         preview: '#2d6a4f',
     },
@@ -486,7 +486,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         type: 'theme',
         name: 'Minuit',
         description: 'Noir profond.',
-        priceCredits: 1,
+        priceCredits: 15,
         rarity: 'common',
         preview: '#0d1b2a',
     },
@@ -495,7 +495,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         type: 'theme',
         name: 'Cerisier',
         description: 'Rose délicat.',
-        priceCredits: 1,
+        priceCredits: 15,
         rarity: 'common',
         preview: '#ff758f',
     },

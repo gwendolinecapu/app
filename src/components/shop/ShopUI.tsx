@@ -38,7 +38,7 @@ import { ShopItemCard } from './ShopItemCard';
 import { ShopItemModal } from './ShopItemModal';
 import LootBoxOpening from './LootBoxOpening';
 import { DailyStreakUI } from './DailyStreakUI';
-
+import DropRateModal from './DropRateModal';
 
 import { InventoryModal } from './InventoryModal';
 
@@ -72,6 +72,8 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
     const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
     const [lootBoxVisible, setLootBoxVisible] = useState(false);
     const [loadingAd, setLoadingAd] = useState(false);
+    const [dropRateVisible, setDropRateVisible] = useState(false);
+    const [dropRateTier, setDropRateTier] = useState<LootBoxTier>('basic');
 
     // LOOT BOX 2.0 LOGIC
     const [openingTier, setOpeningTier] = useState<LootBoxTier | null>(null);
@@ -296,7 +298,20 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                                             <Ionicons name={visuals.icon as any} size={32} color="white" />
                                         </View>
                                         <Text style={styles.boosterName}>{pack.name}</Text>
-                                        <Text style={styles.boosterCards}>{pack.cardCount.max} Cartes Max</Text>
+                                        <Text style={styles.boosterCards}>{pack.cardCount.min}-{pack.cardCount.max} Cartes</Text>
+
+                                        {/* Drop Rate Info Button */}
+                                        <TouchableOpacity
+                                            style={styles.dropRateBtn}
+                                            onPress={() => {
+                                                setDropRateTier(tier);
+                                                setDropRateVisible(true);
+                                            }}
+                                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                        >
+                                            <Ionicons name="information-circle-outline" size={14} color="rgba(255,255,255,0.7)" />
+                                            <Text style={styles.dropRateBtnText}>Taux</Text>
+                                        </TouchableOpacity>
 
                                         <View style={styles.boosterPrice}>
                                             <Ionicons name="diamond" size={12} color="white" />
@@ -505,6 +520,12 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                     await equipItem(item.id, item.type);
                     setInventoryVisible(false);
                 }}
+            />
+
+            <DropRateModal
+                visible={dropRateVisible}
+                tier={dropRateTier}
+                onClose={() => setDropRateVisible(false)}
             />
         </View>
     );
@@ -966,5 +987,21 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 14,
         marginLeft: 4,
+    },
+    dropRateBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        borderRadius: 6,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        alignSelf: 'flex-start',
+        marginBottom: 4,
+    },
+    dropRateBtnText: {
+        color: 'rgba(255,255,255,0.9)',
+        fontSize: 10,
+        fontWeight: '600',
     },
 });

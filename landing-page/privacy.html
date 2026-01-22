@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Politique de Confidentialité - PluralConnect</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .privacy-content {
+            max-width: 800px;
+            margin: 100px auto 60px;
+            padding: 40px 24px;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .privacy-content h1 {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .privacy-content h2 {
+            font-size: 1.75rem;
+            margin-top: 32px;
+            margin-bottom: 16px;
+            color: #A78BFA;
+        }
+
+        .privacy-content p,
+        .privacy-content li {
+            color: #94A3B8;
+            line-height: 1.8;
+            margin-bottom: 16px;
+        }
+
+        .privacy-content ul {
+            padding-left: 24px;
+        }
+
+        .last-updated {
+            color: #64748B;
+            font-size: 0.9rem;
+            margin-bottom: 32px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-gradient"></div>
+
+    <!-- Simple Navbar -->
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="index.html" class="logo">
+                <img src="./logo.png" alt="PluralConnect" class="logo-image">
+                <span class="logo-text">PluralConnect</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="privacy-content">
+        <h1>🔒 Politique de Confidentialité</h1>
+        <p class="last-updated">Dernière mise à jour : 22 janvier 2026</p>
+
+        <h2>1. Introduction</h2>
+        <p>
+            Bienvenue sur PluralConnect. Nous prenons votre vie privée très au sérieux.
+            Cette politique explique comment nous collectons, utilisons et protégeons vos données personnelles
+            lorsque vous vous inscrivez sur notre landing page et utilisez notre application.
+        </p>
+
+        <h2>2. Responsable du traitement</h2>
+        <p>
+            <strong>PluralConnect</strong><br>
+            Email : hello@pluralconnect.app
+        </p>
+
+        <h2>3. Données collectées</h2>
+        <h3>3.1 Landing Page (Inscription Early Bird)</h3>
+        <p>Nous collectons uniquement :</p>
+        <ul>
+            <li><strong>Votre adresse email</strong> : Pour vous contacter lors du lancement de l'application</li>
+            <li><strong>Date et heure d'inscription</strong> : Pour déterminer votre position dans la liste Early Bird
+            </li>
+            <li><strong>Source d'inscription</strong> : Pour savoir d'où vous venez (landing page)</li>
+        </ul>
+
+        <h3>3.2 Application Mobile (À venir)</h3>
+        <p>Une fois l'application lancée, nous collecterons :</p>
+        <ul>
+            <li>Informations de profil (nom de système, alters, etc.)</li>
+            <li>Contenus créés (posts, journal, etc.) - <strong>chiffrés de bout en bout</strong></li>
+            <li>Données d'utilisation anonymisées pour améliorer l'app</li>
+        </ul>
+
+        <h2>4. Utilisation des données</h2>
+        <p>Vos données sont utilisées pour :</p>
+        <ul>
+            <li>✅ Vous envoyer un email de notification lors du lancement de l'app</li>
+            <li>✅ Vous attribuer vos récompenses Early Bird (thème Pioneer, crédits, badge)</li>
+            <li>✅ Créer votre compte automatiquement avec l'email fourni</li>
+            <li>✅ Analytics anonymisées pour améliorer l'inscription (nombre total d'inscrits)</li>
+        </ul>
+
+        <p><strong>Nous ne vendons jamais vos données à des tiers.</strong></p>
+
+        <h2>5. Base légale (RGPD)</h2>
+        <p>Notre base légale pour traiter vos données est :</p>
+        <ul>
+            <li><strong>Consentement</strong> : En vous inscrivant, vous consentez à recevoir des emails de notre part
+            </li>
+            <li><strong>Intérêt légitime</strong> : Gérer notre liste d'attente Early Bird</li>
+        </ul>
+
+        <h2>6. Partage des données</h2>
+        <p> Nous partageons vos données uniquement avec :</p>
+        <ul>
+            <li><strong>Firebase (Google)</strong> : Stockage sécurisé des inscriptions (serveurs EU si possible)</li>
+            <li><strong>Services d'emailing</strong> : Pour envoyer l'email de lancement (SendGrid ou Mailgun)</li>
+        </ul>
+        <p>Aucune donnée n'est partagée à des fins publicitaires.</p>
+
+        <h2>7. Sécurité</h2>
+        <p>Nous protégeons vos données via :</p>
+        <ul>
+            <li>🔒 <strong>Chiffrement HTTPS</strong> : Toutes les communications sont chiffrées</li>
+            <li>🔒 <strong>Firestore Rules strictes</strong> : Seuls les admins peuvent lire les emails inscrits</li>
+            <li>🔒 <strong>Pas de stockage en clair côté client</strong> : Emails hashés dans localStorage</li>
+            <li>🔒 <strong>Validation anti-spam</strong> : Honeypot + rate limiting</li>
+        </ul>
+
+        <h2>8. Vos droits (RGPD)</h2>
+        <p>Vous avez le droit de :</p>
+        <ul>
+            <li>✅ <strong>Accès</strong> : Demander une copie de vos données</li>
+            <li>✅ <strong>Rectification</strong> : Corriger vos informations</li>
+            <li>✅ <strong>Suppression</strong> : Supprimer votre inscription (droit à l'oubli)</li>
+            <li>✅ <strong>Opposition</strong> : Vous opposer au traitement de vos données</li>
+            <li>✅ <strong>Portabilité</strong> : Récupérer vos données dans un format structuré</li>
+        </ul>
+
+        <p>Pour exercer ces droits, contactez-nous à : <strong>hello@pluralconnect.app</strong></p>
+
+        <h2>9. Cookies</h2>
+        <p>Notre landing page utilise :</p>
+        <ul>
+            <li><strong>LocalStorage</strong> : Backup de votre inscription (pas d'email en clair)</li>
+            <li><strong>Google Analytics</strong> (si vous acceptez) : Analytics anonymisées</li>
+        </ul>
+
+        <p>Vous pouvez refuser les cookies Analytics via le banner de consentement.</p>
+
+        <h2>10. Conservation des données</h2>
+        <ul>
+            <li>📧 <strong>Emails Early Bird</strong> : Conservés jusqu'au lancement + 6 mois</li>
+            <li>📊 <strong>Analytics</strong> : Données anonymisées conservées 26 mois (Google Analytics)</li>
+        </ul>
+
+        <h2>11. Transferts internationaux</h2>
+        <p>
+            Vos données peuvent être stockées sur des serveurs Firebase situés hors de l'UE
+            (USA principalement). Google Cloud respecte les clauses contractuelles types de l'UE.
+        </p>
+
+        <h2>12. Modifications</h2>
+        <p>
+            Nous pouvons mettre à jour cette politique. Les changements seront notifiés par email
+            si vous êtes inscrit·e.
+        </p>
+
+        <h2>13. Contact & Réclamations</h2>
+        <p>Pour toute question ou réclamation :</p>
+        <ul>
+            <li>📧 Email : <strong>hello@pluralconnect.app</strong></li>
+            <li>🇪🇺 CNIL (France) : <a href="https://www.cnil.fr" target="_blank"
+                    style="color: #8B5CF6;">www.cnil.fr</a></li>
+        </ul>
+
+        <hr style="margin: 40px 0; border-color: rgba(255,255,255,0.1);">
+
+        <p style="text-align: center; color: #64748B;">
+            <a href="index.html" style="color: #8B5CF6;">← Retour à la landing page</a>
+        </p>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-bottom">
+            <p>© 2026 PluralConnect. Fait avec 💜 pour la communauté plurielle.</p>
+        </div>
+    </footer>
+</body>
+
+</html>

@@ -634,5 +634,6 @@ service cloud.firestore {
                       request.resource.data.count >= 0 &&
                       request.resource.data.count <= 10000 && // Max reasonable
                       request.resource.data.lastUpdated is string;
+    }
   }
 }

@@ -7,10 +7,12 @@
  * - Automatic early bird reward calculation
  * - Particle animations
  * - Smooth interactions
+ * - ✅ Anti-spam: Honeypot + Rate limiting
  */
 
 // ==================== CONSTANTS ====================
 const MAX_EARLY_BIRD = 500;
+const MIN_SUBMIT_INTERVAL = 2000; // 2 seconds between submissions
 const REWARDS = {
     PIONEER_THEME: { name: 'Thème Pioneer Exclusif', icon: '🎨', tier: 500 },
     CREDITS_500: { name: '500 Crédits Bonus', icon: '💎', tier: 500 },
@@ -23,6 +25,7 @@ const REWARDS = {
 let signupCount = 0;
 let isFirebaseReady = false;
 let db = null;
+let lastSubmitTime = 0; // For rate limiting
 
 // ==================== FIREBASE INITIALIZATION ====================
 function waitForFirebase() {
@@ -182,10 +185,30 @@ async function handleFormSubmit(event, formId) {
     const submitButton = form.querySelector('button[type="submit"]');
     const email = emailInput.value.trim().toLowerCase();
 
-    if (!email || !isValidEmail(email)) {
+    // ✅ HONEYPOT CHECK - Silent bot rejection
+    const honeypot = form.querySelector('[name="website"]');
+    if (honeypot && honeypot.value !== '') {
+        // Bot detected - silently reject without showing error
+        emailInput.value = '';
+        return;
+    }
+
+    // ✅ RATE LIMITING - Prevent spam submissions
+    const now = Date.now();
+    if (now - lastSubmitTime < MIN_SUBMIT_INTERVAL) {
+        showToast('⏱️ Veuillez attendre 2 secondes entre chaque soumission', 'error');
         shakeInput(emailInput);
         return;
     }
+
+    if (!email || !isValidEmail(email)) {
+        showToast('📧 Veuillez entrer une adresse email valide', 'error');
+        shakeInput(emailInput);
+        return;
+    }
+
+    // Update last submit time
+    lastSubmitTime = now;
 
     // Disable form
     submitButton.disabled = true;
@@ -576,3 +599,50 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     console.log('✅ PluralConnect Landing Page Ready!');
 });
+
+// ==================== COOKIE CONSENT ====================
+function checkCookieConsent() {
+    const consent = localStorage.getItem('pluralconnect_cookie_consent');
+
+    if (!consent) {
+        // Show banner after 3 seconds
+        setTimeout(() => {
+            const banner = document.getElementById('cookie-banner');
+            if (banner) {
+                banner.classList.remove('hidden');
+            }
+        }, 3000);
+    } else if (consent === 'accepted') {
+        // Initialize Google Analytics if accepted
+        initAnalytics();
+    }
+}
+
+function acceptCookies() {
+    localStorage.setItem('pluralconnect_cookie_consent', 'accepted');
+    hideCookieBanner();
+    initAnalytics();
+}
+
+function refuseCookies() {
+    localStorage.setItem('pluralconnect_cookie_consent', 'refused');
+    hideCookieBanner();
+}
+
+function hideCookieBanner() {
+    const banner = document.getElementById('cookie-banner');
+    if (banner) {
+        banner.classList.add('hidden');
+    }
+}
+
+function initAnalytics() {
+    // TODO: Initialize Google Analytics when GA measurementId is configured
+    // Example with Firebase Analytics SDK already loaded
+    if (window.firebaseApp && typeof gtag !== 'undefined') {
+        console.log('📊 Analytics initialized');
+    }
+}
+
+// Check cookie consent on page load
+checkCookieConsent();

@@ -65,21 +65,44 @@ export default function RitualScreen() {
     };
 
     const pickImages = async () => {
-        try {
-            const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ['images'],
-                quality: 0.9,
-                allowsMultipleSelection: true, // Enable multiple
-                selectionLimit: 5, // Reasonable limit
-            });
+        // Afficher d'abord l'avertissement éthique et la compensation carbone
+        Alert.alert(
+            "⚠️ Utilisation Éthique de l'IA",
+            "Avant de générer :\n\n" +
+            "🎨 Consentement des artistes\n" +
+            "Veuillez utiliser UNIQUEMENT des images dont vous avez les droits ou l'autorisation explicite de l'artiste. " +
+            "L'utilisation du travail d'un artiste sans son accord est contraire à nos principes.\n\n" +
+            "🌱 Compensation carbone incluse\n" +
+            "Chaque image générée contribue automatiquement à une compensation carbone (0,002€/image = 2€/1000 images). " +
+            "Nous estimons ~50g CO₂e par image 2K et provisionnons ce montant pour financer des projets de compensation.\n\n" +
+            "En continuant, vous confirmez respecter ces conditions.",
+            [
+                {
+                    text: "Annuler",
+                    style: "cancel"
+                },
+                {
+                    text: "J'ai compris, continuer",
+                    onPress: async () => {
+                        try {
+                            const result = await ImagePicker.launchImageLibraryAsync({
+                                mediaTypes: ['images'],
+                                quality: 0.9,
+                                allowsMultipleSelection: true,
+                                selectionLimit: 5,
+                            });
 
-            if (!result.canceled && result.assets.length > 0) {
-                setSelectedImages(result.assets);
-            }
-        } catch (error) {
-            console.error("Pick error:", error);
-            Alert.alert("Erreur", "Impossible de sélectionner les images.");
-        }
+                            if (!result.canceled && result.assets.length > 0) {
+                                setSelectedImages(result.assets);
+                            }
+                        } catch (error) {
+                            console.error("Pick error:", error);
+                            Alert.alert("Erreur", "Impossible de sélectionner les images.");
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     const confirmRitual = () => {
@@ -87,7 +110,9 @@ export default function RitualScreen() {
 
         Alert.alert(
             "Lancer la création ?",
-            `Ces références (${selectedImages.length} images) coûtent ${AI_COSTS.RITUAL} Crédits. L'IA va analyser votre alter en détail.`,
+            `Ces références (${selectedImages.length} images) coûtent ${AI_COSTS.RITUAL} Crédits.\n\n` +
+            `L'IA va analyser votre alter en détail.\n\n` +
+            `💚 Impact carbone : une contribution automatique de 0,002€/image est provisionnée pour la compensation carbone.`,
             [
                 { text: "Annuler", style: "cancel" },
                 {
@@ -178,7 +203,7 @@ export default function RitualScreen() {
                         style={StyleSheet.absoluteFill}
                     />
                     <Ionicons name="sparkles" size={32} color={primaryColor} style={styles.cardIcon} />
-                    <Text style={[styles.cardTitle, { color: themeColors?.text || 'white' }]}>Génération d'Avatar</Text>
+                    <Text style={[styles.cardTitle, { color: themeColors?.text || 'white' }]}>Génération d&apos;Avatar</Text>
                     <Text style={[styles.cardDesc, { color: themeColors?.textSecondary || colors.textSecondary }]}>
                         Visualisez {alter?.name || "votre alter"}. Sélectionnez plusieurs images (Face, Profil, Détails) pour un résultat plus précis.
                     </Text>
@@ -271,7 +296,7 @@ export default function RitualScreen() {
                                     style={styles.cancelRedoButton}
                                     onPress={() => setSelectedImages([])}
                                 >
-                                    <Text style={styles.cancelRedoText}>Annuler et garder l'ADN actuel</Text>
+                                    <Text style={styles.cancelRedoText}>Annuler et garder l&apos;ADN actuel</Text>
                                 </TouchableOpacity>
                             )}
                         </View>

@@ -185,7 +185,10 @@ L'espace individuel façon Instagram :
 - **Usage** : Permet ensuite de générer des "scènes de vie" (ex: "Moi buvant un café") pour illustrer les posts.
 - **Éthique & Compromis Communautaire** :
   - ✅ **Strictement Optionnel** : La fonctionnalité doit être activée volontairement. Si l'utilisateur est contre l'IA, il ne verra jamais ces options.
-  - ⚠️ **Responsabilisation (Art Theft)** : Avertissement clair avant l'upload : *"N'utilisez pas d'œuvres d'artistes sans leur accord. Privilégiez vos propres croquis, des photos libres de droit ou des compositeurs d'avatar (Picrew)."*
+  - ⚠️ **Avertissement Interactif** : Avant chaque génération, une alerte s'affiche rappelant :
+    - Le consentement obligatoire des artistes
+    - L'interdiction d'utiliser le travail d'un artiste sans accord
+    - La contribution automatique à la compensation carbone
   - ✅ **Transparence** : Clairement indiqué comme IA.
   - ✅ **Éphémère** : Photos de références supprimées du serveur (BytePlus) immédiatement après génération.
 
@@ -193,6 +196,26 @@ L'espace individuel façon Instagram :
 - **Zero-Training** : Aucune donnée (texte ou image) ne sert à entraîner les modèles.
 - **Chiffrement** : Les échanges avec les API externes sont chiffrés.
 - **Contrôle** : Désactivable globalement dans les paramètres.
+
+### 🌱 Compensation Carbone (Transparence)
+*Parce que l'IA a un impact environnemental.*
+
+**Engagement** : Chaque image générée contribue automatiquement à une compensation carbone.
+
+**Calcul Transparent** :
+- **Empreinte estimée** : ~50g CO₂e par image 2K (estimation conservatrice)
+- **Coût de compensation** : 0,002€ par image (= 2€ pour 1000 images)
+- **Base de calcul** : 24€/tonne CO₂e × 0,05 kg = 0,0012€ arrondi à 0,002€ pour couvrir les variations
+
+**Pourquoi 0,002€ ?**
+- Simple, justifiable et ultra-accessible
+- Budget carbone conservateur (on préfère surestimer que minimiser)
+- Aucun surcoût caché : c'est intégré au coût de génération
+
+**Transparence** :
+- Montant total collecté affiché régulièrement
+- Récap mensuel/trimestriel des dons réalisés
+- Pas de "neutralité carbone magique" : c'est une compensation honnête
 
 ---
 

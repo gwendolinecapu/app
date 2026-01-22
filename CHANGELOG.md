@@ -1,5 +1,31 @@
 # Changelog
 
+## [2026-01-22] IA Éthique : Avertissements & Compensation Carbone 🌱
+
+### 🎨 Avertissement Consentement Artistes
+- **`app/alter-space/[alterId]/ritual.tsx`** : Nouvelle alerte avant sélection d'images
+  - **Contenu** : Rappel explicite de n'utiliser QUE des images avec droits/autorisation
+  - **Warning** : "L'utilisation du travail d'un artiste sans son accord est contraire à nos principes"
+  - **UX** : Obligatoire à accepter avant de continuer ("J'ai compris, continuer")
+  - **Impact** : Sensibilisation active contre le vol d'art, conformité éthique
+
+### 🌱 Compensation Carbone Transparente
+- **Nouveau système** : 0,002€ par image générée automatiquement provisionnée
+  - **Calcul** : ~50g CO₂e × 24€/tonne = 0,002€/image (2€/1000 images)
+  - **Affichage** : Information dans les 2 alertes (sélection + confirmation)
+  - **Promesse** : Budget carbone conservateur, transparence totale (montants affichés régulièrement)
+- **`VISION.md`** : Nouvelle section "Compensation Carbone" détaillant le calcul et les garanties
+  - Pas de "neutralité magique", juste une compensation honnête
+  - Récap mensuel/trimestriel des dons réalisés
+
+### 📝 Documentation Mise à Jour
+- **`VISION.md`** : Section "IA Éthique" enrichie avec :
+  - Avertissements interactifs dans l'UI
+  - Détails complets sur la compensation carbone
+  - Calcul transparent et justification du montant
+
+---
+
 ## [2026-01-21] Fix Bug Notification Persistante 🐛
 
 ### 🐛 Correction Bug UI - Notification Fronting

@@ -20,7 +20,7 @@ import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { db, storage } from '../../src/lib/firebase';
-import { collection, addDoc , deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,6 +33,7 @@ import { SystemMenuModal } from '../../src/components/dashboard/SystemMenuModal'
 import { AddAlterModal } from '../../src/components/dashboard/AddAlterModal';
 import { DashboardGrid, GridItem } from '../../src/components/dashboard/DashboardGrid';
 import { CategoryFilterModal } from '../../src/components/dashboard/CategoryFilterModal';
+import { SubSystemModal } from '../../src/components/dashboard/SubSystemModal';
 import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
 
 import { Alter } from '../../src/types';
@@ -74,6 +75,8 @@ export default function Dashboard() {
     const [deleteMode, setDeleteMode] = useState(false);
     const [categoryModalVisible, setCategoryModalVisible] = useState(false);
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
+    const [subsystemModalVisible, setSubsystemModalVisible] = useState(false);
+    const [activeSubsystemId, setActiveSubsystemId] = useState<string | null>(null);
 
     const { width } = useWindowDimensions();
     const availableWidth = width - (CONTAINER_PADDING * 2);
@@ -108,6 +111,11 @@ export default function Dashboard() {
         // Filter by category first
         if (activeCategory) {
             result = result.filter(alter => alter.role_ids?.includes(activeCategory));
+        }
+
+        // Filter by subsystem
+        if (activeSubsystemId) {
+            result = result.filter(alter => alter.subsystem_id === activeSubsystemId);
         }
 
         // Then filter by search query
@@ -315,6 +323,8 @@ export default function Dashboard() {
                             onSelectAll={handleSelectAll}
                             onOpenCategories={() => setCategoryModalVisible(true)}
                             activeCategory={activeCategory}
+                            onOpenSubsystems={() => setSubsystemModalVisible(true)}
+                            activeSubsystemId={activeSubsystemId}
                         />
 
                         <View style={{ height: 16 }} />
@@ -371,6 +381,13 @@ export default function Dashboard() {
                     setFronting([alter], 'single');
                     router.push(`/alter-space/${alter.id}` as any);
                 }}
+            />
+
+            <SubSystemModal
+                visible={subsystemModalVisible}
+                onClose={() => setSubsystemModalVisible(false)}
+                activeSubsystemId={activeSubsystemId}
+                onSelectSubsystem={(subsystem) => setActiveSubsystemId(subsystem ? subsystem.id : null)}
             />
         </SafeAreaView>
     );

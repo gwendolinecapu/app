@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TextInput, Dimensions , LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Dimensions, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { AnimatedPressable } from '../ui/AnimatedPressable';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../lib/theme';
@@ -23,6 +23,8 @@ interface DashboardHeaderProps {
     onSelectAll?: () => void;
     onOpenCategories?: () => void;
     activeCategory?: string | null;
+    onOpenSubsystems?: () => void;
+    activeSubsystemId?: string | null;
 }
 
 
@@ -42,6 +44,8 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     onSelectAll,
     onOpenCategories,
     activeCategory,
+    onOpenSubsystems,
+    activeSubsystemId,
 }) => {
     const insets = useSafeAreaInsets(); // Added for insets
 
@@ -77,6 +81,21 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                                 name="pricetags"
                                 size={20}
                                 color={activeCategory ? 'white' : colors.text}
+                            />
+                        </AnimatedPressable>
+                    )}
+                    {onOpenSubsystems && (
+                        <AnimatedPressable
+                            style={[
+                                styles.headerIconBtn,
+                                activeSubsystemId && styles.headerIconBtnSubsystem
+                            ]}
+                            onPress={onOpenSubsystems}
+                        >
+                            <Ionicons
+                                name="planet"
+                                size={22}
+                                color={activeSubsystemId ? 'white' : colors.text}
                             />
                         </AnimatedPressable>
                     )}
@@ -168,6 +187,9 @@ const styles = StyleSheet.create({
     },
     headerIconBtnCategory: {
         backgroundColor: '#9C27B0', // Purple for categories
+    },
+    headerIconBtnSubsystem: {
+        backgroundColor: '#3B82F6', // Blue for sub-systems
     },
     selectAllBtn: {
         paddingHorizontal: 12,

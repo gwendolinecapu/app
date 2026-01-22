@@ -75,7 +75,8 @@ async function initRealTimeCounter() {
             await setDoc(counterRef, { count: 0, lastUpdated: new Date().toISOString() });
         }
     } catch (e) {
-        console.log('Counter init check:', e.message);
+    } catch (e) {
+        // silent fail
     }
 
     // Real-time listener
@@ -256,7 +257,7 @@ async function registerEmail(email) {
         const existingDoc = await getDoc(signupRef);
         if (existingDoc.exists()) {
             const existingData = existingDoc.data();
-            console.log('Email already registered:', email);
+            // Email already registered
             return {
                 success: true,
                 position: existingData.position || 0,
@@ -304,7 +305,7 @@ async function registerEmail(email) {
             });
         });
 
-        console.log('✅ New signup registered:', email, 'Position:', newPosition);
+        // New signup registered
         return { success: true, position: newPosition, alreadyExists: false };
 
     } catch (e) {
@@ -625,7 +626,7 @@ document.head.appendChild(dynamicStyles);
 
 // ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🌈 PluralConnect Landing Page Loading...');
+    // Landing Page Loading
 
     // Create particles
     createParticles();
@@ -648,9 +649,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Init animations
     initScrollAnimations();
     initNavbar();
-    initFeatureTabs();
 
-    console.log('✅ PluralConnect Landing Page Ready!');
+
+    initFeatureTabs();
 });
 
 // ==================== FEATURE TABS FILTERING ====================
@@ -725,11 +726,7 @@ function hideCookieBanner() {
 }
 
 function initAnalytics() {
-    // TODO: Initialize Google Analytics when GA measurementId is configured
-    // Example with Firebase Analytics SDK already loaded
-    if (window.firebaseApp && typeof gtag !== 'undefined') {
-        console.log('📊 Analytics initialized');
-    }
+    // Analytics initialized via Firebase SDK in index.html
 }
 
 // Check cookie consent on page load

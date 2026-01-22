@@ -1,5 +1,15 @@
 # Changelog
 
+## [2026-01-22] Landing Page - Polish & Analytics ✨
+
+### 📊 Analytics & SEO
+- **Google Analytics** : Initialisation propre via Firebase SDK dans `index.html`.
+- **OG Tags** : Correction URL image absolue pour partage social (`https://pluralconnect.app/logo.png`).
+- **Code Quality** : Nettoyage des `console.log` de production et correction double initialisation dans `script.js`.
+- **Status** : Prêt pour déploiement (Vercel/Netlify).
+
+---
+
 ## [2026-01-22] Landing Page - Détection Duplicates Améliorée ✅
 
 ### 🔒 Fix : 1 Email = 1 Inscription Garantie
@@ -11,6 +21,8 @@
   - ✅ Message utilisateur amélioré : "Déjà inscrit à la position n°X"
   - ✅ Logs console pour debug
 - **Code** :
+
+
   ```javascript
   // Clé unique basée sur email
   const emailKey = email.replace(/[.@]/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');

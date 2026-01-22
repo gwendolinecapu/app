@@ -11,7 +11,7 @@
     <!-- SEO & OG Tags -->
     <meta property="og:title" content="PluralConnect - L'app TDI qui vous comprend vraiment">
     <meta property="og:description" content="Inscription anticipée - Surprise exclusive pour les 500 premiers !">
-    <meta property="og:image" content="./logo.png">
+    <meta property="og:image" content="https://pluralconnect.app/logo.png">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
 
@@ -32,6 +32,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
         import { getFirestore, collection, addDoc, doc, getDoc, setDoc, onSnapshot, runTransaction, increment } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js';
 
         // Firebase config - CORRECT PROJECT: app-tdi
         const firebaseConfig = {
@@ -47,6 +48,7 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const analytics = getAnalytics(app);
 
         // Make available globally
         window.firebaseDB = db;
@@ -116,7 +118,7 @@
                 </form>
                 <p class="form-note">
                     <i class="fas fa-gift"></i>
-                    <strong>Surprise exclusive</strong> pour les 500 premiers inscrits !
+                    <strong>Surprises exclusives</strong> pour les 500 premiers inscrits !
                 </p>
             </div>
 
@@ -228,7 +230,7 @@
             <button class="tab-btn" data-tab="core">🧠 Dashboard</button>
             <button class="tab-btn" data-tab="alter">🌟 AlterSpace</button>
             <button class="tab-btn" data-tab="social">💬 Social</button>
-            <button class="tab-btn" data-tab="custom">🎨 Boutique</button>
+            <button class="tab-btn" data-tab="custom">🎨 Personnalisation</button>
         </div>
 
         <div class="features-grid">
@@ -308,18 +310,18 @@
                 <div class="feature-icon">
                     <i class="fas fa-palette"></i>
                 </div>
-                <h3>50+ Thèmes & Skins</h3>
-                <p>Dark, Pastel, Cyberpunk... Cadres animés, bulles de chat personnalisées</p>
+                <h3>Personnalisation Totale</h3>
+                <p>Dark, Pastel, Cyberpunk... Plus de 50 thèmes, cadres animés et styles de bulles</p>
                 <div class="feature-count">9 sous-features</div>
             </div>
 
-            <!-- Boutique -->
+            <!-- Cosmétiques -->
             <div class="feature-card" data-category="custom">
                 <div class="feature-icon">
                     <i class="fas fa-gift"></i>
                 </div>
-                <h3>Boutique & Loot Boxes</h3>
-                <p>Boosters style TCG, inventaire cosmétique, système de rareté (Commun → Mythique)</p>
+                <h3>Cosmétiques & Collections</h3>
+                <p>Débloquez des items via le système de récompenses, construisez vos collections</p>
                 <div class="feature-count">6 sous-features</div>
             </div>
 

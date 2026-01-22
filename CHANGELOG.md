@@ -1,5 +1,16 @@
 # Changelog
 
+## [2026-01-21] Fix Bug Notification Persistante 🐛
+
+### 🐛 Correction Bug UI - Notification Fronting
+- **`AuthContext.tsx`** : Suppression de `showToast('Fronting updated successfully', 'success')`
+  - **Problème** : La notification restait affichée en permanence à l'écran (très gênant)
+  - **Cause** : Possiblement due à des re-renders multiples du contexte ou timeout non déclenché
+  - **Solution** : Retrait complet du toast, le feedback haptique (`triggerHaptic.success()`) et la mise à jour optimiste de l'UI suffisent
+  - **Impact** : UX moins intrusive, pas de perturbation visuelle lors du switch de front
+
+---
+
 ## [2026-01-21] End-to-End Encryption (E2EE) Implementation 🔐
 
 ### 🔒 Chiffrement End-to-End (v2 - CORRIGÉ)

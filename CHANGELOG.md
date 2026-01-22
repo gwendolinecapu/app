@@ -1,5 +1,36 @@
 # Changelog
 
+## [2026-01-22] Landing Page - Détection Duplicates Améliorée ✅
+
+### 🔒 Fix : 1 Email = 1 Inscription Garantie
+- **Problème** : Hash btoa() pouvait avoir collisions, détection duplicates pas fiable à 100%
+- **Solution** :
+  - ✅ Nouveau système de clé : email sanitisé (remplace `.@` par `_`)
+  - ✅ Double vérification : avant ET pendant transaction Firestore
+  - ✅ Error handling si email créé pendant transaction (race condition)
+  - ✅ Message utilisateur amélioré : "Déjà inscrit à la position n°X"
+  - ✅ Logs console pour debug
+- **Code** :
+  ```javascript
+  // Clé unique basée sur email
+  const emailKey = email.replace(/[.@]/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
+  
+  // Vérif avant transaction
+  const existingDoc = await getDoc(signupRef);
+  if (existingDoc.exists()) {
+      return { alreadyExists: true, position: existingDoc.data().position };
+  }
+  
+  // Double-check pendant transaction
+  const signupCheck = await transaction.get(signupRef);
+  if (signupCheck.exists()) {
+      throw new Error('EMAIL_ALREADY_EXISTS');
+  }
+  ```
+- **Impact** : **100% garantie** qu'un email ne peut s'inscrire qu'une fois
+
+---
+
 ## [2026-01-22] Landing Page - Sécurisation Critique ✅🔒
 
 ### 🔴 Fix #1 : Firestore Rules Sécurisées

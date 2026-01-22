@@ -219,7 +219,7 @@ async function handleFormSubmit(event, formId) {
         const result = await registerEmail(email);
 
         if (result.alreadyExists) {
-            showAlreadyRegistered(formId);
+            showAlreadyRegistered(formId, result.position);
         } else {
             showSuccess(formId, result.position);
         }
@@ -228,7 +228,8 @@ async function handleFormSubmit(event, formId) {
 
     } catch (error) {
         console.error('Signup error:', error);
-        showToast('❌ Erreur lors de l\'inscription. Réessayez.', 'error');
+        const errorMsg = error.message || '❌ Erreur lors de l\'inscription. Réessayez.';
+        showToast(errorMsg, 'error');
     } finally {
         submitButton.disabled = false;
         submitButton.innerHTML = originalContent;
@@ -245,13 +246,27 @@ async function registerEmail(email) {
 
     const { doc, getDoc, setDoc, runTransaction } = window.firebaseUtils;
 
-    // Check if email already exists
-    const emailHash = btoa(email).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
-    const signupRef = doc(db, 'early_signups', emailHash);
+    // ✅ IMPROVED: Better email hashing for unique ID
+    // Use email directly as key after sanitizing special chars
+    const emailKey = email.replace(/[.@]/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
+    const signupRef = doc(db, 'early_signups', emailKey);
 
-    const existingDoc = await getDoc(signupRef);
-    if (existingDoc.exists()) {
-        return { success: true, position: existingDoc.data().position || 0, alreadyExists: true };
+    // ✅ Check if email already exists BEFORE transaction
+    try {
+        const existingDoc = await getDoc(signupRef);
+        if (existingDoc.exists()) {
+            const existingData = existingDoc.data();
+            console.log('Email already registered:', email);
+            return {
+                success: true,
+                position: existingData.position || 0,
+                alreadyExists: true,
+                email: existingData.email
+            };
+        }
+    } catch (error) {
+        console.error('Error checking existing signup:', error);
+        // Continue anyway - transaction will handle it
     }
 
     // Get current count and increment atomically
@@ -264,6 +279,12 @@ async function registerEmail(email) {
             const counterDoc = await transaction.get(counterRef);
             const currentCount = counterDoc.exists() ? (counterDoc.data().count || 0) : 0;
             newPosition = currentCount + 1;
+
+            // ✅ Double-check no one created this email during transaction
+            const signupCheck = await transaction.get(signupRef);
+            if (signupCheck.exists()) {
+                throw new Error('EMAIL_ALREADY_EXISTS');
+            }
 
             // Update counter
             transaction.set(counterRef, {
@@ -278,21 +299,43 @@ async function registerEmail(email) {
                 isEarlyBird: newPosition <= MAX_EARLY_BIRD,
                 rewards: calculateRewards(newPosition),
                 registeredAt: new Date().toISOString(),
-                source: 'landing_page'
+                source: 'landing_page',
+                emailKey: emailKey // Store key for reference
             });
         });
-    } catch (e) {
-        console.error('Transaction failed:', e);
-        // Fallback: just save the signup
-        await setDoc(signupRef, {
-            email: email,
-            registeredAt: new Date().toISOString(),
-            source: 'landing_page'
-        });
-        newPosition = signupCount + 1;
-    }
 
-    return { success: true, position: newPosition, alreadyExists: false };
+        console.log('✅ New signup registered:', email, 'Position:', newPosition);
+        return { success: true, position: newPosition, alreadyExists: false };
+
+    } catch (e) {
+        // Check if error is duplicate email
+        if (e.message === 'EMAIL_ALREADY_EXISTS') {
+            const existingDoc = await getDoc(signupRef);
+            if (existingDoc.exists()) {
+                return {
+                    success: true,
+                    position: existingDoc.data().position || 0,
+                    alreadyExists: true
+                };
+            }
+        }
+
+        console.error('Transaction failed:', e);
+
+        // Fallback: just save the signup (without atomic counter)
+        try {
+            await setDoc(signupRef, {
+                email: email,
+                registeredAt: new Date().toISOString(),
+                source: 'landing_page',
+                position: signupCount + 1
+            });
+            return { success: true, position: signupCount + 1, alreadyExists: false };
+        } catch (fallbackError) {
+            console.error('Fallback save failed:', fallbackError);
+            throw new Error('Inscription impossible. Réessayez dans quelques instants.');
+        }
+    }
 }
 
 function calculateRewards(position) {
@@ -399,7 +442,7 @@ function showSuccess(formId, position) {
     }
 }
 
-function showAlreadyRegistered(formId) {
+function showAlreadyRegistered(formId, position) {
     if (formId === 'main') {
         const form = document.getElementById('main-form');
         const successEl = document.getElementById('success-message');
@@ -408,11 +451,20 @@ function showAlreadyRegistered(formId) {
         if (form) form.style.display = 'none';
         if (successEl) successEl.classList.add('hidden');
         if (alreadyEl) {
+            // Update message with position if available
+            const message = alreadyEl.querySelector('p');
+            if (message && position) {
+                message.innerHTML = `Cet email est déjà enregistré à la position <strong>n°${position}</strong>. On vous contactera bientôt !`;
+            }
+
             alreadyEl.classList.remove('hidden');
             alreadyEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     } else {
-        showToast('👋 Vous êtes déjà inscrit·e !', 'info');
+        const msg = position
+            ? `👋 Email déjà inscrit ! Vous êtes n°${position}`
+            : '👋 Vous êtes déjà inscrit·e !';
+        showToast(msg, 'info');
     }
 }
 
@@ -596,9 +648,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Init animations
     initScrollAnimations();
     initNavbar();
+    initFeatureTabs();
 
     console.log('✅ PluralConnect Landing Page Ready!');
 });
+
+// ==================== FEATURE TABS FILTERING ====================
+function initFeatureTabs() {
+    const tabs = document.querySelectorAll('.tab-btn');
+    const cards = document.querySelectorAll('.feature-card');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Update active tab
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            const category = tab.dataset.tab;
+
+            // Filter cards with animation
+            cards.forEach((card, index) => {
+                const cardCategory = card.dataset.category;
+
+                if (category === 'all' || cardCategory === category) {
+                    // Show card with staggered animation
+                    card.style.display = 'block';
+                    card.style.animation = 'none';
+                    card.offsetHeight; // Trigger reflow
+                    card.style.animation = `fadeInUp 0.5s ease-out ${index * 0.05}s backwards`;
+                } else {
+                    // Hide card
+                    card.style.animation = 'fadeOut 0.3s ease forwards';
+                    setTimeout(() => {
+                        card.style.display = 'none';
+                    }, 300);
+                }
+            });
+        });
+    });
+}
 
 // ==================== COOKIE CONSENT ====================
 function checkCookieConsent() {

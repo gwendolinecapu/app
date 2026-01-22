@@ -214,79 +214,163 @@
         </div>
     </section>
 
-    <!-- Features Section -->
+    <!-- Features Section - Enrichie avec 50+ Fonctionnalités -->
     <section id="features" class="features">
         <div class="section-header">
-            <span class="section-badge">Fonctionnalités</span>
+            <span class="section-badge">50+ Fonctionnalités</span>
             <h2>Tout ce dont votre système a besoin</h2>
             <p>Une application complète pensée pour le quotidien pluriel</p>
         </div>
 
+        <!-- Feature Categories Tabs -->
+        <div class="feature-tabs">
+            <button class="tab-btn active" data-tab="all">Toutes</button>
+            <button class="tab-btn" data-tab="core">🧠 Dashboard</button>
+            <button class="tab-btn" data-tab="alter">🌟 AlterSpace</button>
+            <button class="tab-btn" data-tab="social">💬 Social</button>
+            <button class="tab-btn" data-tab="custom">🎨 Boutique</button>
+        </div>
+
         <div class="features-grid">
-            <div class="feature-card featured">
-                <div class="feature-icon">
+            <!-- FEATURED: AlterSpace -->
+            <div class="feature-card featured" data-category="alter">
+                <div class="feature-icon shimmer">
                     <i class="fas fa-user-astronaut"></i>
                 </div>
                 <h3>AlterSpace Personnel</h3>
-                <p>Chaque alter a son propre espace style Instagram. Posts, stories, personnalisation complète.</p>
-                <div class="feature-tag">⭐ Exclusif</div>
+                <p>Profil Instagram-like avec feed, galerie, journal intime, et suivi d'humeur par alter</p>
+                <div class="feature-tag">⭐ Cœur de l'App</div>
+                <div class="feature-count">9 sous-features</div>
             </div>
 
-            <div class="feature-card">
+            <!-- Fronting System -->
+            <div class="feature-card" data-category="core">
                 <div class="feature-icon">
-                    <i class="fas fa-exchange-alt"></i>
+                    <i class="fas fa-sync-alt"></i>
                 </div>
                 <h3>Suivi du Fronting</h3>
-                <p>Trackez qui est en front, gérez le co-fronting, visualisez l'historique avec des stats détaillées.
-                </p>
+                <p>Switch fluide, co-fronting, historique, stats des top fronters + Live Activity iOS</p>
+                <div class="feature-count">7 sous-features</div>
             </div>
 
-            <div class="feature-card">
+            <!-- Journal & Communication -->
+            <div class="feature-card" data-category="core">
                 <div class="feature-icon">
                     <i class="fas fa-book-open"></i>
                 </div>
-                <h3>Journal Partagé</h3>
-                <p>Communiquez entre alters avec un journal interne sécurisé et entièrement privé.</p>
+                <h3>Journal & Communication</h3>
+                <p>Journal système partagé + Team Chat interne sécurisé entre alters</p>
+                <div class="feature-count">3 sous-features</div>
             </div>
 
-            <div class="feature-card">
+            <!-- Sécurité -->
+            <div class="feature-card" data-category="core">
                 <div class="feature-icon">
                     <i class="fas fa-shield-alt"></i>
                 </div>
                 <h3>Sécurité Maximale</h3>
-                <p>Chiffrement E2E, mots de passe par espace, protection biométrique. Vos données restent vôtres.</p>
+                <p>Chiffrement E2E, mot de passe par espace, FaceID/TouchID, mode hors-ligne</p>
+                <div class="feature-count">6 sous-features</div>
             </div>
 
-            <div class="feature-card">
+            <!-- Social Features -->
+            <div class="feature-card" data-category="social">
+                <div class="feature-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3>Réseau Social Sécurisé</h3>
+                <p>Amitiés alter-alter, follow de système, feed global, visibilité granulaire</p>
+                <div class="feature-count">10 sous-features</div>
+            </div>
+
+            <!-- Messagerie -->
+            <div class="feature-card" data-category="social">
+                <div class="feature-icon">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <h3>Messagerie Chiffrée</h3>
+                <p>DM entre systèmes, groupes, commentaires identifiés + mentions @</p>
+                <div class="feature-count">5 sous-features</div>
+            </div>
+
+            <!-- IA Éthique -->
+            <div class="feature-card" data-category="alter">
                 <div class="feature-icon">
                     <i class="fas fa-wand-magic-sparkles"></i>
                 </div>
                 <h3>IA Éthique</h3>
-                <p>Génération d'avatars, résumés intelligents. Tout reste privé, local, et respectueux des artistes.</p>
+                <p>Génération d'avatars (Body Swap), résumés intelligents. Tout reste privé et local</p>
+                <div class="feature-count">2 sous-features</div>
             </div>
 
-            <div class="feature-card">
+            <!-- Personnalisation -->
+            <div class="feature-card" data-category="custom">
                 <div class="feature-icon">
                     <i class="fas fa-palette"></i>
                 </div>
-                <h3>Personnalisation Totale</h3>
-                <p>50+ thèmes, cadres, bulles. Chaque alter peut exprimer librement sa personnalité unique.</p>
+                <h3>50+ Thèmes & Skins</h3>
+                <p>Dark, Pastel, Cyberpunk... Cadres animés, bulles de chat personnalisées</p>
+                <div class="feature-count">9 sous-features</div>
             </div>
 
-            <div class="feature-card">
+            <!-- Boutique -->
+            <div class="feature-card" data-category="custom">
                 <div class="feature-icon">
-                    <i class="fas fa-globe"></i>
+                    <i class="fas fa-gift"></i>
                 </div>
-                <h3>Réseau Social Sécurisé</h3>
-                <p>Connectez-vous avec d'autres systèmes, partagez (si vous le souhaitez) en toute sécurité.</p>
+                <h3>Boutique & Loot Boxes</h3>
+                <p>Boosters style TCG, inventaire cosmétique, système de rareté (Commun → Mythique)</p>
+                <div class="feature-count">6 sous-features</div>
             </div>
 
-            <div class="feature-card">
+            <!-- Stories -->
+            <div class="feature-card" data-category="alter">
                 <div class="feature-icon">
-                    <i class="fas fa-file-import"></i>
+                    <i class="fas fa-clock"></i>
                 </div>
-                <h3>Import Simply Plural</h3>
-                <p>Migrez facilement depuis Simply Plural. Importez toutes vos données en 1 clic.</p>
+                <h3>Stories & Highlights</h3>
+                <p>Publications éphémères 24h + épingles sur profil, visibles par amis ou public</p>
+                <div class="feature-count">2 sous-features</div>
+            </div>
+
+            <!-- Inner World -->
+            <div class="feature-card" data-category="core">
+                <div class="feature-icon">
+                    <i class="fas fa-map"></i>
+                </div>
+                <h3>Inner World (Headspace)</h3>
+                <p>Éditeur visuel pour cartographier votre monde intérieur, lieux et connexions</p>
+                <div class="feature-count">1 sous-feature</div>
+            </div>
+
+            <!-- Tâches Gamifiées -->
+            <div class="feature-card" data-category="core">
+                <div class="feature-icon">
+                    <i class="fas fa-gamepad"></i>
+                </div>
+                <h3>Tâches Gamifiées</h3>
+                <p>Gestionnaire de tâches avec XP et crédits pour l'alter qui valide + calendrier partagé</p>
+                <div class="feature-count">2 sous-features</div>
+            </div>
+        </div>
+
+        <!-- Feature Stats Bar -->
+        <div class="feature-stats">
+            <div class="stat-item">
+                <div class="stat-number">50<span>+</span></div>
+                <div class="stat-label">Fonctionnalités</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">6</div>
+                <div class="stat-label">Catégories</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">E2E</div>
+                <div class="stat-label">Chiffrement</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">∞</div>
+                <div class="stat-label">Personnalisation</div>
             </div>
         </div>
     </section>

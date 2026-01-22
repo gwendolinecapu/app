@@ -667,9 +667,10 @@ button {
 /* ==================== MULTI-DEVICE SHOWCASE ==================== */
 .devices-container {
     position: relative;
-    width: 600px;
-    height: 500px;
+    width: 720px;
+    height: 520px;
     perspective: 1000px;
+    transform: scale(0.95);
 }
 
 /* Base device styles */
@@ -680,30 +681,51 @@ button {
 
 .device-frame {
     background: linear-gradient(180deg, #2D3748 0%, #1A202C 100%);
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    box-shadow: var(--shadow-glow), 0 20px 40px rgba(0, 0, 0, 0.4);
+    border: 3px solid rgba(255, 255, 255, 0.15);
+    box-shadow:
+        var(--shadow-glow),
+        0 30px 60px rgba(0, 0, 0, 0.6),
+        inset 0 0 20px rgba(0, 0, 0, 0.5);
 }
 
 .device-screen {
     background: var(--bg-dark);
     overflow: hidden;
+    position: relative;
 }
 
+/* Device Labels */
 .device-label {
     position: absolute;
-    bottom: -30px;
+    bottom: -40px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    background: rgba(30, 41, 59, 0.9);
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 100px;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 600;
     color: var(--text-secondary);
     white-space: nowrap;
+    opacity: 0;
+    animation: fadeInLabel 1s ease-out forwards;
+}
+
+@keyframes fadeInLabel {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
 }
 
 .device-label i {
@@ -715,71 +737,80 @@ button {
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    z-index: 10;
-    animation: floatDevice 4s ease-in-out infinite;
+    z-index: 20;
+    animation: floatIphone 5s ease-in-out infinite;
 }
 
 .device.iphone .device-frame {
-    width: 220px;
-    height: 450px;
-    border-radius: 36px;
-    padding: 8px;
+    width: 250px;
+    height: 500px;
+    border-radius: 44px;
+    padding: 10px;
     position: relative;
+    border-color: rgba(255, 255, 255, 0.2);
 }
 
 .device.iphone .device-notch {
     position: absolute;
-    top: 8px;
+    top: 10px;
     left: 50%;
     transform: translateX(-50%);
     width: 90px;
-    height: 24px;
-    background: #1A202C;
-    border-radius: 0 0 16px 16px;
+    height: 26px;
+    background: #000;
+    border-radius: 0 0 18px 18px;
     z-index: 10;
 }
 
 .device.iphone .device-screen {
     width: 100%;
     height: 100%;
-    border-radius: 28px;
-    padding: 40px 10px 10px;
+    border-radius: 34px;
+    padding: 45px 16px 16px;
     display: flex;
     flex-direction: column;
+    background: linear-gradient(180deg, #111827 0%, #0F172A 100%);
 }
 
 /* iPhone App UI */
 .phone-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    margin-bottom: 12px;
+    gap: 12px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 16px;
 }
 
 .app-logo-mini {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
 .user-info-mini {
     display: flex;
     flex-direction: column;
+    gap: 2px;
 }
 
 .user-name-mini {
-    font-weight: 700;
-    font-size: 0.9rem;
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: #fff;
 }
 
 .user-status-mini {
     display: flex;
     align-items: center;
-    gap: 4px;
-    font-size: 0.65rem;
+    gap: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
     color: var(--success);
+    background: rgba(16, 185, 129, 0.1);
+    padding: 2px 8px;
+    border-radius: 100px;
 }
 
 .status-dot-mini {
@@ -787,62 +818,59 @@ button {
     height: 6px;
     background: var(--success);
     border-radius: 50%;
-    animation: blink 2s infinite;
+    box-shadow: 0 0 8px var(--success);
 }
 
+/* iPhone Content */
 .phone-content {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
     flex: 1;
 }
 
 .alter-card-mini {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px;
-    background: var(--bg-card);
-    border-radius: 10px;
+    gap: 14px;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.05);
-    animation: slideInCard 0.5s ease-out backwards;
+    transition: transform 0.3s;
 }
 
-.alter-card-mini:nth-child(1) {
-    animation-delay: 0.2s;
-}
-
-.alter-card-mini:nth-child(2) {
-    animation-delay: 0.4s;
-}
-
-.alter-card-mini:nth-child(3) {
-    animation-delay: 0.6s;
+.alter-card-mini:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateY(-2px);
 }
 
 .alter-card-mini.accent {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
-    border-color: var(--primary);
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.25) 0%, rgba(236, 72, 153, 0.25) 100%);
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    box-shadow: 0 10px 20px rgba(139, 92, 246, 0.15);
 }
 
 .alter-emoji-mini {
-    font-size: 1.2rem;
+    font-size: 1.6rem;
+    filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.2));
 }
 
 .alter-info-mini {
     display: flex;
     flex-direction: column;
-    gap: 1px;
+    gap: 4px;
 }
 
 .alter-name-mini {
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
 }
 
 .alter-sub-mini {
-    font-size: 0.6rem;
-    color: var(--text-muted);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
 }
 
 .phone-nav-mini {
@@ -853,114 +881,87 @@ button {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+
 .phone-nav-mini i {
     color: var(--text-muted);
-    font-size: 0.9rem;
+    font-size: 1.2rem;
+    opacity: 0.7;
+    transition: all 0.3s;
 }
 
+.phone-nav-mini i:hover,
 .phone-nav-mini i.active {
     color: var(--primary-light);
+    opacity: 1;
+    transform: translateY(-2px);
+    text-shadow: 0 0 15px rgba(139, 92, 246, 0.6);
 }
 
-/* iPad - Left background */
+/* iPad */
 .device.ipad {
-    left: -60px;
+    left: -70px;
     top: 50%;
-    transform: translateY(-50%) rotateY(15deg);
+    transform: translateY(-50%) rotateY(20deg) scale(0.9);
     z-index: 5;
-    animation: floatDevice 5s ease-in-out infinite 0.5s;
+    opacity: 0.9;
 }
 
 .device.ipad .device-frame {
-    width: 180px;
-    height: 240px;
-    border-radius: 16px;
-    padding: 8px;
-}
-
-.device.ipad .device-screen {
-    width: 100%;
-    height: 100%;
-    border-radius: 10px;
+    width: 220px;
+    height: 300px;
+    border-radius: 20px;
     padding: 10px;
 }
 
-.app-header-mini {
-    font-size: 0.7rem;
-    font-weight: 700;
-    margin-bottom: 8px;
-    color: var(--primary-light);
-}
-
-.app-stats-row {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 10px;
-}
-
-.mini-stat {
-    flex: 1;
-    background: var(--bg-card);
-    padding: 8px;
-    border-radius: 8px;
-    text-align: center;
-    font-size: 0.55rem;
-    color: var(--text-muted);
-}
-
-.mini-stat span {
-    display: block;
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--primary-light);
+.device.ipad .device-screen {
+    border-radius: 12px;
+    padding: 14px;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
 }
 
 .app-chart-mini {
-    height: 60px;
-    background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+    height: 80px;
+    background: linear-gradient(90deg, #8B5CF6 0%, #EC4899 100%);
     border-radius: 8px;
-    opacity: 0.3;
+    opacity: 0.4;
+    margin-top: 10px;
+    position: relative;
 }
 
-/* MacBook - Right background */
+.app-chart-mini::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40%;
+    background: linear-gradient(to top, rgba(255, 255, 255, 0.1), transparent);
+}
+
+/* MacBook */
 .device.macbook {
-    right: -80px;
-    top: 40%;
-    transform: translateY(-50%) rotateY(-10deg);
+    right: -90px;
+    top: 45%;
+    transform: translateY(-50%) rotateY(-15deg) scale(0.9);
     z-index: 4;
-    animation: floatDevice 6s ease-in-out infinite 1s;
+    opacity: 0.9;
 }
 
 .device.macbook .device-frame {
-    width: 220px;
-    height: 140px;
-    border-radius: 8px 8px 0 0;
-    padding: 6px;
-}
-
-.device.macbook .device-screen {
-    width: 100%;
-    height: 100%;
-    border-radius: 4px;
+    width: 260px;
+    height: 160px;
 }
 
 .macbook-base {
-    width: 240px;
-    height: 12px;
-    background: linear-gradient(180deg, #4A5568 0%, #2D3748 100%);
-    border-radius: 0 0 8px 8px;
+    width: 280px;
+    height: 14px;
     margin-left: -10px;
-}
-
-.app-ui.web {
-    display: flex;
-    height: 100%;
+    border-radius: 0 0 12px 12px;
 }
 
 .web-sidebar {
-    width: 40px;
-    background: var(--bg-card);
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    width: 50px;
+    background: rgba(30, 41, 59, 0.5);
 }
 
 .web-content {
@@ -972,9 +973,7 @@ button {
 }
 
 .web-card {
-    flex: 1;
-    background: var(--bg-card);
-    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -993,34 +992,36 @@ button {
     padding: 4px;
 }
 
+
+/* Watch */
+.device.watch {
+    right: 30px;
+    bottom: 0px;
+    z-index: 15;
+    transform: rotate(-10deg);
+}
+
+.device.watch .device-frame {
+    width: 80px;
+    height: 96px;
+    border-radius: 20px;
+    padding: 6px;
+    border-color: #4B5563;
+    background: #000;
+}
+
 .device.watch .device-screen {
-    width: 100%;
-    height: 100%;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    border-radius: 14px;
+    background: #000;
 }
 
 .watch-ui {
+    height: 100%;
+    justify-content: center;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 2px;
-}
-
-.watch-emoji {
-    font-size: 1.1rem;
-}
-
-.watch-name {
-    font-size: 0.5rem;
-    font-weight: 700;
-}
-
-.watch-status {
-    font-size: 0.4rem;
-    color: var(--success);
 }
 
 /* Animations */

@@ -1,5 +1,17 @@
 import { Platform } from 'react-native';
-import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
+
+// Conditionally import native modules
+let requestTrackingPermissionsAsync: any = async () => ({ status: 'unavailable' });
+
+if (Platform.OS !== 'web') {
+    try {
+        const trackingModule = require('expo-tracking-transparency');
+        requestTrackingPermissionsAsync = trackingModule.requestTrackingPermissionsAsync;
+    } catch (e) {
+        console.warn('[ConsentService] expo-tracking-transparency not available');
+    }
+}
+
 
 let AdsConsent: any;
 let AdsConsentStatus: any;

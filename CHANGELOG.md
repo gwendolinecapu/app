@@ -1,5 +1,18 @@
 # Changelog
 
+## [2026-01-22] Landing Page - Bugs Fixes 🐛
+
+### Fix #1 : Compteur ne se met pas à jour
+- **Problème** : Après inscription, compteur restait figé (onSnapshot pas assez réactif).
+- **Solution** : Force `updateCounterUI(result.position)` immédiatement après inscription réussie.
+
+### Fix #2 : Message d'erreur générique pour duplicates
+- **Problème** : Affichait "Impossible à vérifier" au lieu du message personnalisé.
+- **Solution** : Amélioration du catch pour détecter les erreurs avec position et afficher `showAlreadyRegistered()`.
+
+---
+
+
 ## [2026-01-22] Landing Page - Polish & Analytics ✨
 
 ### 📊 Analytics & SEO

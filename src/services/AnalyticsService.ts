@@ -1,16 +1,39 @@
 
-
 import { Platform } from 'react-native';
 
-// Optional: Import natif conditionnel pour éviter le crash "RNFBAppModule not found"
+// Dual implementation for Native (react-native-firebase) and Web (firebase/analytics)
 let analytics: any = null;
-try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const analyticsModule = require('@react-native-firebase/analytics');
-    analytics = analyticsModule.default;
-} catch {
-    console.warn('[AnalyticsService] Firebase Analytics native module not found. Analytics disabled.');
+let isWebAnalytics = false;
+
+if (Platform.OS === 'web') {
+    // Web: Use Firebase Web SDK
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { getAnalytics } = require('firebase/analytics');
+        const { auth } = require('../lib/firebase'); // Get initialized app
+
+        // Get the Firebase app instance from auth (which is already initialized)
+        const app = auth.app;
+        if (app) {
+            analytics = getAnalytics(app);
+            isWebAnalytics = true;
+            console.log('[AnalyticsService] Web Analytics initialized');
+        }
+    } catch (e) {
+        console.warn('[AnalyticsService] Firebase Web Analytics initialization failed:', e);
+    }
+} else {
+    // Native: Use react-native-firebase
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const analyticsModule = require('@react-native-firebase/analytics');
+        analytics = analyticsModule.default;
+        console.log('[AnalyticsService] Native Analytics initialized');
+    } catch (e) {
+        console.warn('[AnalyticsService] Firebase Analytics native module not found. Analytics disabled.');
+    }
 }
+
 
 /**
  * Service centralisé pour l'analytics
@@ -35,11 +58,18 @@ class AnalyticsService {
     async setUserId(userId: string | null): Promise<void> {
         if (!analytics) return;
 
-        if (!userId) {
-            await analytics().setUserId(null); // Clear ID on logout
-            return;
+        try {
+            if (isWebAnalytics) {
+                // Web SDK uses setUserId from firebase/analytics
+                const { setUserId: webSetUserId } = require('firebase/analytics');
+                await webSetUserId(analytics, userId);
+            } else {
+                // Native SDK: analytics is a function that returns instance
+                await analytics().setUserId(userId);
+            }
+        } catch (error) {
+            console.warn('[Analytics] Failed to set user ID:', error);
         }
-        await analytics().setUserId(userId);
     }
 
     /**
@@ -49,7 +79,14 @@ class AnalyticsService {
         if (!analytics) return;
 
         try {
-            await analytics().logEvent(name, params);
+            if (isWebAnalytics) {
+                // Web SDK uses logEvent from firebase/analytics
+                const { logEvent: webLogEvent } = require('firebase/analytics');
+                webLogEvent(analytics, name, params);
+            } else {
+                // Native SDK
+                await analytics().logEvent(name, params);
+            }
         } catch (error) {
             console.warn('[Analytics] Failed to log event:', error);
         }
@@ -100,7 +137,12 @@ class AnalyticsService {
                 currency: params.currency || 'USD', // Default to USD if missing
             };
 
-            await analytics().logEvent('ad_impression', eventParams);
+            if (isWebAnalytics) {
+                const { logEvent: webLogEvent } = require('firebase/analytics');
+                webLogEvent(analytics, 'ad_impression', eventParams);
+            } else {
+                await analytics().logEvent('ad_impression', eventParams);
+            }
 
             console.log(`[Analytics] Logged Ad Revenue: ${revenueValue} ${eventParams.currency} (${params.network})`);
 

@@ -71,22 +71,30 @@ async function initRealTimeCounter() {
     // Initialize counter if doesn't exist
     try {
         const counterSnap = await getDoc(counterRef);
-        if (!counterSnap.exists()) {
+        console.log('[DEBUG] Counter snap exists:', counterSnap.exists());
+        if (counterSnap.exists()) {
+            console.log('[DEBUG] Counter data:', counterSnap.data());
+            // Immediately update UI with fetched data
+            signupCount = counterSnap.data().count || 0;
+            updateCounterUI(signupCount);
+        } else {
+            console.log('[DEBUG] Counter does not exist, creating...');
             await setDoc(counterRef, { count: 0, lastUpdated: new Date().toISOString() });
         }
     } catch (e) {
-    } catch (e) {
-        // silent fail
+        console.error('[DEBUG] Counter init error:', e);
     }
 
-    // Real-time listener
-    onSnapshot(counterRef, (doc) => {
-        if (doc.exists()) {
-            signupCount = doc.data().count || 0;
+    // Real-time listener for future updates
+    onSnapshot(counterRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const newCount = docSnap.data().count || 0;
+            console.log('[DEBUG] onSnapshot update:', newCount);
+            signupCount = newCount;
             updateCounterUI(signupCount);
         }
     }, (error) => {
-        console.error('Counter listener error:', error);
+        console.error('[DEBUG] Counter listener error:', error);
         // Fallback to static display
         updateCounterUI(signupCount);
     });
@@ -223,14 +231,22 @@ async function handleFormSubmit(event, formId) {
             showAlreadyRegistered(formId, result.position);
         } else {
             showSuccess(formId, result.position);
+            // Force counter UI update immediately after new signup
+            updateCounterUI(result.position);
         }
 
         emailInput.value = '';
 
     } catch (error) {
         console.error('Signup error:', error);
-        const errorMsg = error.message || '❌ Erreur lors de l\'inscription. Réessayez.';
-        showToast(errorMsg, 'error');
+
+        // Check if error contains position info (handled duplicate)
+        if (error.position) {
+            showAlreadyRegistered(formId, error.position);
+        } else {
+            const errorMsg = error.message || '❌ Erreur lors de l\'inscription. Réessayez.';
+            showToast(errorMsg, 'error');
+        }
     } finally {
         submitButton.disabled = false;
         submitButton.innerHTML = originalContent;
@@ -276,24 +292,29 @@ async function registerEmail(email) {
     let newPosition = 0;
 
     try {
+        console.log('[DEBUG] Starting transaction...');
         await runTransaction(db, async (transaction) => {
             const counterDoc = await transaction.get(counterRef);
             const currentCount = counterDoc.exists() ? (counterDoc.data().count || 0) : 0;
             newPosition = currentCount + 1;
+            console.log('[DEBUG] Transaction - currentCount:', currentCount, 'newPosition:', newPosition);
 
             // ✅ Double-check no one created this email during transaction
             const signupCheck = await transaction.get(signupRef);
             if (signupCheck.exists()) {
+                console.log('[DEBUG] Email already exists in transaction check');
                 throw new Error('EMAIL_ALREADY_EXISTS');
             }
 
             // Update counter
+            console.log('[DEBUG] Setting counter to:', newPosition);
             transaction.set(counterRef, {
                 count: newPosition,
                 lastUpdated: new Date().toISOString()
             });
 
             // Create signup record
+            console.log('[DEBUG] Creating signup record for:', email);
             transaction.set(signupRef, {
                 email: email,
                 position: newPosition,
@@ -305,10 +326,13 @@ async function registerEmail(email) {
             });
         });
 
+        console.log('[DEBUG] Transaction SUCCESS! Position:', newPosition);
         // New signup registered
         return { success: true, position: newPosition, alreadyExists: false };
 
     } catch (e) {
+        console.error('[DEBUG] Transaction FAILED:', e.message, e);
+
         // Check if error is duplicate email
         if (e.message === 'EMAIL_ALREADY_EXISTS') {
             const existingDoc = await getDoc(signupRef);
@@ -321,7 +345,7 @@ async function registerEmail(email) {
             }
         }
 
-        console.error('Transaction failed:', e);
+        console.error('[DEBUG] Trying fallback save...');
 
         // Fallback: just save the signup (without atomic counter)
         try {
@@ -331,10 +355,13 @@ async function registerEmail(email) {
                 source: 'landing_page',
                 position: signupCount + 1
             });
+            console.log('[DEBUG] Fallback save SUCCESS');
             return { success: true, position: signupCount + 1, alreadyExists: false };
         } catch (fallbackError) {
-            console.error('Fallback save failed:', fallbackError);
-            throw new Error('Inscription impossible. Réessayez dans quelques instants.');
+            console.error('[DEBUG] Fallback save FAILED:', fallbackError);
+            // Throw error with more context for duplicate detection
+            const err = new Error('📧 Impossible de finaliser l\'inscription. L\'email est peut-être déjà enregistré.');
+            throw err;
         }
     }
 }

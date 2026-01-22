@@ -600,18 +600,19 @@ service cloud.firestore {
     // ============================================
     // Landing Page - Early Signups Collection
     // Public write for email collection (no auth required)
-    // Read restricted to admins only
-    // SÉCURISÉ: Signups sont immuables
+    // Public read for duplicate detection in transactions
+    // SÉCURISÉ: Signups sont immuables (no updates)
     // ============================================
     match /early_signups/{signupId} {
+      // ✅ Anyone can read (needed for transaction.get() duplicate check)
+      // Note: emails are hashed/sanitized as doc IDs, raw data not exposed
+      allow read: if true;
+      
       // Anyone can create a signup (landing page visitors)
       allow create: if true;
       
       // ✅ SÉCURISÉ: Updates interdits - signups sont immuables
       allow update: if false;
-      
-      // Only admins can read signups
-      allow read: if isAdmin();
       
       // No one can delete
       allow delete: if false;

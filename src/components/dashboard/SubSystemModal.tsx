@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     View,
     Text,
@@ -7,14 +7,14 @@ import {
     Modal,
     FlatList,
     TextInput,
+    Image,
     ActivityIndicator,
-    Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { colors, spacing, borderRadius, typography } from '../../lib/theme';
-import { Subsystem } from '../../types';
+import { Alter, Subsystem } from '../../types';
 import { SubsystemService } from '../../services/SubsystemService';
-import { triggerHaptic } from '../../lib/haptics';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface SubSystemModalProps {
@@ -24,26 +24,14 @@ interface SubSystemModalProps {
     onSelectSubsystem: (subsystem: Subsystem | null) => void;
 }
 
-const COLORS = [
-    '#7C3AED', '#EC4899', '#3B82F6', '#10B981',
-    '#F59E0B', '#EF4444', '#6366F1', '#8B5CF6'
-];
-
 export const SubSystemModal: React.FC<SubSystemModalProps> = ({
     visible,
     onClose,
-    activeSubsystemId,
-    onSelectSubsystem,
 }) => {
-    const { user } = useAuth();
+    const { user, alters, refreshAlters } = useAuth();
+    const [searchQuery, setSearchQuery] = useState('');
     const [subsystems, setSubsystems] = useState<Subsystem[]>([]);
     const [loading, setLoading] = useState(false);
-    const [isCreating, setIsCreating] = useState(false);
-
-    // New Subsystem State
-    const [newName, setNewName] = useState('');
-    const [newColor, setNewColor] = useState(COLORS[0]);
-    const [creatingLoader, setCreatingLoader] = useState(false);
 
     useEffect(() => {
         if (visible && user) {
@@ -58,64 +46,65 @@ export const SubSystemModal: React.FC<SubSystemModalProps> = ({
             const list = await SubsystemService.listSubsystems(user.uid);
             setSubsystems(list);
         } catch (error) {
-            console.error(error);
+            console.error('Error loading subsystems:', error);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleCreate = async () => {
-        if (!newName.trim() || !user) return;
+    // Only show base alters (without subsystem_id) - subsystem alters only appear in their subsystem dashboard
+    const baseAlters = useMemo(() => {
+        return alters.filter(alter => !alter.subsystem_id);
+    }, [alters]);
 
-        setCreatingLoader(true);
-        try {
-            await SubsystemService.createSubsystem(
-                user.uid,
-                newName,
-                newColor
-            );
-            triggerHaptic.success();
-            setNewName('');
-            setIsCreating(false);
-            loadSubsystems();
-        } catch (error) {
-            Alert.alert('Erreur', 'Impossible de créer le sous-système');
-        } finally {
-            setCreatingLoader(false);
-        }
-    };
+    // Filter base alters by search query
+    const filteredAlters = useMemo(() => {
+        if (!searchQuery.trim()) return baseAlters;
+        const query = searchQuery.toLowerCase();
+        return baseAlters.filter(alter =>
+            alter.name.toLowerCase().includes(query) ||
+            alter.pronouns?.toLowerCase().includes(query)
+        );
+    }, [baseAlters, searchQuery]);
 
-    const handleSelect = (subsystem: Subsystem | null) => {
-        triggerHaptic.selection();
-        onSelectSubsystem(subsystem);
+    const handleAlterPress = (alter: Alter) => {
         onClose();
+        router.push(`/subsystem/${alter.id}` as any);
     };
 
-    const renderItem = ({ item }: { item: Subsystem }) => {
-        const isActive = activeSubsystemId === item.id;
+    const getSubsystemForAlter = (alter: Alter): Subsystem | undefined => {
+        return subsystems.find(s => s.id === alter.subsystem_id);
+    };
+
+    const renderAlterItem = ({ item }: { item: Alter }) => {
+        const subsystem = getSubsystemForAlter(item);
 
         return (
             <TouchableOpacity
-                style={[
-                    styles.item,
-                    isActive && { backgroundColor: item.color + '15', borderColor: item.color }
-                ]}
-                onPress={() => handleSelect(item)}
+                style={styles.alterItem}
+                onPress={() => handleAlterPress(item)}
             >
-                <View style={[styles.iconBox, { backgroundColor: item.color + '20' }]}>
-                    <Ionicons name="planet" size={24} color={item.color} />
+                <View style={styles.avatarContainer}>
+                    {item.avatar_url || item.avatar ? (
+                        <Image
+                            source={{ uri: item.avatar_url || item.avatar }}
+                            style={styles.avatar}
+                        />
+                    ) : (
+                        <View style={[styles.avatar, { backgroundColor: item.color || colors.primary }]}>
+                            <Text style={styles.avatarInitial}>
+                                {item.name.charAt(0).toUpperCase()}
+                            </Text>
+                        </View>
+                    )}
+                    {/* Subsystem Badge */}
+                    {subsystem && (
+                        <View style={[styles.subsystemBadge, { backgroundColor: subsystem.color }]} />
+                    )}
                 </View>
-                <View style={styles.itemInfo}>
-                    <Text style={[styles.itemName, isActive && { color: item.color, fontWeight: 'bold' }]}>
-                        {item.name}
-                    </Text>
-                    <Text style={styles.itemCount}>
-                        {item.alter_count} alter{item.alter_count > 1 ? 's' : ''}
-                    </Text>
-                </View>
-                {isActive && (
-                    <Ionicons name="checkmark-circle" size={24} color={item.color} />
-                )}
+                <Text style={styles.alterName} numberOfLines={1}>
+                    {item.name}
+                </Text>
             </TouchableOpacity>
         );
     };
@@ -126,111 +115,70 @@ export const SubSystemModal: React.FC<SubSystemModalProps> = ({
                 <View style={styles.container}>
                     {/* Header */}
                     <View style={styles.header}>
-                        <View style={{ width: 40 }} />
+                        <Ionicons name="planet" size={24} color={colors.primary} />
                         <Text style={styles.title}>Sous-systèmes</Text>
                         <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
                             <Ionicons name="close" size={24} color={colors.text} />
                         </TouchableOpacity>
                     </View>
 
-                    <View style={styles.content}>
-                        {/* Global View Option */}
-                        <TouchableOpacity
-                            style={[
-                                styles.item,
-                                activeSubsystemId === null && styles.activeGlobalItem
-                            ]}
-                            onPress={() => handleSelect(null)}
-                        >
-                            <View style={[styles.iconBox, { backgroundColor: colors.primary + '20' }]}>
-                                <Ionicons name="people" size={24} color={colors.primary} />
-                            </View>
-                            <View style={styles.itemInfo}>
-                                <Text style={[styles.itemName, activeSubsystemId === null && { color: colors.primary, fontWeight: 'bold' }]}>
-                                    Vue Globale
-                                </Text>
-                                <Text style={styles.itemCount}>
-                                    Tous les alters du système
-                                </Text>
-                            </View>
-                            {activeSubsystemId === null && (
-                                <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
-                            )}
-                        </TouchableOpacity>
-
-                        <View style={styles.separator} />
-
-                        {loading ? (
-                            <ActivityIndicator style={{ marginTop: 20 }} color={colors.primary} />
-                        ) : (
-                            <FlatList
-                                data={subsystems}
-                                keyExtractor={item => item.id}
-                                renderItem={renderItem}
-                                contentContainerStyle={styles.list}
-                                ListEmptyComponent={
-                                    !isCreating ? (
-                                        <Text style={styles.emptyText}>Aucun sous-système créé</Text>
-                                    ) : null
-                                }
-                            />
-                        )}
-
-                        {/* Creation Form */}
-                        {isCreating ? (
-                            <View style={styles.createForm}>
-                                <Text style={styles.createTitle}>Nouveau sous-système</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Nom (ex: Le Dark Side)"
-                                    placeholderTextColor={colors.textMuted}
-                                    value={newName}
-                                    onChangeText={setNewName}
-                                    autoFocus
-                                />
-                                <View style={styles.colorRow}>
-                                    {COLORS.map(color => (
-                                        <TouchableOpacity
-                                            key={color}
-                                            style={[
-                                                styles.colorCircle,
-                                                { backgroundColor: color },
-                                                newColor === color && styles.colorSelected
-                                            ]}
-                                            onPress={() => setNewColor(color)}
-                                        />
-                                    ))}
-                                </View>
-                                <View style={styles.formActions}>
-                                    <TouchableOpacity
-                                        style={styles.cancelButton}
-                                        onPress={() => setIsCreating(false)}
-                                    >
-                                        <Text style={styles.cancelText}>Annuler</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        style={[styles.createButton, { backgroundColor: newColor }]}
-                                        onPress={handleCreate}
-                                        disabled={creatingLoader}
-                                    >
-                                        {creatingLoader ? (
-                                            <ActivityIndicator color="white" size="small" />
-                                        ) : (
-                                            <Text style={styles.createText}>Créer</Text>
-                                        )}
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        ) : (
-                            <TouchableOpacity
-                                style={styles.addButton}
-                                onPress={() => setIsCreating(true)}
-                            >
-                                <Ionicons name="add" size={24} color={colors.text} />
-                                <Text style={styles.addText}>Créer un sous-système</Text>
+                    {/* Search Bar */}
+                    <View style={styles.searchContainer}>
+                        <Ionicons name="search" size={18} color={colors.textMuted} />
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Rechercher un alter..."
+                            placeholderTextColor={colors.textMuted}
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                        />
+                        {searchQuery.length > 0 && (
+                            <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                <Ionicons name="close-circle" size={18} color={colors.textMuted} />
                             </TouchableOpacity>
                         )}
                     </View>
+
+                    {/* Instructions */}
+                    <Text style={styles.instructions}>
+                        Touche un alter pour ouvrir son sous-système
+                    </Text>
+
+                    {/* Alters Grid */}
+                    <View style={styles.content}>
+                        {loading ? (
+                            <ActivityIndicator style={{ marginTop: 40 }} color={colors.primary} />
+                        ) : filteredAlters.length > 0 ? (
+                            <FlatList
+                                data={filteredAlters}
+                                keyExtractor={item => item.id}
+                                renderItem={renderAlterItem}
+                                numColumns={4}
+                                contentContainerStyle={styles.grid}
+                                showsVerticalScrollIndicator={false}
+                            />
+                        ) : (
+                            <View style={styles.emptyState}>
+                                <Ionicons name="search" size={48} color={colors.textMuted} />
+                                <Text style={styles.emptyText}>Aucun alter trouvé</Text>
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Legend */}
+                    {subsystems.length > 0 && (
+                        <View style={styles.legend}>
+                            <Text style={styles.legendTitle}>Légende :</Text>
+                            <View style={styles.legendItems}>
+                                {subsystems.map(sub => (
+                                    <View key={sub.id} style={styles.legendItem}>
+                                        <View style={[styles.legendDot, { backgroundColor: sub.color }]} />
+                                        <Text style={styles.legendText}>{sub.name}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        </View>
+                    )}
                 </View>
             </View>
         </Modal>
@@ -248,7 +196,7 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         maxHeight: '85%',
-        minHeight: '60%',
+        minHeight: '70%',
     },
     header: {
         flexDirection: 'row',
@@ -260,139 +208,117 @@ const styles = StyleSheet.create({
         borderBottomColor: colors.border,
     },
     closeBtn: {
-        width: 40,
-        height: 40,
-        justifyContent: 'center',
-        alignItems: 'center',
+        padding: spacing.xs,
     },
     title: {
         ...typography.h3,
         color: colors.text,
     },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.surface,
+        marginHorizontal: spacing.md,
+        marginTop: spacing.md,
+        paddingHorizontal: spacing.md,
+        borderRadius: borderRadius.md,
+        height: 44,
+        gap: spacing.sm,
+    },
+    searchInput: {
+        flex: 1,
+        color: colors.text,
+        fontSize: 16,
+    },
+    instructions: {
+        color: colors.textSecondary,
+        fontSize: 13,
+        textAlign: 'center',
+        marginTop: spacing.sm,
+        marginBottom: spacing.xs,
+    },
     content: {
         flex: 1,
-        padding: spacing.md,
+        paddingHorizontal: spacing.sm,
     },
-    list: {
-        paddingBottom: 100,
+    grid: {
+        paddingVertical: spacing.md,
     },
-    item: {
-        flexDirection: 'row',
+    alterItem: {
+        width: '25%',
         alignItems: 'center',
-        padding: spacing.md,
-        backgroundColor: colors.surface,
-        borderRadius: borderRadius.md,
-        marginBottom: spacing.sm,
-        borderWidth: 1,
-        borderColor: 'transparent',
+        paddingVertical: spacing.sm,
     },
-    activeGlobalItem: {
-        backgroundColor: colors.primary + '10',
-        borderColor: colors.primary,
+    avatarContainer: {
+        position: 'relative',
     },
-    iconBox: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+    avatar: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: spacing.md,
     },
-    itemInfo: {
-        flex: 1,
+    avatarInitial: {
+        color: 'white',
+        fontSize: 22,
+        fontWeight: 'bold',
     },
-    itemName: {
-        fontSize: 16,
-        fontWeight: '600',
+    subsystemBadge: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        width: 16,
+        height: 16,
+        borderRadius: 8,
+        borderWidth: 2,
+        borderColor: colors.background,
+    },
+    alterName: {
+        marginTop: spacing.xs,
+        fontSize: 12,
         color: colors.text,
+        textAlign: 'center',
+        maxWidth: 70,
     },
-    itemCount: {
-        fontSize: 13,
-        color: colors.textSecondary,
-        marginTop: 2,
-    },
-    separator: {
-        height: 1,
-        backgroundColor: colors.border,
-        marginVertical: spacing.md,
+    emptyState: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     emptyText: {
-        textAlign: 'center',
-        color: colors.textSecondary,
-        marginTop: spacing.xl,
-    },
-    addButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: spacing.md,
-        backgroundColor: colors.surface,
-        borderRadius: borderRadius.md,
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderStyle: 'dashed',
-        marginTop: spacing.sm,
-    },
-    addText: {
-        marginLeft: spacing.sm,
-        color: colors.text,
-        fontWeight: '600',
-    },
-    createForm: {
-        backgroundColor: colors.surface,
-        padding: spacing.md,
-        borderRadius: borderRadius.md,
+        color: colors.textMuted,
         marginTop: spacing.md,
-        borderWidth: 1,
-        borderColor: colors.border,
     },
-    createTitle: {
-        ...typography.h4,
-        marginBottom: spacing.md,
-        fontSize: 16,
+    legend: {
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
     },
-    input: {
-        backgroundColor: colors.background,
-        padding: spacing.md,
-        borderRadius: borderRadius.sm,
-        color: colors.text,
-        marginBottom: spacing.md,
-        fontSize: 16,
+    legendTitle: {
+        color: colors.textSecondary,
+        fontSize: 12,
+        fontWeight: '600',
+        marginBottom: spacing.xs,
     },
-    colorRow: {
+    legendItems: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 12,
-        marginBottom: spacing.lg,
-    },
-    colorCircle: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-    },
-    colorSelected: {
-        borderWidth: 3,
-        borderColor: colors.text,
-    },
-    formActions: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
         gap: spacing.md,
     },
-    cancelButton: {
-        paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.md,
+    legendItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
     },
-    cancelText: {
-        color: colors.textSecondary,
+    legendDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
     },
-    createButton: {
-        paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.lg,
-        borderRadius: borderRadius.sm,
-    },
-    createText: {
-        color: 'white',
-        fontWeight: 'bold',
+    legendText: {
+        color: colors.text,
+        fontSize: 12,
     },
 });

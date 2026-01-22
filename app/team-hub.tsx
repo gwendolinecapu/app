@@ -6,7 +6,10 @@ import {
     TouchableOpacity,
     FlatList,
     Image,
-    ActivityIndicator
+    ActivityIndicator,
+    Modal,
+    Alert,
+    TouchableWithoutFeedback
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -21,6 +24,7 @@ export default function TeamHubScreen() {
     const { user, alters, activeFront } = useAuth();
     const [groups, setGroups] = useState<Group[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showFabMenu, setShowFabMenu] = useState(false);
 
     useEffect(() => {
         loadGroups();
@@ -52,8 +56,20 @@ export default function TeamHubScreen() {
     };
 
     const handleCreateGroup = () => {
+        setShowFabMenu(false);
         triggerHaptic.medium();
         router.push('/group-chat/create');
+    };
+
+    const handleOpenPolls = () => {
+        setShowFabMenu(false);
+        triggerHaptic.medium();
+        Alert.alert("Sondages", "La page dédiée aux sondages sera bientôt disponible ! En attendant, vous pouvez créer un sondage dans n'importe quel groupe.");
+    };
+
+    const handleFabPress = () => {
+        triggerHaptic.selection();
+        setShowFabMenu(true);
     };
 
     const renderGroup = ({ item }: { item: Group }) => (
@@ -137,11 +153,49 @@ export default function TeamHubScreen() {
             {/* Floating Action Button */}
             <TouchableOpacity
                 style={styles.fab}
-                onPress={handleCreateGroup}
+                onPress={handleFabPress}
                 activeOpacity={0.8}
             >
-                <Ionicons name="add" size={28} color="white" />
+                <Ionicons name={showFabMenu ? "close" : "add"} size={28} color="white" />
             </TouchableOpacity>
+
+            {/* FAB Menu Modal */}
+            <Modal
+                transparent
+                visible={showFabMenu}
+                animationType="fade"
+                onRequestClose={() => setShowFabMenu(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowFabMenu(false)}
+                >
+                    <View style={styles.fabMenuContainer}>
+                        <TouchableOpacity
+                            style={styles.fabMenuItem}
+                            onPress={handleCreateGroup}
+                            activeOpacity={0.9}
+                        >
+                            <Text style={styles.fabMenuLabel}>Nouveau chat</Text>
+                            <View style={[styles.fabMenuIcon, { backgroundColor: '#E3F2FD' }]}>
+                                <Ionicons name="chatbubbles" size={20} color="#1565C0" />
+                            </View>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.fabMenuItem}
+                            onPress={handleOpenPolls}
+                            activeOpacity={0.9}
+                        >
+                            <Text style={styles.fabMenuLabel}>Sondages</Text>
+                            <View style={[styles.fabMenuIcon, { backgroundColor: '#FFF3E0' }]}>
+                                <Ionicons name="stats-chart" size={20} color="#EF6C00" />
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -278,5 +332,43 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
+    },
+    // FAB Menu
+    fabMenuContainer: {
+        position: 'absolute',
+        bottom: spacing.xl + 80, // Above FAB
+        right: spacing.lg,
+        alignItems: 'flex-end',
+    },
+    fabMenuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: spacing.md,
+        backgroundColor: colors.backgroundCard,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
+        borderRadius: borderRadius.lg,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+    },
+    fabMenuLabel: {
+        ...typography.body,
+        color: colors.text,
+        marginRight: spacing.md,
+        fontWeight: '600',
+    },
+    fabMenuIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
     },
 });

@@ -108,12 +108,15 @@ export default function Dashboard() {
     const filteredAlters = useMemo(() => {
         let result = alters;
 
+        // IMPORTANT: Exclude alters that belong to a subsystem (they appear in their own subsystem dashboard)
+        result = result.filter(alter => !alter.subsystem_id);
+
         // Filter by category first
         if (activeCategory) {
             result = result.filter(alter => alter.role_ids?.includes(activeCategory));
         }
 
-        // Filter by subsystem
+        // Filter by subsystem (for when viewing a specific subsystem)
         if (activeSubsystemId) {
             result = result.filter(alter => alter.subsystem_id === activeSubsystemId);
         }

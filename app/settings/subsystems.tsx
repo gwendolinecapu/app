@@ -130,6 +130,53 @@ export default function SubsystemsSettingsScreen() {
         }
     };
 
+    // Restore all alters to main system (clear subsystem_id)
+    const handleRestoreAllAlters = async () => {
+        Alert.alert(
+            'Restaurer les alters',
+            'Cette action va retirer tous les alters de leurs sous-systèmes et les remettre dans le système principal. Continuer ?',
+            [
+                { text: 'Annuler', style: 'cancel' },
+                {
+                    text: 'Restaurer',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const { collection, getDocs, updateDoc, doc, query, where } = await import('firebase/firestore');
+                            const { db } = await import('../../src/lib/firebase');
+
+                            if (!user) return;
+
+                            const altersRef = collection(db, 'alters');
+                            const q = query(altersRef, where('system_id', '==', user.uid));
+                            const snapshot = await getDocs(q);
+
+                            const updates: Promise<void>[] = [];
+                            snapshot.forEach((docSnap) => {
+                                const data = docSnap.data();
+                                if (data.subsystem_id) {
+                                    updates.push(
+                                        updateDoc(doc(db, 'alters', docSnap.id), {
+                                            subsystem_id: null
+                                        })
+                                    );
+                                }
+                            });
+
+                            await Promise.all(updates);
+                            triggerHaptic.success();
+                            Alert.alert('Succès', `${updates.length} alter(s) restauré(s) dans le système principal`);
+                        } catch (error) {
+                            console.error(error);
+                            triggerHaptic.error();
+                            Alert.alert('Erreur', 'Impossible de restaurer les alters');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header */}
@@ -217,6 +264,15 @@ export default function SubsystemsSettingsScreen() {
                             </View>
                         </View>
                     ))}
+
+                    {/* Restore Button */}
+                    <TouchableOpacity
+                        style={styles.restoreButton}
+                        onPress={handleRestoreAllAlters}
+                    >
+                        <Ionicons name="refresh-outline" size={20} color="#FF9800" />
+                        <Text style={styles.restoreButtonText}>Restaurer tous les alters</Text>
+                    </TouchableOpacity>
                 </ScrollView>
             )}
 
@@ -530,6 +586,22 @@ const styles = StyleSheet.create({
     submitButtonText: {
         ...typography.body,
         color: 'white',
+        fontWeight: '600',
+    },
+    restoreButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.sm,
+        padding: spacing.md,
+        marginTop: spacing.xl,
+        backgroundColor: '#FF980020',
+        borderRadius: borderRadius.md,
+        borderWidth: 1,
+        borderColor: '#FF9800',
+    },
+    restoreButtonText: {
+        color: '#FF9800',
         fontWeight: '600',
     },
 });

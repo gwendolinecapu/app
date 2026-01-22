@@ -11,8 +11,8 @@
     <!-- SEO & OG Tags -->
     <meta property="og:title" content="PluralConnect - L'app TDI qui vous comprend vraiment">
     <meta property="og:description" content="Inscription anticipée - Surprise exclusive pour les 500 premiers !">
-    <meta property="og:image" content="https://pluralconnect.app/logo.png">
-    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://plural-connect.com/logo.png">
+    <meta property="og:url" content="https://plural-connect.com">
     <meta name="twitter:card" content="summary_large_image">
 
     <!-- Favicon -->
@@ -154,63 +154,122 @@
         </div>
 
         <div class="hero-visual">
-            <div class="phone-mockup">
-                <div class="phone-notch"></div>
-                <div class="phone-screen">
-                    <div class="app-preview">
-                        <div class="preview-header">
-                            <img src="./logo.png" alt="" class="preview-logo">
-                            <div class="preview-user">
-                                <span class="preview-name">Luna</span>
-                                <span class="preview-status-dot"></span>
-                                <span class="preview-status">En front</span>
+            <!-- Multi-Device Showcase - Pure CSS -->
+            <div class="devices-container">
+
+                <!-- iPad (background left) -->
+                <div class="device ipad">
+                    <div class="device-frame">
+                        <div class="device-screen">
+                            <div class="app-ui">
+                                <div class="app-header-mini">Dashboard</div>
+                                <div class="app-stats-row">
+                                    <div class="mini-stat"><span>5</span>Alters</div>
+                                    <div class="mini-stat"><span>12</span>Posts</div>
+                                </div>
+                                <div class="app-chart-mini"></div>
                             </div>
                         </div>
-                        <div class="preview-content">
-                            <div class="preview-card">
-                                <div class="card-emoji">🦊🌸</div>
-                                <div class="card-info">
-                                    <span class="card-title">Felix & Sakura en co-front</span>
-                                    <span class="card-sub">Depuis 2h30 · Mode collaboratif</span>
-                                </div>
-                            </div>
-                            <div class="preview-card accent">
-                                <div class="card-emoji">📔</div>
-                                <div class="card-info">
-                                    <span class="card-title">Journal système</span>
-                                    <span class="card-sub">"Bonne journée à tous !" - Alex</span>
-                                </div>
-                            </div>
-                            <div class="preview-card">
-                                <div class="card-emoji">🌌</div>
-                                <div class="card-info">
-                                    <span class="card-title">Nouveau thème débloqué</span>
-                                    <span class="card-sub">Cosmos · Pack Elite</span>
+                    </div>
+                    <div class="device-label"><i class="fas fa-tablet-alt"></i> iPad</div>
+                </div>
+
+                <!-- MacBook (background right) -->
+                <div class="device macbook">
+                    <div class="device-frame">
+                        <div class="device-screen">
+                            <div class="app-ui web">
+                                <div class="web-sidebar"></div>
+                                <div class="web-content">
+                                    <div class="web-card"></div>
+                                    <div class="web-card"></div>
                                 </div>
                             </div>
                         </div>
-                        <div class="preview-nav">
-                            <div class="nav-item active"><i class="fas fa-home"></i></div>
-                            <div class="nav-item"><i class="fas fa-users"></i></div>
-                            <div class="nav-item"><i class="fas fa-plus-circle"></i></div>
-                            <div class="nav-item"><i class="fas fa-comment"></i></div>
-                            <div class="nav-item"><i class="fas fa-user"></i></div>
+                        <div class="macbook-base"></div>
+                    </div>
+                    <div class="device-label"><i class="fas fa-laptop"></i> Mac</div>
+                </div>
+
+                <!-- iPhone (center, prominent) -->
+                <div class="device iphone main-device">
+                    <div class="device-frame">
+                        <div class="device-notch"></div>
+                        <div class="device-screen">
+                            <div class="phone-header">
+                                <img src="./logo.png" alt="" class="app-logo-mini">
+                                <div class="user-info-mini">
+                                    <span class="user-name-mini">Luna</span>
+                                    <span class="user-status-mini"><span class="status-dot-mini"></span>En front</span>
+                                </div>
+                            </div>
+                            <div class="phone-content">
+                                <div class="alter-card-mini">
+                                    <span class="alter-emoji-mini">🦊🌸</span>
+                                    <div class="alter-info-mini">
+                                        <span class="alter-name-mini">Felix & Sakura</span>
+                                        <span class="alter-sub-mini">Co-front · 2h30</span>
+                                    </div>
+                                </div>
+                                <div class="alter-card-mini accent">
+                                    <span class="alter-emoji-mini">📔</span>
+                                    <div class="alter-info-mini">
+                                        <span class="alter-name-mini">Journal système</span>
+                                        <span class="alter-sub-mini">"Bonne journée !"</span>
+                                    </div>
+                                </div>
+                                <div class="alter-card-mini">
+                                    <span class="alter-emoji-mini">🌌</span>
+                                    <div class="alter-info-mini">
+                                        <span class="alter-name-mini">Thème Cosmos</span>
+                                        <span class="alter-sub-mini">Débloqué !</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="phone-nav-mini">
+                                <i class="fas fa-home active"></i>
+                                <i class="fas fa-users"></i>
+                                <i class="fas fa-plus-circle"></i>
+                                <i class="fas fa-comment"></i>
+                                <i class="fas fa-user"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- Apple Watch (bottom right) -->
+                <div class="device watch">
+                    <div class="device-frame">
+                        <div class="device-screen">
+                            <div class="watch-ui">
+                                <span class="watch-emoji">🦊</span>
+                                <span class="watch-name">Felix</span>
+                                <span class="watch-status">En front</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="device-label"><i class="fas fa-clock"></i> Watch</div>
+                </div>
+
             </div>
+
+            <!-- Floating feature cards -->
             <div class="floating-elements">
-                <div class="floating-card" style="--delay: 0s; --x: -80px; --y: -60px;">
+                <div class="floating-card" style="--delay: 0s; --x: -140px; --y: -100px;">
                     <i class="fas fa-shield-halved"></i>
                     <span>Chiffrage E2E</span>
                 </div>
-                <div class="floating-card" style="--delay: 0.5s; --x: 100px; --y: 30px;">
+                <div class="floating-card" style="--delay: 0.5s; --x: 160px; --y: 0px;">
                     <i class="fas fa-palette"></i>
                     <span>50+ Thèmes</span>
                 </div>
-                <div class="floating-card" style="--delay: 1s; --x: -50px; --y: 140px;">
-                    <i class="fas fa-users"></i>
-                    <span>Co-Fronting</span>
+                <div class="floating-card" style="--delay: 1s; --x: -80px; --y: 200px;">
+                    <i class="fas fa-sync-alt"></i>
+                    <span>Sync temps réel</span>
+                </div>
+                <div class="floating-card" style="--delay: 1.5s; --x: 120px; --y: -140px;">
+                    <i class="fab fa-apple"></i>
+                    <span>Cross-platform</span>
                 </div>
             </div>
         </div>

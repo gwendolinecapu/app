@@ -166,6 +166,36 @@ L'espace individuel façon Instagram :
 
 ---
 
+## 🤖 Intelligence Artificielle Éthique (Tests)
+
+> **Philosophie** : L'IA est un outil au service du système pour pallier les handicaps (amnésie, aphantasie), jamais un remplacement de l'humain.
+
+### 1. 🧠 Le "Résumé de Rattrapage" (Journal Catch-up)
+*Pour lutter contre l'amnésie post-switch.*
+- **Problème** : Un alter arrive au front et ignore ce qui s'est passé.
+- **Solution** : Bouton dans le Dashboard pour résumer la journée/semaine à partir du Journal **Public/Système** (jamais privé).
+- **Technique** : 
+  - ✅ **Priorité Locale (On-Device)** : L'IA tourne sur le téléphone (0 serveur, 0 coût, 0 fuite).
+  - 🔄 **Fallback Serveur** (téléphones anciens) : Données chiffrées, traitées puis supprimées immédiatement. Pas d'entraînement.
+
+### 2. 🎨 Le "Studio de Vie" (Life Studio)
+*Pour aider à la visualisation et l'expression de soi.*
+- **Problème** : Difficulté d'avoir des photos de soi en tant qu'alter.
+- **Solution** : Génération d'un avatar "Reference Sheet" (planche de référence) à partir d'inspirations.
+- **Usage** : Permet ensuite de générer des "scènes de vie" (ex: "Moi buvant un café") pour illustrer les posts.
+- **Éthique & Compromis Communautaire** :
+  - ✅ **Strictement Optionnel** : La fonctionnalité doit être activée volontairement. Si l'utilisateur est contre l'IA, il ne verra jamais ces options.
+  - ⚠️ **Responsabilisation (Art Theft)** : Avertissement clair avant l'upload : *"N'utilisez pas d'œuvres d'artistes sans leur accord. Privilégiez vos propres croquis, des photos libres de droit ou des compositeurs d'avatar (Picrew)."*
+  - ✅ **Transparence** : Clairement indiqué comme IA.
+  - ✅ **Éphémère** : Photos de références supprimées du serveur (BytePlus) immédiatement après génération.
+
+### 🛡️ Garanties TDI
+- **Zero-Training** : Aucune donnée (texte ou image) ne sert à entraîner les modèles.
+- **Chiffrement** : Les échanges avec les API externes sont chiffrés.
+- **Contrôle** : Désactivable globalement dans les paramètres.
+
+---
+
 ## 📱 Fonctionnalités Sociales Détaillées
 
 ### Feed & Posts

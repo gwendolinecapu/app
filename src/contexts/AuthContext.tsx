@@ -329,8 +329,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
 
             triggerHaptic.success();
-            // Note: Toast supprimé car il restait bloqué à l'écran
-            // Le feedback haptique + mise à jour optimiste de l'UI suffisent
+            showToast('Fronting updated successfully', 'success');
 
         } catch (error) {
             console.error('Error switching front:', error);

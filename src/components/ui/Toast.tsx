@@ -28,40 +28,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     const opacityAnim = useRef(new Animated.Value(0)).current;
     const isAnimatingRef = useRef(false);
 
-    useEffect(() => {
-        if (activeToast && !isAnimatingRef.current) {
-            // Stop any running animations first
-            slideAnim.stopAnimation();
-            opacityAnim.stopAnimation();
-
-            // Reset to initial state before animating in
-            slideAnim.setValue(-100);
-            opacityAnim.setValue(0);
-
-            // Animate in
-            Animated.parallel([
-                Animated.spring(slideAnim, {
-                    toValue: 0,
-                    useNativeDriver: true,
-                    tension: 100,
-                    friction: 10,
-                }),
-                Animated.timing(opacityAnim, {
-                    toValue: 1,
-                    duration: 200,
-                    useNativeDriver: true,
-                }),
-            ]).start();
-        }
-
-        // MEMORY LEAK FIX: Cleanup timeout on unmount or when activeToast changes
-        return () => {
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
-            }
-        };
-    }, [activeToast, opacityAnim, slideAnim]);
-
     const animateOut = useCallback(() => {
         if (isAnimatingRef.current) return; // Prevent double animation
         isAnimatingRef.current = true;
@@ -84,7 +50,46 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         });
     }, [slideAnim, opacityAnim]);
 
-    const showToast = useCallback((message: string, type: ToastType = 'info', duration: number = 3000) => {
+    useEffect(() => {
+        if (activeToast) {
+            // Stop any running animations first
+            slideAnim.stopAnimation();
+            opacityAnim.stopAnimation();
+
+            // Reset to initial state
+            slideAnim.setValue(-100);
+            opacityAnim.setValue(0);
+
+            // Animate in
+            Animated.parallel([
+                Animated.spring(slideAnim, {
+                    toValue: 0,
+                    useNativeDriver: true,
+                    tension: 100,
+                    friction: 10,
+                }),
+                Animated.timing(opacityAnim, {
+                    toValue: 1,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+
+            // Auto hide timer
+            timeoutRef.current = setTimeout(() => {
+                animateOut();
+            }, activeToast.duration || 1500);
+        }
+
+        // Cleanup timeout
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, [activeToast, opacityAnim, slideAnim, animateOut]);
+
+    const showToast = useCallback((message: string, type: ToastType = 'info', duration: number = 2000) => {
         // Clear existing timeout if any
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
@@ -105,12 +110,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             type,
             duration
         });
-
-        // Auto hide
-        timeoutRef.current = setTimeout(() => {
-            animateOut();
-        }, duration);
-    }, [animateOut]);
+    }, []);
 
     const hideToast = useCallback(() => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);

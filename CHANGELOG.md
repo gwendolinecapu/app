@@ -1,5 +1,36 @@
 # Changelog
 
+## [2026-01-22] Landing Page - Hero Redesign 🎨
+
+### UI / UX
+- **iPhone Center Stage** : L'iPhone est maintenant l'élément central et unique focus interactif.
+- **Realistic UI** : Reproduction fidèle de l'interface de l'application :
+  - Header avec "Bonjour," + "Qui est là ?"
+  - Mode Toggle (Solo/Co-Front) fonctionnel visuellement
+  - Barre de recherche
+  - Grille d'alters 4x2 avec avatars photos colorés (Mona, Zeph, Gwendo, etc.)
+  - Navigation bar 5 items avec icônes FontAwesome et bouton central
+- **Peripheral Devices** : iPad, Mac et Apple Watch ajoutés en mode "Coming Soon" (éteints, logo glow, flou) pour ne pas distraire.
+- **Animations** : Flottement différent pour chaque device, pulse effect sur les logos.
+- **Déploiement** : Mis en ligne sur https://plural-connect.com
+
+### Mobile Fix 📱
+- **Responsive** : Correction du bug où la hero visual disparaissait sur mobile.
+- **Optimisation** :
+  - iPhone visible et centré sur petit écran (scale 0.85).
+  - Masquage automatique des devices décoratifs (iPad/Mac/Watch) sur mobile pour alléger l'interface.
+
+### Firebase Auth Integration 🔐
+- **Création de comptes** : Les inscriptions landing page créent maintenant directement un compte Firebase Authentication.
+- **Flow sécurisé** :
+  1. Génération d'un mot de passe temporaire aléatoire (20 caractères)
+  2. Création du compte Firebase Auth
+  3. Envoi automatique d'un email de réinitialisation
+  4. L'utilisateur définit son propre mot de passe via le lien
+- **Firestore** : Les données stockent maintenant le UID Firebase Auth pour lier l'account (`early_signups` collection).
+- **Gestion d'erreurs** : Messages d'erreur spécifiques (email invalide, compte existant, etc.).
+
+
 ## [2026-01-22] Landing Page - Clean Rewrite 🧹
 
 ### Refactoring Complet

@@ -32,6 +32,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
         import { getFirestore, collection, addDoc, doc, getDoc, setDoc, onSnapshot, runTransaction, increment } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        import { getAuth, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
         import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js';
 
         // Firebase config - CORRECT PROJECT: app-tdi
@@ -48,11 +49,14 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
         const analytics = getAnalytics(app);
 
         // Make available globally
         window.firebaseDB = db;
+        window.firebaseAuth = auth;
         window.firebaseUtils = { collection, addDoc, doc, getDoc, setDoc, onSnapshot, runTransaction, increment };
+        window.firebaseAuthUtils = { createUserWithEmailAndPassword, sendPasswordResetEmail };
     </script>
 
     <link rel="stylesheet" href="styles.css">
@@ -154,184 +158,134 @@
         </div>
 
         <div class="hero-visual">
-            <!-- Multi-Device Showcase - Pure CSS -->
-            <div class="devices-container">
+            <div class="device-showcase centralized-layout">
 
-                <!-- iPad (background left) -->
-                <div class="device ipad">
-                    <div class="device-frame">
-                        <div class="device-screen">
-                            <div class="app-ui">
-                                <div class="app-header-mini">Dashboard</div>
-                                <div class="app-stats-row">
-                                    <div class="mini-stat"><span>5</span>Alters</div>
-                                    <div class="mini-stat"><span>12</span>Posts</div>
-                                </div>
-                                <div class="app-chart-mini"></div>
+                <!-- iPad (Left, Back, Coming Soon) -->
+                <div class="device ipad-mini coming-soon">
+                    <div class="ipad-frame">
+                        <div class="screen-off">
+                            <div class="logo-glow">
+                                <i class="fas fa-tablet-alt"></i>
                             </div>
+                            <span class="coming-soon-text">Bientôt sur iPad</span>
                         </div>
                     </div>
-                    <div class="device-label"><i class="fas fa-tablet-alt"></i> iPad</div>
                 </div>
 
-                <!-- MacBook (background right) -->
-                <div class="device macbook">
-                    <div class="device-frame">
-                        <div class="device-screen">
-                            <div class="app-ui web">
-                                <div class="web-sidebar"></div>
-                                <div class="web-content">
-                                    <div class="web-card"></div>
-                                    <div class="web-card"></div>
+                <!-- iPhone (Center, Front, Active) -->
+                <div class="iphone-hero main-focus">
+                    <div class="iphone-frame">
+                        <div class="iphone-notch"></div>
+                        <div class="iphone-screen">
+                            <!-- Header matching real app -->
+                            <div class="app-header-real">
+                                <div class="header-text">
+                                    <span class="greeting">Bonjour,</span>
+                                    <h3 class="question">Qui est là ?</h3>
+                                </div>
+                                <span class="trash-icon">🗑️</span>
+                            </div>
+
+                            <!-- Mode toggle -->
+                            <div class="mode-toggle-real">
+                                <span class="mode-btn active">Solo</span>
+                                <span class="mode-btn">Co-Front</span>
+                            </div>
+
+                            <!-- Search bar -->
+                            <div class="search-bar-real">
+                                <span>🔍</span>
+                                <span class="search-text">Chercher un alter...</span>
+                            </div>
+
+                            <!-- Alter grid 4x2 -->
+                            <div class="alter-grid-real">
+                                <div class="alter-cell special">
+                                    <div class="avatar dashed">?</div>
+                                    <span class="name">Flou</span>
+                                </div>
+                                <div class="alter-cell special">
+                                    <div class="avatar dashed">+</div>
+                                    <span class="name">Ajouter</span>
+                                </div>
+                                <div class="alter-cell">
+                                    <div class="avatar ring-pink photo"></div>
+                                    <span class="name pink">Mona</span>
+                                </div>
+                                <div class="alter-cell">
+                                    <div class="avatar ring-blue photo"></div>
+                                    <span class="name">Zeph</span>
+                                </div>
+                                <div class="alter-cell">
+                                    <div class="avatar ring-red photo"></div>
+                                    <span class="name">Gwendo</span>
+                                </div>
+                                <div class="alter-cell">
+                                    <div class="avatar ring-cyan photo"></div>
+                                    <span class="name">Maitika</span>
+                                </div>
+                                <div class="alter-cell">
+                                    <div class="avatar ring-white photo"></div>
+                                    <span class="name">Juliette</span>
+                                </div>
+                                <div class="alter-cell">
+                                    <div class="avatar ring-yellow photo"></div>
+                                    <span class="name">Alice</span>
                                 </div>
                             </div>
-                        </div>
-                        <div class="macbook-base"></div>
-                    </div>
-                    <div class="device-label"><i class="fas fa-laptop"></i> Mac</div>
-                </div>
 
-                <!-- iPhone (center, prominent) -->
-                <div class="device iphone main-device">
-                    <div class="device-frame">
-                        <div class="device-notch"></div>
-                        <div class="device-screen">
-                            <div class="real-header-area">
-                                <span class="greeting-text">Bonjour,</span>
-                                <div class="title-row">
-                                    <h2 class="main-title">Qui est là ?</h2>
-                                    <button class="trash-btn"><i class="fas fa-trash-alt"></i></button>
-                                </div>
-                            </div>
-                            <div class="phone-content real-grid-layout">
-                                <div class="mode-selector">
-                                    <div class="mode-pill active">Solo</div>
-                                    <div class="mode-pill">Co-Front</div>
-                                </div>
-
-                                <div class="search-bar-mock">
-                                    <i class="fas fa-search"></i>
-                                    <span>Chercher un alter...</span>
-                                </div>
-                                <div class="alter-grid-container">
-                                    <!-- Row 1 -->
-                                    <div class="grid-item special">
-                                        <div class="circle-avatar dashed">
-                                            <span>?</span>
-                                        </div>
-                                        <span class="grid-name">Flou</span>
-                                    </div>
-                                    <div class="grid-item special">
-                                        <div class="circle-avatar dashed">
-                                            <span>+</span>
-                                        </div>
-                                        <span class="grid-name">Ajouter</span>
-                                    </div>
-                                    <div class="grid-item">
-                                        <div class="circle-avatar img-ring pink">
-                                            <span class="emoji-avatar">🌸</span>
-                                        </div>
-                                        <span class="grid-name accent-pink">Mona</span>
-                                    </div>
-                                    <div class="grid-item">
-                                        <div class="circle-avatar img-ring blue">
-                                            <span class="emoji-avatar">�</span>
-                                        </div>
-                                        <span class="grid-name">Zeph</span>
-                                    </div>
-
-                                    <!-- Row 2 -->
-                                    <div class="grid-item">
-                                        <div class="circle-avatar img-ring red">
-                                            <span class="emoji-avatar">💋</span>
-                                        </div>
-                                        <span class="grid-name">Gwendo</span>
-                                    </div>
-                                    <div class="grid-item">
-                                        <div class="circle-avatar img-ring cyan">
-                                            <span class="emoji-avatar">🌊</span>
-                                        </div>
-                                        <span class="grid-name">Maitika</span>
-                                    </div>
-                                    <div class="grid-item">
-                                        <div class="circle-avatar img-ring white">
-                                            <span class="emoji-avatar">🤍</span>
-                                        </div>
-                                        <span class="grid-name">Juliette</span>
-                                    </div>
-                                    <div class="grid-item">
-                                        <div class="circle-avatar img-ring yellow active-selection">
-                                            <span class="emoji-avatar">👱‍♀️</span>
-                                        </div>
-                                        <span class="grid-name">Alice</span>
-                                    </div>
-                                </div>
-
-
-                            </div>
-                            <div class="real-bottom-nav">
-                                <div class="nav-item">
+                            <!-- Bottom nav - 5 items with proper icons -->
+                            <div class="bottom-nav-real">
+                                <div class="nav-item-real">
                                     <i class="fas fa-th"></i>
-                                    <span>Menu</span>
+                                    <span class="nav-label">Menu</span>
                                 </div>
-                                <div class="nav-item">
+                                <div class="nav-item-real">
                                     <i class="far fa-comment"></i>
-                                    <span>Team</span>
+                                    <span class="nav-label">Team</span>
                                 </div>
-                                <div class="nav-item main-action">
-                                    <div class="check-circle">
-                                        <i class="fas fa-check"></i>
-                                    </div>
+                                <div class="nav-item-real main">
+                                    <div class="check-btn"><i class="fas fa-check"></i></div>
                                 </div>
-                                <div class="nav-item">
+                                <div class="nav-item-real">
                                     <i class="fas fa-chart-bar"></i>
-                                    <span>Historique</span>
+                                    <span class="nav-label">Historique</span>
                                 </div>
-                                <div class="nav-item">
+                                <div class="nav-item-real">
                                     <i class="fas fa-cog"></i>
-                                    <span>Réglages</span>
+                                    <span class="nav-label">Réglages</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Apple Watch (bottom right) -->
-                <div class="device watch">
-                    <div class="device-frame">
-                        <div class="device-screen">
-                            <div class="watch-ui">
-                                <span class="watch-emoji">🦊</span>
-                                <span class="watch-name">Felix</span>
-                                <span class="watch-status">En front</span>
+                <!-- Mac (Right, Back, Coming Soon) -->
+                <div class="device mac-mini coming-soon">
+                    <div class="mac-frame">
+                        <div class="screen-off">
+                            <div class="logo-glow">
+                                <i class="fas fa-laptop"></i>
                             </div>
+                            <span class="coming-soon-text">Bientôt sur Mac</span>
+                        </div>
+                        <div class="mac-base"></div>
+                    </div>
+                </div>
+
+                <!-- Watch (Bottom Right, Float, Coming Soon) -->
+                <div class="device watch-mini coming-soon">
+                    <div class="watch-frame">
+                        <div class="screen-off small">
+                            <i class="fas fa-clock"></i>
                         </div>
                     </div>
-                    <div class="device-label"><i class="fas fa-clock"></i> Watch</div>
                 </div>
 
-            </div>
-
-            <!-- Floating feature cards -->
-            <div class="floating-elements">
-                <div class="floating-card" style="--delay: 0s; --x: -140px; --y: -100px;">
-                    <i class="fas fa-shield-halved"></i>
-                    <span>Chiffrage E2E</span>
-                </div>
-                <div class="floating-card" style="--delay: 0.5s; --x: 160px; --y: 0px;">
-                    <i class="fas fa-palette"></i>
-                    <span>50+ Thèmes</span>
-                </div>
-                <div class="floating-card" style="--delay: 1s; --x: -80px; --y: 200px;">
-                    <i class="fas fa-sync-alt"></i>
-                    <span>Sync temps réel</span>
-                </div>
-                <div class="floating-card" style="--delay: 1.5s; --x: 120px; --y: -140px;">
-                    <i class="fab fa-apple"></i>
-                    <span>Cross-platform</span>
-                </div>
             </div>
         </div>
+        </div>
+
     </section>
 
     <!-- Features Section - Enrichie avec 50+ Fonctionnalités -->

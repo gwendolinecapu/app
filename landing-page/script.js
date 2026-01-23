@@ -246,6 +246,23 @@ async function handleFormSubmit(event, formId) {
     }
 }
 
+/**
+ * Generate a secure random password for temporary Firebase Auth account
+ * Used only to create the account, user will reset via email
+ */
+function generateSecurePassword() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
+    const array = new Uint8Array(20);
+    crypto.getRandomValues(array);
+
+    for (let i = 0; i < 20; i++) {
+        password += chars[array[i] % chars.length];
+    }
+
+    return password;
+}
+
 async function registerEmail(email) {
     // Save to localStorage first (backup)
     saveToLocalStorage(email);
@@ -255,6 +272,8 @@ async function registerEmail(email) {
     }
 
     const { doc, getDoc, setDoc } = window.firebaseUtils;
+    const { createUserWithEmailAndPassword, sendPasswordResetEmail } = window.firebaseAuthUtils;
+    const auth = window.firebaseAuth;
 
     // Create unique key from email
     const emailKey = email.replace(/[.@]/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
@@ -262,7 +281,7 @@ async function registerEmail(email) {
     const counterRef = doc(db, 'landing_stats', 'signup_counter');
 
     try {
-        // Step 1: Check if email already exists
+        // Step 1: Check if email already exists in early_signups
         const existingDoc = await getDoc(signupRef);
 
         if (existingDoc.exists()) {
@@ -278,30 +297,70 @@ async function registerEmail(email) {
         const currentCount = counterSnap.exists() ? (counterSnap.data().count || 0) : 0;
         const newPosition = currentCount + 1;
 
-        // Step 3: Save signup
+        // Step 3: Create Firebase Auth account with temporary password
+        const tempPassword = generateSecurePassword();
+        let uid;
+
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, tempPassword);
+            uid = userCredential.user.uid;
+            console.log(`✅ Firebase Auth account created for ${email} (UID: ${uid})`);
+        } catch (authError) {
+            // If account already exists in Auth, try to get UID from error or skip
+            if (authError.code === 'auth/email-already-in-use') {
+                console.warn(`⚠️ Auth account already exists for ${email}`);
+                // We'll continue without UID, or you could try to sign in to get UID
+                uid = null;
+            } else {
+                throw authError;
+            }
+        }
+
+        // Step 4: Send password reset email so user can set their own password
+        if (uid) {
+            try {
+                await sendPasswordResetEmail(auth, email);
+                console.log(`📧 Password reset email sent to ${email}`);
+            } catch (emailError) {
+                console.warn('Failed to send password reset email:', emailError);
+                // Continue anyway, user can request reset later
+            }
+        }
+
+        // Step 5: Save signup data in Firestore
         await setDoc(signupRef, {
+            uid: uid || null,
             email: email,
             position: newPosition,
             isEarlyBird: newPosition <= MAX_EARLY_BIRD,
             rewards: calculateRewards(newPosition),
             registeredAt: new Date().toISOString(),
-            source: 'landing_page'
+            source: 'landing_page',
+            authAccountCreated: !!uid
         });
 
-        // Step 4: Update counter
+        // Step 6: Update counter
         await setDoc(counterRef, {
             count: newPosition,
             lastUpdated: new Date().toISOString()
         });
 
-        // Step 5: Update local state
+        // Step 7: Update local state
         signupCount = newPosition;
 
         return { success: true, position: newPosition, alreadyExists: false };
 
     } catch (error) {
         console.error('[Registration Error]', error);
-        throw new Error('📧 Inscription échouée. Veuillez réessayer.');
+
+        // Better error messages based on error type
+        if (error.code === 'auth/invalid-email') {
+            throw new Error('📧 Adresse email invalide.');
+        } else if (error.code === 'auth/email-already-in-use') {
+            throw new Error('📧 Un compte existe déjà avec cet email.');
+        } else {
+            throw new Error('📧 Inscription échouée. Veuillez réessayer.');
+        }
     }
 }
 

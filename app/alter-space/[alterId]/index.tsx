@@ -82,8 +82,8 @@ export default function AlterSpaceScreen() {
     const isSameAlter = alter && currentAlter ? alter.id === currentAlter.id : false;
 
     // Fallback: If no custom status is active (System Mode), we might allow editing, 
-    // but assuming strict roleplay: isOwner requires matching IDs.
-    const isOwner = isSystemOwner && isSameAlter;
+    // FIX: System owner has full access to ALL their alters including subsystem alters
+    const isOwner = isSystemOwner;
 
     // Check relationship status
     useFocusEffect(
@@ -369,6 +369,7 @@ export default function AlterSpaceScreen() {
                                         friendIds={friendIds}
                                         onStoryPress={(authorId) => router.push({ pathname: '/story/view', params: { authorId } })}
                                         themeColors={themeColors}
+                                        profileAlter={alter}
                                     />
                                 </>
                             }

@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { colors, spacing, typography } from '../lib/theme';
-import { getFrameStyle , getCosmeticItem } from '../lib/cosmetics';
+import { getFrameStyle, getCosmeticItem } from '../lib/cosmetics';
 import { StoriesService } from '../services/stories';
 import { Story } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -35,6 +35,7 @@ interface StoriesBarProps {
     onStoryPress: (authorId: string, stories: Story[]) => void;
     friendIds?: string[];
     themeColors?: any | null;
+    profileAlter?: { id: string; name: string; avatar?: string; avatar_url?: string; color?: string; equipped_items?: any } | null;
 }
 
 interface StoryAuthor {
@@ -46,8 +47,11 @@ interface StoryAuthor {
     hasUnviewed: boolean;
 }
 
-export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors }: StoriesBarProps) => {
+export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors, profileAlter }: StoriesBarProps) => {
     const { currentAlter, user } = useAuth();
+
+    // Use profileAlter if provided (when viewing an AlterSpace), otherwise use currentAlter
+    const displayAlter = profileAlter || currentAlter;
     const [authors, setAuthors] = useState<StoryAuthor[]>([]);
     const [loading, setLoading] = useState(true);
     const [myStories, setMyStories] = useState<Story[]>([]);
@@ -170,14 +174,14 @@ export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors }: Storie
                 <TouchableOpacity style={styles.storyItem} onPress={handleMyStoryPress}>
                     <View style={styles.avatarContainer}>
                         {(() => {
-                            const frameId = currentAlter?.equipped_items?.frame;
+                            const frameId = displayAlter?.equipped_items?.frame;
                             // Use RING_SIZE (70) for the frame container size
                             const frameStyle = getFrameStyle(frameId, 70);
                             const isImageFrame = !!frameStyle.imageSource;
 
-                            const avatarContent = currentAlter?.avatar || currentAlter?.avatar_url ? (
+                            const avatarContent = displayAlter?.avatar || displayAlter?.avatar_url ? (
                                 <Image
-                                    source={{ uri: currentAlter.avatar || currentAlter.avatar_url }}
+                                    source={{ uri: displayAlter.avatar || displayAlter.avatar_url }}
                                     style={[
                                         { width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2 },
                                         frameStyle.imageStyle as any
@@ -189,7 +193,7 @@ export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors }: Storie
                                     { backgroundColor: themeColors?.primary || colors.primary },
                                     frameStyle.imageStyle
                                 ]}>
-                                    <Text style={styles.avatarInitial}>{currentAlter?.name?.charAt(0) || '?'}</Text>
+                                    <Text style={styles.avatarInitial}>{displayAlter?.name?.charAt(0) || '?'}</Text>
                                 </View>
                             );
 
@@ -227,7 +231,7 @@ export const StoriesBar = ({ onStoryPress, friendIds = [], themeColors }: Storie
                             return (
                                 <View style={[
                                     styles.viewedRing,
-                                    { borderColor: currentAlter?.color || themeColors?.primary || colors.primary },
+                                    { borderColor: displayAlter?.color || themeColors?.primary || colors.primary },
                                     // Remove default styling if we have a special frame
                                     frameId ? frameStyle.containerStyle : {},
                                     // Handle image frames (transparent container)

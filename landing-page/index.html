@@ -64,8 +64,8 @@
 
 <body>
     <!-- Animated Background -->
-    <div class="bg-gradient"></div>
-    <div class="particles" id="particles"></div>
+    <div class="bg-gradient" aria-hidden="true"></div>
+    <div class="particles" id="particles" aria-hidden="true"></div>
 
     <!-- Navigation -->
     <nav class="navbar">
@@ -109,11 +109,12 @@
             <div class="hero-cta">
                 <form id="hero-form" class="email-form">
                     <!-- Honeypot anti-spam (hidden from users) -->
-                    <input type="text" name="website" style="position:absolute;left:-9999px" tabindex="-1"
+                    <input type="text" name="website" class="honeypot-field" tabindex="-1"
                         autocomplete="off" aria-hidden="true">
                     <div class="input-wrapper">
-                        <i class="fas fa-envelope"></i>
-                        <input type="email" placeholder="votre@email.com" required id="hero-email">
+                        <i class="fas fa-envelope" aria-hidden="true"></i>
+                        <label for="hero-email" class="visually-hidden">Adresse email</label>
+                        <input type="email" placeholder="votre@email.com" required id="hero-email" aria-label="Adresse email">
                     </div>
                     <button type="submit" class="btn-primary">
                         <span>Je m'inscris</span>
@@ -127,18 +128,18 @@
             </div>
 
             <!-- Real-time Counter -->
-            <div class="live-counter">
+            <div class="live-counter" aria-live="polite" aria-atomic="true">
                 <div class="counter-content">
                     <div class="counter-item">
                         <div class="counter-value" id="signup-count">
-                            <span class="counter-loader"><i class="fas fa-spinner fa-spin"></i></span>
+                            <span class="counter-loader" aria-label="Chargement"><i class="fas fa-spinner fa-spin" aria-hidden="true"></i></span>
                         </div>
                         <div class="counter-label">Inscrits</div>
                     </div>
-                    <div class="counter-divider"></div>
+                    <div class="counter-divider" aria-hidden="true"></div>
                     <div class="counter-item highlight">
                         <div class="counter-value" id="spots-left">
-                            <span class="counter-loader"><i class="fas fa-spinner fa-spin"></i></span>
+                            <span class="counter-loader" aria-label="Chargement"><i class="fas fa-spinner fa-spin" aria-hidden="true"></i></span>
                         </div>
                         <div class="counter-label">Places restantes</div>
                     </div>
@@ -620,12 +621,13 @@
                 <!-- Main Form -->
                 <form id="main-form" class="main-email-form">
                     <!-- Honeypot anti-spam (hidden from users) -->
-                    <input type="text" name="website" style="position:absolute;left:-9999px" tabindex="-1"
+                    <input type="text" name="website" class="honeypot-field" tabindex="-1"
                         autocomplete="off" aria-hidden="true">
                     <div class="form-row">
                         <div class="input-group">
-                            <i class="fas fa-envelope"></i>
-                            <input type="email" placeholder="votre@email.com" required id="main-email">
+                            <i class="fas fa-envelope" aria-hidden="true"></i>
+                            <label for="main-email" class="visually-hidden">Adresse email</label>
+                            <input type="email" placeholder="votre@email.com" required id="main-email" aria-label="Adresse email">
                         </div>
                         <button type="submit" class="btn-glow" id="submit-btn">
                             <span>Réserver ma place</span>

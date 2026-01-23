@@ -396,7 +396,7 @@ function saveToLocalStorage(email) {
 
 /**
  * Strict email validation
- * - RFC 5321 compliant regex
+ * - RFC 5321 compliant regex (supports plus-addressing like user+tag@example.com)
  * - Blocks disposable email domains
  * - Length validation (min 6, max 254)
  */
@@ -404,7 +404,7 @@ function isValidEmail(email) {
     // Length checks (RFC 5321)
     if (email.length < 6 || email.length > 254) return false;
 
-    // Strict regex - RFC 5321 compliant
+    // RFC 5321 compliant regex - supports plus-addressing (user+tag@domain.com)
     const emailRegex = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
 
     if (!emailRegex.test(email)) return false;
@@ -416,7 +416,8 @@ function isValidEmail(email) {
         'trashmail.com', 'yopmail.com', 'sharklasers.com'
     ];
 
-    const domain = email.split('@')[1];
+    // Extract domain (handle plus-addressing by getting part after @)
+    const domain = email.split('@')[1].toLowerCase();
     if (disposableDomains.includes(domain)) {
         return false;
     }
@@ -500,6 +501,11 @@ function showToast(message, type = 'success') {
     toast.className = `toast toast-${type}`;
     toast.innerHTML = message;
 
+    // Accessibility attributes
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'polite');
+    toast.setAttribute('aria-atomic', 'true');
+
     const bgColor = type === 'error' ? '#EF4444' : type === 'info' ? '#3B82F6' : '#8B5CF6';
 
     toast.style.cssText = `
@@ -529,7 +535,15 @@ function createParticles() {
     const container = document.getElementById('particles');
     if (!container) return;
 
-    for (let i = 0; i < 40; i++) {
+    // Respect user's motion preferences
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
+
+    // Reduce particles on mobile for better performance
+    const isMobile = window.innerWidth <= 768;
+    const particleCount = isMobile ? 15 : 40;
+
+    for (let i = 0; i < particleCount; i++) {
         const particle = document.createElement('div');
         particle.className = 'particle';
 
@@ -573,13 +587,22 @@ function initScrollAnimations() {
 function initNavbar() {
     const navbar = document.querySelector('.navbar');
 
-    window.addEventListener('scroll', () => {
-        if (window.scrollY > 50) {
-            navbar.classList.add('scrolled');
-        } else {
-            navbar.classList.remove('scrolled');
+    // Debounced scroll handler for better performance
+    let scrollTimeout;
+    const handleScroll = () => {
+        if (scrollTimeout) {
+            cancelAnimationFrame(scrollTimeout);
         }
-    });
+        scrollTimeout = requestAnimationFrame(() => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
 
     // Mobile menu
     const mobileBtn = document.getElementById('mobile-menu');

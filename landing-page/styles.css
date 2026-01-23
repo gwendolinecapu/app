@@ -3756,3 +3756,73 @@ button {
         width: 100%;
     }
 }
+
+/* ==================== ACCESSIBILITY ==================== */
+
+/* Visually hidden but accessible to screen readers */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Honeypot field - hidden from users but visible to bots */
+.honeypot-field {
+    position: absolute;
+    left: -9999px;
+    top: -9999px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* ==================== REDUCED MOTION ==================== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .bg-gradient,
+    .particles,
+    .particle {
+        animation: none !important;
+    }
+
+    .badge.pulse {
+        animation: none !important;
+    }
+
+    .device,
+    .device.ipad,
+    .device.macbook,
+    .device.watch,
+    .device.iphone {
+        animation: none !important;
+    }
+
+    .logo-glow {
+        animation: none !important;
+    }
+
+    .feature-icon.shimmer::after {
+        animation: none !important;
+    }
+
+    .preview-status-dot {
+        animation: none !important;
+    }
+
+    .waveform span {
+        animation: none !important;
+    }
+}

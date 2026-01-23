@@ -127,8 +127,6 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
             // Sync Inventory
             const defaults = ['theme_default', 'frame_simple', 'bubble_default', 'border_none'];
             const alterOwned = currentAlter.owned_items || [];
-            console.log('[MonetizationContext] refreshState - CurrentAlter:', currentAlter.id);
-            console.log('[MonetizationContext] refreshState - Credits:', currentAlter.credits);
             const merged = [...new Set([...defaults, ...alterOwned])];
             setOwnedItems(merged);
 
@@ -249,7 +247,6 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
         try {
             const alterRef = doc(db, 'alters', currentAlter.id);
-            console.log('[MonetizationContext] Adding to inventory:', itemId, 'for alter:', currentAlter.id);
 
             // Use setDoc with merge to ensure the field is created if it doesn't exist
             await setDoc(alterRef, {
@@ -360,7 +357,6 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
             // ==================== DEV MODE BYPASS ====================
             if (__DEV__) {
-                console.log('[MonetizationContext] DEV MODE: Bypassing IAP for', packageId);
                 // Simulate network delay
                 await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -369,7 +365,6 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
                     if (pack && pack.id.includes('credits_')) {
                         const amount = parseInt(pack.id.replace('credits_', ''), 10);
                         if (!isNaN(amount) && currentAlter) {
-                            console.log('[MonetizationContext] DEV MODE: Granting', amount, 'credits');
                             await CreditService.addCredits(currentAlter.id, amount, 'purchase_iap', 'Achat IAP (DEV)');
                         }
                     } else {

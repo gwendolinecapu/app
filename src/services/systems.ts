@@ -27,7 +27,6 @@ export const SystemService = {
         try {
             // Remove @ if present
             const cleanUsername = username.startsWith('@') ? username.substring(1) : username;
-            console.log(`[SystemService] Looking up system for: '${cleanUsername}'`);
 
             const q = query(
                 collection(db, 'systems'),
@@ -35,7 +34,6 @@ export const SystemService = {
             );
 
             const snapshot = await getDocs(q);
-            console.log(`[SystemService] Found ${snapshot.size} matches for '${cleanUsername}'`);
             if (!snapshot.empty) {
                 const docSnap = snapshot.docs[0];
                 return { id: docSnap.id, ...docSnap.data() } as System;

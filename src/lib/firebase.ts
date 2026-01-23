@@ -18,16 +18,16 @@ import { getStorage } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
 
 // ------------------------------------------------------------------
-// Firebase Configuration
+// Firebase Configuration - Using Environment Variables
 // ------------------------------------------------------------------
 const firebaseConfig = {
-    apiKey: "AIzaSyDdteIZYO8VJEyXYPAvHzkiOjXW17s5exc",
-    authDomain: "app-tdi.firebaseapp.com",
-    projectId: "app-tdi",
-    storageBucket: "app-tdi.firebasestorage.app",
-    messagingSenderId: "280489246228",
-    appId: "1:280489246228:web:7b5e1177e193dc20caf101",
-    measurementId: "G-Y5Y6LXVNS1"
+    apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+    measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialisation (Compat Mode guarantees registration)
@@ -48,7 +48,7 @@ if (Platform.OS === 'web') {
     // Native: Use modular auth with persistence
     try {
         // Explicitly try to initialize with React Native Persistence first
-         
+
         const { getReactNativePersistence } = require('firebase/auth');
         auth = initializeAuth(app, {
             persistence: getReactNativePersistence(AsyncStorage)

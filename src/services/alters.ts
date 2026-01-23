@@ -73,7 +73,6 @@ export const AlterService = {
         try {
             // Remove @ if present
             const cleanName = name.startsWith('@') ? name.substring(1) : name;
-            console.log(`[AlterService] Looking up alter for: '${cleanName}'`);
 
             const q = query(
                 collection(db, 'alters'),
@@ -83,7 +82,6 @@ export const AlterService = {
             );
 
             const snapshot = await getDocs(q);
-            console.log(`[AlterService] Found ${snapshot.size} matches for '${cleanName}'`);
             if (!snapshot.empty) {
                 // Determine the best match? (e.g. from same system > friends > public)
                 // For now, return the first one found.

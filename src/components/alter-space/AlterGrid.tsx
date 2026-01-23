@@ -36,7 +36,6 @@ export const AlterGrid: React.FC<AlterGridProps> = ({
     isPrivate = false
 }) => {
     // ALL HOOKS MUST BE CALLED FIRST - No early returns before this point
-    // console.log("Rendering AlterGrid", { isPrivate });
     const [activeTab, setActiveTab] = React.useState<'grid' | 'tagged'>('grid');
     const [taggedPosts, setTaggedPosts] = React.useState<Post[]>([]);
     const [loadingTagged, setLoadingTagged] = React.useState(false);

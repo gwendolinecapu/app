@@ -58,9 +58,7 @@ class ConsentService {
             // 2. Load and show consent form if required (e.g. first time or expired)
             if (consentInfo.isConsentFormAvailable && consentInfo.status === AdsConsentStatus.REQUIRED) {
                 const { status } = await AdsConsent.loadAndShowConsentFormIfRequired();
-                console.log('[ConsentService] Consent form shown, status:', status);
             } else {
-                console.log('[ConsentService] Consent form not required or not available, status:', consentInfo.status);
             }
 
             // 3. (iOS Only) Explicitly request App Tracking Transparency (ATT) permission
@@ -68,7 +66,6 @@ class ConsentService {
             // If UMP showed it, this returns the status immediately without a second prompt.
             if (Platform.OS === 'ios') {
                 const { status: trackingStatus } = await requestTrackingPermissionsAsync();
-                console.log('[ConsentService] iOS ATT Status:', trackingStatus);
             }
 
             this.initialized = true;
@@ -100,7 +97,6 @@ class ConsentService {
 
         try {
             const { status } = await AdsConsent.showPrivacyOptionsForm();
-            console.log('[ConsentService] Privacy options form shown, status:', status);
         } catch (error) {
             console.error('[ConsentService] Failed to show privacy options form:', error);
             throw error;

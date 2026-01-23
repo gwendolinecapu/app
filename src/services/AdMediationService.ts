@@ -287,7 +287,6 @@ class AdMediationService {
         // Trouver le premier réseau avec une pub chargée
         const available = this.preloadedRewarded.find(r => r.loaded);
         if (!available) {
-            console.log('[AdMediation] No rewarded ad available');
             return {
                 completed: false,
                 rewardType: 'credits',
@@ -356,7 +355,6 @@ class AdMediationService {
                 const unsubscribeEarned = this.rewardedAd!.addAdEventListener(
                     RewardedAdEventType.EARNED_REWARD,
                     (reward: any) => {
-                        console.log('[AdMediation] Reward earned:', reward);
                         earned = true;
                     }
                 );
@@ -364,7 +362,6 @@ class AdMediationService {
                 const unsubscribeClosed = this.rewardedAd!.addAdEventListener(
                     AdEventType.CLOSED,
                     () => {
-                        console.log('[AdMediation] Ad closed');
                         cleanup();
                         resolve(earned);
                     }

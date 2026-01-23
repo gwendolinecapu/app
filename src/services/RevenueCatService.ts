@@ -42,7 +42,6 @@ class RevenueCatService {
 
         // If in Expo Go, skip initialization to prevent annoying red screens
         if (isExpoGo) {
-            console.log('[RevenueCat] Running in Expo Go. Skipping initialization to prevent native module errors.');
             this.initialized = true;
             this.configured = false; // Mock mode
             return;
@@ -50,7 +49,6 @@ class RevenueCatService {
 
         // Ensure keys exist, otherwise mock or warn
         if (!API_KEYS.ios && !API_KEYS.android) {
-            console.log('[RevenueCat] No API keys found. Skipping initialization.');
             this.initialized = true;
             return;
         }

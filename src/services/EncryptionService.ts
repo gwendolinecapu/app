@@ -112,7 +112,6 @@ export class EncryptionService {
 
                 // Stocker de manière sécurisée
                 await Storage.setItemAsync(keyName, key);
-                console.log(`✅ [EncryptionService] Nouvelle clé générée pour système ${systemId}`);
             }
 
             return key;
@@ -312,7 +311,6 @@ export class EncryptionService {
             // Générer la clé immédiatement si elle n'existe pas
             await this.getOrCreateSystemKey(systemId);
 
-            console.log(`🔒 [EncryptionService] Chiffrement activé pour système ${systemId}`);
         } catch (error) {
             console.error('[EncryptionService] Erreur lors de l\'activation:', error);
             throw error;
@@ -326,7 +324,6 @@ export class EncryptionService {
         try {
             const settingName = `${ENCRYPTION_ENABLED_PREFIX}${systemId}`;
             await Storage.deleteItemAsync(settingName);
-            console.log(`🔓 [EncryptionService] Chiffrement désactivé pour système ${systemId}`);
         } catch (error) {
             console.error('[EncryptionService] Erreur lors de la désactivation:', error);
             throw error;
@@ -359,7 +356,6 @@ export class EncryptionService {
             const settingName = `${ENCRYPTION_ENABLED_PREFIX}${systemId}`;
             await Storage.deleteItemAsync(settingName);
 
-            console.log(`🗑️ [EncryptionService] Clé supprimée pour système ${systemId}`);
         } catch (error) {
             console.error('[EncryptionService] Erreur lors de la suppression:', error);
             throw error;

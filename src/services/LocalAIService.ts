@@ -171,7 +171,6 @@ export const LocalAIService = {
 
             if (result?.uri) {
                 await AsyncStorage.setItem(MODEL_STORAGE_KEY, 'true');
-                console.log('[LocalAI] Model downloaded successfully:', result.uri);
             }
         } catch (error) {
             console.error('[LocalAI] Download failed:', error);
@@ -189,7 +188,6 @@ export const LocalAIService = {
             await FileSystem.deleteAsync(getTokenizerFile(), { idempotent: true });
             await FileSystem.deleteAsync(getTokenizerConfigFile(), { idempotent: true });
             await AsyncStorage.removeItem(MODEL_STORAGE_KEY);
-            console.log('[LocalAI] Model deleted');
         } catch (error) {
             console.error('[LocalAI] Delete failed:', error);
         }

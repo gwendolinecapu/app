@@ -6,6 +6,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { Alter } from '../../types';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
+import { PasswordService } from '../../services/PasswordService';
 
 import { ThemeColors } from '../../lib/cosmetics';
 
@@ -48,7 +49,9 @@ export const AlterSettings: React.FC<AlterSettingsProps> = ({ alter, themeColors
         setSaving(true);
         try {
             const alterRef = doc(db, 'alters', alter.id);
-            await updateDoc(alterRef, { password: newPassword });
+            // Hash the password before storing
+            const hashedPassword = await PasswordService.hashPassword(newPassword);
+            await updateDoc(alterRef, { password: hashedPassword });
             Alert.alert('Succès', 'Mot de passe défini avec succès');
             setShowPasswordModal(false);
             setNewPassword('');

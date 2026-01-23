@@ -476,14 +476,12 @@ export const FriendService = {
         );
         const snap1 = await getDocs(q1);
         if (snap1.size > 1) {
-            console.log(`[FriendService] Found ${snap1.size} connections for ${alterId}->${friendId}. Cleaning up.`);
             // Sort by creation time (if available) or insertion order. 
             // We just keep the first one and delete the rest.
             const docs = snap1.docs;
             const toDelete = docs.slice(1);
             try {
                 await Promise.all(toDelete.map(d => deleteDoc(d.ref)));
-                console.log(`[FriendService] Successfully cleaned up ${toDelete.length} duplicates.`);
             } catch (e) {
                 console.warn(`[FriendService] Failed to delete duplicates for ${alterId}->${friendId} (likely permission issue):`, e);
             }

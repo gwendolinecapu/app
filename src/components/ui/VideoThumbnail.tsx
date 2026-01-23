@@ -42,13 +42,11 @@ export const VideoThumbnail: React.FC<VideoThumbnailProps> = ({ mediaUrl, style 
                     }
                 } catch (e) {
                     // Silently fail - continue to next time
-                    console.log(`Thumbnail generation failed for time ${time}:`, e);
                 }
             }
 
             // If we're here, all attempts failed
             if (isMounted) {
-                console.log("All thumbnail attempts failed, falling back to Video component");
                 setError(true);
                 setLoading(false);
             }

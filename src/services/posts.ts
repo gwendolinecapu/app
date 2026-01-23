@@ -567,7 +567,6 @@ export const PostService = {
                             }
 
                             // [DEBUG] Trace notification creation
-                            console.log('Creating notification for:', post.system_id);
 
                             const notificationRef = collection(db, 'notifications'); // Re-introduced definition
 
@@ -586,10 +585,8 @@ export const PostService = {
                                 subtitle: post.content || (post.media_url ? "Photo" : "Publication"),
                                 mediaUrl: post.media_url || null,
                             };
-                            console.log('Payload:', JSON.stringify(notificationPayload));
 
                             await addDoc(notificationRef, notificationPayload);
-                            console.log('Notification created successfully!');
 
 
                             // Send Push Notification

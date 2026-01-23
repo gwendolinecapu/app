@@ -83,7 +83,6 @@ class FrontingCheckInService {
             await this.scheduleNextCheckIn();
         }
 
-        console.log('[FrontingCheckIn] Service initialized');
     }
 
     /**
@@ -168,7 +167,6 @@ class FrontingCheckInService {
             this.notificationId = notificationId;
             await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATION_ID, notificationId);
 
-            console.log(`[FrontingCheckIn] Scheduled every ${settings.intervalHours}h`);
         } catch (error) {
             console.error('[FrontingCheckIn] Failed to schedule:', error);
         }
@@ -240,7 +238,6 @@ class FrontingCheckInService {
         if (actionId === 'same_fronter') {
             // L'utilisateur confirme que c'est le même fronter
             await this.recordCheckIn({ confirmed: true, changed: false });
-            console.log('[FrontingCheckIn] Same fronter confirmed');
         } else {
             // Ouvrir l'app pour sélectionner
             Linking.openURL('pluralconnect://checkin');
@@ -255,7 +252,6 @@ class FrontingCheckInService {
         await AsyncStorage.setItem(STORAGE_KEYS.LAST_CHECKIN, now);
 
         // Ici, on pourrait aussi enregistrer l'historique des check-ins
-        console.log('[FrontingCheckIn] Check-in recorded:', data);
     }
 
     /**

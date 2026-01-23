@@ -17,7 +17,6 @@ if (Platform.OS === 'web') {
         if (app) {
             analytics = getAnalytics(app);
             isWebAnalytics = true;
-            console.log('[AnalyticsService] Web Analytics initialized');
         }
     } catch (e) {
         console.warn('[AnalyticsService] Firebase Web Analytics initialization failed:', e);
@@ -28,7 +27,6 @@ if (Platform.OS === 'web') {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const analyticsModule = require('@react-native-firebase/analytics');
         analytics = analyticsModule.default;
-        console.log('[AnalyticsService] Native Analytics initialized');
     } catch (e) {
         console.warn('[AnalyticsService] Firebase Analytics native module not found. Analytics disabled.');
     }
@@ -144,7 +142,6 @@ class AnalyticsService {
                 await analytics().logEvent('ad_impression', eventParams);
             }
 
-            console.log(`[Analytics] Logged Ad Revenue: ${revenueValue} ${eventParams.currency} (${params.network})`);
 
         } catch (error) {
             console.error('[Analytics] Failed to log ad revenue:', error);

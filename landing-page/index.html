@@ -76,7 +76,8 @@
             </a>
             <div class="nav-links">
                 <a href="#features">Fonctionnalités</a>
-                <a href="#why">Pourquoi nous ?</a>
+                <a href="#support">Soutenir</a>
+                <a href="#feedback">Vos idées</a>
                 <a href="#signup" class="nav-cta">Inscription</a>
             </div>
             <button class="mobile-menu" id="mobile-menu">
@@ -439,13 +440,9 @@
                 <div class="stat-number">6</div>
                 <div class="stat-label">Catégories</div>
             </div>
-            <div class="stat-item">
-                <div class="stat-number">E2E</div>
-                <div class="stat-label">Chiffrement</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">∞</div>
-                <div class="stat-label">Personnalisation</div>
+            <div class="stat-item" title="End-to-End : vos données sont chiffrées de bout en bout">
+                <div class="stat-number">🔐</div>
+                <div class="stat-label">Chiffré bout-en-bout</div>
             </div>
         </div>
     </section>
@@ -493,6 +490,14 @@
                                 nos pratiques.</p>
                         </div>
                     </div>
+
+                    <div class="why-point">
+                        <div class="why-icon">🧘</div>
+                        <div>
+                            <h4>Pas de design addictif</h4>
+                            <p>Aucun scroll infini, pas de notifications abusives, pas de FOMO artificiel. Votre bien-être passe avant nos métriques.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -505,7 +510,7 @@
                     <ul class="comp-list">
                         <li><i class="fas fa-times"></i> Interface clinique froide</li>
                         <li><i class="fas fa-times"></i> Fonctionnalités basiques</li>
-                        <li><i class="fas fa-times"></i> Pas de personnalisation</li>
+                        <li><i class="fas fa-times"></i> Design addictif (scroll infini)</li>
                         <li><i class="fas fa-times"></i> Données sur leurs serveurs</li>
                     </ul>
                 </div>
@@ -518,8 +523,8 @@
                     <ul class="comp-list">
                         <li><i class="fas fa-check"></i> Design moderne & fun</li>
                         <li><i class="fas fa-check"></i> AlterSpace + IA + Social</li>
-                        <li><i class="fas fa-check"></i> 50+ thèmes personnalisables</li>
-                        <li><i class="fas fa-check"></i> Chiffrement E2E local</li>
+                        <li><i class="fas fa-check"></i> Respecte votre attention</li>
+                        <li><i class="fas fa-check"></i> Chiffré bout-en-bout</li>
                     </ul>
                 </div>
             </div>
@@ -530,10 +535,20 @@
     <section class="support-section" id="support">
         <div class="support-container">
             <div class="support-text">
-                <span class="badge-support">Soutenir le dev</span>
-                <h2>Aidez-nous à construire le futur</h2>
-                <p>PluralConnect est 100% gratuit. Votre soutien nous aide à payer les serveurs et à accélérer le
-                    développement iOS/Android.</p>
+                <span class="badge-support">💜 Devenez un Pioneer</span>
+                <h2>Soutenez le projet, accédez en premier</h2>
+                <p>PluralConnect sera 100% gratuit. Votre soutien finance les serveurs et accélère le lancement sur iOS et Android.</p>
+
+                <!-- Donor Benefits -->
+                <div class="donor-benefits">
+                    <h4><i class="fas fa-crown"></i> Avantages donateurs</h4>
+                    <ul class="benefits-list">
+                        <li><i class="fas fa-flask"></i> <strong>Accès Alpha exclusif</strong> — Testez l'app avant tout le monde, même avant la bêta</li>
+                        <li><i class="fas fa-gift"></i> <strong>Récompenses de lancement</strong> — Surprises exclusives à la sortie de l'app</li>
+                        <li><i class="fas fa-comments"></i> <strong>Canal privé</strong> — Accès au groupe de discussion avec l'équipe</li>
+                        <li><i class="fas fa-heart"></i> <strong>Votre nom dans l'app</strong> — Remerciement permanent dans les crédits</li>
+                    </ul>
+                </div>
             </div>
 
             <a href="https://www.leetchi.com/fr/c/application-pour-les-personnes-atteintes-de-troubles-dissociatifs-de-lidentite-1520065?utm_source=native&utm_medium=social_sharing"
@@ -561,17 +576,64 @@
                         <span class="progress-target">Objectif : 120€ pour l'App Store</span>
                     </div>
                     <div class="funding-status">
-                        <span class="status-check success"><i class="fas fa-check-circle"></i> Play Store (25€) financé
-                            !</span>
-                        <span class="status-check pending"><i class="far fa-circle"></i> Apple Store (120€) en
-                            cours</span>
+                        <span class="status-check success"><i class="fas fa-check-circle"></i> Play Store (25€) financé !</span>
+                        <span class="status-check pending"><i class="far fa-circle"></i> Apple Store (120€) en cours</span>
                     </div>
                 </div>
 
                 <div class="leetchi-cta-button">
-                    Participer à la cagnotte
+                    <i class="fas fa-heart"></i> Soutenir & devenir Alpha Tester
                 </div>
             </a>
+        </div>
+    </section>
+
+    <!-- Feature Requests / Questions Section -->
+    <section id="feedback" class="feedback-section">
+        <div class="feedback-container">
+            <div class="section-header">
+                <span class="section-badge">💡 Vos idées comptent</span>
+                <h2>Une idée ? Une question ?</h2>
+                <p>L'app est construite avec vous. Proposez des fonctionnalités ou posez vos questions !</p>
+            </div>
+
+            <div class="feedback-cards">
+                <div class="feedback-card">
+                    <div class="feedback-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h3>Demande de fonctionnalité</h3>
+                    <p>Une idée qui manque ? Décrivez-la et on l'ajoutera à notre roadmap !</p>
+                    <form id="feature-form" class="feedback-form">
+                        <input type="text" name="feature-title" placeholder="Titre de votre idée" required id="feature-title">
+                        <textarea name="feature-desc" placeholder="Décrivez votre idée en détail..." required id="feature-desc" rows="3"></textarea>
+                        <input type="email" name="feature-email" placeholder="Votre email (optionnel)" id="feature-email">
+                        <button type="submit" class="btn-feedback">
+                            <i class="fas fa-paper-plane"></i> Envoyer l'idée
+                        </button>
+                    </form>
+                </div>
+
+                <div class="feedback-card">
+                    <div class="feedback-icon question">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <h3>Poser une question</h3>
+                    <p>Vous voulez savoir si une fonctionnalité existe ? Posez votre question !</p>
+                    <form id="question-form" class="feedback-form">
+                        <input type="text" name="question-title" placeholder="Votre question" required id="question-title">
+                        <textarea name="question-desc" placeholder="Plus de détails si nécessaire..." id="question-desc" rows="3"></textarea>
+                        <input type="email" name="question-email" placeholder="Votre email (pour la réponse)" id="question-email">
+                        <button type="submit" class="btn-feedback question">
+                            <i class="fas fa-paper-plane"></i> Envoyer la question
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <p class="feedback-note">
+                <i class="fas fa-github"></i> Vos demandes sont enregistrées sur notre GitHub pour un suivi transparent.
+            </p>
         </div>
     </section>
 
@@ -593,28 +655,15 @@
                     à la sortie de l'app. Votre email = votre compte prêt à l'emploi !
                 </p>
 
-                <!-- Surprise Preview -->
-                <div class="surprise-preview">
-                    <div class="surprise-item">
-                        <div class="surprise-icon">🎨</div>
-                        <div class="surprise-info">
-                            <span class="surprise-title">Thème Pioneer</span>
-                            <span class="surprise-desc">Exclusif early adopters</span>
-                        </div>
+                <!-- Surprise Teaser -->
+                <div class="surprise-teaser">
+                    <div class="mystery-box">
+                        <div class="mystery-icon">🎁</div>
+                        <div class="mystery-sparkles" aria-hidden="true">✨</div>
                     </div>
-                    <div class="surprise-item">
-                        <div class="surprise-icon">💎</div>
-                        <div class="surprise-info">
-                            <span class="surprise-title">500 Crédits</span>
-                            <span class="surprise-desc">Valeur 4.99€</span>
-                        </div>
-                    </div>
-                    <div class="surprise-item">
-                        <div class="surprise-icon">⭐</div>
-                        <div class="surprise-info">
-                            <span class="surprise-title">Badge Pioneer</span>
-                            <span class="surprise-desc">Permanent sur profil</span>
-                        </div>
+                    <div class="mystery-text">
+                        <span class="mystery-title">Surprises à découvrir...</span>
+                        <span class="mystery-desc">Des récompenses exclusives vous attendent à la sortie !</span>
                     </div>
                 </div>
 
@@ -697,7 +746,8 @@
                 <div class="footer-column">
                     <h4>À propos</h4>
                     <a href="#features">Fonctionnalités</a>
-                    <a href="#why">Notre mission</a>
+                    <a href="#support">Soutenir le projet</a>
+                    <a href="#feedback">Proposer une idée</a>
                     <a href="#signup">Early Access</a>
                 </div>
                 <div class="footer-column">

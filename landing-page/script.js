@@ -780,3 +780,97 @@ function initAnalytics() {
 
 // Check cookie consent on page load
 checkCookieConsent();
+
+// ==================== FEEDBACK FORMS ====================
+function initFeedbackForms() {
+    const featureForm = document.getElementById('feature-form');
+    const questionForm = document.getElementById('question-form');
+
+    if (featureForm) {
+        featureForm.addEventListener('submit', (e) => handleFeedbackSubmit(e, 'feature'));
+    }
+
+    if (questionForm) {
+        questionForm.addEventListener('submit', (e) => handleFeedbackSubmit(e, 'question'));
+    }
+}
+
+async function handleFeedbackSubmit(event, type) {
+    event.preventDefault();
+
+    const form = event.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalContent = submitBtn.innerHTML;
+
+    // Get form values
+    const titleInput = form.querySelector(`#${type}-title`);
+    const descInput = form.querySelector(`#${type}-desc`);
+    const emailInput = form.querySelector(`#${type}-email`);
+
+    const title = titleInput.value.trim();
+    const description = descInput?.value.trim() || '';
+    const email = emailInput?.value.trim() || '';
+
+    if (!title) {
+        showToast('📝 Veuillez entrer un titre', 'error');
+        return;
+    }
+
+    // Disable form
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi...';
+
+    try {
+        await saveFeedback(type, title, description, email);
+
+        // Success
+        const successMsg = type === 'feature'
+            ? '💡 Merci ! Votre idée a été enregistrée.'
+            : '✅ Merci ! Votre question a été envoyée.';
+        showToast(successMsg, 'success');
+
+        // Reset form
+        form.reset();
+
+    } catch (error) {
+        console.error('Feedback error:', error);
+        showToast('❌ Erreur lors de l\'envoi. Réessayez.', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalContent;
+    }
+}
+
+async function saveFeedback(type, title, description, email) {
+    // Save to localStorage as backup
+    const feedbacks = JSON.parse(localStorage.getItem('pluralconnect_feedbacks') || '[]');
+    feedbacks.push({ type, title, description, email, date: new Date().toISOString() });
+    localStorage.setItem('pluralconnect_feedbacks', JSON.stringify(feedbacks));
+
+    if (!isFirebaseReady) {
+        return { success: true };
+    }
+
+    const { collection, addDoc } = window.firebaseUtils;
+
+    // Save to Firestore
+    const feedbackData = {
+        type: type, // 'feature' or 'question'
+        title: title,
+        description: description,
+        email: email || null,
+        status: 'new',
+        source: 'landing_page',
+        createdAt: new Date().toISOString(),
+        userAgent: navigator.userAgent
+    };
+
+    await addDoc(collection(db, 'feature_requests'), feedbackData);
+
+    return { success: true };
+}
+
+// Initialize feedback forms on DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+    initFeedbackForms();
+});

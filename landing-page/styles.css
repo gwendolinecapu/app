@@ -204,6 +204,7 @@ button {
     margin: 0 auto;
     gap: 60px;
     position: relative;
+    overflow: hidden;
 }
 
 .hero::before {
@@ -713,6 +714,7 @@ button {
     position: relative;
     height: 600px;
     width: 100%;
+    overflow: hidden;
 }
 
 /* Base Device Styles */
@@ -773,17 +775,17 @@ button {
 
 /* iPad Mini (Left, Back) */
 .device.ipad-mini {
-    left: -120px;
+    left: -60px;
     top: 50px;
     z-index: 1;
-    transform: scale(0.8) rotate(-5deg) translateX(0);
-    opacity: 0.7;
+    transform: scale(0.7) rotate(-5deg);
+    opacity: 0.6;
     filter: blur(1px);
 }
 
 .device.ipad-mini .ipad-frame {
-    width: 300px;
-    height: 400px;
+    width: 260px;
+    height: 350px;
     border-radius: 20px;
     background: #1a1a2a;
     border: 2px solid rgba(255, 255, 255, 0.1);
@@ -791,11 +793,11 @@ button {
 
 /* Mac Mini (Right, Back) */
 .device.mac-mini {
-    right: -140px;
+    right: -60px;
     top: 20px;
     z-index: 2;
-    transform: scale(0.75) rotate(5deg);
-    opacity: 0.7;
+    transform: scale(0.65) rotate(5deg);
+    opacity: 0.6;
     filter: blur(1px);
 }
 
@@ -2750,13 +2752,6 @@ button {
 .feature-card.featured {
     background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(236, 72, 153, 0.15) 100%);
     border-color: var(--primary);
-    grid-column: span 2;
-}
-
-@media (max-width: 768px) {
-    .feature-card.featured {
-        grid-column: span 1;
-    }
 }
 
 /* ==================== WHY SECTION ==================== */
@@ -3525,6 +3520,21 @@ button {
         grid-template-columns: 1fr;
         gap: 40px;
     }
+
+    /* Hide peripheral devices on tablet */
+    .device.coming-soon {
+        display: none !important;
+    }
+
+    .device-showcase.centralized-layout {
+        justify-content: center;
+    }
+
+    .iphone-hero {
+        position: relative;
+        left: auto !important;
+        transform: none !important;
+    }
 }
 
 @media (max-width: 768px) {
@@ -3549,12 +3559,28 @@ button {
         display: block;
     }
 
+    /* Hero mobile */
+    .hero {
+        padding: 100px 16px 40px;
+        gap: 30px;
+        min-height: auto;
+    }
+
+    .hero-title {
+        font-size: 2rem;
+        line-height: 1.2;
+    }
+
+    .hero-subtitle {
+        font-size: 1rem;
+    }
+
     .hero-visual {
         display: block;
-        height: 500px;
+        height: auto;
         margin-top: 20px;
-        margin-bottom: -50px;
-        transform: scale(0.85);
+        margin-bottom: 0;
+        transform: scale(0.9);
     }
 
     .device.coming-soon {
@@ -3569,10 +3595,15 @@ button {
         margin: 0 auto;
     }
 
+    .iphone-frame {
+        width: 260px !important;
+        height: 520px !important;
+    }
+
     .device-showcase.centralized-layout {
         height: auto;
         justify-content: center;
-        align-items: flex-start;
+        align-items: center;
     }
 
     .email-form {
@@ -3586,24 +3617,108 @@ button {
     .btn-primary {
         width: 100%;
         justify-content: center;
+        padding: 16px 24px;
     }
 
     .counter-value {
-        font-size: 2rem;
+        font-size: 1.8rem;
+    }
+
+    .live-counter {
+        padding: 16px;
+    }
+
+    /* Features mobile */
+    .features {
+        padding: 60px 16px;
     }
 
     .features-grid {
         grid-template-columns: 1fr;
+        gap: 16px;
     }
 
-    .surprise-preview {
+    .feature-card {
+        padding: 24px;
+    }
+
+    .feature-stats {
         flex-direction: column;
-        align-items: center;
+        gap: 16px;
     }
 
-    .surprise-item {
-        width: 100%;
-        max-width: 300px;
+    .feature-tabs {
+        gap: 8px;
+    }
+
+    .tab-btn {
+        padding: 10px 16px;
+        font-size: 0.85rem;
+    }
+
+    /* Why section mobile */
+    .why-section {
+        padding: 60px 16px;
+    }
+
+    .why-point {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .why-icon {
+        margin-bottom: 8px;
+    }
+
+    .comparison-card {
+        padding: 20px;
+    }
+
+    /* Support section mobile */
+    .support-section {
+        padding: 60px 16px;
+    }
+
+    .support-text h2 {
+        font-size: 1.5rem;
+    }
+
+    .donor-benefits {
+        padding: 16px;
+    }
+
+    .benefits-list li {
+        font-size: 0.9rem;
+    }
+
+    /* Feedback section mobile */
+    .feedback-section {
+        padding: 60px 16px;
+    }
+
+    .feedback-card {
+        padding: 24px;
+    }
+
+    /* Signup section mobile */
+    .signup-section {
+        padding: 60px 16px;
+    }
+
+    .signup-container {
+        padding: 32px 20px;
+    }
+
+    .signup-container h2 {
+        font-size: 1.5rem;
+    }
+
+    .surprise-teaser {
+        padding: 16px 20px;
+    }
+
+    .mystery-box {
+        font-size: 2.5rem;
     }
 
     .form-row {
@@ -3615,19 +3730,48 @@ button {
         justify-content: center;
     }
 
-    .signup-container {
-        padding: 40px 24px;
+    /* Footer mobile */
+    .footer {
+        padding: 40px 16px 24px;
     }
 
     .footer-links {
         grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+
+    .footer-brand {
+        text-align: center;
+    }
+
+    .footer-bottom {
+        font-size: 0.8rem;
     }
 }
 
 @media (max-width: 480px) {
+    .hero {
+        padding: 90px 12px 30px;
+    }
+
+    .hero-title {
+        font-size: 1.75rem;
+    }
+
     .badge-container {
         flex-direction: column;
         align-items: center;
+        gap: 8px;
+    }
+
+    .badge {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+    }
+
+    .iphone-frame {
+        width: 220px !important;
+        height: 440px !important;
     }
 
     .counter-content {
@@ -4095,4 +4239,19 @@ button {
     .mystery-sparkles {
         animation: none !important;
     }
+}
+
+/* ==================== FOOTER SOCIAL COMING SOON ==================== */
+.social-coming-soon {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 12px;
+    font-style: italic;
+}
+
+.social-coming-soon i {
+    font-size: 0.9rem;
 }

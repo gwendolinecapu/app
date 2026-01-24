@@ -77,7 +77,7 @@
             <div class="nav-links">
                 <a href="#features">Fonctionnalités</a>
                 <a href="#support">Soutenir</a>
-                <a href="#feedback">Vos idées</a>
+                <a href="https://discord.gg/yb5UfCAXbP" target="_blank"><i class="fab fa-discord"></i> Discord</a>
                 <a href="#signup" class="nav-cta">Inscription</a>
             </div>
             <button class="mobile-menu" id="mobile-menu">
@@ -489,14 +489,6 @@
                                 nos pratiques.</p>
                         </div>
                     </div>
-
-                    <div class="why-point">
-                        <div class="why-icon">🧘</div>
-                        <div>
-                            <h4>Pas de design addictif</h4>
-                            <p>Aucun scroll infini, pas de notifications abusives, pas de FOMO artificiel. Votre bien-être passe avant nos métriques.</p>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -586,54 +578,6 @@
         </div>
     </section>
 
-    <!-- Feature Requests / Questions Section -->
-    <section id="feedback" class="feedback-section">
-        <div class="feedback-container">
-            <div class="section-header">
-                <span class="section-badge">💡 Vos idées comptent</span>
-                <h2>Une idée ? Une question ?</h2>
-                <p>L'app est construite avec vous. Proposez des fonctionnalités ou posez vos questions !</p>
-            </div>
-
-            <div class="feedback-cards">
-                <div class="feedback-card">
-                    <div class="feedback-icon">
-                        <i class="fas fa-lightbulb"></i>
-                    </div>
-                    <h3>Proposer une idée</h3>
-                    <p>Une fonctionnalité manque ? On l'ajoute à la roadmap !</p>
-                    <form id="feature-form" class="feedback-form">
-                        <input type="text" name="feature-title" placeholder="Ex: Mode sombre automatique" required id="feature-title">
-                        <textarea name="feature-desc" placeholder="Décrivez votre idée..." required id="feature-desc" rows="3"></textarea>
-                        <input type="email" name="feature-email" placeholder="Email (optionnel)" id="feature-email">
-                        <button type="submit" class="btn-feedback">
-                            <i class="fas fa-paper-plane"></i> Envoyer
-                        </button>
-                    </form>
-                </div>
-
-                <div class="feedback-card">
-                    <div class="feedback-icon question">
-                        <i class="fas fa-question-circle"></i>
-                    </div>
-                    <h3>Poser une question</h3>
-                    <p>Une question sur l'app ou ses fonctionnalités ?</p>
-                    <form id="question-form" class="feedback-form">
-                        <input type="text" name="question-title" placeholder="Ex: Y aura-t-il un mode hors-ligne ?" required id="question-title">
-                        <textarea name="question-desc" placeholder="Détails (optionnel)..." id="question-desc" rows="3"></textarea>
-                        <input type="email" name="question-email" placeholder="Email (optionnel)" id="question-email">
-                        <button type="submit" class="btn-feedback question">
-                            <i class="fas fa-paper-plane"></i> Envoyer
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <p class="feedback-note">
-                <i class="fas fa-github"></i> Vos demandes sont enregistrées sur notre GitHub pour un suivi transparent.
-            </p>
-        </div>
-    </section>
 
     <!-- Early Access Section with Real Counter -->
     <section id="signup" class="signup-section">
@@ -729,7 +673,71 @@
         </div>
     </div>
 
+    <!-- Registration Modal -->
+    <div id="signup-modal" class="modal hidden">
+        <div class="modal-backdrop" onclick="closeSignupModal()"></div>
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeSignupModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="modal-header">
+                <div class="modal-icon">🚀</div>
+                <h3>Créer votre compte</h3>
+                <p>Ce sera votre compte pour l'application !</p>
+            </div>
+            <form id="modal-signup-form" class="modal-form">
+                <div class="modal-field">
+                    <label for="modal-email">Email</label>
+                    <div class="modal-input-wrapper">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="modal-email" required readonly>
+                    </div>
+                </div>
+                <div class="modal-field">
+                    <label for="modal-password">Mot de passe</label>
+                    <div class="modal-input-wrapper">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="modal-password" placeholder="Minimum 6 caractères" required minlength="6">
+                        <button type="button" class="toggle-password" onclick="togglePassword()">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-field">
+                    <label for="modal-password-confirm">Confirmer le mot de passe</label>
+                    <div class="modal-input-wrapper">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="modal-password-confirm" placeholder="Confirmez votre mot de passe" required minlength="6">
+                    </div>
+                </div>
+                <p class="modal-error hidden" id="modal-error"></p>
+                <button type="submit" class="btn-modal-submit">
+                    <span>S'inscrire</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+            <p class="modal-note">
+                <i class="fas fa-shield-alt"></i> Vos données sont sécurisées et chiffrées
+            </p>
+        </div>
+    </div>
 
+    <!-- Discord Section -->
+    <section class="discord-section">
+        <div class="discord-container">
+            <div class="discord-text">
+                <span class="section-badge"><i class="fab fa-discord"></i> Communauté</span>
+                <h2>Rejoignez-nous sur Discord</h2>
+                <p>Échangez avec la communauté, posez vos questions et suivez le développement en direct !</p>
+                <a href="https://discord.gg/yb5UfCAXbP" target="_blank" class="btn-discord">
+                    <i class="fab fa-discord"></i> Rejoindre le serveur
+                </a>
+            </div>
+            <div class="discord-widget-wrapper">
+                <iframe src="https://discord.com/widget?id=1455286833138106441&theme=dark" width="350" height="400" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
+            </div>
+        </div>
+    </section>
 
     <!-- Footer -->
     <footer class="footer">
@@ -745,7 +753,6 @@
                     <h4>À propos</h4>
                     <a href="#features">Fonctionnalités</a>
                     <a href="#support">Soutenir le projet</a>
-                    <a href="#feedback">Proposer une idée</a>
                     <a href="#signup">Early Access</a>
                 </div>
                 <div class="footer-column">
@@ -753,13 +760,6 @@
                     <a href="privacy.html">Confidentialité</a>
                     <a href="cgu.html">CGU</a>
                     <a href="privacy.html#cookies">Cookies</a>
-                </div>
-                <div class="footer-column">
-                    <h4>Contact</h4>
-                    <a href="mailto:hello@pluralconnect.app">hello@pluralconnect.app</a>
-                    <p class="social-coming-soon">
-                        <i class="fas fa-clock"></i> Réseaux sociaux bientôt
-                    </p>
                 </div>
             </div>
         </div>

@@ -96,6 +96,7 @@ async function initRealTimeCounter() {
 function updateCounterUI(count) {
     const spotsLeft = Math.max(0, MAX_EARLY_BIRD - count);
     const progress = Math.min((count / MAX_EARLY_BIRD) * 100, 100);
+    const isObjectifAtteint = count >= MAX_EARLY_BIRD;
 
     // Update all counter elements
     const elements = {
@@ -118,8 +119,9 @@ function updateCounterUI(count) {
     if (progressBar) {
         progressBar.style.width = `${progress}%`;
 
-        // Change color based on progress
-        if (progress >= 90) {
+        if (isObjectifAtteint) {
+            progressBar.style.background = 'linear-gradient(90deg, #10B981, #34D399)';
+        } else if (progress >= 90) {
             progressBar.style.background = 'linear-gradient(90deg, #EF4444, #F59E0B)';
         } else if (progress >= 70) {
             progressBar.style.background = 'linear-gradient(90deg, #F59E0B, #FBBF24)';
@@ -129,8 +131,8 @@ function updateCounterUI(count) {
     // Update status text
     const statusEl = document.getElementById('counter-status');
     if (statusEl) {
-        if (spotsLeft === 0) {
-            statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Objectif atteint ! Les inscriptions restent ouvertes.';
+        if (isObjectifAtteint) {
+            statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Objectif atteint ! Inscrivez-vous pour être informé du lancement.';
             statusEl.style.color = '#10B981';
         } else if (spotsLeft <= 50) {
             statusEl.innerHTML = `<i class="fas fa-fire"></i> Plus que ${spotsLeft} places ! Dépêchez-vous !`;
@@ -146,9 +148,33 @@ function updateCounterUI(count) {
 
     // Update early bird badge visibility
     const badge = document.getElementById('early-bird-badge');
-    if (badge && spotsLeft === 0) {
-        badge.innerHTML = '<i class="fas fa-trophy"></i> Objectif atteint !';
-        badge.classList.add('completed');
+    if (badge) {
+        if (isObjectifAtteint) {
+            badge.innerHTML = '<i class="fas fa-trophy"></i> Objectif atteint !';
+            badge.classList.add('completed');
+        }
+    }
+
+    // Hide countdown badge when objective reached
+    const countdownBadge = document.getElementById('countdown-badge');
+    if (countdownBadge && isObjectifAtteint) {
+        countdownBadge.innerHTML = '<i class="fas fa-trophy"></i> <span>L\'objectif Early Bird est atteint !</span>';
+        countdownBadge.classList.add('completed');
+    }
+
+    // Update "Places restantes" label when objective reached
+    const spotsLeftItem = document.querySelector('.counter-item.highlight');
+    if (spotsLeftItem && isObjectifAtteint) {
+        const label = spotsLeftItem.querySelector('.counter-label');
+        if (label) {
+            label.textContent = 'Complet !';
+        }
+    }
+
+    // Update form note when objective reached
+    const formNote = document.querySelector('.form-note');
+    if (formNote && isObjectifAtteint) {
+        formNote.innerHTML = '<i class="fas fa-bell"></i> Inscrivez-vous pour être <strong>notifié du lancement</strong> !';
     }
 }
 
@@ -176,6 +202,55 @@ function animateValue(element, start, end, duration) {
     }
 
     requestAnimationFrame(update);
+}
+
+// ==================== MODAL HANDLING ====================
+let pendingEmail = '';
+let pendingFormId = '';
+
+function openSignupModal(email, formId) {
+    pendingEmail = email;
+    pendingFormId = formId;
+
+    const modal = document.getElementById('signup-modal');
+    const modalEmail = document.getElementById('modal-email');
+    const modalPassword = document.getElementById('modal-password');
+    const modalPasswordConfirm = document.getElementById('modal-password-confirm');
+    const modalError = document.getElementById('modal-error');
+
+    if (modalEmail) modalEmail.value = email;
+    if (modalPassword) modalPassword.value = '';
+    if (modalPasswordConfirm) modalPasswordConfirm.value = '';
+    if (modalError) modalError.classList.add('hidden');
+
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    // Focus password field
+    setTimeout(() => modalPassword?.focus(), 100);
+}
+
+function closeSignupModal() {
+    const modal = document.getElementById('signup-modal');
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+    pendingEmail = '';
+    pendingFormId = '';
+}
+
+function togglePassword() {
+    const passwordInput = document.getElementById('modal-password');
+    const toggleBtn = document.querySelector('.toggle-password i');
+
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleBtn.classList.remove('fa-eye');
+        toggleBtn.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        toggleBtn.classList.remove('fa-eye-slash');
+        toggleBtn.classList.add('fa-eye');
+    }
 }
 
 // ==================== FORM HANDLING ====================
@@ -212,33 +287,65 @@ async function handleFormSubmit(event, formId) {
     // Update last submit time
     lastSubmitTime = now;
 
-    // Disable form
+    // Open modal instead of registering directly
+    openSignupModal(email, formId);
+}
+
+async function handleModalSubmit(event) {
+    event.preventDefault();
+
+    const email = pendingEmail;
+    const formId = pendingFormId;
+    const password = document.getElementById('modal-password').value;
+    const passwordConfirm = document.getElementById('modal-password-confirm').value;
+    const submitButton = document.querySelector('.btn-modal-submit');
+    const errorEl = document.getElementById('modal-error');
+
+    // Validate passwords
+    if (password.length < 6) {
+        errorEl.textContent = 'Le mot de passe doit contenir au moins 6 caractères';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    if (password !== passwordConfirm) {
+        errorEl.textContent = 'Les mots de passe ne correspondent pas';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    errorEl.classList.add('hidden');
+
+    // Disable button
     submitButton.disabled = true;
     const originalContent = submitButton.innerHTML;
     submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Inscription...';
 
     try {
-        const result = await registerEmail(email);
+        const result = await registerEmailWithPassword(email, password);
+
+        closeSignupModal();
+
+        // Clear the original form
+        const emailInput = document.getElementById(formId === 'hero' ? 'hero-email' : 'main-email');
+        if (emailInput) emailInput.value = '';
 
         if (result.alreadyExists) {
             showAlreadyRegistered(formId, result.position);
         } else {
             showSuccess(formId, result.position);
-            // Force counter UI update immediately after new signup
             updateCounterUI(result.position);
         }
-
-        emailInput.value = '';
 
     } catch (error) {
         console.error('Signup error:', error);
 
-        // Check if error contains position info (handled duplicate)
         if (error.position) {
+            closeSignupModal();
             showAlreadyRegistered(formId, error.position);
         } else {
-            const errorMsg = error.message || '❌ Erreur lors de l\'inscription. Réessayez.';
-            showToast(errorMsg, 'error');
+            errorEl.textContent = error.message || 'Erreur lors de l\'inscription. Réessayez.';
+            errorEl.classList.remove('hidden');
         }
     } finally {
         submitButton.disabled = false;
@@ -247,20 +354,100 @@ async function handleFormSubmit(event, formId) {
 }
 
 /**
- * Generate a secure random password for temporary Firebase Auth account
- * Used only to create the account, user will reset via email
+ * Register user with their chosen password
  */
-function generateSecurePassword() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-    let password = '';
-    const array = new Uint8Array(20);
-    crypto.getRandomValues(array);
+async function registerEmailWithPassword(email, password) {
+    // Save to localStorage first (backup)
+    saveToLocalStorage(email);
 
-    for (let i = 0; i < 20; i++) {
-        password += chars[array[i] % chars.length];
+    if (!isFirebaseReady) {
+        return { success: true, position: signupCount + 1, alreadyExists: false };
     }
 
-    return password;
+    const { doc, getDoc, setDoc } = window.firebaseUtils;
+    const { createUserWithEmailAndPassword } = window.firebaseAuthUtils;
+    const auth = window.firebaseAuth;
+
+    // Create unique key from email
+    const emailKey = email.replace(/[.@]/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
+    const signupRef = doc(db, 'early_signups', emailKey);
+    const counterRef = doc(db, 'landing_stats', 'signup_counter');
+
+    try {
+        // Step 1: Check if email already exists in early_signups
+        const existingDoc = await getDoc(signupRef);
+
+        if (existingDoc.exists()) {
+            return {
+                success: true,
+                position: existingDoc.data().position || 0,
+                alreadyExists: true
+            };
+        }
+
+        // Step 2: Get current counter
+        const counterSnap = await getDoc(counterRef);
+        const currentCount = counterSnap.exists() ? (counterSnap.data().count || 0) : 0;
+        const newPosition = currentCount + 1;
+
+        // Step 3: Create Firebase Auth account with user's password
+        let uid;
+
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            uid = userCredential.user.uid;
+            console.log(`✅ Firebase Auth account created for ${email} (UID: ${uid})`);
+        } catch (authError) {
+            if (authError.code === 'auth/email-already-in-use') {
+                console.warn(`⚠️ Auth account already exists for ${email}`);
+                uid = null;
+            } else if (authError.code === 'auth/weak-password') {
+                throw new Error('Le mot de passe est trop faible. Utilisez au moins 6 caractères.');
+            } else {
+                throw authError;
+            }
+        }
+
+        // Step 4: Save signup data in Firestore
+        await setDoc(signupRef, {
+            uid: uid || null,
+            email: email,
+            position: newPosition,
+            isEarlyBird: newPosition <= MAX_EARLY_BIRD,
+            rewards: calculateRewards(newPosition),
+            registeredAt: new Date().toISOString(),
+            source: 'landing_page',
+            authAccountCreated: !!uid
+        });
+
+        // Step 5: Update counter
+        await setDoc(counterRef, {
+            count: newPosition,
+            lastUpdated: new Date().toISOString()
+        });
+
+        // Step 6: Update local state
+        signupCount = newPosition;
+
+        return { success: true, position: newPosition, alreadyExists: false };
+
+    } catch (error) {
+        console.error('[Registration Error]', error);
+
+        if (error.code === 'auth/invalid-email') {
+            throw new Error('📧 Adresse email invalide.');
+        } else if (error.code === 'auth/email-already-in-use') {
+            // Try to find existing position
+            const existingDoc = await getDoc(signupRef);
+            if (existingDoc.exists()) {
+                const position = existingDoc.data().position || 0;
+                throw { message: 'Cet email est déjà inscrit !', position };
+            }
+            throw new Error('Cet email est déjà utilisé.');
+        }
+
+        throw error;
+    }
 }
 
 async function registerEmail(email) {
@@ -444,6 +631,7 @@ function showSuccess(formId, position) {
     const form = document.getElementById(formId === 'hero' ? 'hero-form' : 'main-form');
     const successEl = document.getElementById('success-message');
     const alreadyEl = document.getElementById('already-message');
+    const isEarlyBird = position <= MAX_EARLY_BIRD;
 
     if (formId === 'main' && successEl) {
         if (form) form.style.display = 'none';
@@ -456,17 +644,36 @@ function showSuccess(formId, position) {
         // Set rewards based on position
         const rewardsEl = document.getElementById('success-rewards');
         if (rewardsEl) {
-            const rewards = calculateRewards(position);
-            rewardsEl.innerHTML = rewards.map(r => {
-                const reward = REWARDS[r.toUpperCase()] || { name: r, icon: '🎁' };
-                return `<div class="reward-badge"><span class="reward-icon">${reward.icon}</span><span>${reward.name}</span></div>`;
-            }).join('');
+            if (isEarlyBird) {
+                const rewards = calculateRewards(position);
+                rewardsEl.innerHTML = rewards.map(r => {
+                    const reward = REWARDS[r.toUpperCase()] || { name: r, icon: '🎁' };
+                    return `<div class="reward-badge"><span class="reward-icon">${reward.icon}</span><span>${reward.name}</span></div>`;
+                }).join('');
+            } else {
+                // Pas de récompenses Early Bird, mais confirmation d'inscription
+                rewardsEl.innerHTML = `
+                    <div class="no-rewards-message">
+                        <p>🎯 L'objectif Early Bird est déjà atteint, mais vous serez notifié dès le lancement de l'app !</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Update title if not early bird
+        const successTitle = successEl.querySelector('h3');
+        if (successTitle && !isEarlyBird) {
+            successTitle.textContent = 'Inscription confirmée !';
         }
 
         successEl.classList.remove('hidden');
         successEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else {
-        showToast(`🎉 Inscrit ! Vous êtes n°${position}`, 'success');
+        if (isEarlyBird) {
+            showToast(`🎉 Inscrit ! Vous êtes n°${position}`, 'success');
+        } else {
+            showToast(`✅ Inscrit ! Vous serez notifié au lancement.`, 'success');
+        }
     }
 }
 
@@ -686,6 +893,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Form handlers
     const heroForm = document.getElementById('hero-form');
     const mainForm = document.getElementById('main-form');
+    const modalForm = document.getElementById('modal-signup-form');
 
     if (heroForm) {
         heroForm.addEventListener('submit', (e) => handleFormSubmit(e, 'hero'));
@@ -694,6 +902,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (mainForm) {
         mainForm.addEventListener('submit', (e) => handleFormSubmit(e, 'main'));
     }
+
+    if (modalForm) {
+        modalForm.addEventListener('submit', handleModalSubmit);
+    }
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeSignupModal();
+        }
+    });
 
     // Init animations
     initScrollAnimations();

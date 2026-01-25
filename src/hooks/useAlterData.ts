@@ -30,36 +30,6 @@ export const useAlterData = (alterId: string | undefined): AlterData => {
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchAlter = useCallback(async () => {
-        if (!alterId) return;
-        try {
-            // Always fetch from Firestore to get latest data (especially password)
-            const docRef = doc(db, 'alters', alterId);
-            const docSnap = await getDoc(docRef);
-
-            if (docSnap.exists()) {
-                const firestoreAlter = { id: docSnap.id, ...docSnap.data() } as Alter;
-
-                // For owned alters, merge with local data for faster cosmetic updates
-                const localAlter = alters.find(a => a.id === alterId);
-                if (localAlter) {
-                    // Use Firestore data but prefer local cosmetic data for immediate updates
-                    setAlter({
-                        ...firestoreAlter,
-                        equipped_items: localAlter.equipped_items || firestoreAlter.equipped_items,
-                    });
-                } else {
-                    setAlter(firestoreAlter);
-                }
-            } else {
-                setError('Alter non trouvé');
-            }
-        } catch (err) {
-            console.error('Error fetching alter:', err);
-            setError('Erreur lors du chargement du profil');
-        }
-    }, [alterId, alters]);
-
     const fetchStats = useCallback(async () => {
         if (!alterId) return;
         try {
@@ -98,28 +68,55 @@ export const useAlterData = (alterId: string | undefined): AlterData => {
 
     const refresh = async () => {
         setRefreshing(true);
-        await Promise.all([fetchAlter(), fetchStats(), fetchPosts()]);
+        // OnSnapshot updates automatically, so we mainly need to refresh lists that are not real-time here
+        await Promise.all([fetchStats(), fetchPosts()]);
         setRefreshing(false);
     };
 
+    // Real-time listener for Alter data
     useEffect(() => {
-        let mounted = true;
+        if (!alterId) return;
 
-        const load = async () => {
-            setLoading(true);
-            await Promise.all([fetchAlter(), fetchStats(), fetchPosts()]);
-            if (mounted) setLoading(false);
-        };
+        setLoading(true);
+        const { onSnapshot } = require('firebase/firestore');
+        const docRef = doc(db, 'alters', alterId);
 
-        if (alterId) {
-            load();
-        }
+        const unsubscribe = onSnapshot(docRef, (docSnap: any) => {
+            if (docSnap.exists()) {
+                const firestoreAlter = { id: docSnap.id, ...docSnap.data() } as Alter;
 
-        return () => {
-            mounted = false;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [alterId]);
+                // For owned alters, merge with local data for faster cosmetic updates if available
+                const localAlter = alters.find(a => a.id === alterId);
+                if (localAlter) {
+                    setAlter({
+                        ...firestoreAlter,
+                        // Prefer Firestore data for truth, but keeping local optimization pattern if desired
+                        // Actually, onSnapshot is fast enough, so we can trust firestoreAlter mostly.
+                        // But let's keep cosmetic override logic if it was serving a specific purpose (like optimistic updates from context)
+                        equipped_items: localAlter.equipped_items || firestoreAlter.equipped_items,
+                    });
+                } else {
+                    setAlter(firestoreAlter);
+                }
+                setError(null);
+            } else {
+                setError('Alter non trouvé');
+                setAlter(null);
+            }
+            setLoading(false);
+        }, (err: any) => {
+            console.error('Error listening to alter:', err);
+            setError('Erreur lors du chargement du profil');
+            setLoading(false);
+        });
+
+        // Initial fetch for stats and posts (keep these as one-time or separate listeners if needed)
+        // For now, keep them as one-time to avoid too many listeners, unless requested.
+        fetchStats();
+        fetchPosts();
+
+        return () => unsubscribe();
+    }, [alterId, alters, fetchStats, fetchPosts]);
 
     // Sync cosmetics from AuthContext.alters when it changes (e.g., after refreshAlters())
     // This ensures UI updates immediately when theme/cosmetics are equipped

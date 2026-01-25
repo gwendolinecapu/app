@@ -406,6 +406,16 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                         <AnimatedPressable
                             containerStyle={{ flex: 1 }}
                             style={[styles.actionButton, themeColors && { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
+                            onPress={() => router.push({
+                                pathname: '/alter-space/[alterId]',
+                                params: { alterId: alter.id, tab: 'presentation' }
+                            })}
+                        >
+                            <Ionicons name="book-outline" size={16} color={themeColors?.text || colors.text} />
+                        </AnimatedPressable>
+                        <AnimatedPressable
+                            containerStyle={{ flex: 1 }}
+                            style={[styles.actionButton, themeColors && { backgroundColor: themeColors.backgroundCard, borderColor: themeColors.border }]}
                             onPress={() => router.push('/settings')}
                         >
                             <Ionicons name="settings-outline" size={16} color={themeColors?.text || colors.text} />
@@ -434,6 +444,17 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                             <Text style={styles.actionButtonText}>Message</Text>
                         </AnimatedPressable>
 
+                        <AnimatedPressable
+                            containerStyle={{ flex: 0.6 }}
+                            style={styles.actionButton}
+                            onPress={() => router.push({
+                                pathname: '/alter-space/[alterId]',
+                                params: { alterId: alter.id, tab: 'journal', viewMode: 'visitor' }
+                            })}
+                        >
+                            <Ionicons name="book-outline" size={20} color={themeColors?.text || colors.text} />
+                        </AnimatedPressable>
+
                         {alter.custom_fields?.find(f => f.label.toLowerCase() === 'role')?.value?.toLowerCase() !== 'singlet' && (
                             <AnimatedPressable
                                 containerStyle={{ flex: 1 }}
@@ -456,15 +477,17 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
             {/* HIGHLIGHTS SECTION */}
             {/* Strict Privacy: Only show highlights if owner or friends */}
-            {(isOwner || friendStatus === 'friends') && (
-                <StoryHighlights
-                    authorId={alter.id}
-                    systemId={alter.systemId || alter.system_id || alter.userId || 'unknown'}
-                    isOwner={isOwner}
-                    themeColor={themeColors?.primary || colors.primary}
-                    friendIds={friendIds}
-                />
-            )}
+            {
+                (isOwner || friendStatus === 'friends') && (
+                    <StoryHighlights
+                        authorId={alter.id}
+                        systemId={alter.systemId || alter.system_id || alter.userId || 'unknown'}
+                        isOwner={isOwner}
+                        themeColor={themeColors?.primary || colors.primary}
+                        friendIds={friendIds}
+                    />
+                )
+            }
 
         </View >
     );

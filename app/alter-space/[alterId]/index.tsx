@@ -39,7 +39,7 @@ import { PasswordModal } from '../../../src/components/alter-space/PasswordModal
 import { useAlterData } from '../../../src/hooks/useAlterData';
 import { ErrorBoundary } from '../../../src/components/ErrorBoundary';
 
-type TabType = 'feed' | 'profile' | 'journal' | 'gallery' | 'emotions' | 'settings' | 'menu' | 'shop';
+type TabType = 'feed' | 'profile' | 'journal' | 'presentation' | 'gallery' | 'emotions' | 'settings' | 'menu' | 'shop';
 
 export default function AlterSpaceScreen() {
     const insets = useSafeAreaInsets();
@@ -105,12 +105,22 @@ export default function AlterSpaceScreen() {
         }, [alterId, currentAlter])
     );
 
-    // Enforce "Profile" view for visitors (Insta-like)
+    // Synchronize activeTab with URL parameters (tab)
+    useEffect(() => {
+        if (tab && tab !== activeTab) {
+            setActiveTab(tab as TabType);
+        }
+    }, [tab]);
+
+    // Enforce allowed tabs for visitors
     useEffect(() => {
         if (!loading && !isOwner) {
-            setActiveTab('profile');
+            const allowedVisitorTabs: TabType[] = ['profile', 'journal'];
+            if (!allowedVisitorTabs.includes(activeTab)) {
+                setActiveTab('profile');
+            }
         }
-    }, [loading, isOwner]);
+    }, [loading, isOwner, activeTab]);
 
 
     // Check if password is required to access this AlterSpace
@@ -486,7 +496,9 @@ export default function AlterSpaceScreen() {
                     </ScrollView>
                 );
             case 'journal':
-                return <AlterJournal alter={alter} themeColors={themeColors} />;
+                return <AlterJournal alter={alter} themeColors={themeColors} isPublic={!isOwner} />;
+            case 'presentation':
+                return <AlterJournal alter={alter} themeColors={themeColors} isPublic={true} editable={isOwner} />;
             case 'gallery':
                 return <AlterGallery alter={alter} isCloudEnabled={false} themeColors={themeColors} />;
             case 'emotions':

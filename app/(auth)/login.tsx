@@ -63,7 +63,7 @@ export default function LoginScreen() {
                         resizeMode="contain"
                     />
                     <Text style={styles.title}>PluralConnect</Text>
-                    <Text style={styles.subtitle}>Un espace safe pour votre système</Text>
+                    <Text style={styles.subtitle}>Un espace safe pour votre propre système</Text>
                 </View>
 
                 <View style={styles.form}>

@@ -20,7 +20,8 @@ import {
     RefreshControl,
     Dimensions,
     Animated,
- Modal } from 'react-native';
+    Modal
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LineChart, PieChart, BarChart } from 'react-native-chart-kit';
@@ -257,6 +258,10 @@ export default function HistoryScreen() {
             sick: '#8BC34A',
             guilt: '#607D8B',
             hurt: '#C0392B',
+            fuzzy: '#A0A0A0',
+            numb: '#95A5A6',
+            overwhelmed: '#E056FD',
+            hopeful: '#F9CA24',
         };
 
         return emotionDistribution.slice(0, 5).map(e => ({

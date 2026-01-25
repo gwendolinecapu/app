@@ -63,7 +63,7 @@ describe('LocalAIService', () => {
     it('should download model and tokenizer files', async () => {
         FileSystem.getInfoAsync.mockResolvedValue({ exists: false });
         FileSystem.makeDirectoryAsync.mockResolvedValue(undefined);
-        const mockDownloadAsync = jest.fn().mockResolvedValue({ uri: 'file://model.onnx' });
+        const mockDownloadAsync = jest.fn().mockResolvedValue({ uri: 'file://model.onnx' } as any);
         FileSystem.createDownloadResumable.mockReturnValue({
             downloadAsync: mockDownloadAsync,
         });
@@ -116,7 +116,7 @@ describe('LocalAIService', () => {
                     dims: [1, 3, 10], // batch, seq_len, vocab
                     data: new Float32Array(30), // dummy data
                 }
-            })
+            } as any)
         };
         InferenceSession.create.mockResolvedValue(mockSession);
 

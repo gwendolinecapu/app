@@ -103,6 +103,7 @@ export class EncryptionService {
 
             if (!key) {
                 // Générer une nouvelle clé AES-256 (32 bytes = 256 bits)
+                if (!Crypto) throw new Error('Crypto not available');
                 const randomBytes = await Crypto.getRandomBytesAsync(32);
 
                 // Convertir en hexadécimal pour stockage

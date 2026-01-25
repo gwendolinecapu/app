@@ -63,7 +63,7 @@ const getBubbleConfig = (alterCount: number, availableWidth: number) => {
  * Handles the Apple Watch-inspired "Alter Grid" and system utility tools.
  */
 export default function Dashboard() {
-    const { alters, user, refreshAlters, setFronting, activeFront, loading: authLoading } = useAuth();
+    const { alters, user, system, refreshAlters, setFronting, activeFront, loading: authLoading } = useAuth();
     const [modalVisible, setModalVisible] = useState(false);
     const [menuVisible, setMenuVisible] = useState(false);
 
@@ -328,6 +328,7 @@ export default function Dashboard() {
                             activeCategory={activeCategory}
                             onOpenSubsystems={() => setSubsystemModalVisible(true)}
                             activeSubsystemId={activeSubsystemId}
+                            systemName={system?.username}
                         />
 
                         <View style={{ height: 16 }} />

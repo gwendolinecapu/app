@@ -59,7 +59,7 @@ export default function SubsystemDashboard() {
 
             // Check if a subsystem exists with this host's name
             const allSubsystems = await SubsystemService.listSubsystems(user.uid);
-            let existingSubsystem = allSubsystems.find(s => s.name === hostName);
+            let existingSubsystem: Subsystem | null = allSubsystems.find(s => s.name === hostName) || null;
 
             if (!existingSubsystem) {
                 // Create a new subsystem for this alter

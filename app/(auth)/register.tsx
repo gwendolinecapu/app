@@ -15,6 +15,10 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { useSuccessAnimation } from '../../src/contexts/SuccessAnimationContext';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { DismissKeyboard } from '../../src/components/ui/DismissKeyboard';
+import { LegalModal } from '../../src/components/auth/LegalModal';
+import { Ionicons } from '@expo/vector-icons';
+
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function RegisterScreen() {
     const params = useLocalSearchParams<{ systemName?: string; alterCount?: string }>();
@@ -25,6 +29,10 @@ export default function RegisterScreen() {
     const [loading, setLoading] = useState(false);
     const { signUp, signInWithGoogle } = useAuth();
     const { play } = useSuccessAnimation();
+    const [legalModal, setLegalModal] = useState<{ visible: boolean; type: 'tos' | 'privacy' | null }>({
+        visible: false,
+        type: null
+    });
 
     useEffect(() => {
         if (params.systemName) {
@@ -99,140 +107,189 @@ export default function RegisterScreen() {
 
     return (
         <DismissKeyboard>
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined}
-                style={styles.container}
-            >
-                <ScrollView contentContainerStyle={styles.scrollContent}>
+            <SafeAreaView style={styles.safeArea}>
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined}
+                    style={styles.container}
+                >
                     <View style={styles.header}>
+                        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                            <Ionicons name="arrow-back" size={24} color={colors.text} />
+                        </TouchableOpacity>
+
                         <Text style={styles.logo}>💜</Text>
-                        <Text style={styles.title}>Créer un compte</Text>
-                        <Text style={styles.subtitle}>Rejoignez la communauté PluralConnect</Text>
                     </View>
 
-                    <View style={styles.form}>
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Nom du système</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Le Collectif Stellaire"
-                                placeholderTextColor={colors.textMuted}
-                                value={username}
-                                onChangeText={setUsername}
-                                autoCapitalize="words"
-                            />
+                    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                        <View style={styles.titleContainer}>
+                            <Text style={styles.title}>Créer un compte</Text>
+                            <Text style={styles.subtitle}>Rejoignez la communauté PluralConnect</Text>
                         </View>
 
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Email</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="votre@email.com"
-                                placeholderTextColor={colors.textMuted}
-                                value={email}
-                                onChangeText={setEmail}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                                autoComplete="email"
-                            />
-                        </View>
+                        <View style={styles.form}>
+                            <View style={styles.inputContainer}>
+                                <Text style={styles.label}>Nom du système</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Le Collectif Stellaire"
+                                    placeholderTextColor={colors.textMuted}
+                                    value={username}
+                                    onChangeText={setUsername}
+                                    autoCapitalize="words"
+                                />
+                            </View>
 
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Mot de passe</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="••••••••"
-                                placeholderTextColor={colors.textMuted}
-                                value={password}
-                                onChangeText={setPassword}
-                                secureTextEntry
-                                autoComplete="new-password"
-                            />
-                        </View>
+                            <View style={styles.inputContainer}>
+                                <Text style={styles.label}>Email</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="votre@email.com"
+                                    placeholderTextColor={colors.textMuted}
+                                    value={email}
+                                    onChangeText={setEmail}
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
+                                    autoComplete="email"
+                                />
+                            </View>
 
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Confirmer le mot de passe</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="••••••••"
-                                placeholderTextColor={colors.textMuted}
-                                value={confirmPassword}
-                                onChangeText={setConfirmPassword}
-                                secureTextEntry
-                                autoComplete="new-password"
-                            />
-                        </View>
+                            <View style={styles.inputContainer}>
+                                <Text style={styles.label}>Mot de passe</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="••••••••"
+                                    placeholderTextColor={colors.textMuted}
+                                    value={password}
+                                    onChangeText={setPassword}
+                                    secureTextEntry
+                                    autoComplete="new-password"
+                                />
+                            </View>
 
-                        <TouchableOpacity
-                            style={[styles.buttonContainer, styles.button]}
-                            onPress={handleRegister}
-                            disabled={loading}
-                            activeOpacity={0.8}
-                        >
-                            <Text style={styles.buttonText}>
-                                {loading ? 'Création...' : "S'inscrire"}
+                            <View style={styles.inputContainer}>
+                                <Text style={styles.label}>Confirmer le mot de passe</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="••••••••"
+                                    placeholderTextColor={colors.textMuted}
+                                    value={confirmPassword}
+                                    onChangeText={setConfirmPassword}
+                                    secureTextEntry
+                                    autoComplete="new-password"
+                                />
+                            </View>
+
+                            <TouchableOpacity
+                                style={[styles.buttonContainer, styles.button]}
+                                onPress={handleRegister}
+                                disabled={loading}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.buttonText}>
+                                    {loading ? 'Création...' : "S'inscrire"}
+                                </Text>
+                            </TouchableOpacity>
+
+                            <Text style={styles.legalText}>
+                                En vous inscrivant, vous acceptez nos{' '}
+                                <Text
+                                    style={styles.legalLink}
+                                    onPress={() => setLegalModal({ visible: true, type: 'tos' })}
+                                >
+                                    Conditions Générales
+                                </Text>
+                                {' et notre '}
+                                <Text
+                                    style={styles.legalLink}
+                                    onPress={() => setLegalModal({ visible: true, type: 'privacy' })}
+                                >
+                                    Politique de Confidentialité
+                                </Text>.
                             </Text>
-                        </TouchableOpacity>
 
-                        <View style={styles.dividerContainer}>
-                            <View style={styles.divider} />
-                            <Text style={styles.dividerText}>OU</Text>
-                            <View style={styles.divider} />
+                            <View style={styles.dividerContainer}>
+                                <View style={styles.divider} />
+                                <Text style={styles.dividerText}>OU</Text>
+                                <View style={styles.divider} />
+                            </View>
+
+                            <TouchableOpacity
+                                style={[styles.button, styles.googleButton]}
+                                onPress={async () => {
+                                    setLoading(true);
+                                    const { error } = await signInWithGoogle();
+                                    setLoading(false);
+                                    if (error) {
+                                        Alert.alert("Erreur Google", error.message);
+                                    } else {
+                                        router.replace('/(tabs)/dashboard');
+                                    }
+                                }}
+                                disabled={loading}
+                            >
+                                <Text style={[styles.buttonText, styles.googleButtonText]}>S'inscrire avec Google</Text>
+                            </TouchableOpacity>
+
+                            <View style={styles.footer}>
+                                <Text style={styles.footerText}>Déjà un compte ?</Text>
+                                <Link href="/(auth)/login" asChild>
+                                    <TouchableOpacity>
+                                        <Text style={styles.link}>Se connecter</Text>
+                                    </TouchableOpacity>
+                                </Link>
+                            </View>
                         </View>
+                    </ScrollView>
+                </KeyboardAvoidingView>
 
-                        <TouchableOpacity
-                            style={[styles.button, styles.googleButton]}
-                            onPress={async () => {
-                                setLoading(true);
-                                const { error } = await signInWithGoogle();
-                                setLoading(false);
-                                if (error) {
-                                    Alert.alert("Erreur Google", error.message);
-                                } else {
-                                    router.replace('/(tabs)/dashboard');
-                                }
-                            }}
-                            disabled={loading}
-                        >
-                            <Text style={[styles.buttonText, styles.googleButtonText]}>S'inscrire avec Google</Text>
-                        </TouchableOpacity>
-
-                        <View style={styles.footer}>
-                            <Text style={styles.footerText}>Déjà un compte ?</Text>
-                            <Link href="/(auth)/login" asChild>
-                                <TouchableOpacity>
-                                    <Text style={styles.link}>Se connecter</Text>
-                                </TouchableOpacity>
-                            </Link>
-                        </View>
-                    </View>
-                </ScrollView>
-            </KeyboardAvoidingView>
+                <LegalModal
+                    visible={legalModal.visible}
+                    type={legalModal.type}
+                    onClose={() => setLegalModal({ visible: false, type: null })}
+                />
+            </SafeAreaView>
         </DismissKeyboard>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
+    safeArea: {
         flex: 1,
         backgroundColor: colors.background,
     },
+    container: {
+        flex: 1,
+    },
     scrollContent: {
         flexGrow: 1,
-        justifyContent: 'center',
         padding: spacing.lg,
     },
     header: {
+        flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: spacing.xl,
+        justifyContent: 'center',
+        marginBottom: spacing.md,
+        paddingHorizontal: spacing.lg,
+        height: 50,
+        position: 'relative',
+    },
+    backButton: {
+        position: 'absolute',
+        left: spacing.lg,
+        padding: spacing.xs,
+        zIndex: 10,
     },
     logo: {
-        fontSize: 64,
-        marginBottom: spacing.md,
+        fontSize: 40,
+    },
+    titleContainer: {
+        alignItems: 'center',
+        marginBottom: spacing.xl,
     },
     title: {
         ...typography.h1,
         marginBottom: spacing.xs,
+        textAlign: 'center',
     },
     subtitle: {
         ...typography.bodySmall,
@@ -312,5 +369,16 @@ const styles = StyleSheet.create({
     },
     googleButtonText: {
         color: colors.text,
+    },
+    legalText: {
+        ...typography.bodySmall,
+        color: colors.textSecondary,
+        textAlign: 'center',
+        marginTop: spacing.md,
+        lineHeight: 20,
+    },
+    legalLink: {
+        color: colors.primary,
+        fontWeight: 'bold',
     },
 });

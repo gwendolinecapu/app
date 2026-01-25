@@ -26,9 +26,14 @@ export function BiometricGuard({ children }: BiometricGuardProps) {
 
     useEffect(() => {
         const subscription = AppState.addEventListener('change', nextAppState => {
-            // FIX: Only trigger logic if coming from BACKGROUND.
+            // IMMEDIATE LOCK on Inactive/Background to hide content in App Switcher
+            if (nextAppState.match(/inactive|background/) && user?.uid && isBiometricEnabled) {
+                setIsLocked(true);
+            }
+
+            // Trigger auth when coming back to active
             if (
-                appState.current.match(/background/) &&
+                appState.current.match(/inactive|background/) &&
                 nextAppState === 'active'
             ) {
                 if (user?.uid && !isAuthenticating.current && isBiometricEnabled) {

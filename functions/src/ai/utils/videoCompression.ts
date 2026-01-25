@@ -94,17 +94,6 @@ export async function compressVideo(
         cleanupFile(inputPath);
         cleanupFile(outputPath);
         throw err;
-        return compressedBuffer;
-    } finally {
-        // Cleanup temp files
-        try {
-            await Promise.all([
-                fs.promises.unlink(inputPath).catch(() => {}),
-                fs.promises.unlink(outputPath).catch(() => {})
-            ]);
-        } catch (err) {
-            console.error('Error cleaning up temp files:', err);
-        }
     }
 }
 

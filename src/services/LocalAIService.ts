@@ -222,7 +222,7 @@ export const LocalAIService = {
         const periodLabel = period === 'day' ? 'journée' : period === 'week' ? 'semaine' : 'mois';
 
         if (Platform.OS === 'web') {
-             return {
+            return {
                 summary: await mockSummarizeWithPeriod(text, periodLabel),
                 provider: 'mock',
             };
@@ -292,7 +292,9 @@ export const LocalAIService = {
                         }
                     }
 
-                    if (nextToken === tokenizer.eos_token_id) break;
+                    // Gemma EOS token ID is typically 1 (or use sep_token_id as fallback)
+                    const eosTokenId = (tokenizer as any).eos_token_id ?? (tokenizer as any).sep_token_id ?? 1;
+                    if (nextToken === eosTokenId) break;
 
                     sequence.push(BigInt(nextToken));
                 }

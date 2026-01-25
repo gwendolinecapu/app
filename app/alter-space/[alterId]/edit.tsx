@@ -339,7 +339,8 @@ export default function EditAlterProfileScreen() {
                 console.log('Starting image upload...', avatarUrl);
                 try {
                     const blob = await getBlobFromUri(avatarUrl) as any; // Cast to any to avoid TS issues with RN Blob vs Web Blob
-                    const fileName = `avatars/${alterId}/${Date.now()}.jpg`;
+                    // Use user.uid as the path owner, then organize by alter
+                    const fileName = `avatars/${user?.uid}/${alterId}_${Date.now()}.jpg`;
                     const storageRef = ref(storage, fileName);
 
                     console.log('Uploading bytes to:', fileName);

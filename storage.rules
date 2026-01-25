@@ -5,42 +5,47 @@ service firebase.storage {
     function isAuthenticated() {
       return request.auth != null;
     }
+    
+    // Helper to check if user owns the path
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
 
-    // Avatars: Public read, authenticated user write
-    match /avatars/{allPaths=**} {
+    // Avatars: Public read, owner write only
+    match /avatars/{userId}/{allPaths=**} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isOwner(userId);
     }
     
-    // Post images: Public read, authenticated user write
-    match /posts/{allPaths=**} {
+    // Post images: Public read, authenticated user write (posts have their own security via Firestore)
+    match /posts/{userId}/{allPaths=**} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isOwner(userId);
     }
     
-    // Profile images - in case they use a different path
-    match /profiles/{allPaths=**} {
+    // Profile images
+    match /profiles/{userId}/{allPaths=**} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isOwner(userId);
     }
     
     // Images folder - catch-all for any image uploads
-    match /images/{allPaths=**} {
+    match /images/{userId}/{allPaths=**} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isOwner(userId);
     }
+    
     // Visual DNA images
-    match /visual_dna/{allPaths=**} {
+    match /visual_dna/{userId}/{allPaths=**} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isOwner(userId);
     }
 
     // Stories media
-    match /stories/{allPaths=**} {
+    match /stories/{userId}/{allPaths=**} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isOwner(userId);
     }
-
 
   }
 }

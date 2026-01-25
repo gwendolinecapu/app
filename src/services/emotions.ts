@@ -158,10 +158,13 @@ export const EmotionService = {
         proud: 5,
         love: 5,
         calm: 4,
+        hopeful: 4,
         neutral: 3,
         confused: 2,
         tired: 2,
         bored: 2,
+        fuzzy: 2,
+        numb: 2,
         anxious: 1,
         sad: 1,
         angry: 1,
@@ -170,6 +173,7 @@ export const EmotionService = {
         guilt: 1,
         sick: 1,
         hurt: 1,
+        overwhelmed: 1,
     } as Record<EmotionType, number>,
 
     /**
@@ -298,6 +302,7 @@ export const EmotionService = {
             tired: 'Fatigué', calm: 'Calme', confused: 'Confus', excited: 'Excité',
             fear: 'Peur', shame: 'Honte', bored: 'Ennuyé', proud: 'Fier',
             love: 'Amoureux', sick: 'Malade', guilt: 'Coupable', hurt: 'Blessé',
+            fuzzy: 'Flou', numb: 'Détaché', overwhelmed: 'Submergé', hopeful: 'Optimiste',
         };
 
         // Compter par type
@@ -397,6 +402,7 @@ export const EmotionService = {
             tired: 'Fatigué', calm: 'Calme', confused: 'Confus', excited: 'Excité',
             fear: 'Peur', shame: 'Honte', bored: 'Ennuyé', proud: 'Fier',
             love: 'Amoureux', sick: 'Malade', guilt: 'Coupable', hurt: 'Blessé',
+            fuzzy: 'Flou', numb: 'Détaché', overwhelmed: 'Submergé', hopeful: 'Optimiste',
         };
 
         // Pattern 1: Émotion dominante

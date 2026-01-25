@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { useNotificationContext } from '../../../src/contexts/NotificationContext';
 import { FriendService } from '../../../src/services/friends';
+import { PasswordService } from '../../../src/services/PasswordService';
 import { Feed } from '../../../src/components/Feed';
 import { StoriesBar } from '../../../src/components/StoriesBar';
 import { colors, spacing, typography } from '../../../src/lib/theme';
@@ -124,9 +125,13 @@ export default function AlterSpaceScreen() {
         }
     }, [loading, alter]);
 
-    // Handle password verification
-    const handlePasswordConfirm = (enteredPassword: string) => {
-        if (alter && enteredPassword === alter.password) {
+    // Handle password verification (async for hash comparison)
+    const handlePasswordConfirm = async (enteredPassword: string) => {
+        if (!alter || !alter.password) return;
+
+        const isValid = await PasswordService.verifyPassword(enteredPassword, alter.password);
+
+        if (isValid) {
             setIsPasswordLocked(false);
             setShowPasswordModal(false);
             setPasswordError('');

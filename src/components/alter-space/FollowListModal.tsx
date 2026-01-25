@@ -111,7 +111,10 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
                                     style={styles.itemContent}
                                     onPress={() => {
                                         onClose();
-                                        router.push(`/alter-space/${item.id}`);
+                                        router.push({
+                                            pathname: '/alter-space/[alterId]',
+                                            params: { alterId: item.id, tab: 'profile', viewMode: 'visitor' }
+                                        });
                                     }}
                                 >
                                     <View style={[styles.avatar, { backgroundColor: item.color || themeColors?.primary || colors.primary }]}>

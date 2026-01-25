@@ -106,36 +106,46 @@ const AlterBubbleComponent: React.FC<AlterBubbleProps> = ({
             onLongPress={onLongPress}
             haptic={true}
         >
-            <View style={[
-                styles.bubble,
-                dynamicStyles.bubble,
-                {
-                    backgroundColor: alter.color,
-                    borderColor: alter.color,
-                    borderWidth: 4
-                },
-                selectedStyle
-            ]}>
-                {alter.avatar_url ? (
-                    <AnimatedImage
-                        source={{ uri: alter.avatar_url }}
-                        style={styles.bubbleImage}
-                        contentFit="cover"
-                        transition={500}
-                        {...({ sharedTransitionTag: `avatar-${alter.id}` } as any)}
-                        cachePolicy="memory-disk"
-                    />
-                ) : (
-                    <Text style={[styles.bubbleInitial, { fontSize: dynamicStyles.initialFontSize }]}>
-                        {alter.name.charAt(0).toUpperCase()}
-                    </Text>
-                )}
+            <View>
+                <View style={[
+                    styles.bubble,
+                    dynamicStyles.bubble,
+                    {
+                        backgroundColor: alter.color,
+                        borderColor: alter.color,
+                        borderWidth: 4
+                    },
+                    selectedStyle
+                ]}>
+                    {alter.avatar_url ? (
+                        <AnimatedImage
+                            source={{ uri: alter.avatar_url }}
+                            style={styles.bubbleImage}
+                            contentFit="cover"
+                            transition={500}
+                            {...({ sharedTransitionTag: `avatar-${alter.id}` } as any)}
+                            cachePolicy="memory-disk"
+                        />
+                    ) : (
+                        <Text style={[styles.bubbleInitial, { fontSize: dynamicStyles.initialFontSize }]}>
+                            {alter.name.charAt(0).toUpperCase()}
+                        </Text>
+                    )}
+                </View>
+
+                {/* Badges moved outside bubble to allow overflow */}
                 {showCheck && (
                     <View style={[styles.checkBadge, { backgroundColor: primaryColor }]}>
                         <Ionicons name="checkmark" size={12} color="white" />
                     </View>
                 )}
+                {!showCheck && alter.isPinned && (
+                    <View style={[styles.pinBadge, { backgroundColor: colors.error }]}>
+                        <Ionicons name="pin" size={14} color="white" />
+                    </View>
+                )}
             </View>
+
             <Text
                 style={[
                     styles.bubbleName,
@@ -223,5 +233,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderWidth: 2,
         borderColor: 'white',
+    },
+    pinBadge: {
+        position: 'absolute',
+        top: -4,
+        left: -4,
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: 'white',
+        zIndex: 10,
+        backgroundColor: colors.primary, // Force background color here to be sure
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
     },
 });

@@ -43,7 +43,7 @@ type TabType = 'feed' | 'profile' | 'journal' | 'gallery' | 'emotions' | 'settin
 
 export default function AlterSpaceScreen() {
     const insets = useSafeAreaInsets();
-    const { alterId, tab } = useLocalSearchParams<{ alterId: string; tab?: string }>();
+    const { alterId, tab, viewMode } = useLocalSearchParams<{ alterId: string; tab?: string; viewMode?: string }>();
     const { alters, currentAlter, user } = useAuth(); // currentAlter is the one viewing
     const { unreadCount } = useNotificationContext();
 
@@ -83,8 +83,9 @@ export default function AlterSpaceScreen() {
     const isSameAlter = alter && currentAlter ? alter.id === currentAlter.id : false;
 
     // Fallback: If no custom status is active (System Mode), we might allow editing, 
-    // FIX: System owner has full access to ALL their alters including subsystem alters
-    const isOwner = isSystemOwner;
+    // FIX: System owner has full access to ALL their alters including subsystem alters.
+    // BUT: If viewMode='visitor' is passed, we force visitor view.
+    const isOwner = isSystemOwner && viewMode !== 'visitor';
 
     // Check relationship status
     useFocusEffect(

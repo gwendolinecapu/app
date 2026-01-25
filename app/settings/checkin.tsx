@@ -22,6 +22,8 @@ import {
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import Slider from '@react-native-community/slider';
+import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import FrontingCheckInService, { CheckInSettings } from '../../src/services/FrontingCheckInService';
 
 export default function CheckInSettingsScreen() {
@@ -104,142 +106,149 @@ export default function CheckInSettingsScreen() {
                 colors={['#1a1a2e', '#16213e', '#0f0f23']}
                 style={StyleSheet.absoluteFill}
             />
-
-            <ScrollView style={styles.content}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <Text style={styles.emoji}>🎭</Text>
-                    <Text style={styles.title}>Check-In Automatique</Text>
-                    <Text style={styles.subtitle}>
-                        Recevez des rappels pour indiquer qui est en front
-                    </Text>
-                </View>
-
-                {/* Toggle Activé */}
-                <View style={styles.section}>
-                    <View style={styles.settingRow}>
-                        <View style={styles.settingInfo}>
-                            <Text style={styles.settingLabel}>Activer les rappels</Text>
-                            <Text style={styles.settingDescription}>
-                                Recevoir des notifications périodiques
-                            </Text>
-                        </View>
-                        <Switch
-                            value={settings.enabled}
-                            onValueChange={handleToggleEnabled}
-                            trackColor={{ false: '#3e3e3e', true: '#8B5CF6' }}
-                            thumbColor={settings.enabled ? '#FFFFFF' : '#f4f3f4'}
-                        />
-                    </View>
-                </View>
-
-                {/* Intervalle */}
-                {settings.enabled && (
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Fréquence</Text>
-
-                        <View style={styles.intervalContainer}>
-                            <Text style={styles.intervalValue}>
-                                Toutes les {formatInterval(settings.intervalHours)}
-                            </Text>
-                            <Slider
-                                style={styles.slider}
-                                minimumValue={1}
-                                maximumValue={12}
-                                step={1}
-                                value={settings.intervalHours}
-                                onValueChange={handleIntervalChange}
-                                onSlidingComplete={handleIntervalComplete}
-                                minimumTrackTintColor="#8B5CF6"
-                                maximumTrackTintColor="#3e3e3e"
-                                thumbTintColor="#FFFFFF"
-                            />
-                            <View style={styles.sliderLabels}>
-                                <Text style={styles.sliderLabel}>1h</Text>
-                                <Text style={styles.sliderLabel}>12h</Text>
-                            </View>
-                        </View>
-                    </View>
-                )}
-
-                {/* Heures calmes */}
-                {settings.enabled && (
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Heures calmes</Text>
-                        <View style={styles.quietHoursCard}>
-                            <Text style={styles.quietHoursIcon}>🌙</Text>
-                            <View style={styles.quietHoursInfo}>
-                                <Text style={styles.quietHoursLabel}>
-                                    Pas de notification entre
-                                </Text>
-                                <Text style={styles.quietHoursValue}>
-                                    {settings.quietHoursStart}h00 et {settings.quietHoursEnd}h00
-                                </Text>
-                            </View>
-                        </View>
-                        <Text style={styles.quietHoursHint}>
-                            Les notifications seront reportées au matin
-                        </Text>
-                    </View>
-                )}
-
-                {/* Dynamic Island */}
-                {settings.enabled && (
-                    <View style={styles.section}>
-                        <View style={styles.featureCard}>
-                            <Text style={styles.featureIcon}>🏝️</Text>
-                            <View style={styles.featureInfo}>
-                                <Text style={styles.featureLabel}>Dynamic Island</Text>
-                                <Text style={styles.featureDescription}>
-                                    Sur iPhone 14 Pro+, le rappel s'affiche dans le Dynamic Island
-                                </Text>
-                            </View>
-                        </View>
-                    </View>
-                )}
-
-                {/* Test */}
-                {settings.enabled && (
-                    <View style={styles.section}>
+            <SafeAreaView style={StyleSheet.absoluteFill} pointerEvents="box-none">
+                <ScrollView style={styles.content}>
+                    {/* Header */}
+                    <View style={styles.header}>
                         <TouchableOpacity
-                            style={styles.testButton}
-                            onPress={handleTestNotification}
+                            style={styles.backButton}
+                            onPress={() => router.back()}
                         >
-                            <Text style={styles.testButtonIcon}>🔔</Text>
-                            <Text style={styles.testButtonText}>
-                                Tester une notification
-                            </Text>
+                            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                         </TouchableOpacity>
+                        <Text style={styles.emoji}>🎭</Text>
+                        <Text style={styles.title}>Check-In Automatique</Text>
+                        <Text style={styles.subtitle}>
+                            Recevez des rappels pour indiquer qui est en front
+                        </Text>
                     </View>
-                )}
 
-                {/* Info */}
-                <View style={styles.infoSection}>
-                    <Text style={styles.infoTitle}>Comment ça marche ?</Text>
-                    <Text style={styles.infoText}>
-                        À intervalles réguliers, vous recevrez une notification vous demandant qui est actuellement en front. Vous pouvez :
-                    </Text>
-                    <View style={styles.infoBullet}>
-                        <Text style={styles.infoBulletIcon}>•</Text>
-                        <Text style={styles.infoBulletText}>
-                            Confirmer que c'est le même fronter
-                        </Text>
+                    {/* Toggle Activé */}
+                    <View style={styles.section}>
+                        <View style={styles.settingRow}>
+                            <View style={styles.settingInfo}>
+                                <Text style={styles.settingLabel}>Activer les rappels</Text>
+                                <Text style={styles.settingDescription}>
+                                    Recevoir des notifications périodiques
+                                </Text>
+                            </View>
+                            <Switch
+                                value={settings.enabled}
+                                onValueChange={handleToggleEnabled}
+                                trackColor={{ false: '#3e3e3e', true: '#8B5CF6' }}
+                                thumbColor={settings.enabled ? '#FFFFFF' : '#f4f3f4'}
+                            />
+                        </View>
                     </View>
-                    <View style={styles.infoBullet}>
-                        <Text style={styles.infoBulletIcon}>•</Text>
-                        <Text style={styles.infoBulletText}>
-                            Changer de fronter rapidement
+
+                    {/* Intervalle */}
+                    {settings.enabled && (
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>Fréquence</Text>
+
+                            <View style={styles.intervalContainer}>
+                                <Text style={styles.intervalValue}>
+                                    Toutes les {formatInterval(settings.intervalHours)}
+                                </Text>
+                                <Slider
+                                    style={styles.slider}
+                                    minimumValue={1}
+                                    maximumValue={12}
+                                    step={1}
+                                    value={settings.intervalHours}
+                                    onValueChange={handleIntervalChange}
+                                    onSlidingComplete={handleIntervalComplete}
+                                    minimumTrackTintColor="#8B5CF6"
+                                    maximumTrackTintColor="#3e3e3e"
+                                    thumbTintColor="#FFFFFF"
+                                />
+                                <View style={styles.sliderLabels}>
+                                    <Text style={styles.sliderLabel}>1h</Text>
+                                    <Text style={styles.sliderLabel}>12h</Text>
+                                </View>
+                            </View>
+                        </View>
+                    )}
+
+                    {/* Heures calmes */}
+                    {settings.enabled && (
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>Heures calmes</Text>
+                            <View style={styles.quietHoursCard}>
+                                <Text style={styles.quietHoursIcon}>🌙</Text>
+                                <View style={styles.quietHoursInfo}>
+                                    <Text style={styles.quietHoursLabel}>
+                                        Pas de notification entre
+                                    </Text>
+                                    <Text style={styles.quietHoursValue}>
+                                        {settings.quietHoursStart}h00 et {settings.quietHoursEnd}h00
+                                    </Text>
+                                </View>
+                            </View>
+                            <Text style={styles.quietHoursHint}>
+                                Les notifications seront reportées au matin
+                            </Text>
+                        </View>
+                    )}
+
+                    {/* Dynamic Island */}
+                    {settings.enabled && (
+                        <View style={styles.section}>
+                            <View style={styles.featureCard}>
+                                <Text style={styles.featureIcon}>🏝️</Text>
+                                <View style={styles.featureInfo}>
+                                    <Text style={styles.featureLabel}>Dynamic Island</Text>
+                                    <Text style={styles.featureDescription}>
+                                        Sur iPhone 14 Pro+, le rappel s'affiche dans le Dynamic Island
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+                    )}
+
+                    {/* Test */}
+                    {settings.enabled && (
+                        <View style={styles.section}>
+                            <TouchableOpacity
+                                style={styles.testButton}
+                                onPress={handleTestNotification}
+                            >
+                                <Text style={styles.testButtonIcon}>🔔</Text>
+                                <Text style={styles.testButtonText}>
+                                    Tester une notification
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                    {/* Info */}
+                    <View style={styles.infoSection}>
+                        <Text style={styles.infoTitle}>Comment ça marche ?</Text>
+                        <Text style={styles.infoText}>
+                            À intervalles réguliers, vous recevrez une notification vous demandant qui est actuellement en front. Vous pouvez :
                         </Text>
+                        <View style={styles.infoBullet}>
+                            <Text style={styles.infoBulletIcon}>•</Text>
+                            <Text style={styles.infoBulletText}>
+                                Confirmer que c'est le même fronter
+                            </Text>
+                        </View>
+                        <View style={styles.infoBullet}>
+                            <Text style={styles.infoBulletIcon}>•</Text>
+                            <Text style={styles.infoBulletText}>
+                                Changer de fronter rapidement
+                            </Text>
+                        </View>
+                        <View style={styles.infoBullet}>
+                            <Text style={styles.infoBulletIcon}>•</Text>
+                            <Text style={styles.infoBulletText}>
+                                Déclarer un co-front
+                            </Text>
+                        </View>
                     </View>
-                    <View style={styles.infoBullet}>
-                        <Text style={styles.infoBulletIcon}>•</Text>
-                        <Text style={styles.infoBulletText}>
-                            Déclarer un co-front
-                        </Text>
-                    </View>
-                </View>
-            </ScrollView>
-        </View>
+                </ScrollView>
+            </SafeAreaView>
+        </View >
     );
 }
 
@@ -258,9 +267,19 @@ const styles = StyleSheet.create({
     },
     header: {
         alignItems: 'center',
-        paddingTop: 20,
+        paddingTop: 60,
         paddingBottom: 24,
         paddingHorizontal: 16,
+        position: 'relative',
+    },
+    backButton: {
+        position: 'absolute',
+        top: 60,
+        left: 16,
+        zIndex: 10,
+        padding: 8,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 20,
     },
     emoji: {
         fontSize: 48,

@@ -187,7 +187,10 @@ export const Feed = ({ type = 'global', systemId, alterId, ListHeaderComponent, 
 
     const handleAuthorPress = (authorId: string, type: 'alter' | 'system') => {
         if (type === 'alter') {
-            router.push(`/alter-space/${authorId}` as any);
+            router.push({
+                pathname: '/alter-space/[alterId]',
+                params: { alterId: authorId, viewMode: 'visitor' }
+            });
         } else {
             router.push(`/profile/${authorId}` as any);
         }

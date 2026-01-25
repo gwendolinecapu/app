@@ -12,13 +12,18 @@
 
 // ==================== CONSTANTS ====================
 const MAX_EARLY_BIRD = 500;
+const FIRST_100 = 100;
 const MIN_SUBMIT_INTERVAL = 2000; // 2 seconds between submissions
 const REWARDS = {
+    // Récompenses 500 premiers (Early Bird)
     PIONEER_THEME: { name: 'Thème Pioneer Exclusif', icon: '🎨', tier: 500 },
     CREDITS_500: { name: '500 Crédits Bonus', icon: '💎', tier: 500 },
     BADGE_PIONEER: { name: 'Badge Pioneer Permanent', icon: '⭐', tier: 500 },
-    EXTRA_CREDITS: { name: '+200 Crédits Extra', icon: '🌟', tier: 100 },
-    BETA_ACCESS: { name: 'Accès Beta Privée', icon: '🚀', tier: 50 }
+    // Récompenses 100 premiers (Double Bonus)
+    DOUBLE_CREDITS: { name: '1000 Crédits (Double!)', icon: '💎💎', tier: 100 },
+    BADGE_FIRST_100: { name: 'Badge "First 100"', icon: '🏆', tier: 100 },
+    EXCLUSIVE_THEME: { name: 'Thème Exclusif First 100', icon: '🎨✨', tier: 100 },
+    BETA_ACCESS: { name: 'Accès Alpha Privé', icon: '🚀', tier: 100 }
 };
 
 // ==================== STATE ====================
@@ -175,6 +180,27 @@ function updateCounterUI(count) {
     const formNote = document.querySelector('.form-note');
     if (formNote && isObjectifAtteint) {
         formNote.innerHTML = '<i class="fas fa-bell"></i> Inscrivez-vous pour être <strong>notifié du lancement</strong> !';
+    }
+
+    // Update milestone 100 marker
+    const milestone100 = document.getElementById('milestone-100');
+    const tier100 = document.getElementById('tier-100');
+    const isFirst100Complete = count >= FIRST_100;
+
+    if (milestone100) {
+        if (isFirst100Complete) {
+            milestone100.classList.add('reached');
+        }
+    }
+
+    if (tier100) {
+        if (isFirst100Complete) {
+            tier100.classList.add('completed');
+            tier100.querySelector('.tier-text').innerHTML = '<strong>100 premiers</strong> : Complet !';
+        } else {
+            const spots100Left = FIRST_100 - count;
+            tier100.querySelector('.tier-text').innerHTML = `<strong>${spots100Left} places</strong> Double Bonus restantes !`;
+        }
     }
 }
 
@@ -413,6 +439,7 @@ async function registerEmailWithPassword(email, password) {
             uid: uid || null,
             email: email,
             position: newPosition,
+            isFirst100: newPosition <= FIRST_100,
             isEarlyBird: newPosition <= MAX_EARLY_BIRD,
             rewards: calculateRewards(newPosition),
             registeredAt: new Date().toISOString(),
@@ -555,19 +582,13 @@ async function registerEmail(email) {
 function calculateRewards(position) {
     const rewards = [];
 
-    // All early birds get these
-    if (position <= MAX_EARLY_BIRD) {
+    // Top 100 get DOUBLE BONUS (replaces normal rewards)
+    if (position <= FIRST_100) {
+        rewards.push('double_credits', 'badge_first_100', 'exclusive_theme', 'beta_access');
+    }
+    // 101-500 get normal Early Bird rewards
+    else if (position <= MAX_EARLY_BIRD) {
         rewards.push('pioneer_theme', 'credits_500', 'badge_pioneer');
-    }
-
-    // Top 100 get extra
-    if (position <= 100) {
-        rewards.push('extra_credits');
-    }
-
-    // Top 50 get beta access
-    if (position <= 50) {
-        rewards.push('beta_access');
     }
 
     return rewards;

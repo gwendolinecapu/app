@@ -4607,3 +4607,110 @@ button {
     font-size: 1rem;
     margin: 0;
 }
+
+
+/* ==================== MILESTONE & TIER STYLES ==================== */
+.progress-bar-container {
+    position: relative;
+}
+
+.progress-milestones {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    pointer-events: none;
+}
+
+.milestone {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.milestone-marker {
+    width: 12px;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    transition: all 0.3s;
+}
+
+.milestone-marker.reached {
+    background: #10B981;
+    border-color: #10B981;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.milestone-label {
+    position: absolute;
+    top: 20px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.bonus-tiers {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.tier {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 100px;
+    font-size: 0.85rem;
+    transition: all 0.3s;
+}
+
+.tier-100 {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.15) 100%);
+    border-color: rgba(251, 191, 36, 0.3);
+}
+
+.tier-100.completed {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.tier-500 {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%);
+    border-color: rgba(139, 92, 246, 0.3);
+}
+
+.tier-icon {
+    font-size: 1.1rem;
+}
+
+.tier-text {
+    color: var(--text-secondary);
+}
+
+.tier-text strong {
+    color: var(--text-primary);
+}
+
+@media (max-width: 480px) {
+    .bonus-tiers {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .tier {
+        justify-content: center;
+        font-size: 0.8rem;
+        padding: 6px 12px;
+    }
+}

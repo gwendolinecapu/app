@@ -152,6 +152,26 @@
                 </div>
                 <div class="progress-bar-container">
                     <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+                    <div class="progress-milestones">
+                        <div class="milestone" style="left: 20%">
+                            <span class="milestone-marker" id="milestone-100"></span>
+                            <span class="milestone-label">100</span>
+                        </div>
+                        <div class="milestone" style="left: 100%">
+                            <span class="milestone-marker"></span>
+                            <span class="milestone-label">500</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bonus-tiers">
+                    <div class="tier tier-100" id="tier-100">
+                        <span class="tier-icon">🏆</span>
+                        <span class="tier-text"><strong>100 premiers</strong> : Double bonus !</span>
+                    </div>
+                    <div class="tier tier-500">
+                        <span class="tier-icon">⭐</span>
+                        <span class="tier-text"><strong>500 premiers</strong> : Récompenses Early Bird</span>
+                    </div>
                 </div>
                 <p class="counter-status" id="counter-status">
                     <i class="fas fa-circle-notch fa-spin"></i> Chargement...
@@ -558,16 +578,18 @@
 
                 <div class="leetchi-progress-area">
                     <div class="progress-bar-container">
-                        <!-- 60€ / 120€ = 50% -->
-                        <div class="progress-bar-fill" style="width: 50%"></div>
+                        <!-- 208€ / 200€ = 100% -->
+                        <div class="progress-bar-fill" style="width: 100%"></div>
                     </div>
                     <div class="progress-labels">
-                        <span class="progress-current">60€ récoltés</span>
-                        <span class="progress-target">Objectif : 120€ pour l'App Store</span>
+                        <span class="progress-current">208€ récoltés</span>
+                        <span class="progress-target">Tous les objectifs atteints ! 🎉</span>
                     </div>
                     <div class="funding-status">
-                        <span class="status-check success"><i class="fas fa-check-circle"></i> Play Store (25€) financé !</span>
-                        <span class="status-check pending"><i class="far fa-circle"></i> Apple Store (120€) en cours</span>
+                        <span class="status-check success"><i class="fas fa-check-circle"></i> Play Store (25€)</span>
+                        <span class="status-check success"><i class="fas fa-check-circle"></i> Apple Store (120€)</span>
+                        <span class="status-check success"><i class="fas fa-check-circle"></i> App Ordinateur (160€)</span>
+                        <span class="status-check success"><i class="fas fa-check-circle"></i> App Apple Watch (200€)</span>
                     </div>
                 </div>
 
@@ -640,7 +662,6 @@
                         <div class="success-rewards" id="success-rewards">
                             <!-- Dynamically filled based on position -->
                         </div>
-                        <p class="success-note">Un email de confirmation arrive dans quelques minutes.</p>
                     </div>
                 </div>
 

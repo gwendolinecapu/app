@@ -206,6 +206,7 @@ export default function SettingsScreen() {
                     {renderSettingItem("Modifier le Système", "create-outline", () => router.push('/settings/edit-system' as any))}
                     {renderSettingItem("Importer Simply Plural", "cloud-download-outline", () => router.push('/settings/import' as any))}
                     {renderSettingItem("Sécurité et données", "lock-closed-outline", () => router.push('/settings/security' as any))}
+                    {renderSettingItem("Alters archivés", "archive-outline", () => router.push('/settings/archived-alters' as any))}
                     <PrivacySettingsButton />
                 </View>
 

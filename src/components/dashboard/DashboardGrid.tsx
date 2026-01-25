@@ -28,6 +28,7 @@ interface DashboardGridProps {
     setModalVisible: (visible: boolean) => void;
     ListHeaderComponent?: React.ReactElement;
     deleteMode?: boolean;
+    onAlterLongPress?: (alter: Alter) => void;
 }
 
 const DashboardGridComponent = ({
@@ -42,7 +43,8 @@ const DashboardGridComponent = ({
     handleBlurryMode,
     setModalVisible,
     ListHeaderComponent,
-    deleteMode = false
+    deleteMode = false,
+    onAlterLongPress,
 }: DashboardGridProps) => {
 
     const renderItem = useCallback(({ item }: { item: GridItem }) => (
@@ -60,7 +62,15 @@ const DashboardGridComponent = ({
                     else if (item.type === 'blurry') handleBlurryMode();
                     else if (item.type === 'add') setModalVisible(true);
                 }}
-                onLongPress={() => item.type === 'alter' && router.push(`/alter-space/${item.data.id}` as any)}
+                onLongPress={() => {
+                    if (item.type === 'alter') {
+                        if (onAlterLongPress) {
+                            onAlterLongPress(item.data);
+                        } else {
+                            router.push(`/alter-space/${item.data.id}` as any);
+                        }
+                    }
+                }}
             />
         </View>
     ), [numColumns, bubbleSize, selectionMode, selectedAlters, deleteMode, toggleSelection, handleBlurryMode, setModalVisible]);

@@ -26,6 +26,7 @@ interface DashboardHeaderProps {
     onOpenSubsystems?: () => void;
     activeSubsystemId?: string | null;
     systemName?: string;
+    onSystemNamePress?: () => void;
 }
 
 
@@ -48,6 +49,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     onOpenSubsystems,
     activeSubsystemId,
     systemName,
+    onSystemNamePress,
 }) => {
     const insets = useSafeAreaInsets(); // Added for insets
 
@@ -61,7 +63,11 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                 <View>
                     <Text style={styles.greeting}>Bonjour,</Text>
                     <Text style={styles.title}>Qui est là ?</Text>
-                    {systemName && <Text style={styles.systemName}>Système {systemName}</Text>}
+                    {systemName && (
+                        <AnimatedPressable onPress={onSystemNamePress}>
+                            <Text style={styles.systemName}>Système {systemName}</Text>
+                        </AnimatedPressable>
+                    )}
                 </View>
                 <View style={styles.headerActions}>
                     {deleteMode && onSelectAll && (
@@ -174,10 +180,11 @@ const styles = StyleSheet.create({
         fontSize: 26,
     },
     systemName: {
-        ...typography.caption,
-        color: colors.primary, // Using primary color to match the brand
-        fontWeight: '600',
-        marginTop: 2,
+        ...typography.body,
+        color: colors.primaryLight,
+        fontWeight: '700',
+        marginTop: 4,
+        fontSize: 16,
     },
     headerActions: {
         flexDirection: 'row',

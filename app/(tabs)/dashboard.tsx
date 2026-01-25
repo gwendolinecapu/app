@@ -20,7 +20,7 @@ import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { db, storage } from '../../src/lib/firebase';
-import { collection, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -63,7 +63,7 @@ const getBubbleConfig = (alterCount: number, availableWidth: number) => {
  * Handles the Apple Watch-inspired "Alter Grid" and system utility tools.
  */
 export default function Dashboard() {
-    const { alters, user, system, refreshAlters, setFronting, activeFront, loading: authLoading } = useAuth();
+    const { alters, user, system, refreshAlters, setFronting, activeFront, loading: authLoading, toggleArchive, togglePin } = useAuth();
     const [modalVisible, setModalVisible] = useState(false);
     const [menuVisible, setMenuVisible] = useState(false);
 
@@ -109,7 +109,8 @@ export default function Dashboard() {
         let result = alters;
 
         // IMPORTANT: Exclude alters that belong to a subsystem (they appear in their own subsystem dashboard)
-        result = result.filter(alter => !alter.subsystem_id);
+        // AND exclude archived alters
+        result = result.filter(alter => !alter.subsystem_id && !alter.isArchived);
 
         // Filter by category first
         if (activeCategory) {
@@ -128,273 +129,343 @@ export default function Dashboard() {
                 alter.name.toLowerCase().includes(query) ||
                 alter.pronouns?.toLowerCase().includes(query)
             );
+            );
+}
+
+// Sort by Pinned status first (pinned at top), then by name
+result.sort((a, b) => {
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    // Fallback to name sort or other criteria
+    return a.name.localeCompare(b.name);
+});
+
+return result;
+    }, [alters, searchQuery, activeCategory, activeSubsystemId]);
+
+const gridData = useMemo((): GridItem[] => {
+    return [
+        { type: 'blurry' },
+        { type: 'add' },
+        ...filteredAlters.map(alter => ({ type: 'alter' as const, data: alter }))
+    ];
+}, [filteredAlters]);
+
+const toggleSelection = useCallback((alterId: string) => {
+    if (selectionMode === 'single') {
+        const alter = alters.find(a => a.id === alterId);
+        if (alter) {
+            setFronting([alter], 'single');
+            router.push(`/alter-space/${alterId}` as any);
         }
+    } else {
+        setSelectedAlters(prev => {
+            const newSelection = prev.includes(alterId)
+                ? prev.filter(id => id !== alterId)
+                : [...prev, alterId];
+            return newSelection;
+        });
+    }
+}, [selectionMode, alters, setFronting]);
 
-        return result;
-    }, [alters, searchQuery, activeCategory]);
+const handleConfirmCoFront = async () => {
+    if (selectedAlters.length === 0) return;
+    const selectedAlterObjects = alters.filter(a => selectedAlters.includes(a.id));
+    await setFronting(selectedAlterObjects, selectedAlterObjects.length === 1 ? 'single' : 'co-front');
+    triggerHaptic.success();
+};
 
-    const gridData = useMemo((): GridItem[] => {
-        return [
-            { type: 'blurry' },
-            { type: 'add' },
-            ...filteredAlters.map(alter => ({ type: 'alter' as const, data: alter }))
-        ];
-    }, [filteredAlters]);
-
-    const toggleSelection = useCallback((alterId: string) => {
-        if (selectionMode === 'single') {
-            const alter = alters.find(a => a.id === alterId);
-            if (alter) {
-                setFronting([alter], 'single');
-                router.push(`/alter-space/${alterId}` as any);
+const handleBlurryMode = async () => {
+    Alert.alert("Mode Flou", "Entrer en tant que système sans alter spécifique ?", [
+        { text: "Annuler", style: "cancel" },
+        {
+            text: "Continuer", onPress: async () => {
+                await setFronting([], 'blurry');
+                triggerHaptic.medium();
             }
-        } else {
-            setSelectedAlters(prev => {
-                const newSelection = prev.includes(alterId)
-                    ? prev.filter(id => id !== alterId)
-                    : [...prev, alterId];
-                return newSelection;
-            });
         }
-    }, [selectionMode, alters, setFronting]);
+    ]);
+};
 
-    const handleConfirmCoFront = async () => {
-        if (selectedAlters.length === 0) return;
-        const selectedAlterObjects = alters.filter(a => selectedAlters.includes(a.id));
-        await setFronting(selectedAlterObjects, selectedAlterObjects.length === 1 ? 'single' : 'co-front');
+const handleOpenMenu = useCallback(() => setMenuVisible(true), []);
+const handleCloseMenu = useCallback(() => setMenuVisible(false), []);
+
+const handleCloseAddModal = useCallback(() => setModalVisible(false), []);
+
+const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+    });
+    return result.canceled ? null : result.assets[0].uri;
+};
+
+const handleCreateAlter = async (data: { name: string, pronouns: string, bio: string, color: string, image: string | null }) => {
+    if (!user) return;
+    setLoading(true);
+    try {
+        let avatarUrl = null;
+        if (data.image) {
+            const response = await fetch(data.image);
+            const blob = await response.blob();
+            const storageRef = ref(storage, `avatars/${user.uid}/${Date.now()}.jpg`);
+            await uploadBytes(storageRef, blob);
+            avatarUrl = await getDownloadURL(storageRef);
+        }
+        const newAlter = {
+            system_id: user.uid,
+            name: data.name,
+            pronouns: data.pronouns || null,
+            bio: data.bio || null,
+            color: data.color,
+            avatar_url: avatarUrl,
+            is_host: false,
+            is_active: false,
+            created_at: new Date().toISOString(),
+        };
+        await addDoc(collection(db, 'alters'), newAlter);
+        await refreshAlters();
+        setModalVisible(false);
         triggerHaptic.success();
-    };
+    } catch (error) {
+        Alert.alert('Erreur', 'Impossible de créer l\'alter');
+    } finally {
+        setLoading(false);
+    }
+};
 
-    const handleBlurryMode = async () => {
-        Alert.alert("Mode Flou", "Entrer en tant que système sans alter spécifique ?", [
-            { text: "Annuler", style: "cancel" },
+// Handler for editing system name
+const handleEditSystemName = () => {
+    if (!system || !user) return;
+
+    Alert.prompt(
+        "Renommer le système",
+        "Entrez le nouveau nom de votre système",
+        [
             {
-                text: "Continuer", onPress: async () => {
-                    await setFronting([], 'blurry');
-                    triggerHaptic.medium();
-                }
-            }
-        ]);
-    };
-
-    const handleOpenMenu = useCallback(() => setMenuVisible(true), []);
-    const handleCloseMenu = useCallback(() => setMenuVisible(false), []);
-
-    const handleCloseAddModal = useCallback(() => setModalVisible(false), []);
-
-    const pickImage = async () => {
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images'],
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.7,
-        });
-        return result.canceled ? null : result.assets[0].uri;
-    };
-
-    const handleCreateAlter = async (data: { name: string, pronouns: string, bio: string, color: string, image: string | null }) => {
-        if (!user) return;
-        setLoading(true);
-        try {
-            let avatarUrl = null;
-            if (data.image) {
-                const response = await fetch(data.image);
-                const blob = await response.blob();
-                const storageRef = ref(storage, `avatars/${user.uid}/${Date.now()}.jpg`);
-                await uploadBytes(storageRef, blob);
-                avatarUrl = await getDownloadURL(storageRef);
-            }
-            const newAlter = {
-                system_id: user.uid,
-                name: data.name,
-                pronouns: data.pronouns || null,
-                bio: data.bio || null,
-                color: data.color,
-                avatar_url: avatarUrl,
-                is_host: false,
-                is_active: false,
-                created_at: new Date().toISOString(),
-            };
-            await addDoc(collection(db, 'alters'), newAlter);
-            await refreshAlters();
-            setModalVisible(false);
-            triggerHaptic.success();
-        } catch (error) {
-            Alert.alert('Erreur', 'Impossible de créer l\'alter');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleToggleDeleteMode = () => {
-        setDeleteMode(!deleteMode);
-        if (!deleteMode) {
-            // Entering delete mode
-            setSelectionMode('multi');
-            setSelectedAlters([]);
-        } else {
-            // Exiting delete mode
-            setSelectionMode('single');
-            setSelectedAlters([]);
-        }
-    };
-
-    const handleBulkDelete = async () => {
-        if (selectedAlters.length === 0) return;
-
-        // Safety checks
-        const hostsSelected = selectedAlters.some(id => {
-            const alter = alters.find(a => a.id === id);
-            return alter?.is_host;
-        });
-
-        if (hostsSelected) {
-            Alert.alert('Erreur', 'Vous ne pouvez pas supprimer l\'alter host.');
-            return;
-        }
-
-        if (alters.length - selectedAlters.length < 1) {
-            Alert.alert('Erreur', 'Au moins un alter doit rester dans le système.');
-            return;
-        }
-
-        // Confirmation
-        const count = selectedAlters.length;
-        Alert.alert(
-            'Confirmer la suppression',
-            `Êtes-vous sûr de vouloir supprimer ${count} alter${count > 1 ? 's' : ''} ? Cette action est irréversible.`,
-            [
-                { text: 'Annuler', style: 'cancel' },
-                {
-                    text: 'Supprimer',
-                    style: 'destructive',
-                    onPress: async () => {
-                        setLoading(true);
+                text: "Annuler",
+                style: "cancel"
+            },
+            {
+                text: "Enregistrer",
+                onPress: async (newName?: string) => {
+                    if (newName && newName.trim().length > 0) {
                         try {
-                            // Delete all selected alters
-                            await Promise.all(
-                                selectedAlters.map(id => deleteDoc(doc(db, 'alters', id)))
-                            );
-                            await refreshAlters();
-                            setSelectedAlters([]);
-                            setDeleteMode(false);
-                            setSelectionMode('single');
+                            const systemRef = doc(db, 'systems', user.uid);
+                            await updateDoc(systemRef, {
+                                username: newName.trim()
+                            });
                             triggerHaptic.success();
                         } catch (error) {
-                            Alert.alert('Erreur', 'Impossible de supprimer les alters');
+                            console.error("Error updating system name:", error);
+                            Alert.alert("Erreur", "Impossible de mettre à jour le nom du système");
                             triggerHaptic.error();
-                        } finally {
-                            setLoading(false);
                         }
                     }
                 }
-            ]
-        );
-    };
+            }
+        ],
+        "plain-text",
+        system.username || ""
+    );
+};
 
-    const handleSelectAll = () => {
-        // Select all alters except hosts
-        const selectableAlters = alters.filter(alter => !alter.is_host).map(a => a.id);
-        setSelectedAlters(selectableAlters);
-        triggerHaptic.selection();
-    };
+const handleToggleDeleteMode = () => {
+    setDeleteMode(!deleteMode);
+    if (!deleteMode) {
+        // Entering delete mode
+        setSelectionMode('multi');
+        setSelectedAlters([]);
+    } else {
+        // Exiting delete mode
+        setSelectionMode('single');
+        setSelectedAlters([]);
+    }
+};
 
-    return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            <DashboardGrid
-                data={authLoading ? [] : gridData}
-                numColumns={NUM_COLUMNS}
-                bubbleSize={BUBBLE_SIZE}
-                selectionMode={selectionMode}
-                selectedAlters={selectedAlters}
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                toggleSelection={toggleSelection}
-                handleBlurryMode={handleBlurryMode}
-                setModalVisible={setModalVisible}
-                deleteMode={deleteMode}
-                ListHeaderComponent={
-                    <View>
-                        <DashboardHeader
-                            searchQuery={searchQuery}
-                            onSearchChange={setSearchQuery}
-                            selectionMode={selectionMode}
-                            onModeChange={setSelectionMode}
-                            hasSelection={selectedAlters.length > 0}
-                            deleteMode={deleteMode}
-                            onToggleDeleteMode={handleToggleDeleteMode}
-                            onSelectAll={handleSelectAll}
-                            onOpenCategories={() => setCategoryModalVisible(true)}
-                            activeCategory={activeCategory}
-                            onOpenSubsystems={() => setSubsystemModalVisible(true)}
-                            activeSubsystemId={activeSubsystemId}
-                            systemName={system?.username}
-                        />
+const handleBulkDelete = async () => {
+    if (selectedAlters.length === 0) return;
 
-                        <View style={{ height: 16 }} />
-                    </View>
+    // Safety checks
+    const hostsSelected = selectedAlters.some(id => {
+        const alter = alters.find(a => a.id === id);
+        return alter?.is_host;
+    });
+
+    if (hostsSelected) {
+        Alert.alert('Erreur', 'Vous ne pouvez pas supprimer l\'alter host.');
+        return;
+    }
+
+    if (alters.length - selectedAlters.length < 1) {
+        Alert.alert('Erreur', 'Au moins un alter doit rester dans le système.');
+        return;
+    }
+
+    // Confirmation
+    const count = selectedAlters.length;
+    Alert.alert(
+        'Confirmer la suppression',
+        `Êtes-vous sûr de vouloir supprimer ${count} alter${count > 1 ? 's' : ''} ? Cette action est irréversible.`,
+        [
+            { text: 'Annuler', style: 'cancel' },
+            {
+                text: 'Supprimer',
+                style: 'destructive',
+                onPress: async () => {
+                    setLoading(true);
+                    try {
+                        // Delete all selected alters
+                        await Promise.all(
+                            selectedAlters.map(id => deleteDoc(doc(db, 'alters', id)))
+                        );
+                        await refreshAlters();
+                        setSelectedAlters([]);
+                        setDeleteMode(false);
+                        setSelectionMode('single');
+                        triggerHaptic.success();
+                    } catch (error) {
+                        Alert.alert('Erreur', 'Impossible de supprimer les alters');
+                        triggerHaptic.error();
+                    } finally {
+                        setLoading(false);
+                    }
                 }
-            />
+            }
+        ]
+    );
+};
 
-            {/* Delete Button - only show in delete mode */}
-            {deleteMode && selectedAlters.length > 0 && (
-                <View style={styles.deleteButtonContainer}>
-                    <AnimatedPressable
-                        style={styles.deleteButton}
-                        onPress={handleBulkDelete}
-                    >
-                        <Ionicons name="trash" size={20} color="white" />
-                        <Text style={styles.deleteButtonText}>
-                            Supprimer {selectedAlters.length} alter{selectedAlters.length > 1 ? 's' : ''}
-                        </Text>
-                    </AnimatedPressable>
+const handleSelectAll = () => {
+    // Select all alters except hosts
+    const selectableAlters = alters.filter(alter => !alter.is_host).map(a => a.id);
+    setSelectedAlters(selectableAlters);
+    triggerHaptic.selection();
+};
+
+const handleAlterLongPress = (alter: Alter) => {
+    Alert.alert(
+        alter.name,
+        "Que voulez-vous faire ?",
+        [
+            { text: "Annuler", style: "cancel" },
+            {
+                text: alter.isPinned ? "Désépingler" : "Épingler",
+                onPress: async () => {
+                    await togglePin(alter.id);
+                }
+            },
+            {
+                text: "Archiver",
+                style: "destructive",
+                onPress: async () => {
+                    await toggleArchive(alter.id);
+                }
+            }
+        ]
+    );
+};
+
+return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+        <DashboardGrid
+            data={authLoading ? [] : gridData}
+            numColumns={NUM_COLUMNS}
+            bubbleSize={BUBBLE_SIZE}
+            selectionMode={selectionMode}
+            selectedAlters={selectedAlters}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            toggleSelection={toggleSelection}
+            handleBlurryMode={handleBlurryMode}
+            setModalVisible={setModalVisible}
+            deleteMode={deleteMode}
+            ListHeaderComponent={
+                <View>
+                    <DashboardHeader
+                        searchQuery={searchQuery}
+                        onSearchChange={setSearchQuery}
+                        selectionMode={selectionMode}
+                        onModeChange={setSelectionMode}
+                        hasSelection={selectedAlters.length > 0}
+                        deleteMode={deleteMode}
+                        onToggleDeleteMode={handleToggleDeleteMode}
+                        onSelectAll={handleSelectAll}
+                        onOpenCategories={() => setCategoryModalVisible(true)}
+                        activeCategory={activeCategory}
+                        onOpenSubsystems={() => setSubsystemModalVisible(true)}
+                        activeSubsystemId={activeSubsystemId}
+                        systemName={system?.username}
+                        onSystemNamePress={handleEditSystemName}
+                    />
+
+                    <View style={{ height: 16 }} />
                 </View>
-            )}
+            }
+            onAlterLongPress={handleAlterLongPress}
+        />
 
-            {/* Co-Front Control Bar - only show when NOT in delete mode */}
-            {!deleteMode && (
-                <SystemControlBar
-                    onOpenMenu={handleOpenMenu}
-                    onConfirmFronting={handleConfirmCoFront}
-                    hasSelection={selectedAlters.length > 0}
-                />
-            )}
+        {/* Delete Button - only show in delete mode */}
+        {deleteMode && selectedAlters.length > 0 && (
+            <View style={styles.deleteButtonContainer}>
+                <AnimatedPressable
+                    style={styles.deleteButton}
+                    onPress={handleBulkDelete}
+                >
+                    <Ionicons name="trash" size={20} color="white" />
+                    <Text style={styles.deleteButtonText}>
+                        Supprimer {selectedAlters.length} alter{selectedAlters.length > 1 ? 's' : ''}
+                    </Text>
+                </AnimatedPressable>
+            </View>
+        )}
 
-            <AddAlterModal
-                visible={modalVisible}
-                onClose={handleCloseAddModal}
-                onCreate={handleCreateAlter}
-                loading={loading}
-                pickImage={pickImage}
-            />
-
-            <SystemMenuModal
-                visible={menuVisible}
-                onClose={handleCloseMenu}
+        {/* Co-Front Control Bar - only show when NOT in delete mode */}
+        {!deleteMode && (
+            <SystemControlBar
+                onOpenMenu={handleOpenMenu}
+                onConfirmFronting={handleConfirmCoFront}
                 hasSelection={selectedAlters.length > 0}
             />
+        )}
 
-            <CategoryFilterModal
-                visible={categoryModalVisible}
-                onClose={() => setCategoryModalVisible(false)}
-                systemId={user?.uid || ''}
-                alters={alters}
-                activeCategory={activeCategory}
-                onSelectCategory={setActiveCategory}
-                onSelectAlter={(alter) => {
-                    setFronting([alter], 'single');
-                    router.push(`/alter-space/${alter.id}` as any);
-                }}
-            />
+        <AddAlterModal
+            visible={modalVisible}
+            onClose={handleCloseAddModal}
+            onCreate={handleCreateAlter}
+            loading={loading}
+            pickImage={pickImage}
+        />
 
-            <SubSystemModal
-                visible={subsystemModalVisible}
-                onClose={() => setSubsystemModalVisible(false)}
-                activeSubsystemId={activeSubsystemId}
-                onSelectSubsystem={(subsystem) => setActiveSubsystemId(subsystem ? subsystem.id : null)}
-            />
-        </SafeAreaView>
-    );
+        <SystemMenuModal
+            visible={menuVisible}
+            onClose={handleCloseMenu}
+            hasSelection={selectedAlters.length > 0}
+        />
+
+        <CategoryFilterModal
+            visible={categoryModalVisible}
+            onClose={() => setCategoryModalVisible(false)}
+            systemId={user?.uid || ''}
+            alters={alters}
+            activeCategory={activeCategory}
+            onSelectCategory={setActiveCategory}
+            onSelectAlter={(alter) => {
+                setFronting([alter], 'single');
+                router.push(`/alter-space/${alter.id}` as any);
+            }}
+        />
+
+        <SubSystemModal
+            visible={subsystemModalVisible}
+            onClose={() => setSubsystemModalVisible(false)}
+            activeSubsystemId={activeSubsystemId}
+            onSelectSubsystem={(subsystem) => setActiveSubsystemId(subsystem ? subsystem.id : null)}
+        />
+    </SafeAreaView>
+);
 }
 
 // =====================================================

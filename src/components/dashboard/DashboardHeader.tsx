@@ -113,7 +113,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                         onPress={onToggleDeleteMode}
                     >
                         <Ionicons
-                            name={deleteMode ? "close" : "trash-outline"}
+                            name={deleteMode ? "close" : "create-outline"}
                             size={22}
                             color={deleteMode ? 'white' : colors.text}
                         />

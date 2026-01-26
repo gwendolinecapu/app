@@ -84,17 +84,16 @@ export default function DropRateModal({ visible, tier, onClose }: DropRateModalP
                             <Text style={styles.sectionTitle}>Taux de Rareté</Text>
 
                             {(Object.entries(pack.dropRates) as [Rarity, number][])
-                                .filter(([_, rate]) => rate > 0)
                                 .sort(([_, a], [__, b]) => b - a)
                                 .map(([rarity, rate]) => (
                                     <View key={rarity} style={styles.rarityRow}>
                                         <LinearGradient
-                                            colors={RARITY_COLORS[rarity] as [string, string]}
+                                            colors={(RARITY_COLORS[rarity] || ['#6B7280', '#374151']) as any}
                                             style={styles.rarityBadge}
                                             start={{ x: 0, y: 0 }}
                                             end={{ x: 1, y: 1 }}
                                         >
-                                            <Text style={styles.rarityLabel}>{RARITY_LABELS[rarity]}</Text>
+                                            <Text style={styles.rarityLabel}>{RARITY_LABELS[rarity] || rarity}</Text>
                                         </LinearGradient>
 
                                         <View style={styles.rarityBarContainer}>
@@ -102,20 +101,20 @@ export default function DropRateModal({ visible, tier, onClose }: DropRateModalP
                                                 style={[
                                                     styles.rarityBar,
                                                     {
-                                                        width: `${rate * 100}%`,
-                                                        backgroundColor: RARITY_COLORS[rarity][0]
+                                                        width: `${Math.max(rate * 100, 2)}%`, // Min width for visibility
+                                                        backgroundColor: RARITY_COLORS[rarity]?.[0] || '#9CA3AF'
                                                     }
                                                 ]}
                                             />
                                         </View>
 
-                                        <Text style={styles.rarityValue}>{(rate * 100).toFixed(2)}%</Text>
+                                        <Text style={styles.rarityValue}>{(rate * 100).toFixed(1)}%</Text>
                                     </View>
                                 ))}
                         </View>
 
                         {/* Guarantees */}
-                        {pack.rarityGuarantees.minRarity && (
+                        {pack.rarityGuarantees && pack.rarityGuarantees.minRarity && (
                             <View style={styles.section}>
                                 <Text style={styles.sectionTitle}>✨ Garanties</Text>
                                 <View style={styles.guaranteeBox}>
@@ -128,14 +127,7 @@ export default function DropRateModal({ visible, tier, onClose }: DropRateModalP
                             </View>
                         )}
 
-                        {/* Legal Notice */}
-                        <View style={styles.legalNotice}>
-                            <Ionicons name="information-circle-outline" size={16} color="#9CA3AF" />
-                            <Text style={styles.legalText}>
-                                Les probabilités affichées sont exactes et vérifiables.
-                                Chaque ouverture est indépendante.
-                            </Text>
-                        </View>
+                        <View style={{ height: 40 }} /> {/* Bottom Spacer */}
                     </ScrollView>
                 </View>
             </View>

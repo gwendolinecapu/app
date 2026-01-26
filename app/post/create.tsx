@@ -229,19 +229,18 @@ export default function CreatePostScreen() {
         }
     };
 
-    useEffect(() => {
-        // Request permissions on mount just in case
-        (async () => {
-            if (Platform.OS !== 'web') {
-                const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-                if (status !== 'granted') {
-                    Alert.alert('Permission requise', 'Nous avons besoin de la permission pour accéder à vos photos.');
-                }
-            }
-        })();
-    }, []);
+    // Permission sera demandée seulement lors du clic sur photo/vidéo (dans pickMedia)
 
     const pickMedia = async (type: 'photo' | 'video') => {
+        // Demander la permission d'abord
+        if (Platform.OS !== 'web') {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permission requise', 'Nous avons besoin de la permission pour accéder à vos photos.');
+                return;
+            }
+        }
+
         // If we switch to photo/video, clear audio
         setAudioUri(null);
 

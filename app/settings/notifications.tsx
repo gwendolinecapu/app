@@ -43,11 +43,11 @@ export default function NotificationSettingsScreen() {
 
     if (loading || !settings) {
         return (
-            <SafeAreaView style={styles.container} edges={['top']}>
+            <View style={styles.container}>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={colors.primary} />
                 </View>
-            </SafeAreaView>
+            </View>
         );
     }
 
@@ -77,7 +77,7 @@ export default function NotificationSettingsScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -307,7 +307,7 @@ export default function NotificationSettingsScreen() {
 
                 <View style={{ height: 50 }} />
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 }
 
@@ -325,7 +325,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: spacing.md,
+        paddingTop: Platform.OS === 'ios' ? 60 : 40,
+        paddingHorizontal: spacing.md,
+        paddingBottom: spacing.md,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
     },

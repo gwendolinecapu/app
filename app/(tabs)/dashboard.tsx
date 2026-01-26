@@ -240,6 +240,12 @@ export default function Dashboard() {
     // Handler for editing system name
     const handleEditSystemName = () => {
         if (!system || !user) return;
+        // Navigation vers les paramètres du système
+        router.push('/settings/system-profile' as any);
+    };
+
+    const handleEditSystemNameOLD_UNUSED = () => {
+        if (!system || !user) return;
 
         Alert.prompt(
             "Renommer le système",
@@ -408,17 +414,43 @@ export default function Dashboard() {
                 onAlterLongPress={handleAlterLongPress}
             />
 
-            {/* Delete Button - only show in delete mode */}
+            {/* Action Buttons - only show in delete/edit mode */}
             {deleteMode && selectedAlters.length > 0 && (
                 <View style={styles.deleteButtonContainer}>
+                    <AnimatedPressable
+                        style={styles.actionButton}
+                        onPress={async () => {
+                            for (const alterId of selectedAlters) {
+                                await togglePin(alterId);
+                            }
+                            setSelectedAlters([]);
+                            setDeleteMode(false);
+                        }}
+                    >
+                        <Ionicons name="pin" size={20} color="white" />
+                        <Text style={styles.deleteButtonText}>Épingler</Text>
+                    </AnimatedPressable>
+
+                    <AnimatedPressable
+                        style={[styles.actionButton, { backgroundColor: '#FF9500' }]}
+                        onPress={async () => {
+                            for (const alterId of selectedAlters) {
+                                await toggleArchive(alterId);
+                            }
+                            setSelectedAlters([]);
+                            setDeleteMode(false);
+                        }}
+                    >
+                        <Ionicons name="archive" size={20} color="white" />
+                        <Text style={styles.deleteButtonText}>Archiver</Text>
+                    </AnimatedPressable>
+
                     <AnimatedPressable
                         style={styles.deleteButton}
                         onPress={handleBulkDelete}
                     >
                         <Ionicons name="trash" size={20} color="white" />
-                        <Text style={styles.deleteButtonText}>
-                            Supprimer {selectedAlters.length} alter{selectedAlters.length > 1 ? 's' : ''}
-                        </Text>
+                        <Text style={styles.deleteButtonText}>Supprimer</Text>
                     </AnimatedPressable>
                 </View>
             )}
@@ -906,15 +938,31 @@ const styles = StyleSheet.create({
         bottom: 30,
         left: spacing.lg,
         right: spacing.lg,
+        flexDirection: 'row',
+        gap: spacing.sm,
+        justifyContent: 'center',
+    },
+    actionButton: {
+        flexDirection: 'row',
         alignItems: 'center',
+        gap: spacing.xs,
+        backgroundColor: colors.primary,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+        borderRadius: borderRadius.full,
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+        elevation: 4,
     },
     deleteButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: spacing.sm,
+        gap: spacing.xs,
         backgroundColor: '#FF3B30', // iOS red
         paddingVertical: spacing.md,
-        paddingHorizontal: spacing.xl,
+        paddingHorizontal: spacing.lg,
         borderRadius: borderRadius.full,
         shadowColor: '#FF3B30',
         shadowOffset: { width: 0, height: 4 },

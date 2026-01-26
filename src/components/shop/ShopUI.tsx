@@ -41,6 +41,8 @@ import { DailyStreakUI } from './DailyStreakUI';
 import DropRateModal from './DropRateModal';
 
 import { InventoryModal } from './InventoryModal';
+import { ShopMenu } from './ShopMenu';
+import BankModal from './BankModal';
 
 const { width } = Dimensions.get('window');
 
@@ -69,6 +71,7 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
 
     const [modalVisible, setModalVisible] = useState(false);
     const [inventoryVisible, setInventoryVisible] = useState(false);
+    const [menuVisible, setMenuVisible] = useState(false);
     const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
     const [lootBoxVisible, setLootBoxVisible] = useState(false);
     const [loadingAd, setLoadingAd] = useState(false);
@@ -226,24 +229,29 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                             <Ionicons name="arrow-back" size={24} color="#FFF" />
                         </TouchableOpacity>
 
-                        <Text style={styles.headerTitle}>BOUTIQUE</Text>
+                        {/* CENTER: TITLE */}
+                        <View style={styles.headerCenter}>
+                            <Text style={styles.headerTitle}>BOUTIQUE</Text>
+                        </View>
 
-                        {/* RIGHT: INVENTORY & CREDITS */}
+                        {/* RIGHT: CURRENCY & MENU */}
                         <View style={styles.headerRight}>
-                            <View style={styles.creditBadge}>
-                                <Ionicons name="flash" size={14} color="#FCD34D" />
-                                <Text style={styles.creditText}>{dust}</Text>
-                            </View>
-                            <View style={styles.creditBadge}>
-                                <Ionicons name="diamond" size={14} color="#F59E0B" />
-                                <Text style={styles.creditText}>{credits}</Text>
+                            <View style={styles.currencyContainer}>
+                                <View style={styles.creditBadge}>
+                                    <Ionicons name="flash" size={12} color="#FCD34D" />
+                                    <Text style={styles.creditText}>{dust}</Text>
+                                </View>
+                                <View style={styles.creditBadge}>
+                                    <Ionicons name="diamond" size={12} color="#F59E0B" />
+                                    <Text style={styles.creditText}>{credits}</Text>
+                                </View>
                             </View>
 
                             <TouchableOpacity
                                 style={styles.iconBtn}
-                                onPress={() => setInventoryVisible(true)}
+                                onPress={() => setMenuVisible(true)}
                             >
-                                <Ionicons name="bag-handle-outline" size={24} color="#FFF" />
+                                <Ionicons name="menu" size={24} color="#FFF" />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -398,24 +406,17 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                     ))}
                 </ScrollView>
 
-                {/* 3. SECTION CATALOG TEASER / EXPANDED */}
-                <TouchableOpacity
-                    style={styles.catalogButton}
-                    onPress={() => setCatalogExpanded(!catalogExpanded)}
-                >
-                    <Text style={styles.catalogBtnText}>
-                        {catalogExpanded ? 'MASQUER LE CATALOGUE' : 'VOIR TOUT LE CATALOGUE'}
-                    </Text>
-                    <Ionicons
-                        name={catalogExpanded ? 'chevron-up' : 'grid-outline'}
-                        size={20}
-                        color="#FFF"
-                    />
-                </TouchableOpacity>
-
-                {/* CATALOG EXPANDED SECTION */}
+                {/* 3. SECTION CATALOG TEASER / EXPANDED - NOW IN MENU */}
+                {/* Catalog is hidden by default and accessible via Menu */}
                 {catalogExpanded && (
                     <View style={styles.catalogSection}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>CATALOGUE COMPLET</Text>
+                            <TouchableOpacity onPress={() => setCatalogExpanded(false)}>
+                                <Ionicons name="close-circle" size={24} color="#FFF" />
+                            </TouchableOpacity>
+                        </View>
+
                         {/* Filter Tabs */}
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterTabs}>
                             {(['all', 'theme', 'frame', 'bubble'] as const).map((filter) => (
@@ -489,6 +490,23 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
 
             </ScrollView>
 
+            {/* SHOP MENU */}
+            <ShopMenu
+                visible={menuVisible}
+                onClose={() => setMenuVisible(false)}
+                onOptionSelect={(option) => {
+                    setMenuVisible(false);
+                    setTimeout(() => {
+                        if (option === 'inventory') setInventoryVisible(true);
+                        if (option === 'bank') setBankModalVisible(true);
+                        if (option === 'catalog') {
+                            setCatalogExpanded(true);
+                            // Scroll to catalog (optional, simplistic approach)
+                        }
+                    }, 300);
+                }}
+            />
+
             {/* MODALS */}
             <ShopItemModal
                 visible={modalVisible}
@@ -522,6 +540,11 @@ export default function ShopUI({ isEmbedded = false }: ShopUIProps) {
                 }}
             />
 
+            <BankModal
+                visible={bankModalVisible}
+                onClose={() => setBankModalVisible(false)}
+            />
+
             <DropRateModal
                 visible={dropRateVisible}
                 tier={dropRateTier}
@@ -545,25 +568,32 @@ const styles = StyleSheet.create({
     headerTop: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between', // Keep space between for layout
         paddingVertical: 10,
-        height: 50, // Fixed height for absolute centering
+        height: 60,
+    },
+    headerCenter: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        // Ensure title doesn't overlap
+        marginHorizontal: 8,
     },
     headerTitle: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        textAlign: 'center',
-        fontSize: 24, // Slightly smaller for better fit
+        fontSize: 20,
         fontWeight: '900',
         color: '#FFF',
         letterSpacing: 1,
-        zIndex: -1, // Behind buttons click area
+        textAlign: 'center',
     },
     headerRight: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        gap: 8,
+    },
+    currencyContainer: {
+        flexDirection: 'column', // Stack currencies on small screens to save width
+        alignItems: 'flex-end',
+        gap: 4,
     },
     iconBtn: {
         width: 40,
@@ -576,16 +606,18 @@ const styles = StyleSheet.create({
     creditBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 20,
-        gap: 6,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+        gap: 4,
+        minWidth: 60,
+        justifyContent: 'center',
     },
     creditText: {
         color: '#FFF',
         fontWeight: 'bold',
-        fontSize: 14,
+        fontSize: 12,
     },
     plusBtn: {
         backgroundColor: '#F59E0B',

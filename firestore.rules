@@ -22,8 +22,9 @@ service cloud.firestore {
     // Check ownership for create operations
     function isOwnerCreate() {
       return isAuthenticated() && (
-        request.resource.data.system_id == request.auth.uid || 
-        request.resource.data.userId == request.auth.uid
+        request.resource.data.system_id == request.auth.uid ||
+        request.resource.data.userId == request.auth.uid ||
+        request.resource.data.systemId == request.auth.uid
       );
     }
 

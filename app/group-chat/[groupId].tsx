@@ -47,6 +47,9 @@ export default function GroupChatScreen() {
     const [searchLoading, setSearchLoading] = useState(false);
     const [friends, setFriends] = useState<any[]>([]);
 
+    // Alter selector modal
+    const [showAlterSelector, setShowAlterSelector] = useState(false);
+
     // Initialize sender to current front or first alter
     useEffect(() => {
         if (!selectedSenderId && alters.length > 0) {
@@ -337,12 +340,13 @@ export default function GroupChatScreen() {
 
             {/* Input Area */}
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                style={{ flexShrink: 0 }}
             >
-                <View style={[styles.inputContainer, { paddingBottom: insets.bottom + spacing.md }]}>
+                <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 8) }]}>
                     {/* Sender Pill */}
-                    <TouchableOpacity style={styles.senderPill}>
+                    <TouchableOpacity style={styles.senderPill} onPress={() => setShowAlterSelector(true)}>
                         {currentSender?.avatar_url ? (
                             <Image source={{ uri: currentSender.avatar_url }} style={styles.senderPillAvatar} />
                         ) : (
@@ -354,6 +358,13 @@ export default function GroupChatScreen() {
                     </TouchableOpacity>
 
                     <View style={styles.inputWrapper}>
+                        <TouchableOpacity
+                            style={styles.attachButton}
+                            onPress={() => Alert.alert('Images', 'Fonctionnalité bientôt disponible')}
+                        >
+                            <Ionicons name="image-outline" size={20} color={colors.textSecondary} />
+                        </TouchableOpacity>
+
                         <TextInput
                             style={styles.input}
                             value={inputText}
@@ -363,6 +374,7 @@ export default function GroupChatScreen() {
                             multiline
                             maxLength={1000}
                         />
+
                         {inputText.trim().length > 0 && (
                             <TouchableOpacity
                                 style={styles.sendButton}
@@ -509,6 +521,58 @@ export default function GroupChatScreen() {
                                 )}
                             />
                         )}
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+
+            {/* Alter Selector Modal */}
+            <Modal
+                visible={showAlterSelector}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setShowAlterSelector(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowAlterSelector(false)}
+                >
+                    <View style={styles.settingsModal} onStartShouldSetResponder={() => true}>
+                        <View style={styles.modalHandle} />
+                        <Text style={styles.settingsTitle}>Qui parle ?</Text>
+
+                        <FlatList
+                            data={alters}
+                            keyExtractor={(item) => item.id}
+                            style={{ maxHeight: 400 }}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={[
+                                        styles.alterSelectorItem,
+                                        item.id === selectedSenderId && styles.alterSelectorItemActive
+                                    ]}
+                                    onPress={() => {
+                                        setSelectedSenderId(item.id);
+                                        setShowAlterSelector(false);
+                                        triggerHaptic.selection();
+                                    }}
+                                >
+                                    {item.avatar_url ? (
+                                        <Image source={{ uri: item.avatar_url }} style={styles.alterSelectorAvatar} />
+                                    ) : (
+                                        <View style={[styles.alterSelectorAvatarPlaceholder, { backgroundColor: item.color || colors.primary }]}>
+                                            <Text style={styles.alterSelectorInitial}>{item.name.charAt(0)}</Text>
+                                        </View>
+                                    )}
+                                    <Text style={[styles.alterSelectorName, item.id === selectedSenderId && styles.alterSelectorNameActive]}>
+                                        {item.name}
+                                    </Text>
+                                    {item.id === selectedSenderId && (
+                                        <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                                    )}
+                                </TouchableOpacity>
+                            )}
+                        />
                     </View>
                 </TouchableOpacity>
             </Modal>
@@ -669,6 +733,10 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
         minHeight: 44,
     },
+    attachButton: {
+        padding: spacing.xs,
+        marginRight: spacing.xs,
+    },
     input: {
         flex: 1,
         color: colors.text,
@@ -816,5 +884,48 @@ const styles = StyleSheet.create({
         height: 40,
         borderRadius: 20,
         marginRight: spacing.md,
+    },
+    // Alter Selector Modal
+    alterSelectorItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.background,
+        borderRadius: borderRadius.lg,
+        padding: spacing.md,
+        marginBottom: spacing.sm,
+    },
+    alterSelectorItemActive: {
+        backgroundColor: `${colors.primary}20`,
+        borderWidth: 2,
+        borderColor: colors.primary,
+    },
+    alterSelectorAvatar: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        marginRight: spacing.md,
+    },
+    alterSelectorAvatarPlaceholder: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: spacing.md,
+    },
+    alterSelectorInitial: {
+        color: 'white',
+        fontSize: 20,
+        fontWeight: 'bold',
+    },
+    alterSelectorName: {
+        flex: 1,
+        ...typography.body,
+        fontSize: 16,
+        color: colors.text,
+    },
+    alterSelectorNameActive: {
+        fontWeight: '600',
+        color: colors.primary,
     },
 });

@@ -131,8 +131,19 @@ export function DailyStreakUI({ alterId, onOpenPack }: DailyStreakUIProps) {
                     (status === 'current' && canClaim) ? styles.activeCard : {}
                 ]}
                 activeOpacity={0.8}
-                onPress={status === 'current' ? handleClaim : undefined}
-                disabled={status !== 'current' || claiming}
+                onPress={() => {
+                    if (status === 'current') {
+                        handleClaim();
+                    } else {
+                        Alert.alert(
+                            `Jour ${day}`,
+                            status === 'claimed'
+                                ? "Déjà récupéré !"
+                                : "Reviens plus tard pour débloquer ce jour !"
+                        );
+                    }
+                }}
+                disabled={claiming}
             >
                 <LinearGradient
                     colors={bgColors as any}
@@ -238,11 +249,12 @@ const styles = StyleSheet.create({
     },
     dayCard: {
         width: CARD_WIDTH,
-        height: 90,
+        height: 100, // Taller for better proportion
         marginRight: 8,
-        borderRadius: 12,
+        borderRadius: 16,
         borderWidth: 1,
         overflow: 'hidden',
+        backgroundColor: 'rgba(255,255,255,0.05)', // Base bg
     },
     activeCard: {
         transform: [{ scale: 1.05 }],

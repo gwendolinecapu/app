@@ -19,6 +19,7 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { Platform } from 'react-native';
 
 import BoosterPack from './BoosterPack';
 import CardReveal from './CardReveal';
@@ -220,8 +221,10 @@ export default function LootBoxOpening({ visible, tier, onClose }: LootBoxOpenin
             withTiming(0, { duration: 300 })
         );
 
-        // Enhanced haptics
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        // Enhanced haptics (Reduced)
+        if (Platform.OS === 'ios') {
+            Haptics.selectionAsync();
+        }
 
         // Persist rewards
         const saveRewards = async () => {
@@ -240,7 +243,8 @@ export default function LootBoxOpening({ visible, tier, onClose }: LootBoxOpenin
         phaseTransitionTimeoutRef.current = setTimeout(() => {
             setPhase('cards');
             setShowParticles(false);
-        }, 800);
+            // Auto flip first card logic is handled in render
+        }, 500);
     }, [tier, ownedItems, addToInventory, addDust]);
 
     const handleCardFlip = () => {
@@ -299,11 +303,22 @@ export default function LootBoxOpening({ visible, tier, onClose }: LootBoxOpenin
 
                 <SafeAreaView style={styles.container}>
                     {/* Header / Close */}
-                    {phase !== 'pack' && (
-                        <TouchableOpacity style={styles.closeButton} onPress={handleFinish}>
-                            <Ionicons name="close-circle" size={32} color="rgba(255,255,255,0.5)" />
-                        </TouchableOpacity>
-                    )}
+                    <View style={styles.headerControls}>
+                        {phase === 'cards' && cardsRevealedCount < (result?.cards.length || 0) && (
+                            <TouchableOpacity
+                                style={styles.skipButton}
+                                onPress={() => setCardsRevealedCount(result?.cards.length || 0)}
+                            >
+                                <Text style={styles.skipButtonText}>TOUT RÉVÉLER</Text>
+                            </TouchableOpacity>
+                        )}
+
+                        {phase !== 'pack' && (
+                            <TouchableOpacity style={styles.closeButton} onPress={handleFinish}>
+                                <Ionicons name="close-circle" size={32} color="rgba(255,255,255,0.5)" />
+                            </TouchableOpacity>
+                        )}
+                    </View>
 
                     {/* PHASE 1: BOOSTER PACK */}
                     {phase === 'pack' && (
@@ -408,11 +423,30 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    closeButton: {
+    headerControls: {
         position: 'absolute',
         top: 50,
+        left: 20,
         right: 20,
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
         zIndex: 50,
+    },
+    closeButton: {
+        // removed absolute
+        marginLeft: 16,
+    },
+    skipButton: {
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+    },
+    skipButtonText: {
+        color: '#FFF',
+        fontSize: 12,
+        fontWeight: 'bold',
     },
     instructionText: {
         color: 'white',

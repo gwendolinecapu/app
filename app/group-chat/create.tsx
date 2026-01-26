@@ -37,6 +37,13 @@ export default function CreateGroupScreen() {
     const [loading, setLoading] = useState(false);
     const [creating, setCreating] = useState(false);
 
+    // Ajouter automatiquement le système courant comme membre par défaut
+    useEffect(() => {
+        if (user?.uid && !selectedMembers.includes(user.uid)) {
+            setSelectedMembers([user.uid]);
+        }
+    }, [user]);
+
     useEffect(() => {
         loadFriends();
     }, [currentAlter]);

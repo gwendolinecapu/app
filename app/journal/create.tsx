@@ -200,11 +200,11 @@ export default function CreateJournalEntryScreen() {
                                     )}
                                 </Text>
                                 <View>
-                                    <Text style={styles.optionLabel}>Visibilité IA</Text>
+                                    <Text style={styles.optionLabel}>Accessible à l'IA</Text>
                                     <Text style={styles.optionHint}>
                                         {isLocked
-                                            ? "Forcé en Privé (Verrouillé)"
-                                            : "Journal de bord (Public pour l'IA)"}
+                                            ? "Non - Privé et verrouillé"
+                                            : "Oui - Analyse IA autorisée"}
                                     </Text>
                                 </View>
                             </View>

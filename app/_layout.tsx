@@ -18,8 +18,6 @@ import { SuccessAnimation } from '../src/components/ui/SuccessAnimation';
 import { SuccessAnimationProvider } from '../src/contexts/SuccessAnimationContext';
 import { colors, typography } from '../src/lib/theme';
 
-import { BiometricGuard } from '../src/components/auth/BiometricGuard';
-
 // Ignore specific warnings
 LogBox.ignoreLogs([
     'CookieManager',
@@ -39,11 +37,10 @@ export default function RootLayout() {
                                     <NotificationProvider>
                                         <MonetizationProvider>
                                             <SuccessAnimationProvider>
-                                                <BiometricGuard>
-                                                    <View style={styles.container}>
-                                                        <OfflineBanner />
-                                                        <SuccessAnimation />
-                                                        <Stack
+                                                <View style={styles.container}>
+                                                    <OfflineBanner />
+                                                    <SuccessAnimation />
+                                                    <Stack
                                                             screenOptions={{
                                                                 headerStyle: {
                                                                     backgroundColor: colors.background,
@@ -129,7 +126,6 @@ export default function RootLayout() {
                                                         </Stack>
                                                         <StatusBar style="auto" />
                                                     </View>
-                                                </BiometricGuard>
                                             </SuccessAnimationProvider>
                                         </MonetizationProvider>
                                     </NotificationProvider>

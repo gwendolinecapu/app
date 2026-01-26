@@ -453,12 +453,13 @@ export default function AlterSpaceScreen() {
                                     <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
                                 </TouchableOpacity>
 
-                                <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname: '/inner-world', params: { alterId: alter.id } })}>
+                                <TouchableOpacity style={[styles.menuItem, { opacity: 0.5 }]} disabled={true}>
                                     <Ionicons name="planet-outline" size={24} color={activeColor} style={{ marginRight: 15 }} />
                                     <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text }]}>Inner World</Text>
                                     <View style={{ flex: 1 }} />
-                                    <StatusBadge status="beta" />
-                                    <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} style={{ marginLeft: 8 }} />
+                                    <View style={{ backgroundColor: '#6366F1', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+                                        <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600' }}>Bientôt</Text>
+                                    </View>
                                 </TouchableOpacity>
 
                                 <View style={{ height: 30 }} />

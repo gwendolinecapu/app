@@ -37,6 +37,7 @@ import { SubSystemModal } from '../../src/components/dashboard/SubSystemModal';
 import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
 
 import { Alter } from '../../src/types';
+import { useResponsive } from '../../src/hooks/useResponsive';
 
 const CONTAINER_PADDING = 16;
 
@@ -64,6 +65,7 @@ const getBubbleConfig = (alterCount: number, availableWidth: number) => {
  */
 export default function Dashboard() {
     const { alters, user, system, refreshAlters, setFronting, activeFront, loading: authLoading, toggleArchive, togglePin } = useAuth();
+    const { isDesktop, isWeb } = useResponsive();
     const [modalVisible, setModalVisible] = useState(false);
     const [menuVisible, setMenuVisible] = useState(false);
 
@@ -421,8 +423,8 @@ export default function Dashboard() {
                 </View>
             )}
 
-            {/* Co-Front Control Bar - only show when NOT in delete mode */}
-            {!deleteMode && (
+            {/* Co-Front Control Bar - only show when NOT in delete mode and NOT on desktop */}
+            {!deleteMode && !(isWeb && isDesktop) && (
                 <SystemControlBar
                     onOpenMenu={handleOpenMenu}
                     onConfirmFronting={handleConfirmCoFront}

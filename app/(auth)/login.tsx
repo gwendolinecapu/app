@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
     View,
     Text,
-    TextInput,
     TouchableOpacity,
     StyleSheet,
     KeyboardAvoidingView,
@@ -16,6 +15,8 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { DismissKeyboard } from '../../src/components/ui/DismissKeyboard';
 import { WebContainer } from '../../src/components/ui/WebContainer';
+import { ResponsiveInput } from '../../src/components/ui/ResponsiveInput';
+import { ResponsiveButton } from '../../src/components/ui/ResponsiveButton';
 
 export default function LoginScreen() {
     const [email, setEmail] = useState('');
@@ -74,43 +75,34 @@ export default function LoginScreen() {
                         </View>
 
                         <View style={styles.form}>
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Email</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="votre@email.com"
-                            placeholderTextColor={colors.textMuted}
-                            value={email}
-                            onChangeText={setEmail}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            autoComplete="email"
-                        />
-                    </View>
+                    <ResponsiveInput
+                        label="Email"
+                        placeholder="votre@email.com"
+                        value={email}
+                        onChangeText={setEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoComplete="email"
+                    />
 
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Mot de passe</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="••••••••"
-                            placeholderTextColor={colors.textMuted}
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry
-                            autoComplete="password"
-                        />
-                    </View>
+                    <ResponsiveInput
+                        label="Mot de passe"
+                        placeholder="••••••••"
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry
+                        autoComplete="password"
+                    />
 
-                    <TouchableOpacity
-                        style={[styles.buttonContainer, styles.button]}
+                    <ResponsiveButton
+                        title={loading ? 'Connexion...' : 'Se connecter'}
                         onPress={handleLogin}
                         disabled={loading}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={styles.buttonText}>
-                            {loading ? 'Connexion...' : 'Se connecter'}
-                        </Text>
-                    </TouchableOpacity>
+                        loading={loading}
+                        variant="primary"
+                        fullWidth
+                        style={styles.buttonContainer}
+                    />
 
 
                     <View style={styles.dividerContainer}>

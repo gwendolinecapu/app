@@ -1,23 +1,29 @@
-import { Tabs, router } from 'expo-router';
-import { Platform, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Tabs } from 'expo-router';
 import { useTheme } from '../../src/contexts/ThemeContext';
-import { useState } from 'react';
-import { SystemMenuModal } from '../../src/components/dashboard/SystemMenuModal';
+import { useAuth } from '../../src/contexts/AuthContext';
+import { DashboardWrapper } from '../../src/components/dashboard/DashboardWrapper';
+import { useResponsive } from '../../src/hooks/useResponsive';
 
 export default function TabLayout() {
     const { colors } = useTheme();
+    const { system, user } = useAuth();
+    const { isDesktop, isWeb } = useResponsive();
+
+    // Sur desktop web, cacher complètement la tabBar
+    const tabBarStyle = (isWeb && isDesktop) ? { display: 'none' as const } : { display: 'none' as const };
 
     return (
-        <Tabs
-            screenOptions={{
-                headerShown: false,
-                tabBarStyle: {
-                    display: 'none', // Tab Bar masquée - navigation via bulles d'alter
-                },
-            }}
-            initialRouteName="dashboard"
+        <DashboardWrapper
+            systemName={system?.username}
+            userEmail={user?.email}
         >
+            <Tabs
+                screenOptions={{
+                    headerShown: false,
+                    tabBarStyle,
+                }}
+                initialRouteName="dashboard"
+            >
             {/* Dashboard - Seul écran visible directement */}
             <Tabs.Screen
                 name="dashboard"
@@ -36,7 +42,8 @@ export default function TabLayout() {
             <Tabs.Screen name="create" options={{ href: null }} />
             <Tabs.Screen name="menu" options={{ href: null }} />
             <Tabs.Screen name="notifications" options={{ href: null }} />
-        </Tabs>
+            </Tabs>
+        </DashboardWrapper>
     );
 }
 

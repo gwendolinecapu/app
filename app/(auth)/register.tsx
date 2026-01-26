@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
-    TextInput,
     TouchableOpacity,
     StyleSheet,
     KeyboardAvoidingView,
@@ -17,8 +16,10 @@ import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { DismissKeyboard } from '../../src/components/ui/DismissKeyboard';
 import { LegalModal } from '../../src/components/auth/LegalModal';
 import { Ionicons } from '@expo/vector-icons';
-
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { PlatformSafeView } from '../../src/components/ui/PlatformSafeView';
+import { WebContainer } from '../../src/components/ui/WebContainer';
+import { ResponsiveInput } from '../../src/components/ui/ResponsiveInput';
+import { ResponsiveButton } from '../../src/components/ui/ResponsiveButton';
 
 export default function RegisterScreen() {
     const params = useLocalSearchParams<{ systemName?: string; alterCount?: string }>();
@@ -107,88 +108,76 @@ export default function RegisterScreen() {
 
     return (
         <DismissKeyboard>
-            <SafeAreaView style={styles.safeArea}>
+            <PlatformSafeView style={styles.safeArea}>
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined}
                     style={styles.container}
                 >
-                    <View style={styles.header}>
-                        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                            <Ionicons name="arrow-back" size={24} color={colors.text} />
-                        </TouchableOpacity>
+                    <ScrollView
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        <WebContainer maxWidth={500} noPadding={Platform.OS !== 'web'}>
+                            <View style={styles.header}>
+                                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                                    <Ionicons name="arrow-back" size={24} color={colors.text} />
+                                </TouchableOpacity>
 
-                        <Text style={styles.logo}>💜</Text>
-                    </View>
-
-                    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                        <View style={styles.titleContainer}>
-                            <Text style={styles.title}>Créer un compte</Text>
-                            <Text style={styles.subtitle}>Rejoignez la communauté PluralConnect</Text>
-                        </View>
-
-                        <View style={styles.form}>
-                            <View style={styles.inputContainer}>
-                                <Text style={styles.label}>Nom du système</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Le Collectif Stellaire"
-                                    placeholderTextColor={colors.textMuted}
-                                    value={username}
-                                    onChangeText={setUsername}
-                                    autoCapitalize="words"
-                                />
+                                <Text style={styles.logo}>💜</Text>
                             </View>
 
-                            <View style={styles.inputContainer}>
-                                <Text style={styles.label}>Email</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="votre@email.com"
-                                    placeholderTextColor={colors.textMuted}
-                                    value={email}
-                                    onChangeText={setEmail}
-                                    keyboardType="email-address"
-                                    autoCapitalize="none"
-                                    autoComplete="email"
-                                />
+                            <View style={styles.titleContainer}>
+                                <Text style={styles.title}>Créer un compte</Text>
+                                <Text style={styles.subtitle}>Rejoignez la communauté PluralConnect</Text>
                             </View>
 
-                            <View style={styles.inputContainer}>
-                                <Text style={styles.label}>Mot de passe</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="••••••••"
-                                    placeholderTextColor={colors.textMuted}
-                                    value={password}
-                                    onChangeText={setPassword}
-                                    secureTextEntry
-                                    autoComplete="new-password"
-                                />
-                            </View>
+                            <View style={styles.form}>
+                            <ResponsiveInput
+                                label="Nom du système"
+                                placeholder="Le Collectif Stellaire"
+                                value={username}
+                                onChangeText={setUsername}
+                                autoCapitalize="words"
+                            />
 
-                            <View style={styles.inputContainer}>
-                                <Text style={styles.label}>Confirmer le mot de passe</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="••••••••"
-                                    placeholderTextColor={colors.textMuted}
-                                    value={confirmPassword}
-                                    onChangeText={setConfirmPassword}
-                                    secureTextEntry
-                                    autoComplete="new-password"
-                                />
-                            </View>
+                            <ResponsiveInput
+                                label="Email"
+                                placeholder="votre@email.com"
+                                value={email}
+                                onChangeText={setEmail}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                autoComplete="email"
+                            />
 
-                            <TouchableOpacity
-                                style={[styles.buttonContainer, styles.button]}
+                            <ResponsiveInput
+                                label="Mot de passe"
+                                placeholder="••••••••"
+                                value={password}
+                                onChangeText={setPassword}
+                                secureTextEntry
+                                autoComplete="new-password"
+                            />
+
+                            <ResponsiveInput
+                                label="Confirmer le mot de passe"
+                                placeholder="••••••••"
+                                value={confirmPassword}
+                                onChangeText={setConfirmPassword}
+                                secureTextEntry
+                                autoComplete="new-password"
+                            />
+
+                            <ResponsiveButton
+                                title={loading ? 'Création...' : "S'inscrire"}
                                 onPress={handleRegister}
                                 disabled={loading}
-                                activeOpacity={0.8}
-                            >
-                                <Text style={styles.buttonText}>
-                                    {loading ? 'Création...' : "S'inscrire"}
-                                </Text>
-                            </TouchableOpacity>
+                                loading={loading}
+                                variant="primary"
+                                fullWidth
+                                style={styles.buttonContainer}
+                            />
 
                             <Text style={styles.legalText}>
                                 En vous inscrivant, vous acceptez nos{' '}
@@ -227,7 +216,7 @@ export default function RegisterScreen() {
                                 }}
                                 disabled={loading}
                             >
-                                <Text style={[styles.buttonText, styles.googleButtonText]}>S'inscrire avec Google</Text>
+                                <Text style={[styles.buttonText, styles.googleButtonText]}>S&apos;inscrire avec Google</Text>
                             </TouchableOpacity>
 
                             <View style={styles.footer}>
@@ -239,6 +228,7 @@ export default function RegisterScreen() {
                                 </Link>
                             </View>
                         </View>
+                        </WebContainer>
                     </ScrollView>
                 </KeyboardAvoidingView>
 
@@ -247,7 +237,7 @@ export default function RegisterScreen() {
                     type={legalModal.type}
                     onClose={() => setLegalModal({ visible: false, type: null })}
                 />
-            </SafeAreaView>
+            </PlatformSafeView>
         </DismissKeyboard>
     );
 }
@@ -262,6 +252,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
+        justifyContent: 'center',
         padding: spacing.lg,
     },
     header: {

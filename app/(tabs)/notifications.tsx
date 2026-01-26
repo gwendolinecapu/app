@@ -56,6 +56,7 @@ interface Notification {
     targetName?: string; // For "You accepted X's request"
     targetAvatar?: string; // For double avatar display
     isProfileDeleted?: boolean; // NEW: Flag for deleted profiles
+    senderAlterId?: string; // NEW: Explicit alter ID from notification data
 }
 
 export default function NotificationsScreen() {
@@ -225,8 +226,21 @@ export default function NotificationsScreen() {
             // Collect all unique sender IDs to verify existence
             const senderIdsToVerify = new Set<string>();
             loadedNotifications.forEach(n => {
-                if (n.senderId) senderIdsToVerify.add(n.senderId);
-                // Also check for friend request accepted legacy data
+                // Priority 1: Explicit senderAlterId (e.g. friend_new)
+                if (n.senderAlterId) {
+                    senderIdsToVerify.add(n.senderAlterId);
+                }
+                // Priority 2: In-data alterId (e.g. friend_request_accepted - the acceptor)
+                else if ((n.type === 'friend_request_accepted' || n.type === 'FRIEND_REQUEST_ACCEPTED') && n.data?.alterId) {
+                    senderIdsToVerify.add(n.data.alterId);
+                }
+                // Priority 3: Standard senderId
+                else if (n.senderId) {
+                    senderIdsToVerify.add(n.senderId);
+                }
+
+                // Also check for friend request accepted legacy data for the TARGET (the one whose request was accepted)
+                // This seems to be used for targetName
                 if ((n.type === 'friend_request_accepted' || n.type === 'FRIEND_REQUEST_ACCEPTED') && n.data?.friendId) {
                     senderIdsToVerify.add(n.data.friendId);
                 }
@@ -249,9 +263,14 @@ export default function NotificationsScreen() {
                 // Determine the relevant ID for this notification
                 let relevantId = n.senderId;
 
-                // Special handling for friend request accepted
-                if ((n.type === 'friend_request_accepted' || n.type === 'FRIEND_REQUEST_ACCEPTED') && !relevantId && n.data?.friendId) {
-                    relevantId = n.data.friendId;
+                if (n.senderAlterId) {
+                    relevantId = n.senderAlterId;
+                } else if ((n.type === 'friend_request_accepted' || n.type === 'FRIEND_REQUEST_ACCEPTED')) {
+                    if (n.data?.alterId) {
+                        relevantId = n.data.alterId;
+                    } else if (!relevantId && n.data?.friendId) {
+                        relevantId = n.data.friendId;
+                    }
                 }
 
                 if (relevantId && senderProfiles.has(relevantId)) {

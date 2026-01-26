@@ -473,8 +473,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         updateHeadspace,
         currentAlter: activeFront.alters[0] || null,
         isBiometricEnabled,
-        currentAlter: activeFront.alters[0] || null,
-        isBiometricEnabled,
         toggleBiometric,
         signInWithGoogle,
         refreshSystem

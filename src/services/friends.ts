@@ -492,5 +492,72 @@ export const FriendService = {
         // For 'Following' list (getFriends): alterId=Me, friendId=Them
         // For 'Followers' list (getFollowing): friendId=Me, alterId=Them (in DB schema)
         // The modal passes the IDs. logic should handle direction based on context.
+    },
+
+    /**
+     * Save suggested friends (unselected alters from import)
+     */
+    saveSuggestions: async (systemId: string, altersKeyed: { id: string, name: string, avatar_url?: string, systemId?: string }[]) => {
+        if (!systemId) return;
+
+        // We'll use a subcollection 'friend_suggestions' under the user's system document
+        // This is more organized and easy to clean up.
+        // It requires a new rule or might reuse existing 'isOwner' logic if we put it under systems/{uid}/...
+
+        const batch = [];
+        // Note: Firestore batch is useful but here we can just loop for simplicity or use runTransaction if needed.
+        // We will just add/set docs.
+
+        for (const alter of altersKeyed) {
+            // Check if already exists to avoid duplicates?
+            // Actually, we can just overwrite or ignore.
+            // Using setDoc with merge might be good if we had unique IDs for suggestions.
+            // We can use suggestionId = `${systemId}_${alter.id}`
+
+            // Since we are inside a static object, let's keep it simple with addDoc or separate calls.
+            // But wait, the prompt asked for "Persist unselected alters".
+
+            try {
+                await addDoc(collection(db, `systems/${systemId}/friend_suggestions`), {
+                    alterId: alter.id,
+                    name: alter.name,
+                    avatar_url: alter.avatar_url || null,
+                    targetSystemId: alter.systemId,
+                    suggestedAt: serverTimestamp(),
+                    status: 'pending'
+                });
+            } catch (e) {
+                console.warn("Error saving suggestion:", e);
+            }
+        }
+    },
+
+    /**
+     * Get friend suggestions for the current system
+     */
+    getSuggestions: async (systemId: string) => {
+        if (!systemId) return [];
+
+        try {
+            const q = query(
+                collection(db, `systems/${systemId}/friend_suggestions`),
+                where('status', '==', 'pending'),
+                limit(20)
+            );
+            const snapshot = await getDocs(q);
+            return snapshot.docs.map(doc => ({
+                id: doc.data().alterId,
+                name: doc.data().name,
+                avatar_url: doc.data().avatar_url,
+                systemId: doc.data().targetSystemId,
+                type: 'alter',
+                color: '#60A5FA', // Default color for suggestions
+                suggestionDocId: doc.id
+            }));
+        } catch (error) {
+            console.error("Error fetching suggestions:", error);
+            // Fallback to empty array so the UI doesn't crash
+            return [];
+        }
     }
 };

@@ -50,6 +50,11 @@ service cloud.firestore {
       // Reverting to same rule but adding comment about visibility awareness.
       allow read: if isAuthenticated();
       allow write: if isAuthenticated() && request.auth.uid == systemId;
+
+      // Friend Suggestions Subcollection
+      match /friend_suggestions/{suggestionId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == systemId;
+      }
     }
 
     // ============================================

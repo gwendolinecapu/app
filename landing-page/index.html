@@ -30,6 +30,11 @@
 
     <!-- Firebase SDK -->
     <script type="module">
+        import { inject } from 'https://esm.sh/@vercel/analytics';
+
+        // Initialize Vercel Analytics
+        inject();
+
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
         import { getFirestore, collection, addDoc, doc, getDoc, setDoc, onSnapshot, runTransaction, increment } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
         import { getAuth, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
@@ -110,12 +115,13 @@
             <div class="hero-cta">
                 <form id="hero-form" class="email-form">
                     <!-- Honeypot anti-spam (hidden from users) -->
-                    <input type="text" name="website" class="honeypot-field" tabindex="-1"
-                        autocomplete="off" aria-hidden="true">
+                    <input type="text" name="website" class="honeypot-field" tabindex="-1" autocomplete="off"
+                        aria-hidden="true">
                     <div class="input-wrapper">
                         <i class="fas fa-envelope" aria-hidden="true"></i>
                         <label for="hero-email" class="visually-hidden">Adresse email</label>
-                        <input type="email" placeholder="votre@email.com" required id="hero-email" aria-label="Adresse email">
+                        <input type="email" placeholder="votre@email.com" required id="hero-email"
+                            aria-label="Adresse email">
                     </div>
                     <button type="submit" class="btn-primary">
                         <span>Je m'inscris</span>
@@ -133,14 +139,16 @@
                 <div class="counter-content">
                     <div class="counter-item">
                         <div class="counter-value" id="signup-count">
-                            <span class="counter-loader" aria-label="Chargement"><i class="fas fa-spinner fa-spin" aria-hidden="true"></i></span>
+                            <span class="counter-loader" aria-label="Chargement"><i class="fas fa-spinner fa-spin"
+                                    aria-hidden="true"></i></span>
                         </div>
                         <div class="counter-label">Inscrits</div>
                     </div>
                     <div class="counter-divider" aria-hidden="true"></div>
                     <div class="counter-item highlight">
                         <div class="counter-value" id="spots-left">
-                            <span class="counter-loader" aria-label="Chargement"><i class="fas fa-spinner fa-spin" aria-hidden="true"></i></span>
+                            <span class="counter-loader" aria-label="Chargement"><i class="fas fa-spinner fa-spin"
+                                    aria-hidden="true"></i></span>
                         </div>
                         <div class="counter-label">Places restantes</div>
                     </div>
@@ -548,14 +556,17 @@
             <div class="support-text">
                 <span class="badge-support">💜 Devenez un Pioneer</span>
                 <h2>Soutenez le projet, accédez en premier</h2>
-                <p>PluralConnect sera 100% gratuit. Votre soutien finance les serveurs et accélère le lancement sur iOS et Android.</p>
+                <p>PluralConnect sera 100% gratuit. Votre soutien finance les serveurs et accélère le lancement sur iOS
+                    et Android.</p>
 
                 <!-- Donor Benefits -->
                 <div class="donor-benefits">
                     <h4><i class="fas fa-crown"></i> Avantages donateurs</h4>
                     <ul class="benefits-list">
-                        <li><i class="fas fa-flask"></i> <strong>Accès Alpha</strong> — Avant la bêta, avant tout le monde</li>
-                        <li><i class="fas fa-gift"></i> <strong>Récompenses</strong> — Surprises exclusives au lancement</li>
+                        <li><i class="fas fa-flask"></i> <strong>Accès Alpha</strong> — Avant la bêta, avant tout le
+                            monde</li>
+                        <li><i class="fas fa-gift"></i> <strong>Récompenses</strong> — Surprises exclusives au lancement
+                        </li>
                         <li><i class="fas fa-heart"></i> <strong>Crédits</strong> — Votre nom dans l'app</li>
                     </ul>
                 </div>
@@ -588,8 +599,10 @@
                     <div class="funding-status">
                         <span class="status-check success"><i class="fas fa-check-circle"></i> Play Store (25€)</span>
                         <span class="status-check success"><i class="fas fa-check-circle"></i> Apple Store (120€)</span>
-                        <span class="status-check success"><i class="fas fa-check-circle"></i> App Ordinateur (160€)</span>
-                        <span class="status-check success"><i class="fas fa-check-circle"></i> App Apple Watch (200€)</span>
+                        <span class="status-check success"><i class="fas fa-check-circle"></i> App Ordinateur
+                            (160€)</span>
+                        <span class="status-check success"><i class="fas fa-check-circle"></i> App Apple Watch
+                            (200€)</span>
                     </div>
                 </div>
 
@@ -634,13 +647,14 @@
                 <!-- Main Form -->
                 <form id="main-form" class="main-email-form">
                     <!-- Honeypot anti-spam (hidden from users) -->
-                    <input type="text" name="website" class="honeypot-field" tabindex="-1"
-                        autocomplete="off" aria-hidden="true">
+                    <input type="text" name="website" class="honeypot-field" tabindex="-1" autocomplete="off"
+                        aria-hidden="true">
                     <div class="form-row">
                         <div class="input-group">
                             <i class="fas fa-envelope" aria-hidden="true"></i>
                             <label for="main-email" class="visually-hidden">Adresse email</label>
-                            <input type="email" placeholder="votre@email.com" required id="main-email" aria-label="Adresse email">
+                            <input type="email" placeholder="votre@email.com" required id="main-email"
+                                aria-label="Adresse email">
                         </div>
                         <button type="submit" class="btn-glow" id="submit-btn">
                             <span>Réserver ma place</span>
@@ -718,7 +732,8 @@
                     <label for="modal-password">Mot de passe</label>
                     <div class="modal-input-wrapper">
                         <i class="fas fa-lock"></i>
-                        <input type="password" id="modal-password" placeholder="Minimum 6 caractères" required minlength="6">
+                        <input type="password" id="modal-password" placeholder="Minimum 6 caractères" required
+                            minlength="6">
                         <button type="button" class="toggle-password" onclick="togglePassword()">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -728,7 +743,8 @@
                     <label for="modal-password-confirm">Confirmer le mot de passe</label>
                     <div class="modal-input-wrapper">
                         <i class="fas fa-lock"></i>
-                        <input type="password" id="modal-password-confirm" placeholder="Confirmez votre mot de passe" required minlength="6">
+                        <input type="password" id="modal-password-confirm" placeholder="Confirmez votre mot de passe"
+                            required minlength="6">
                     </div>
                 </div>
                 <p class="modal-error hidden" id="modal-error"></p>
@@ -755,7 +771,9 @@
                 </a>
             </div>
             <div class="discord-widget-wrapper">
-                <iframe src="https://discord.com/widget?id=1455286833138106441&theme=dark" width="350" height="400" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
+                <iframe src="https://discord.com/widget?id=1455286833138106441&theme=dark" width="350" height="400"
+                    allowtransparency="true" frameborder="0"
+                    sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
             </div>
         </div>
     </section>

@@ -1,5 +1,14 @@
 # Changelog
 
+## [2026-01-26] Landing Page - Vercel Analytics Integration 📊
+
+### 📈 Tracking
+- **Vercel Analytics** : Intégration de la solution Analytics de Vercel (via CDN esm.sh) pour suivre les visites et la performance de la landing page.
+- **Méthode** : Importation directe dans le module script existant d'`index.html` (sans npm build step).
+- **Objectif** : Mesurer l'engagement sur la page d'inscription Early Bird.
+
+---
+
 ## [2026-01-22] Landing Page - Hero Redesign 🎨
 
 ### UI / UX

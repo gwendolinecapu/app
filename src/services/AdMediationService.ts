@@ -136,6 +136,13 @@ class AdMediationService {
     async initialize(): Promise<void> {
         if (this.initialized) return;
 
+        // Skip initialization on web - no native ads available
+        if (isWeb) {
+            console.log('[AdMediation] Skipping initialization on web platform');
+            this.initialized = true;
+            return;
+        }
+
         try {
             await this.loadState();
             this.checkDailyReset();
@@ -156,13 +163,13 @@ class AdMediationService {
                 console.warn('[AdMediation] Consent flow skipped or failed:', consentError);
             }
 
-            // Initialiser Google Mobile Ads (skip in Expo Go where mobileAds is null)
+            // Initialiser Google Mobile Ads (skip in Expo Go and Web where mobileAds is null)
             if (mobileAds) {
                 await mobileAds().initialize();
                 // Précharger les pubs reward AdMob (only if SDK is available)
                 this.preloadRewardedAds();
             } else {
-                // AdMob disabled in Expo Go
+                // AdMob disabled in Expo Go or Web
             }
 
             // Initialiser les autres réseaux (placeholders pour l'instant)

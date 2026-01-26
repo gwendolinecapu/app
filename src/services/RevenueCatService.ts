@@ -1,11 +1,31 @@
-import Purchases, {
-    PurchasesOffering,
-    PurchasesPackage,
-    CustomerInfo
-} from 'react-native-purchases';
-import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import { Platform, LogBox } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
+
+// Conditional imports for native platforms only
+let Purchases: any = null;
+let RevenueCatUI: any = null;
+let PAYWALL_RESULT: any = null;
+let PurchasesOffering: any = null;
+let PurchasesPackage: any = null;
+let CustomerInfo: any = null;
+
+const isWeb = Platform.OS === 'web';
+
+if (!isWeb) {
+    try {
+        const PurchasesModule = require('react-native-purchases');
+        Purchases = PurchasesModule.default;
+        PurchasesOffering = PurchasesModule.PurchasesOffering;
+        PurchasesPackage = PurchasesModule.PurchasesPackage;
+        CustomerInfo = PurchasesModule.CustomerInfo;
+
+        const PurchasesUIModule = require('react-native-purchases-ui');
+        RevenueCatUI = PurchasesUIModule.default;
+        PAYWALL_RESULT = PurchasesUIModule.PAYWALL_RESULT;
+    } catch (e) {
+        console.warn('[RevenueCat] Native modules not available:', e);
+    }
+}
 
 // API Key provided by user (test key for now)
 // API Keys from environment
@@ -37,6 +57,14 @@ class RevenueCatService {
     async initialize(userId?: string): Promise<void> {
         if (this.initialized) return;
 
+        // Skip on web platform - in-app purchases not available
+        if (isWeb) {
+            console.log('[RevenueCat] Skipping initialization on web platform');
+            this.initialized = true;
+            this.configured = false;
+            return;
+        }
+
         // Check for Expo Go
         const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
@@ -44,6 +72,14 @@ class RevenueCatService {
         if (isExpoGo) {
             this.initialized = true;
             this.configured = false; // Mock mode
+            return;
+        }
+
+        // Check if Purchases SDK is available
+        if (!Purchases) {
+            console.warn('[RevenueCat] SDK not available (native build required)');
+            this.initialized = true;
+            this.configured = false;
             return;
         }
 
@@ -113,8 +149,8 @@ class RevenueCatService {
     /**
      * Identify user (e.g. on login)
      */
-    async login(userId: string): Promise<CustomerInfo | null> {
-        if (!this.configured) return null;
+    async login(userId: string): Promise<any | null> {
+        if (!this.configured || !Purchases) return null;
         try {
             const { customerInfo } = await Purchases.logIn(userId);
             return customerInfo;
@@ -127,8 +163,8 @@ class RevenueCatService {
     /**
      * Logout user (reset to anonymous)
      */
-    async logout(): Promise<CustomerInfo | null> {
-        if (!this.configured) return null;
+    async logout(): Promise<any | null> {
+        if (!this.configured || !Purchases) return null;
         try {
             const customerInfo = await Purchases.logOut();
             return customerInfo;
@@ -141,8 +177,8 @@ class RevenueCatService {
     /**
      * Get current offerings (products to display)
      */
-    async getOfferings(): Promise<PurchasesOffering | null> {
-        if (!this.configured) return null;
+    async getOfferings(): Promise<any | null> {
+        if (!this.configured || !Purchases) return null;
         try {
             const offerings = await Purchases.getOfferings();
             if (offerings.current !== null) {
@@ -159,8 +195,11 @@ class RevenueCatService {
      * Purchase a package manually
      */
     async purchasePackage(
-        packageToPurchase: PurchasesPackage
-    ): Promise<{ customerInfo: CustomerInfo; paymentSuccessful: boolean }> {
+        packageToPurchase: any
+    ): Promise<{ customerInfo: any; paymentSuccessful: boolean }> {
+        if (!this.configured || !Purchases) {
+            return { customerInfo: null, paymentSuccessful: false };
+        }
         if (!this.configured) return { customerInfo: null as any, paymentSuccessful: false };
         try {
             const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
@@ -177,20 +216,18 @@ class RevenueCatService {
      * Present the native RevenueCat Paywall
      */
     async presentPaywall(): Promise<boolean> {
-        if (!this.configured) return false;
+        if (!this.configured || !RevenueCatUI) return false;
         try {
-            const paywallResult: PAYWALL_RESULT = await RevenueCatUI.presentPaywall();
+            const paywallResult = await RevenueCatUI.presentPaywall();
 
-            switch (paywallResult) {
-                case PAYWALL_RESULT.PURCHASED:
-                case PAYWALL_RESULT.RESTORED:
-                    return true;
-                case PAYWALL_RESULT.NOT_PRESENTED:
-                case PAYWALL_RESULT.ERROR:
-                case PAYWALL_RESULT.CANCELLED:
-                default:
-                    return false;
+            // Check if paywall was successful (purchased or restored)
+            if (PAYWALL_RESULT) {
+                return paywallResult === PAYWALL_RESULT.PURCHASED ||
+                       paywallResult === PAYWALL_RESULT.RESTORED;
             }
+
+            // Fallback for unknown result
+            return false;
         } catch (error) {
             console.warn('[RevenueCat] Paywall error:', error);
             return false;
@@ -201,7 +238,7 @@ class RevenueCatService {
      * Present the Customer Center
      */
     async presentCustomerCenter(): Promise<void> {
-        if (!this.configured) return;
+        if (!this.configured || !RevenueCatUI) return;
         try {
             await RevenueCatUI.presentCustomerCenter();
         } catch (error) {
@@ -212,8 +249,8 @@ class RevenueCatService {
     /**
      * Restore purchases
      */
-    async restorePurchases(): Promise<CustomerInfo | null> {
-        if (!this.configured) return null;
+    async restorePurchases(): Promise<any | null> {
+        if (!this.configured || !Purchases) return null;
         try {
             return await Purchases.restorePurchases();
         } catch (e) {
@@ -225,8 +262,8 @@ class RevenueCatService {
     /**
      * Check if user has active entitlement
      */
-    async isPro(customerInfo?: CustomerInfo): Promise<boolean> {
-        if (!this.configured) return false;
+    async isPro(customerInfo?: any): Promise<boolean> {
+        if (!this.configured || !Purchases) return false;
         try {
             const info = customerInfo || await Purchases.getCustomerInfo();
             return typeof info.entitlements.active[ENTITLEMENT_ID] !== "undefined";
@@ -239,12 +276,12 @@ class RevenueCatService {
     /**
      * Get generic generic raw customer info
      */
-    async getCustomerInfo(): Promise<CustomerInfo | null> {
-        if (!this.configured) return null;
+    async getCustomerInfo(): Promise<any | null> {
+        if (!this.configured || !Purchases) return null;
         try {
             return await Purchases.getCustomerInfo();
         } catch (e) {
-            console.warn('RevenueCat] Error getting info', e);
+            console.warn('[RevenueCat] Error getting info', e);
             return null;
         }
     }

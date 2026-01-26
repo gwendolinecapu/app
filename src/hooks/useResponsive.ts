@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Dimensions, Platform } from 'react-native';
+import {
+  getPlatformType,
+  getDeviceCategory,
+  isWeb as checkIsWeb,
+  isNative as checkIsNative,
+  isMobileDevice as checkIsMobile,
+  isWebMobile as checkIsWebMobile,
+  isWebDesktop as checkIsWebDesktop,
+  PlatformType,
+  DeviceCategory
+} from '../lib/platformDetection';
 
 export type DeviceType = 'mobile' | 'tablet' | 'desktop';
 export type Orientation = 'portrait' | 'landscape';
@@ -10,9 +21,13 @@ interface ResponsiveInfo {
   width: number;
   height: number;
   isWeb: boolean;
+  isNative: boolean;
   isMobile: boolean;
   isTablet: boolean;
   isDesktop: boolean;
+  isWebMobile: boolean;
+  isWebDesktop: boolean;
+  platformType: PlatformType;
 }
 
 const MOBILE_MAX_WIDTH = 768;
@@ -48,17 +63,20 @@ export function useResponsive(): ResponsiveInfo {
 
   const deviceType = getDeviceType(dimensions.width);
   const orientation = getOrientation(dimensions.width, dimensions.height);
-  const isWeb = Platform.OS === 'web';
 
   return {
     deviceType,
     orientation,
     width: dimensions.width,
     height: dimensions.height,
-    isWeb,
-    isMobile: deviceType === 'mobile',
+    isWeb: checkIsWeb(),
+    isNative: checkIsNative(),
+    isMobile: deviceType === 'mobile' || checkIsMobile(),
     isTablet: deviceType === 'tablet',
     isDesktop: deviceType === 'desktop',
+    isWebMobile: checkIsWebMobile(),
+    isWebDesktop: checkIsWebDesktop(),
+    platformType: getPlatformType(),
   };
 }
 

@@ -31,6 +31,7 @@ const MENU_ITEMS: MenuItem[] = [
     { id: 'history', label: 'Historique', description: 'Stats & Fronts', icon: 'stats-chart', color: colors.warning, route: '/history', status: 'beta' },
     { id: 'courses', label: 'Cours', description: 'Notes & Matières', icon: 'school', color: '#2196F3', route: '/courses', status: 'new' },
     { id: 'subsystems', label: 'Sous-systèmes', description: 'Organiser les alters', icon: 'folder-open', color: '#9C27B0', route: '/settings/subsystems', status: 'new' },
+    { id: 'profile', label: 'Voir profil système', description: 'Photo, Nom & Partage', icon: 'id-card', color: colors.primary, route: '/settings/system-profile' },
     { id: 'help', label: 'Aide & SOS', description: 'Support système', icon: 'help-circle', color: colors.error, route: '/help' },
 ];
 

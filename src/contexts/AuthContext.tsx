@@ -59,6 +59,7 @@ interface AuthContextType {
     isBiometricEnabled: boolean;
     toggleBiometric: () => Promise<void>;
     signInWithGoogle: () => Promise<{ error: any }>;
+    refreshSystem: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -219,6 +220,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // No-op for compatibility as functionality is now realtime
     const refreshAlters = async () => { };
+    const refreshSystem = async () => { };
 
     const signUp = async (email: string, password: string, username: string, alterCount?: number) => {
         try {
@@ -471,8 +473,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         updateHeadspace,
         currentAlter: activeFront.alters[0] || null,
         isBiometricEnabled,
+        currentAlter: activeFront.alters[0] || null,
+        isBiometricEnabled,
         toggleBiometric,
-        signInWithGoogle
+        signInWithGoogle,
+        refreshSystem
     }), [user, systemData, activeFront, alters, loading, isBiometricEnabled]);
 
     return (

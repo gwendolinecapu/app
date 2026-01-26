@@ -134,9 +134,8 @@ const JournalSection: React.FC<JournalSectionProps> = ({
     );
 };
 
-import { SafetyPlanModal } from './SafetyPlanModal';
-
 // ... (previous imports)
+import { SafetyPlanModal } from './SafetyPlanModal';
 
 export const AlterJournal: React.FC<AlterJournalProps> = ({ alter, themeColors, isPublic, editable }) => {
     // Only show "Role", "MajorRole", etc. in specialized components, rely on filtering for custom journals
@@ -203,24 +202,6 @@ export const AlterJournal: React.FC<AlterJournalProps> = ({ alter, themeColors, 
 
         return (
             <ScrollView style={[styles.container, themeColors && { backgroundColor: themeColors.background }]} contentContainerStyle={{ paddingBottom: 100 }}>
-                {/* Safety Plan Button (Only visible if owner/editable) */}
-                {editable && (
-                    <TouchableOpacity
-                        style={[styles.safetyButton, { borderColor: colors.error }]}
-                        onPress={() => setShowSafetyModal(true)}
-                    >
-                        <Ionicons name="warning-outline" size={20} color={colors.error} />
-                        <Text style={[styles.safetyButtonText, { color: colors.error }]}>Plan de Sécurité / Crise</Text>
-                    </TouchableOpacity>
-                )}
-
-                <SafetyPlanModal
-                    visible={showSafetyModal}
-                    onClose={() => setShowSafetyModal(false)}
-                    alter={alter}
-                    editable={editable}
-                />
-
                 {/* Main Section (Presentation) */}
                 <JournalSection
                     label={mainField?.label || "Présentation"}
@@ -309,6 +290,23 @@ export const AlterJournal: React.FC<AlterJournalProps> = ({ alter, themeColors, 
         <SecureContainer title="Journal Privé" subtitle="Authentification requise">
             <ScrollView style={styles.container}>
                 <Text style={[styles.title, themeColors && { color: themeColors.text }]}>Journal de {alter.name}</Text>
+
+                {/* Safety Plan Button for Private Journal */}
+                <TouchableOpacity
+                    style={[styles.safetyButton, { borderColor: colors.error, marginBottom: spacing.lg }]}
+                    onPress={() => setShowSafetyModal(true)}
+                >
+                    <Ionicons name="warning-outline" size={20} color={colors.error} />
+                    <Text style={[styles.safetyButtonText, { color: colors.error }]}>Plan de Sécurité</Text>
+                </TouchableOpacity>
+
+                <SafetyPlanModal
+                    visible={showSafetyModal}
+                    onClose={() => setShowSafetyModal(false)}
+                    alter={alter}
+                    editable={true} // Always editable in private journal (owner)
+                />
+
                 <View style={styles.emptyState}>
                     <Ionicons name="book-outline" size={64} color={themeColors?.textSecondary || colors.textMuted} />
                     <Text style={[styles.emptyTitle, themeColors && { color: themeColors.text }]}>Journal personnel</Text>

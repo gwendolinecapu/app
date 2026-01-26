@@ -134,9 +134,14 @@ const JournalSection: React.FC<JournalSectionProps> = ({
     );
 };
 
+import { SafetyPlanModal } from './SafetyPlanModal';
+
+// ... (previous imports)
+
 export const AlterJournal: React.FC<AlterJournalProps> = ({ alter, themeColors, isPublic, editable }) => {
     // Only show "Role", "MajorRole", etc. in specialized components, rely on filtering for custom journals
     const [isCreating, setIsCreating] = useState(false);
+    const [showSafetyModal, setShowSafetyModal] = useState(false);
     const [newTitle, setNewTitle] = useState('');
     const [newContent, setNewContent] = useState('');
 
@@ -144,6 +149,7 @@ export const AlterJournal: React.FC<AlterJournalProps> = ({ alter, themeColors, 
     const MAIN_LABELS = ['présentation', 'presentation', 'journal', 'description', 'bio'];
 
     const updateCustomField = async (label: string, value: string, originalLabel?: string) => {
+        // ... (existing implementation)
         const alterRef = doc(db, 'alters', alter.id);
         const currentFields = [...(alter.custom_fields || [])];
 
@@ -197,6 +203,24 @@ export const AlterJournal: React.FC<AlterJournalProps> = ({ alter, themeColors, 
 
         return (
             <ScrollView style={[styles.container, themeColors && { backgroundColor: themeColors.background }]} contentContainerStyle={{ paddingBottom: 100 }}>
+                {/* Safety Plan Button (Only visible if owner/editable) */}
+                {editable && (
+                    <TouchableOpacity
+                        style={[styles.safetyButton, { borderColor: colors.error }]}
+                        onPress={() => setShowSafetyModal(true)}
+                    >
+                        <Ionicons name="warning-outline" size={20} color={colors.error} />
+                        <Text style={[styles.safetyButtonText, { color: colors.error }]}>Plan de Sécurité / Crise</Text>
+                    </TouchableOpacity>
+                )}
+
+                <SafetyPlanModal
+                    visible={showSafetyModal}
+                    onClose={() => setShowSafetyModal(false)}
+                    alter={alter}
+                    editable={editable}
+                />
+
                 {/* Main Section (Presentation) */}
                 <JournalSection
                     label={mainField?.label || "Présentation"}
@@ -423,5 +447,20 @@ const styles = StyleSheet.create({
         color: colors.textSecondary,
         textAlign: 'center',
         marginTop: spacing.sm,
+    },
+    safetyButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        padding: spacing.md,
+        borderRadius: borderRadius.md,
+        borderWidth: 1,
+        marginBottom: spacing.xl,
+        backgroundColor: 'rgba(255, 0, 0, 0.05)',
+        justifyContent: 'center',
+    },
+    safetyButtonText: {
+        fontWeight: 'bold',
+        fontSize: 16,
     },
 });

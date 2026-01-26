@@ -111,6 +111,9 @@ export interface Alter {
 
     // Subsystems (Phase: Organisation hiérarchique)
     subsystem_id?: string; // ID du subsystem auquel appartient l'alter
+
+    // Safety Plan
+    safety_plan?: SafetyPlan;
 }
 
 export interface VisualDNA {
@@ -146,6 +149,12 @@ export type RelationshipType =
     | 'rival'
     | 'work'
     | 'other';
+
+export interface SafetyPlan {
+    emergency_numbers: { label: string; number: string }[];
+    trusted_contacts: { system_id: string; note: string; name: string; avatar_url?: string }[];
+    custom_notes: string;
+}
 
 export interface Post {
     id: string;

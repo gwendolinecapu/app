@@ -28,7 +28,7 @@ import { StatusBadge } from '../../../src/components/ui/StatusBadge';
 
 // Components
 import { ProfileHeader } from '../../../src/components/alter-space/ProfileHeader';
-import ShopUI from '../../../src/components/shop/ShopUI';
+import { ShopShell } from '../../../src/components/shop/ShopShell';
 import { AlterGrid } from '../../../src/components/alter-space/AlterGrid';
 import { AlterJournal } from '../../../src/components/alter-space/AlterJournal';
 import { AlterGallery } from '../../../src/components/alter-space/AlterGallery';
@@ -394,7 +394,7 @@ export default function AlterSpaceScreen() {
                 );
 
             case 'shop':
-                return <ShopUI isEmbedded={true} />;
+                return <ShopShell isEmbedded={true} />;
 
             case 'menu':
                 return (

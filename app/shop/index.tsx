@@ -1,6 +1,6 @@
 import React from 'react';
-import ShopUI from '../../src/components/shop/ShopUI';
+import { ShopShell } from '../../src/components/shop/ShopShell';
 
 export default function ShopScreen() {
-    return <ShopUI />;
+    return <ShopShell />;
 }

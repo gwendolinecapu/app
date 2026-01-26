@@ -33,6 +33,7 @@ async function checkRateLimit(userId: string, action: string, cooldownMs: number
 
 export { processAIJob, startAIJob, cancelAIJob, retryAIJob };
 export * from './integrations/github';
+export * from './monetization';
 
 export const performBirthRitual = functions.runWith({
     secrets: SECRETS,

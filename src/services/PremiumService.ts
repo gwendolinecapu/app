@@ -5,7 +5,8 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, functions } from '../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
 import {
     UserTier,
     MonetizationStatus,
@@ -95,19 +96,28 @@ class PremiumService {
 
     // ==================== TRIAL ====================
 
+    // ==================== TRIAL ====================
+
     /**
      * Démarre le trial de 14 jours (appelé automatiquement à l'inscription)
      */
     async startTrial(): Promise<void> {
-        const trialEndDate = Date.now() + (AD_CONFIG.TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000);
+        try {
+            const startTrialFn = httpsCallable(functions, 'startTrial');
+            const result = await startTrialFn();
+            const { trialEndDate } = result.data as any;
 
-        this.status = {
-            ...DEFAULT_MONETIZATION_STATUS,
-            tier: 'trial',
-            trialEndDate,
-        };
-
-        await this.saveStatus();
+            this.status = {
+                ...this.status,
+                tier: 'trial',
+                trialEndDate,
+            };
+            // Only save to local cache, do NOT write to firestore (blocked)
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(this.status));
+        } catch (e) {
+            console.error('[PremiumService] Failed to start trial:', e);
+            // Fallback? No, security first.
+        }
     }
 
     /**
@@ -173,10 +183,6 @@ class PremiumService {
         // Only if NOT currently premium (paid)
         if (this.status.premiumEndDate && this.status.premiumEndDate > Date.now()) return false;
 
-        // And Silent Trial JUST finished (we don't want to show it forever every time?)
-        // Or show it if they are using the app and trial expired?
-        // User request: "popup comme quoi depuis 14j il profitais que si il veut il continue"
-
         if (!this.status.silentTrialStartDate) return false;
         if (this.status.hasSeenConversionModal) return false;
 
@@ -211,17 +217,24 @@ class PremiumService {
             return false;
         }
 
-        const currentEnd = this.status.premiumEndDate || Date.now();
-        const newEnd = Math.max(currentEnd, Date.now()) + (AD_CONFIG.FREE_MONTH_DAYS * 24 * 60 * 60 * 1000);
+        try {
+            const activateFreeMonthFn = httpsCallable(functions, 'activateFreeMonth');
+            const result = await activateFreeMonthFn();
+            const { newEndDate } = result.data as any;
 
-        this.status.premiumEndDate = newEnd;
-        this.status.hasUsedFreeMonth = true;
-        this.status.tier = 'premium'; // Update tier immediately
+            this.status.premiumEndDate = newEndDate;
+            this.status.hasUsedFreeMonth = true;
+            this.status.tier = 'premium';
 
-        await this.saveStatus();
-
-        return true;
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(this.status));
+            return true;
+        } catch (e) {
+            console.error('[PremiumService] Failed to activate free month:', e);
+            return false;
+        }
     }
+
+    // ...
 
     /**
      * Accorde X jours de premium (via reward ads ou achat crédits)
@@ -314,30 +327,44 @@ class PremiumService {
      * Enregistre un visionnage de reward ad et vérifie les seuils
      */
     async recordRewardAdWatch(): Promise<{ adFreeUnlocked: boolean; premiumUnlocked: boolean }> {
+        // Optimistic update for UI responsiveness
         this.status.rewardAdsForAdFree++;
         this.status.rewardAdsForPremium++;
         this.status.rewardAdsToday++;
 
-        let adFreeUnlocked = false;
-        let premiumUnlocked = false;
+        try {
+            const claimAdRewardFn = httpsCallable(functions, 'claimAdReward');
+            const result = await claimAdRewardFn();
+            const { adFreeUnlocked, premiumUnlocked } = result.data as any;
 
-        // Vérifier seuil sans pub (3 vidéos = 7 jours)
-        if (this.status.rewardAdsForAdFree >= AD_CONFIG.REWARD_ADS_FOR_AD_FREE) {
-            await this.grantAdFreeDays(7);
-            this.status.rewardAdsForAdFree = 0;
-            adFreeUnlocked = true;
+            // Sync full status from server result if needed, or just trust return?
+            // Let's refresh status to be sure we have the correct dates
+            // But to avoid lag, we accept the flags.
+
+            if (adFreeUnlocked) {
+                this.status.rewardAdsForAdFree = 0;
+                // We don't know the exact date without refreshing, but UI just needs to know it's active.
+                // Force refresh in background?
+                this.refreshStatus();
+            }
+            if (premiumUnlocked) {
+                this.status.rewardAdsForPremium = 0;
+                this.refreshStatus();
+            }
+
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(this.status));
+            return { adFreeUnlocked, premiumUnlocked };
+        } catch (e) {
+            console.error('[PremiumService] Failed to claim ad reward:', e);
+            // Revert optimistic update?
+            this.status.rewardAdsForAdFree--;
+            this.status.rewardAdsForPremium--;
+            this.status.rewardAdsToday--;
+            return { adFreeUnlocked: false, premiumUnlocked: false };
         }
-
-        // Vérifier seuil premium (15 vidéos = 7 jours)
-        if (this.status.rewardAdsForPremium >= AD_CONFIG.REWARD_ADS_FOR_PREMIUM) {
-            await this.grantPremiumDays(7);
-            this.status.rewardAdsForPremium = 0;
-            premiumUnlocked = true;
-        }
-
-        await this.saveStatus();
-        return { adFreeUnlocked, premiumUnlocked };
     }
+
+    // ...
 
     // ==================== HELPERS ====================
 
@@ -368,16 +395,13 @@ class PremiumService {
      */
     private async saveStatus(): Promise<void> {
         try {
-            // Cache local
+            // Cache local ONLY
             await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(this.status));
 
-            // Firestore
-            if (this.userId) {
-                const docRef = doc(db, FIRESTORE_COLLECTION, this.userId);
-                await setDoc(docRef, this.status, { merge: true });
-            }
+            // Firestore WRITE BLOCKED by rules now. 
+            // We do NOT write to firestore from client anymore.
         } catch (error) {
-            console.error('[PremiumService] Failed to save status:', error);
+            console.error('[PremiumService] Failed to save local status:', error);
         }
     }
 

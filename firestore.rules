@@ -400,15 +400,20 @@ service cloud.firestore {
     // User Monetization Collection
     // ============================================
     match /user_monetization/{userId} {
-      allow read, write: if isAuthenticated() && userId == request.auth.uid;
+      // Read: Owner only
+      allow read: if isAuthenticated() && userId == request.auth.uid;
+      // Write: BLOCKED (Must use Cloud Functions)
+      allow write: if false;
       
       match /credit_transactions/{transactionId} {
-        allow read, write: if isAuthenticated() && userId == request.auth.uid;
+        allow read: if isAuthenticated() && userId == request.auth.uid;
+        allow write: if false; 
       }
     }
 
     match /user_credits/{userId} {
-      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow write: if false;
     }
 
     // ============================================

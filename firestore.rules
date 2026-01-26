@@ -65,7 +65,9 @@ service cloud.firestore {
       // 3. 'friends' visibility -> check friendship.
       // 4. 'private' -> owner only.
       allow read: if isAuthenticated() && (
-         resource.data.systemId == request.auth.uid || 
+         resource.data.system_id == request.auth.uid || 
+         resource.data.userId == request.auth.uid ||
+         resource.data.systemId == request.auth.uid ||
          resource.data.visibility == 'public' ||
          (resource.data.visibility == 'friends' && 
            // Check if requesting user is a friend (Warning: This might be expensive/complex in rules)

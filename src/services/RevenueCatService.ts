@@ -197,10 +197,14 @@ class RevenueCatService {
     async purchasePackage(
         packageToPurchase: any
     ): Promise<{ customerInfo: any; paymentSuccessful: boolean }> {
+        if (isWeb) {
+            alert("Veuillez utiliser l'application mobile pour effectuer des achats. Vos abonnements seront synchronisés ici.");
+            return { customerInfo: null, paymentSuccessful: false };
+        }
+
         if (!this.configured || !Purchases) {
             return { customerInfo: null, paymentSuccessful: false };
         }
-        if (!this.configured) return { customerInfo: null as any, paymentSuccessful: false };
         try {
             const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
             return { customerInfo, paymentSuccessful: true };
@@ -216,6 +220,11 @@ class RevenueCatService {
      * Present the native RevenueCat Paywall
      */
     async presentPaywall(): Promise<boolean> {
+        if (isWeb) {
+            alert("Veuillez utiliser l'application mobile pour gérer votre abonnement. Vos avantages seront synchronisés ici.");
+            return false;
+        }
+
         if (!this.configured || !RevenueCatUI) return false;
         try {
             const paywallResult = await RevenueCatUI.presentPaywall();
@@ -223,7 +232,7 @@ class RevenueCatService {
             // Check if paywall was successful (purchased or restored)
             if (PAYWALL_RESULT) {
                 return paywallResult === PAYWALL_RESULT.PURCHASED ||
-                       paywallResult === PAYWALL_RESULT.RESTORED;
+                    paywallResult === PAYWALL_RESULT.RESTORED;
             }
 
             // Fallback for unknown result
@@ -238,6 +247,11 @@ class RevenueCatService {
      * Present the Customer Center
      */
     async presentCustomerCenter(): Promise<void> {
+        if (isWeb) {
+            alert("Veuillez utiliser l'application mobile pour gérer votre abonnement.");
+            return;
+        }
+
         if (!this.configured || !RevenueCatUI) return;
         try {
             await RevenueCatUI.presentCustomerCenter();

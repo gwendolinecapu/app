@@ -135,6 +135,7 @@
       "@react-native-google-signin/google-signin",
       "./plugins/withUnityAds",
       "@react-native-firebase/app",
+      "@react-native-firebase/crashlytics",
       [
         "expo-build-properties",
         {

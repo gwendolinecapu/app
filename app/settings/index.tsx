@@ -11,6 +11,7 @@ import {
     StatusBar
 } from 'react-native';
 import { router } from 'expo-router';
+import crashlytics from '@react-native-firebase/crashlytics';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useMonetization } from '../../src/contexts/MonetizationContext';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
@@ -243,6 +244,7 @@ export default function SettingsScreen() {
                         <Text style={styles.sectionTitle}>Administration</Text>
                         <View style={styles.section}>
                             {renderSettingItem("Admin Feedback", "construct-outline", () => router.push('/admin/feedback' as any))}
+                            {renderSettingItem("Test Crashlytics", "bug-outline", () => crashlytics().crash(), undefined, true)}
                         </View>
                     </>
                 )}

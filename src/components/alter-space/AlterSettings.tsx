@@ -1,22 +1,86 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, typography, borderRadius, spacing } from '../../lib/theme';
 import { SafetyPlanModal } from './SafetyPlanModal';
+import PasswordService from '../../services/PasswordService'; // Adjust path if needed
 
-// ...
+// Interface for Props
+interface AlterSettingsProps {
+    alter: any; // Using any for now to avoid strict type issues during restoration, ideally UserAlter
+    themeColors: any;
+}
 
 export const AlterSettings: React.FC<AlterSettingsProps> = ({ alter, themeColors }) => {
-    // ... (previous variables)
+    // Colors derivation
+    const bgColor = themeColors?.background || colors.background;
+    const cardBg = themeColors?.cardBackground || colors.surface;
+    const textColor = themeColors?.text || colors.text;
+    const textSecondaryColor = themeColors?.textSecondary || colors.textSecondary;
+    const borderColor = themeColors?.border || colors.border;
+    const iconColor = themeColors?.primary || colors.primary;
 
-    // Password modal state
+    // State
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [showSafetyModal, setShowSafetyModal] = useState(false);
-    // ... (other states)
+    const [hasPassword, setHasPassword] = useState(false);
 
-    // ... (existing functions)
+    // Password Form
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    // Initial check for password
+    useEffect(() => {
+        checkPasswordStatus();
+    }, [alter.id]);
+
+    const checkPasswordStatus = async () => {
+        const has = await PasswordService.hasAlterPassword(alter.id);
+        setHasPassword(has);
+    };
+
+    const handleSavePassword = async () => {
+        if (newPassword !== confirmPassword) {
+            Alert.alert("Erreur", "Les mots de passe ne correspondent pas.");
+            return;
+        }
+        if (newPassword.length < 4 && newPassword.length > 0) {
+            Alert.alert("Erreur", "Le mot de passe doit faire au moins 4 caractères.");
+            return;
+        }
+
+        setSaving(true);
+        try {
+            if (newPassword.length === 0) {
+                // Remove password
+                await PasswordService.removeAlterPassword(alter.id);
+                setHasPassword(false);
+                Alert.alert("Succès", "Mot de passe supprimé.");
+            } else {
+                // Set password
+                await PasswordService.setAlterPassword(alter.id, newPassword);
+                setHasPassword(true);
+                Alert.alert("Succès", "Mot de passe mis à jour.");
+            }
+            setShowPasswordModal(false);
+            setNewPassword('');
+            setConfirmPassword('');
+        } catch (e) {
+            console.error(e);
+            Alert.alert("Erreur", "Une erreur est survenue.");
+        } finally {
+            setSaving(false);
+        }
+    };
 
     return (
-        <ScrollView style={[styles.container, { backgroundColor: themeColors?.background || 'transparent' }]}>
+        <ScrollView style={[styles.container, { backgroundColor: 'transparent' }]}>
             <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: textSecondaryColor }]}>Compte</Text>
-                <TouchableOpacity style={[styles.item, { backgroundColor: cardBg, borderColor: borderColor }]} onPress={() => router.push(`/alter-space/${alter.id}/edit`)}>
+                <TouchableOpacity style={[styles.item, { backgroundColor: cardBg, borderColor: borderColor }]} onPress={() => router.push(`/alter-space/${alter.id}/edit` as any)}>
                     <Ionicons name="person-outline" size={24} color={textColor} />
                     <Text style={[styles.itemText, { color: textColor }]}>Modifier le profil</Text>
                     <Ionicons name="chevron-forward" size={20} color={textSecondaryColor} />
@@ -32,7 +96,7 @@ export const AlterSettings: React.FC<AlterSettingsProps> = ({ alter, themeColors
                 {/* PASSWORD OPTION */}
                 <TouchableOpacity
                     style={[styles.item, { backgroundColor: cardBg, borderColor: borderColor }]}
-                // ... (rest of password implementation)
+                    onPress={() => setShowPasswordModal(true)}
                 >
                     <Ionicons name="key-outline" size={24} color={iconColor} />
                     <Text style={[styles.itemText, { color: textColor }]}>Mot de passe</Text>
@@ -60,7 +124,7 @@ export const AlterSettings: React.FC<AlterSettingsProps> = ({ alter, themeColors
                     <Text style={[styles.itemText, { color: textColor }]}>Notifications</Text>
                     <Ionicons name="chevron-forward" size={20} color={textSecondaryColor} />
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.item, { backgroundColor: cardBg, borderColor: borderColor }]} onPress={() => router.push('/settings')}>
+                <TouchableOpacity style={[styles.item, { backgroundColor: cardBg, borderColor: borderColor }]} onPress={() => router.push('/settings' as any)}>
                     <Ionicons name="settings-outline" size={24} color={textColor} />
                     <Text style={[styles.itemText, { color: textColor }]}>Paramètres de l'application</Text>
                     <Ionicons name="chevron-forward" size={20} color={textSecondaryColor} />
@@ -88,6 +152,16 @@ export const AlterSettings: React.FC<AlterSettingsProps> = ({ alter, themeColors
                     <Text style={[styles.itemText, { color: colors.error }]}>Masquer cet alter</Text>
                 </TouchableOpacity>
             </View>
+
+            {/* SAFETY PLAN MODAL */}
+            {showSafetyModal && (
+                <SafetyPlanModal
+                    visible={showSafetyModal}
+                    onClose={() => setShowSafetyModal(false)}
+                    alterId={alter.id}
+                    themeColors={themeColors}
+                />
+            )}
 
             {/* PASSWORD MODAL */}
             <Modal visible={showPasswordModal} transparent animationType="fade">

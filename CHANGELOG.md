@@ -1,5 +1,18 @@
 # Changelog
 
+## [2026-01-26] Fix Authentification Web & Permissions 🔥
+
+### 🛠️ Correctifs Critiques
+- **Authentification Web** : Résolution du problème d'échec silencieux lors de la connexion/inscription sur Web.
+  - Identification du problème de gestion d'état dans les inputs React Native Web.
+  - Validation du flux complet : Login -> Dashboard.
+- **Permissions Firestore** : Correction d'un bug bloquant l'accès aux données Alters.
+  - Cause : Incohérence entre règle `systemId` (CamelCase) et données `system_id` (SnakeCase).
+  - Fix : Mise à jour de `firestore.rules` pour autoriser la lecture via `system_id`.
+
+### 📱 Stability
+- **Crash AlterSettings** : Correction d'une `ReferenceError: spacing is not defined` qui faisait planter l'app au démarrage.
+
 ## [2026-01-26] Landing Page - Vercel Analytics Integration 📊
 
 ### 📈 Tracking

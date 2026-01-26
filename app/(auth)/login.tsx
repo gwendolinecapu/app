@@ -75,68 +75,68 @@ export default function LoginScreen() {
                         </View>
 
                         <View style={styles.form}>
-                    <ResponsiveInput
-                        label="Email"
-                        placeholder="votre@email.com"
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        autoComplete="email"
-                    />
+                            <ResponsiveInput
+                                label="Email"
+                                placeholder="votre@email.com"
+                                value={email}
+                                onChangeText={setEmail}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                autoComplete="email"
+                            />
 
-                    <ResponsiveInput
-                        label="Mot de passe"
-                        placeholder="••••••••"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                        autoComplete="password"
-                    />
+                            <ResponsiveInput
+                                label="Mot de passe"
+                                placeholder="••••••••"
+                                value={password}
+                                onChangeText={setPassword}
+                                secureTextEntry
+                                autoComplete="password"
+                            />
 
-                    <ResponsiveButton
-                        title={loading ? 'Connexion...' : 'Se connecter'}
-                        onPress={handleLogin}
-                        disabled={loading}
-                        loading={loading}
-                        variant="primary"
-                        fullWidth
-                        style={styles.buttonContainer}
-                    />
+                            <ResponsiveButton
+                                title={loading ? 'Connexion...' : 'Se connecter'}
+                                onPress={handleLogin}
+                                disabled={loading}
+                                loading={loading}
+                                variant="primary"
+                                fullWidth
+                                style={styles.buttonContainer}
+                            />
 
 
-                    <View style={styles.dividerContainer}>
-                        <View style={styles.divider} />
-                        <Text style={styles.dividerText}>OU</Text>
-                        <View style={styles.divider} />
-                    </View>
+                            <View style={styles.dividerContainer}>
+                                <View style={styles.divider} />
+                                <Text style={styles.dividerText}>OU</Text>
+                                <View style={styles.divider} />
+                            </View>
 
-                    <TouchableOpacity
-                        style={[styles.button, styles.googleButton]}
-                        onPress={async () => {
-                            setLoading(true);
-                            const { error } = await signInWithGoogle();
-                            setLoading(false);
-                            if (error) {
-                                Alert.alert("Erreur Google", error.message);
-                            } else {
-                                router.replace('/(tabs)/dashboard');
-                            }
-                        }}
-                        disabled={loading}
-                    >
-                        <Text style={[styles.buttonText, styles.googleButtonText]}>Continuer avec Google</Text>
-                    </TouchableOpacity>
-
-                    <View style={styles.footer}>
-                        <Text style={styles.footerText}>Pas encore de compte ?</Text>
-                        <Link href="/(auth)/register" asChild>
-                            <TouchableOpacity>
-                                <Text style={styles.link}>S&apos;inscrire</Text>
+                            <TouchableOpacity
+                                style={[styles.button, styles.googleButton]}
+                                onPress={async () => {
+                                    setLoading(true);
+                                    const { error } = await signInWithGoogle();
+                                    setLoading(false);
+                                    if (error) {
+                                        Alert.alert("Erreur Google", error.message);
+                                    } else {
+                                        router.replace('/(tabs)/dashboard');
+                                    }
+                                }}
+                                disabled={loading}
+                            >
+                                <Text style={[styles.buttonText, styles.googleButtonText]}>Continuer avec Google</Text>
                             </TouchableOpacity>
-                        </Link>
-                    </View>
-                </View>
+
+                            <View style={styles.footer}>
+                                <Text style={styles.footerText}>Pas encore de compte ?</Text>
+                                <Link href="/(auth)/register" asChild>
+                                    <TouchableOpacity>
+                                        <Text style={styles.link}>S&apos;inscrire</Text>
+                                    </TouchableOpacity>
+                                </Link>
+                            </View>
+                        </View>
                     </WebContainer>
                 </ScrollView>
             </KeyboardAvoidingView>

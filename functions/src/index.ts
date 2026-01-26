@@ -12,6 +12,24 @@ import { uploadVideo } from './ai/utils/videoCompression';
 admin.initializeApp();
 
 const SECRETS = ["GOOGLE_AI_API_KEY", "BYTEPLUS_API_KEY"];
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB Limit
+
+/**
+ * Rate Limiting Helper
+ */
+async function checkRateLimit(userId: string, action: string, cooldownMs: number = 60000) {
+    const rateLimitRef = admin.firestore().collection('rate_limits').doc(`${userId}_${action}`);
+    const doc = await rateLimitRef.get();
+
+    if (doc.exists) {
+        const lastTimestamp = (doc.data()?.timestamp as admin.firestore.Timestamp)?.toMillis() || 0;
+        if (Date.now() - lastTimestamp < cooldownMs) {
+            throw new functions.https.HttpsError('resource-exhausted', `Rate limit exceeded for ${action}. Please wait.`);
+        }
+    }
+
+    await rateLimitRef.set({ timestamp: admin.firestore.FieldValue.serverTimestamp() });
+}
 
 export { processAIJob, startAIJob, cancelAIJob, retryAIJob };
 export * from './integrations/github';
@@ -23,8 +41,19 @@ export const performBirthRitual = functions.runWith({
 }).https.onCall(async (data: any, context: any) => {
     if (!context.auth)
         throw new functions.https.HttpsError('unauthenticated', 'Login required');
+
+    // Input Validation
+    const { alterId, referenceImageUrls } = data;
+    if (!alterId || typeof alterId !== 'string' || alterId.length > 100) {
+        throw new functions.https.HttpsError('invalid-argument', 'Invalid alterId');
+    }
+    if (referenceImageUrls && (!Array.isArray(referenceImageUrls) || referenceImageUrls.length > 5)) {
+        throw new functions.https.HttpsError('invalid-argument', 'Invalid referenceImageUrls');
+    }
+
     try {
-        const { alterId, referenceImageUrls } = data;
+        await checkRateLimit(context.auth.uid, 'ritual', 30000); // 30s cooldown
+
         // 1. Charge
         await BillingUtils.chargeCredits(alterId, COSTS.RITUAL, "Rituel de Naissance");
         // 2. Execute directly (Sync)
@@ -53,10 +82,19 @@ export const generateMagicPost = functions.runWith({
 }).https.onCall(async (data: any, context: any) => {
     if (!context.auth)
         throw new functions.https.HttpsError('unauthenticated', 'Login required');
-    try {
-        console.log('🎨 [MAGIC POST] Starting generation with params:', JSON.stringify(data, null, 2));
 
-        const { alterId, imageCount = 1 } = data;
+    const { alterId, imageCount = 1 } = data;
+
+    // Validation
+    if (!alterId || typeof alterId !== 'string')
+        throw new functions.https.HttpsError('invalid-argument', 'Invalid alterId');
+    if (typeof imageCount !== 'number' || imageCount < 1 || imageCount > 4)
+        throw new functions.https.HttpsError('invalid-argument', 'Invalid imageCount (1-4)');
+
+    try {
+        await checkRateLimit(context.auth.uid, 'magic_post', 10000); // 10s cooldown
+
+        console.log('🎨 [MAGIC POST] Starting generation with params:', JSON.stringify(data, null, 2));
 
         // 1. Charge
         let cost = COSTS.POST_STD;
@@ -111,8 +149,21 @@ export const uploadVideoPost = functions.runWith({
             throw new functions.https.HttpsError('invalid-argument', 'Missing videoBase64 or alterId');
         }
 
+        // Validate Size (approximate from Base64 length)
+        // Base64 is ~33% larger than binary. 100MB binary ~= 133MB Base64
+        if (videoBase64.length > (MAX_VIDEO_SIZE * 1.37)) {
+            throw new functions.https.HttpsError('invalid-argument', 'Video too large (Max 100MB)');
+        }
+
+        await checkRateLimit(context.auth.uid, 'upload_video', 60000); // 1m cooldown
+
         // Convert base64 to buffer
         const videoBuffer = Buffer.from(videoBase64, 'base64');
+
+        // Double check real buffer size
+        if (videoBuffer.length > MAX_VIDEO_SIZE) {
+            throw new functions.https.HttpsError('invalid-argument', 'Video too large (Max 100MB)');
+        }
 
         // Generate unique filename
         const timestamp = Date.now();

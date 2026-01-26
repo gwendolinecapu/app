@@ -79,7 +79,7 @@ export async function compressVideo(
         // Input is no longer needed
         cleanupFile(inputPath);
         // Read compressed video
-        const compressedBuffer = await fs.promises.readFile(outputPath);
+        // const compressedBuffer = await fs.promises.readFile(outputPath);
 
         const stats = fs.statSync(outputPath);
         console.log(`Video compressed: ${inputBuffer.length} → ${stats.size} bytes (${Math.round(stats.size / 1024 / 1024)}MB)`);

@@ -11,40 +11,58 @@ service firebase.storage {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    // Helper to validate images
+    function isImage() {
+      return request.resource.contentType.matches('image/.*') &&
+             request.resource.size < 5 * 1024 * 1024; // Max 5MB
+    }
+
+    // Helper to validate videos
+    function isVideo() {
+      return request.resource.contentType.matches('video/.*') &&
+             request.resource.size < 100 * 1024 * 1024; // Max 100MB (aligned with Cloud Function)
+    }
+
     // Avatars: Public read, owner write only
     match /avatars/{userId}/{allPaths=**} {
       allow read: if true;
-      allow write: if isOwner(userId);
+      allow write: if isOwner(userId) && isImage();
     }
     
     // Post images: Public read, authenticated user write (posts have their own security via Firestore)
     match /posts/{userId}/{allPaths=**} {
       allow read: if true;
-      allow write: if isOwner(userId);
+      allow write: if isOwner(userId) && isImage();
     }
     
     // Profile images
     match /profiles/{userId}/{allPaths=**} {
       allow read: if true;
-      allow write: if isOwner(userId);
+      allow write: if isOwner(userId) && isImage();
     }
     
     // Images folder - catch-all for any image uploads
     match /images/{userId}/{allPaths=**} {
       allow read: if true;
-      allow write: if isOwner(userId);
+      allow write: if isOwner(userId) && isImage();
     }
     
     // Visual DNA images
     match /visual_dna/{userId}/{allPaths=**} {
       allow read: if true;
-      allow write: if isOwner(userId);
+      allow write: if isOwner(userId) && isImage();
     }
 
     // Stories media
     match /stories/{userId}/{allPaths=**} {
       allow read: if true;
-      allow write: if isOwner(userId);
+      allow write: if isOwner(userId) && (isImage() || isVideo());
+    }
+
+    // Videos folder
+    match /videos/{userId}/{allPaths=**} {
+       allow read: if true;
+       allow write: if isOwner(userId) && isVideo();
     }
 
   }

@@ -17,14 +17,21 @@ export function BiometricGuard({ children }: BiometricGuardProps) {
     const isAuthenticating = useRef(false);
     const authResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    // Disable biometric guard on web platform
+    const isWebPlatform = Platform.OS === 'web';
+
     useEffect(() => {
+        if (isWebPlatform) return; // Skip biometric check on web
+
         const init = async () => {
             await checkHardware();
         };
         init();
-    }, []);
+    }, [isWebPlatform]);
 
     useEffect(() => {
+        if (isWebPlatform) return; // Skip biometric guard on web
+
         const subscription = AppState.addEventListener('change', nextAppState => {
             // IMMEDIATE LOCK on Inactive/Background to hide content in App Switcher
             if (nextAppState.match(/inactive|background/) && user?.uid && isBiometricEnabled) {
@@ -55,7 +62,7 @@ export function BiometricGuard({ children }: BiometricGuardProps) {
         return () => {
             subscription.remove();
         };
-    }, [user?.uid, isBiometricEnabled]); // Removed 'user' object dependency
+    }, [user?.uid, isBiometricEnabled, isWebPlatform]); // Removed 'user' object dependency
 
     // MEMORY LEAK FIX: Cleanup auth reset timeout on unmount
     useEffect(() => {
@@ -67,6 +74,7 @@ export function BiometricGuard({ children }: BiometricGuardProps) {
     }, []);
 
     const checkHardware = async () => {
+        if (isWebPlatform) return false; // No biometric hardware on web
         const hasHard = await LocalAuthentication.hasHardwareAsync();
         const isEnrolled = await LocalAuthentication.isEnrolledAsync();
         setHasHardware(hasHard && isEnrolled);
@@ -75,7 +83,7 @@ export function BiometricGuard({ children }: BiometricGuardProps) {
 
     const authenticate = async () => {
         // If we are already locked or authenticating, skip
-        if (isAuthenticating.current) return;
+        if (isAuthenticating.current || isWebPlatform) return; // Skip on web
 
         // Fresh check to be sure, as state might be stale in closure
         const hasHard = await LocalAuthentication.hasHardwareAsync();

@@ -9,11 +9,13 @@ import {
     Platform,
     Alert,
     Image,
+    ScrollView,
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
 import { DismissKeyboard } from '../../src/components/ui/DismissKeyboard';
+import { WebContainer } from '../../src/components/ui/WebContainer';
 
 export default function LoginScreen() {
     const [email, setEmail] = useState('');
@@ -56,17 +58,22 @@ export default function LoginScreen() {
                 behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined}
                 style={styles.container}
             >
-                <View style={styles.header}>
-                    <Image
-                        source={require('../../assets/adaptive-icon.png')}
-                        style={styles.logoImage}
-                        resizeMode="contain"
-                    />
-                    <Text style={styles.title}>PluralConnect</Text>
-                    <Text style={styles.subtitle}>Un espace safe pour votre propre système</Text>
-                </View>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    <WebContainer maxWidth={500} noPadding={Platform.OS !== 'web'}>
+                        <View style={styles.header}>
+                            <Image
+                                source={require('../../assets/adaptive-icon.png')}
+                                style={styles.logoImage}
+                                resizeMode="contain"
+                            />
+                            <Text style={styles.title}>PluralConnect</Text>
+                            <Text style={styles.subtitle}>Un espace safe pour votre propre système</Text>
+                        </View>
 
-                <View style={styles.form}>
+                        <View style={styles.form}>
                     <View style={styles.inputContainer}>
                         <Text style={styles.label}>Email</Text>
                         <TextInput
@@ -138,6 +145,8 @@ export default function LoginScreen() {
                         </Link>
                     </View>
                 </View>
+                    </WebContainer>
+                </ScrollView>
             </KeyboardAvoidingView>
         </DismissKeyboard>
     );
@@ -147,6 +156,9 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,
+    },
+    scrollContent: {
+        flexGrow: 1,
         justifyContent: 'center',
         padding: spacing.lg,
     },

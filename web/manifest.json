@@ -1,0 +1,27 @@
+{
+  "short_name": "PluralConnect",
+  "name": "PluralConnect - Un espace safe pour votre système",
+  "description": "Application de gestion et réseau social pour les personnes avec TDI (Trouble Dissociatif de l'Identité)",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/adaptive-icon.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#0F2847",
+  "background_color": "#0F2847",
+  "orientation": "portrait-primary"
+}

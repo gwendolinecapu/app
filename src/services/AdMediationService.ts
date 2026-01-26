@@ -23,11 +23,12 @@ import {
 } from './MonetizationTypes';
 
 // =====================================================
-// SAFE IMPORT FOR EXPO GO
-// En Expo Go, les modules natifs AdMob ne sont pas disponibles
+// SAFE IMPORT FOR EXPO GO AND WEB
+// En Expo Go et sur Web, les modules natifs AdMob ne sont pas disponibles
 // On utilise des mocks pour éviter les crashes
 // =====================================================
 const isExpoGo = Constants.appOwnership === 'expo';
+const isWeb = Platform.OS === 'web';
 
 // Declare types for AdMob to avoid TS errors
 let mobileAds: any = null;
@@ -36,7 +37,7 @@ let TestIds: any = { BANNER: '', REWARDED: '' };
 let RewardedAdEventType: any = { LOADED: '', EARNED_REWARD: '', PAID: '' };
 let AdEventType: any = { ERROR: '', PAID: '' };
 
-if (!isExpoGo) {
+if (!isExpoGo && !isWeb) {
     try {
         // Only import in native builds
         // eslint-disable-next-line @typescript-eslint/no-require-imports

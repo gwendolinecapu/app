@@ -1,0 +1,138 @@
+/* Global Web Styles for PluralConnect */
+
+/* Reset default body margin/padding for web */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Fix scrollbar styling for better UX */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0F2847;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2A5A8F;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3A6AA0;
+}
+
+/* Responsive layout adjustments */
+#root {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Fix focus outline for accessibility */
+*:focus-visible {
+  outline: 2px solid #8B5CF6;
+  outline-offset: 2px;
+}
+
+/* Improve button cursor */
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Fix input autofill colors */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-text-fill-color: #FFFFFF;
+  -webkit-box-shadow: 0 0 0px 1000px #1E4275 inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Responsive text selection */
+::selection {
+  background-color: #8B5CF6;
+  color: #FFFFFF;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+}
+
+/* Desktop optimization */
+@media (min-width: 1024px) {
+  /* Center modals on desktop */
+  .modal-container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+
+/* Fix React Native Web specific issues */
+#root > div {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Loading spinner improvement */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Image optimization */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Fix for React Native Web touch highlights */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Typography improvements for web */
+@media (min-width: 1024px) {
+  h1 {
+    font-size: 32px;
+  }
+
+  h2 {
+    font-size: 26px;
+  }
+
+  h3 {
+    font-size: 20px;
+  }
+}

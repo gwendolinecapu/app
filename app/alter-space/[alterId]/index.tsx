@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
     View,
     StyleSheet,
@@ -435,6 +435,33 @@ export default function AlterSpaceScreen() {
                                     <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} style={{ marginLeft: 8 }} />
                                 </TouchableOpacity>
 
+
+
+                                <View style={{ height: 20 }} />
+
+                                {/* Section: Boutique - Highlighted */}
+                                <TouchableOpacity
+                                    style={[styles.menuItem, {
+                                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                                        borderColor: 'rgba(245, 158, 11, 0.3)',
+                                        borderWidth: 1
+                                    }]}
+                                    onPress={() => router.push({ pathname: '/shop', params: { alterId: alter.id } })}
+                                >
+                                    <LinearGradient
+                                        colors={['#F59E0B', '#D97706']}
+                                        style={{ width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginRight: 15 }}
+                                    >
+                                        <Ionicons name="storefront" size={18} color="#FFF" />
+                                    </LinearGradient>
+                                    <Text style={[styles.menuItemText, { color: themeColors?.text || colors.text, fontWeight: '800' }]}>BOUTIQUE</Text>
+                                    <View style={{ flex: 1 }} />
+                                    <View style={{ backgroundColor: '#F59E0B', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, marginRight: 8 }}>
+                                        <Text style={{ color: '#000', fontSize: 10, fontWeight: 'bold' }}>OFFRES</Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
+                                </TouchableOpacity>
+
                                 <View style={{ height: 30 }} />
 
                                 <Text style={{ fontSize: 13, fontWeight: '700', color: themeColors?.textSecondary || colors.textSecondary, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.7 }}>Espace Personnel</Text>
@@ -493,8 +520,9 @@ export default function AlterSpaceScreen() {
                                     <Ionicons name="chevron-forward" size={20} color={themeColors?.textSecondary || colors.textSecondary} />
                                 </TouchableOpacity>
                             </>
-                        )}
-                    </ScrollView>
+                        )
+                        }
+                    </ScrollView >
                 );
             case 'journal':
                 return <AlterJournal alter={alter} themeColors={themeColors} isPublic={!isOwner} />;

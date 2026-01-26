@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Platform, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -28,8 +28,8 @@ export function ShopHomeScreen() {
         equippedItems,
         purchaseItem,
         equipItem,
-        currentAlter
     } = useMonetization();
+    const { currentAlter } = useAuth();
 
     const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0 });
     const [loadingAd, setLoadingAd] = useState(false);
@@ -114,28 +114,51 @@ export function ShopHomeScreen() {
 
     return (
         <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-            {/* 1. FEATURED HERO (Top Pack) */}
+            {/* HERO BANNER / WELCOME */}
+            <View style={styles.heroSection}>
+                <Text style={styles.heroWelcome}>Bienvenue dans la</Text>
+                <Text style={styles.heroTitle}>Boutique Plural</Text>
+                <Text style={styles.heroSubtitle}>Personnalisez votre expérience</Text>
+            </View>
+
+            {/* 1. EXTENSION PACKS (Redesigned) */}
             <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>PACKS EXTENSION</Text>
-                    <View style={styles.badgeNew}>
-                        <Text style={styles.badgeNewText}>SERIE 1</Text>
-                    </View>
+                    <Text style={styles.sectionTitle}>PACKS D'EXTENSION</Text>
+                    <TouchableOpacity style={styles.infoBadge} onPress={() => { setDropRateTier('basic'); setDropRateVisible(true); }}>
+                        <Ionicons name="information-circle" size={16} color="rgba(255,255,255,0.7)" />
+                        <Text style={styles.infoText}>Probabilités</Text>
+                    </TouchableOpacity>
                 </View>
 
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.boosterRow}>
                     {(['basic', 'standard', 'elite'] as LootBoxTier[]).map(tier => {
                         const pack = PACK_TIERS[tier];
                         const visuals = {
-                            basic: { color: ['#9CA3AF', '#4B5563'], icon: 'cube-outline' },
-                            standard: { color: ['#60A5FA', '#2563EB'], icon: 'layers-outline' },
-                            elite: { color: ['#FCD34D', '#D97706'], icon: 'star' }
+                            basic: {
+                                color: ['#374151', '#111827'],
+                                borderColor: '#4B5563',
+                                icon: 'cube-outline',
+                                glow: 'transparent'
+                            },
+                            standard: {
+                                color: ['#2563EB', '#1e40af'],
+                                borderColor: '#3B82F6',
+                                icon: 'layers-outline',
+                                glow: 'rgba(37, 99, 235, 0.3)'
+                            },
+                            elite: {
+                                color: ['#D97706', '#92400e'],
+                                borderColor: '#F59E0B',
+                                icon: 'star',
+                                glow: 'rgba(217, 119, 6, 0.4)'
+                            }
                         }[tier];
 
                         return (
                             <TouchableOpacity
                                 key={tier}
-                                style={styles.boosterCard}
+                                style={[styles.boosterCard, { borderColor: visuals.borderColor, shadowColor: visuals.borderColor }]}
                                 onPress={() => handleBuyPack(tier)}
                                 activeOpacity={0.8}
                             >
@@ -145,26 +168,21 @@ export function ShopHomeScreen() {
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 1 }}
                                 >
-                                    <View style={styles.boosterIcon}>
-                                        <Ionicons name={visuals.icon as any} size={32} color="white" />
+                                    <View style={styles.boosterHeader}>
+                                        <Text style={styles.boosterTier}>{tier.toUpperCase()}</Text>
+                                        <Ionicons name="hardware-chip-outline" size={12} color="rgba(255,255,255,0.3)" />
                                     </View>
-                                    <Text style={styles.boosterName}>{pack.name}</Text>
-                                    <Text style={styles.boosterCards}>{pack.cardCount.min}-{pack.cardCount.max} Cartes</Text>
 
-                                    <TouchableOpacity
-                                        style={styles.dropRateBtn}
-                                        onPress={() => {
-                                            setDropRateTier(tier);
-                                            setDropRateVisible(true);
-                                        }}
-                                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                                    >
-                                        <Ionicons name="information-circle-outline" size={14} color="rgba(255,255,255,0.7)" />
-                                        <Text style={styles.dropRateBtnText}>Taux</Text>
-                                    </TouchableOpacity>
+                                    <View style={styles.boosterCenter}>
+                                        <View style={[styles.boosterIconCircle, { borderColor: visuals.borderColor }]}>
+                                            <Ionicons name={visuals.icon as any} size={32} color="#FFF" />
+                                        </View>
+                                        <Text style={styles.boosterName}>{pack.name}</Text>
+                                        <Text style={styles.boosterCards}>{pack.cardCount.min}-{pack.cardCount.max} Cartes</Text>
+                                    </View>
 
-                                    <View style={styles.boosterPrice}>
-                                        <Ionicons name="diamond" size={12} color="white" />
+                                    <View style={styles.boosterPriceBtn}>
+                                        <Ionicons name="diamond" size={12} color="#FCD34D" />
                                         <Text style={styles.boosterPriceText}>{pack.price}</Text>
                                     </View>
                                 </LinearGradient>
@@ -174,60 +192,69 @@ export function ShopHomeScreen() {
                 </ScrollView>
             </View>
 
-            {/* 2. DAILY ITEMS */}
+            {/* 2. DAILY FLASH (Redesigned) */}
             <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>FLASH QUOTIDIEN</Text>
-                <View style={styles.timerBadge}>
-                    <Ionicons name="time-outline" size={12} color="#AAA" />
-                    <Text style={styles.timerText}>
-                        {timeLeft.hours}H {timeLeft.minutes.toString().padStart(2, '0')}M
-                    </Text>
+                <View>
+                    <Text style={styles.sectionTitle}>FLASH QUOTIDIEN</Text>
+                    <Text style={styles.sectionSubtitle}>Mise à jour dans {timeLeft.hours}h {timeLeft.minutes}m</Text>
                 </View>
             </View>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dailyScroll}>
-                {/* AD CARD */}
+                {/* AD CARD (Redesigned) */}
                 <TouchableOpacity
-                    activeOpacity={0.8}
+                    activeOpacity={0.9}
                     onPress={handleWatchAd}
                     disabled={!canWatchRewardAd || loadingAd}
-                    style={styles.adCard}
+                    style={styles.adCardNew}
                 >
                     <LinearGradient
-                        colors={['#059669', '#10B981']}
-                        style={styles.adGradient}
+                        colors={canWatchRewardAd ? ['#10B981', '#059669'] : ['#374151', '#1F2937']}
+                        style={styles.adGradientNew}
                     >
-                        <View style={styles.adBadge}>
-                            <Text style={styles.adBadgeText}>GRATUIT</Text>
+                        <View style={styles.adContentNew}>
+                            {canWatchRewardAd ? (
+                                <>
+                                    <View style={styles.adIconCircle}>
+                                        <Ionicons name="play" size={24} color="#10B981" />
+                                    </View>
+                                    <View>
+                                        <Text style={styles.adTitleNew}>Cadeau Gratuit</Text>
+                                        <Text style={styles.adSubNew}>Regarder une pub</Text>
+                                    </View>
+                                </>
+                            ) : (
+                                <>
+                                    <View style={[styles.adIconCircle, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
+                                        <Ionicons name="checkmark" size={24} color="#9CA3AF" />
+                                    </View>
+                                    <View>
+                                        <Text style={[styles.adTitleNew, { color: '#9CA3AF' }]}>Récupéré</Text>
+                                        <Text style={styles.adSubNew}>Reviens demain</Text>
+                                    </View>
+                                </>
+                            )}
                         </View>
 
-                        <Ionicons name="play-circle" size={48} color="#FFF" />
-
-                        <View style={styles.adContent}>
-                            <Text style={styles.adTitle}>Crédits Gratuits</Text>
-                            <View style={styles.adReward}>
-                                <Ionicons name="diamond" size={14} color="#FFD700" />
-                                <Text style={styles.adRewardText}>+50</Text>
-                            </View>
-                        </View>
-
-                        {loadingAd && (
-                            <View style={styles.adOverlay}>
-                                <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="dark" />
-                                <Ionicons name="hourglass-outline" size={32} color="#FFF" />
+                        {canWatchRewardAd && (
+                            <View style={styles.adRewardBadge}>
+                                <Ionicons name="diamond" size={12} color="#FFD700" />
+                                <Text style={styles.adRewardTextNew}>+50</Text>
                             </View>
                         )}
 
-                        {!canWatchRewardAd && !loadingAd && (
-                            <View style={styles.adOverlay}>
+                        {loadingAd && (
+                            <View style={styles.loadingOverlay}>
                                 <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="dark" />
-                                <Ionicons name="checkmark-circle" size={40} color="#FFF" />
-                                <Text style={styles.adOverlayText}>REVIENS DEMAIN</Text>
+                                <Animated.View style={{ transform: [{ rotate: '45deg' }] }}>
+                                    <Ionicons name="sync" size={24} color="#FFF" />
+                                </Animated.View>
                             </View>
                         )}
                     </LinearGradient>
                 </TouchableOpacity>
 
+                {/* ITEMS */}
                 {dailyItems.map((item, index) => (
                     <Animated.View
                         key={item.id}
@@ -247,7 +274,7 @@ export function ShopHomeScreen() {
                 ))}
             </ScrollView>
 
-            <View style={{ height: 100 }} />
+            <View style={{ height: 120 }} />
 
             {/* MODALS */}
             <ShopItemModal
@@ -294,6 +321,30 @@ const styles = StyleSheet.create({
     container: {
         paddingTop: spacing.md,
     },
+    heroSection: {
+        paddingHorizontal: spacing.xl,
+        marginBottom: spacing.xl,
+        alignItems: 'center',
+    },
+    heroWelcome: {
+        color: 'rgba(255,255,255,0.6)',
+        fontSize: 12,
+        letterSpacing: 2,
+        textTransform: 'uppercase',
+        marginBottom: 4,
+    },
+    heroTitle: {
+        fontSize: 28,
+        fontWeight: '900',
+        color: '#FFF',
+        textShadowColor: 'rgba(255, 158, 11, 0.5)',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 10,
+    },
+    heroSubtitle: {
+        color: 'rgba(255,255,255,0.8)',
+        fontSize: 14,
+    },
     section: {
         marginBottom: spacing.xl,
     },
@@ -310,156 +361,159 @@ const styles = StyleSheet.create({
         color: '#FFF',
         letterSpacing: 1,
     },
-    badgeNew: {
-        backgroundColor: '#F59E0B',
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 4,
-    },
-    badgeNewText: {
-        color: '#000',
-        fontSize: 10,
-        fontWeight: 'bold',
-    },
-    timerBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
-        gap: 4,
-    },
-    timerText: {
-        color: '#FFF',
+    sectionSubtitle: {
         fontSize: 12,
-        fontVariant: ['tabular-nums'],
+        color: 'rgba(255,255,255,0.5)',
+        marginTop: 2,
     },
-    boosterRow: {
-        paddingHorizontal: spacing.md,
-        gap: spacing.md,
-    },
-    boosterCard: {
-        width: 130,
-        height: 180,
-        borderRadius: 16,
-        overflow: 'hidden',
-    },
-    boosterGradient: {
-        flex: 1,
-        padding: 12,
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    boosterIcon: {
-        marginTop: 10,
-    },
-    boosterName: {
-        color: '#FFF',
-        fontSize: 14,
-        fontWeight: 'bold',
-        textAlign: 'center',
-    },
-    boosterCards: {
-        color: 'rgba(255,255,255,0.7)',
-        fontSize: 10,
-    },
-    dropRateBtn: {
+    infoBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
         padding: 4,
     },
-    dropRateBtnText: {
+    infoText: {
         color: 'rgba(255,255,255,0.7)',
         fontSize: 10,
     },
-    boosterPrice: {
+    boosterRow: {
+        paddingHorizontal: spacing.md,
+        gap: spacing.lg,
+        paddingBottom: 20, // space for shadows
+    },
+    boosterCard: {
+        width: 140,
+        height: 200,
+        borderRadius: 20,
+        borderWidth: 1,
+        // Shadow handled by style prop in render
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.5,
+        shadowRadius: 12,
+        elevation: 10,
+    },
+    boosterGradient: {
+        flex: 1,
+        borderRadius: 19, // inner radius
+        padding: 12,
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    boosterHeader: {
+        width: '100%',
         flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    boosterTier: {
+        color: 'rgba(255,255,255,0.5)',
+        fontSize: 10,
+        fontWeight: 'bold',
+        letterSpacing: 1,
+    },
+    boosterCenter: {
+        alignItems: 'center',
+        gap: 8,
+    },
+    boosterIconCircle: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: 'rgba(0,0,0,0.3)',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
-        gap: 4,
-        width: '100%',
-        justifyContent: 'center',
+        borderWidth: 1,
+        marginBottom: 4,
+    },
+    boosterName: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    boosterCards: {
+        color: 'rgba(255,255,255,0.6)',
+        fontSize: 12,
+    },
+    boosterPriceBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        gap: 6,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
     },
     boosterPriceText: {
         color: '#FFF',
         fontWeight: 'bold',
+        fontSize: 14,
     },
     dailyScroll: {
         paddingHorizontal: spacing.md,
         gap: spacing.md,
         paddingRight: 40,
     },
-    adCard: {
-        width: 140,
-        height: 200,
+    adCardNew: {
+        width: 160,
+        height: 220, // Match ShopItemCard height
         borderRadius: 16,
         overflow: 'hidden',
-        marginRight: 4,
-        backgroundColor: '#10B981',
     },
-    adGradient: {
+    adGradientNew: {
+        flex: 1,
+        padding: 12,
+        justifyContent: 'space-between',
+    },
+    adContentNew: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 12,
         gap: 12,
     },
-    adBadge: {
-        position: 'absolute',
-        top: 8,
-        left: 8,
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 4,
-    },
-    adBadgeText: {
-        color: '#FFF',
-        fontSize: 10,
-        fontWeight: 'bold',
-    },
-    adContent: {
+    adIconCircle: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#FFF',
+        justifyContent: 'center',
         alignItems: 'center',
-        gap: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
     },
-    adTitle: {
+    adTitleNew: {
         color: '#FFF',
         fontWeight: 'bold',
-        fontSize: 14,
+        fontSize: 16,
         textAlign: 'center',
     },
-    adReward: {
+    adSubNew: {
+        color: 'rgba(255,255,255,0.8)',
+        fontSize: 12,
+        textAlign: 'center',
+    },
+    adRewardBadge: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
         backgroundColor: 'rgba(0,0,0,0.2)',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
         gap: 4,
     },
-    adRewardText: {
+    adRewardTextNew: {
         color: '#FFD700',
         fontWeight: 'bold',
-        fontSize: 12,
+        fontSize: 14,
     },
-    adOverlay: {
+    loadingOverlay: {
         ...StyleSheet.absoluteFillObject,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.4)',
         zIndex: 10,
-        gap: 8,
-    },
-    adOverlayText: {
-        color: '#FFF',
-        fontWeight: 'bold',
-        fontSize: 12,
-        textAlign: 'center',
-        paddingHorizontal: 8,
     },
 });

@@ -214,14 +214,13 @@ export const PACK_TIERS: Record<LootBoxTier, PackConfig> = {
         name: 'Basic Pack',
         price: 30,
         cardCount: {
-            min: 3,
-            max: 5,
-            probabilities: { 3: 0.70, 4: 0.25, 5: 0.05 }
+            min: 1,
+            max: 3,
+            probabilities: { 1: 0.60, 2: 0.30, 3: 0.10 }
         },
         rarityGuarantees: {},
         dropRates: {
             common: 0.85,
-            // rare merged with uncommon logic: 10% uncommon + 4% rare from plan = 14% rare
             rare: 0.14,
             epic: 0.009,
             legendary: 0.001,
@@ -234,8 +233,8 @@ export const PACK_TIERS: Record<LootBoxTier, PackConfig> = {
         price: 100,
         cardCount: {
             min: 3,
-            max: 6,
-            probabilities: { 3: 0.80, 4: 0.15, 5: 0.04, 6: 0.01 }
+            max: 5,
+            probabilities: { 3: 0.70, 4: 0.25, 5: 0.05 }
         },
         rarityGuarantees: {},
         dropRates: {
@@ -253,7 +252,7 @@ export const PACK_TIERS: Record<LootBoxTier, PackConfig> = {
         cardCount: {
             min: 5,
             max: 8,
-            probabilities: { 5: 0.70, 6: 0.20, 7: 0.08, 8: 0.02 }
+            probabilities: { 5: 0.60, 6: 0.25, 7: 0.10, 8: 0.05 }
         },
         rarityGuarantees: {
             minRarity: 'rare',

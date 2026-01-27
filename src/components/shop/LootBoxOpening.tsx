@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, StyleSheet, Text, Modal, TouchableOpacity, ScrollView, Dimensions, SafeAreaView } from 'react-native';
+import { View, StyleSheet, Text, Modal, TouchableOpacity, Dimensions, SafeAreaView } from 'react-native';
 import { BlurView } from 'expo-blur';
 import Animated, {
     useSharedValue,
@@ -12,6 +12,8 @@ import Animated, {
     runOnJS,
     FadeIn,
     FadeOut,
+    FadeInDown,
+    FadeInUp,
     Easing,
     cancelAnimation,
     interpolate
@@ -23,15 +25,20 @@ import { Platform } from 'react-native';
 
 import BoosterPack from './BoosterPack';
 import CardReveal from './CardReveal';
-import LootBoxService, { PackResult } from '../../services/LootBoxService';
-import { LootBoxTier } from '../../services/MonetizationTypes';
+import SummaryGrid from './SummaryGrid';
+import LootBoxService, { PackResult, CardResult } from '../../services/LootBoxService';
+import { LootBoxTier, Rarity } from '../../services/MonetizationTypes';
 import { useMonetization } from '../../contexts/MonetizationContext';
 
 interface LootBoxOpeningProps {
     visible: boolean;
     tier: LootBoxTier;
+    packCount?: number;  // Nombre de packs à ouvrir (default: 1)
     onClose: () => void;
 }
+
+// Phases du flow multi-packs
+type OpeningPhase = 'count' | 'opening' | 'cards' | 'summary';
 
 const { width, height } = Dimensions.get('window');
 
@@ -45,21 +52,30 @@ const TIER_THEME: Record<LootBoxTier, {
     basic: {
         primaryColor: '#9CA3AF',
         secondaryColor: '#4B5563',
-        rayColors: ['rgba(156, 163, 175, 0.15)', 'transparent'], // Reduced opacity
-        particleCount: 5, // Reduced from 8
+        rayColors: ['rgba(156, 163, 175, 0.15)', 'transparent'],
+        particleCount: 5,
     },
     standard: {
         primaryColor: '#60A5FA',
         secondaryColor: '#2563EB',
-        rayColors: ['rgba(96, 165, 250, 0.2)', 'transparent'], // Reduced opacity
-        particleCount: 8, // Reduced from 12
+        rayColors: ['rgba(96, 165, 250, 0.2)', 'transparent'],
+        particleCount: 8,
     },
     elite: {
         primaryColor: '#FCD34D',
         secondaryColor: '#D97706',
-        rayColors: ['rgba(252, 211, 77, 0.25)', 'transparent'], // Reduced opacity
-        particleCount: 15, // Reduced from 20
+        rayColors: ['rgba(252, 211, 77, 0.25)', 'transparent'],
+        particleCount: 15,
     },
+};
+
+// Helper: Extraire la meilleure rareté d'un pack
+const getBestRarity = (cards: CardResult[]): Rarity => {
+    return cards.reduce((best, card) => {
+        const bestVal = LootBoxService.getRarityValue(best);
+        const cardVal = LootBoxService.getRarityValue(card.item.rarity || 'common');
+        return cardVal > bestVal ? (card.item.rarity || 'common') : best;
+    }, 'common' as Rarity);
 };
 
 // Animated particle component for burst effect
@@ -155,20 +171,104 @@ const AnimatedRay = React.memo(({
     );
 });
 
-export default function LootBoxOpening({ visible, tier, onClose }: LootBoxOpeningProps) {
+// Composant pour l'écran de comptage initial
+const PackCountScreen = React.memo(({
+    packCount,
+    tier,
+    theme,
+    onStart,
+}: {
+    packCount: number;
+    tier: LootBoxTier;
+    theme: typeof TIER_THEME.basic;
+    onStart: () => void;
+}) => {
+    return (
+        <Animated.View entering={FadeIn} style={styles.countScreen}>
+            {/* Packs empilés visuellement */}
+            <View style={styles.stackedPacks}>
+                {Array.from({ length: Math.min(packCount, 5) }).map((_, i) => (
+                    <Animated.View
+                        key={i}
+                        entering={FadeInDown.delay(i * 100).springify()}
+                        style={[
+                            styles.stackedPackItem,
+                            {
+                                transform: [
+                                    { translateY: -i * 8 },
+                                    { rotate: `${(i - 2) * 3}deg` },
+                                ],
+                                zIndex: 5 - i,
+                            },
+                        ]}
+                    >
+                        <LinearGradient
+                            colors={TIER_THEME[tier].rayColors as any}
+                            style={styles.stackedPackGradient}
+                        >
+                            <Ionicons name="cube" size={40} color={theme.primaryColor} />
+                        </LinearGradient>
+                    </Animated.View>
+                ))}
+            </View>
+
+            {/* Nombre de packs */}
+            <Animated.Text
+                entering={FadeInUp.delay(300).springify()}
+                style={[styles.packCountText, { color: theme.primaryColor }]}
+            >
+                {packCount} PACK{packCount > 1 ? 'S' : ''}
+            </Animated.Text>
+
+            <Animated.Text
+                entering={FadeInUp.delay(400).springify()}
+                style={styles.packCountSubtext}
+            >
+                Prêt à ouvrir
+            </Animated.Text>
+
+            {/* Bouton démarrer */}
+            <Animated.View entering={FadeInUp.delay(500).springify()}>
+                <TouchableOpacity
+                    style={[styles.startButton, { backgroundColor: theme.primaryColor }]}
+                    onPress={onStart}
+                >
+                    <Text style={[styles.startButtonText, { color: tier === 'elite' ? '#000' : '#FFF' }]}>
+                        COMMENCER
+                    </Text>
+                    <Ionicons name="arrow-forward" size={20} color={tier === 'elite' ? '#000' : '#FFF'} />
+                </TouchableOpacity>
+            </Animated.View>
+        </Animated.View>
+    );
+});
+
+export default function LootBoxOpening({ visible, tier, packCount = 1, onClose }: LootBoxOpeningProps) {
     const { ownedItems, addToInventory, addDust } = useMonetization();
     const theme = TIER_THEME[tier];
 
-    const [phase, setPhase] = useState<'pack' | 'cards' | 'summary'>('pack');
-    const [result, setResult] = useState<PackResult | null>(null);
+    // État multi-packs
+    const [phase, setPhase] = useState<OpeningPhase>('count');
+    const [currentPackIndex, setCurrentPackIndex] = useState(0);
+    const [allResults, setAllResults] = useState<PackResult[]>([]);
     const [cardsRevealedCount, setCardsRevealedCount] = useState(0);
     const [showParticles, setShowParticles] = useState(false);
+    const [rewardsSaved, setRewardsSaved] = useState(false);
+
     const phaseTransitionTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Pack actuel et sa meilleure rareté (pour la lueur R6)
+    const currentResult = allResults[currentPackIndex];
+    const currentBestRarity = useMemo(() => {
+        if (!currentResult) return undefined;
+        return getBestRarity(currentResult.cards);
+    }, [currentResult]);
 
     // Animation values
     const backgroundOpacity = useSharedValue(0);
     const rayScale = useSharedValue(0);
     const burstScale = useSharedValue(0);
+    const packSlideX = useSharedValue(0);
 
     // Generate particles for burst effect
     const particles = useMemo(() => {
@@ -180,13 +280,32 @@ export default function LootBoxOpening({ visible, tier, onClose }: LootBoxOpenin
         }));
     }, [tier]);
 
-    // Reset when opening
+    // Pré-générer tous les packs à l'ouverture
     useEffect(() => {
-        if (visible) {
-            setPhase('pack');
-            setResult(null);
+        if (visible && packCount > 0) {
+            // Reset state
+            setPhase(packCount > 1 ? 'count' : 'opening');
+            setCurrentPackIndex(0);
             setCardsRevealedCount(0);
             setShowParticles(false);
+            setRewardsSaved(false);
+            packSlideX.value = 0;
+
+            // Pré-générer tous les résultats
+            const results: PackResult[] = [];
+            let currentOwnedItems = [...ownedItems];
+
+            for (let i = 0; i < packCount; i++) {
+                const result = LootBoxService.openPack(tier, currentOwnedItems);
+                results.push(result);
+                // Ajouter les nouveaux items à la liste pour éviter les doublons inter-packs
+                result.cards.forEach(card => {
+                    if (card.isNew) {
+                        currentOwnedItems.push(card.item.id);
+                    }
+                });
+            }
+            setAllResults(results);
 
             // Animate background elements in
             backgroundOpacity.value = withTiming(1, { duration: 500 });
@@ -196,7 +315,7 @@ export default function LootBoxOpening({ visible, tier, onClose }: LootBoxOpenin
             rayScale.value = 0;
             burstScale.value = 0;
         }
-    }, [visible]);
+    }, [visible, packCount, tier, ownedItems]);
 
     // Cleanup
     useEffect(() => {
@@ -207,13 +326,34 @@ export default function LootBoxOpening({ visible, tier, onClose }: LootBoxOpenin
             cancelAnimation(backgroundOpacity);
             cancelAnimation(rayScale);
             cancelAnimation(burstScale);
+            cancelAnimation(packSlideX);
         };
     }, []);
 
-    const handlePackOpen = useCallback(() => {
-        const packResult = LootBoxService.openPack(tier, ownedItems);
-        setResult(packResult);
+    // Sauvegarder tous les rewards
+    const saveAllRewards = useCallback(async () => {
+        if (rewardsSaved) return;
+        setRewardsSaved(true);
 
+        for (const result of allResults) {
+            for (const card of result.cards) {
+                if (card.isNew) {
+                    await addToInventory(card.item.id);
+                }
+            }
+            if (result.totalDust > 0) {
+                await addDust(result.totalDust);
+            }
+        }
+    }, [allResults, addToInventory, addDust, rewardsSaved]);
+
+    // Démarrer l'ouverture (depuis l'écran de comptage)
+    const handleStart = useCallback(() => {
+        setPhase('opening');
+    }, []);
+
+    // Quand un pack est ouvert
+    const handlePackOpen = useCallback(() => {
         // Trigger burst effect
         setShowParticles(true);
         burstScale.value = withSequence(
@@ -221,39 +361,52 @@ export default function LootBoxOpening({ visible, tier, onClose }: LootBoxOpenin
             withTiming(0, { duration: 300 })
         );
 
-        // Enhanced haptics (Reduced)
+        // Enhanced haptics
         if (Platform.OS === 'ios') {
             Haptics.selectionAsync();
         }
-
-        // Persist rewards
-        const saveRewards = async () => {
-            for (const card of packResult.cards) {
-                if (card.isNew) {
-                    await addToInventory(card.item.id);
-                }
-            }
-            if (packResult.totalDust > 0) {
-                await addDust(packResult.totalDust);
-            }
-        };
-        saveRewards();
 
         // Transition to Cards phase with delay for burst animation
         phaseTransitionTimeoutRef.current = setTimeout(() => {
             setPhase('cards');
             setShowParticles(false);
-            // Auto flip first card logic is handled in render
+            setCardsRevealedCount(0);
         }, 500);
-    }, [tier, ownedItems, addToInventory, addDust]);
+    }, []);
 
-    const handleCardFlip = () => {
+    // Quand une carte est retournée
+    const handleCardFlip = useCallback(() => {
         setCardsRevealedCount(prev => prev + 1);
-    };
+    }, []);
 
-    const handleFinish = () => {
+    // Passer au pack suivant
+    const handleNextPack = useCallback(() => {
+        if (currentPackIndex < packCount - 1) {
+            // Animation de slide
+            packSlideX.value = withTiming(-width, { duration: 300 }, () => {
+                runOnJS(setCurrentPackIndex)(currentPackIndex + 1);
+                runOnJS(setCardsRevealedCount)(0);
+                runOnJS(setPhase)('opening');
+                packSlideX.value = 0;
+            });
+        } else {
+            // Dernier pack, aller au récap
+            saveAllRewards();
+            setPhase('summary');
+        }
+    }, [currentPackIndex, packCount, saveAllRewards]);
+
+    // Skip tout et aller au récap
+    const handleSkipAll = useCallback(() => {
+        saveAllRewards();
+        setPhase('summary');
+    }, [saveAllRewards]);
+
+    // Fermer le modal
+    const handleFinish = useCallback(() => {
+        saveAllRewards();
         onClose();
-    };
+    }, [saveAllRewards, onClose]);
 
     const backgroundStyle = useAnimatedStyle(() => ({
         opacity: backgroundOpacity.value,
@@ -268,7 +421,14 @@ export default function LootBoxOpening({ visible, tier, onClose }: LootBoxOpenin
         opacity: interpolate(burstScale.value, [0, 1, 1.5], [0, 1, 0]),
     }));
 
+    const packContainerStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: packSlideX.value }],
+    }));
+
     if (!visible) return null;
+
+    const allCardsRevealed = currentResult && cardsRevealedCount >= currentResult.cards.length;
+    const isLastPack = currentPackIndex >= packCount - 1;
 
     return (
         <Modal transparent animationType="fade" visible={visible}>
@@ -302,40 +462,70 @@ export default function LootBoxOpening({ visible, tier, onClose }: LootBoxOpenin
                 )}
 
                 <SafeAreaView style={styles.container}>
-                    {/* Header / Close */}
+                    {/* Header / Controls */}
                     <View style={styles.headerControls}>
-                        {phase === 'cards' && cardsRevealedCount < (result?.cards.length || 0) && (
+                        {/* Compteur de packs */}
+                        {packCount > 1 && phase !== 'count' && phase !== 'summary' && (
+                            <View style={styles.packCounter}>
+                                <Text style={styles.packCounterText}>
+                                    Pack {currentPackIndex + 1}/{packCount}
+                                </Text>
+                            </View>
+                        )}
+
+                        {/* Bouton Skip All */}
+                        {phase !== 'summary' && phase !== 'count' && (
                             <TouchableOpacity
-                                style={styles.skipButton}
-                                onPress={() => setCardsRevealedCount(result?.cards.length || 0)}
+                                style={styles.skipAllButton}
+                                onPress={handleSkipAll}
                             >
-                                <Text style={styles.skipButtonText}>TOUT RÉVÉLER</Text>
+                                <Ionicons name="play-forward" size={14} color="#FFF" />
+                                <Text style={styles.skipAllText}>SKIP TOUT</Text>
                             </TouchableOpacity>
                         )}
 
-                        {phase !== 'pack' && (
+                        {/* Bouton Close */}
+                        {phase !== 'opening' && (
                             <TouchableOpacity style={styles.closeButton} onPress={handleFinish}>
                                 <Ionicons name="close-circle" size={32} color="rgba(255,255,255,0.5)" />
                             </TouchableOpacity>
                         )}
                     </View>
 
-                    {/* PHASE 1: BOOSTER PACK */}
-                    {phase === 'pack' && (
-                        <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.centerContent}>
+                    {/* PHASE: PACK COUNT (multi-packs) */}
+                    {phase === 'count' && (
+                        <PackCountScreen
+                            packCount={packCount}
+                            tier={tier}
+                            theme={theme}
+                            onStart={handleStart}
+                        />
+                    )}
+
+                    {/* PHASE: PACK OPENING */}
+                    {phase === 'opening' && (
+                        <Animated.View
+                            entering={FadeIn}
+                            exiting={FadeOut}
+                            style={[styles.centerContent, packContainerStyle]}
+                        >
                             <Text style={[styles.instructionText, { color: theme.primaryColor }]}>
                                 GLISSEZ POUR OUVRIR
                             </Text>
-                            <BoosterPack tier={tier} onOpen={handlePackOpen} />
+                            <BoosterPack
+                                tier={tier}
+                                onOpen={handlePackOpen}
+                                spoilerRarity={currentBestRarity}
+                            />
                         </Animated.View>
                     )}
 
-                    {/* PHASE 2: CARDS REVEAL - Supercell Style */}
-                    {phase === 'cards' && result && (
+                    {/* PHASE: CARDS REVEAL */}
+                    {phase === 'cards' && currentResult && (
                         <Animated.View entering={FadeIn.delay(300)} style={styles.cardsContainer}>
                             {/* Progress indicator */}
                             <View style={styles.progressContainer}>
-                                {result.cards.map((_, i) => (
+                                {currentResult.cards.map((_, i) => (
                                     <View
                                         key={i}
                                         style={[
@@ -348,20 +538,19 @@ export default function LootBoxOpening({ visible, tier, onClose }: LootBoxOpenin
                             </View>
 
                             <Text style={[styles.congratsText, { textShadowColor: theme.primaryColor }]}>
-                                {cardsRevealedCount === result.cards.length
-                                    ? `🎉 ${result.cards.length} OBJETS OBTENUS !`
-                                    : `TOUCHEZ POUR RÉVÉLER (${cardsRevealedCount + 1}/${result.cards.length})`
+                                {allCardsRevealed
+                                    ? `🎉 ${currentResult.cards.length} OBJETS OBTENUS !`
+                                    : `TOUCHEZ POUR RÉVÉLER (${cardsRevealedCount + 1}/${currentResult.cards.length})`
                                 }
                             </Text>
 
                             {/* Single card display - Centered */}
                             <View style={styles.singleCardContainer}>
-                                {result.cards.map((card, index) => (
+                                {currentResult.cards.map((card, index) => (
                                     <View
                                         key={`${card.item.id}-${index}`}
                                         style={[
                                             styles.cardWrapper,
-                                            // Hide cards that aren't the current one
                                             index !== cardsRevealedCount && styles.hiddenCard
                                         ]}
                                     >
@@ -369,35 +558,57 @@ export default function LootBoxOpening({ visible, tier, onClose }: LootBoxOpenin
                                             item={card.item}
                                             isNew={card.isNew}
                                             dustValue={card.dustValue}
-                                            delay={0} // No stagger, show immediately
+                                            delay={0}
                                             onFlip={handleCardFlip}
-                                            autoFlip={index === 0} // First card auto-flips
+                                            autoFlip={index === 0}
                                             isActive={index === cardsRevealedCount}
                                         />
                                     </View>
                                 ))}
                             </View>
 
-                            {/* Summary / Continue Button - Only show when all revealed */}
-                            {cardsRevealedCount >= result.cards.length && (
+                            {/* Actions après révélation de toutes les cartes */}
+                            {allCardsRevealed && (
                                 <Animated.View entering={FadeIn.delay(500)} style={styles.footer}>
-                                    {result.totalDust > 0 && (
+                                    {currentResult.totalDust > 0 && (
                                         <View style={styles.dustSummary}>
                                             <Ionicons name="flash" size={16} color="#FCD34D" />
-                                            <Text style={styles.dustSummaryText}>+{result.totalDust} Poussière</Text>
+                                            <Text style={styles.dustSummaryText}>+{currentResult.totalDust} Poussière</Text>
                                         </View>
                                     )}
 
+                                    {/* Bouton suivant ou récap */}
                                     <TouchableOpacity
                                         style={[styles.finishButton, { backgroundColor: theme.primaryColor }]}
-                                        onPress={handleFinish}
+                                        onPress={handleNextPack}
                                     >
                                         <Text style={[styles.finishButtonText, { color: tier === 'elite' ? '#000' : '#FFF' }]}>
-                                            TOUT RÉCUPÉRER ✨
+                                            {isLastPack
+                                                ? (packCount > 1 ? 'VOIR LE RÉCAP' : 'TOUT RÉCUPÉRER ✨')
+                                                : `PACK SUIVANT (${currentPackIndex + 2}/${packCount})`
+                                            }
                                         </Text>
+                                        {!isLastPack && (
+                                            <Ionicons
+                                                name="arrow-forward"
+                                                size={18}
+                                                color={tier === 'elite' ? '#000' : '#FFF'}
+                                                style={{ marginLeft: 8 }}
+                                            />
+                                        )}
                                     </TouchableOpacity>
                                 </Animated.View>
                             )}
+                        </Animated.View>
+                    )}
+
+                    {/* PHASE: SUMMARY (récap final) */}
+                    {phase === 'summary' && allResults.length > 0 && (
+                        <Animated.View entering={FadeIn} style={styles.summaryContainer}>
+                            <SummaryGrid
+                                allResults={allResults}
+                                onClose={handleFinish}
+                            />
                         </Animated.View>
                     )}
 
@@ -432,21 +643,36 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
         alignItems: 'center',
         zIndex: 50,
+        gap: 12,
     },
-    closeButton: {
-        // removed absolute
-        marginLeft: 16,
+    packCounter: {
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        marginRight: 'auto',
     },
-    skipButton: {
+    packCounterText: {
+        color: '#FFF',
+        fontSize: 14,
+        fontWeight: 'bold',
+    },
+    skipAllButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: 'rgba(255,255,255,0.2)',
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 16,
+        gap: 4,
     },
-    skipButtonText: {
+    skipAllText: {
         color: '#FFF',
         fontSize: 12,
         fontWeight: 'bold',
+    },
+    closeButton: {
+        marginLeft: 4,
     },
     instructionText: {
         color: 'white',
@@ -471,11 +697,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         textShadowColor: 'rgba(0,0,0,0.5)',
         textShadowRadius: 4,
-    },
-    cardsScroll: {
-        alignItems: 'center',
-        paddingHorizontal: width * 0.15, // Center first card
-        paddingBottom: 20,
     },
     cardWrapper: {
         marginHorizontal: 10,
@@ -502,8 +723,10 @@ const styles = StyleSheet.create({
         marginLeft: 6,
     },
     finishButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: 'white',
-        paddingHorizontal: 40,
+        paddingHorizontal: 30,
         paddingVertical: 15,
         borderRadius: 30,
         shadowColor: "#000",
@@ -518,7 +741,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         letterSpacing: 1,
     },
-    // NEW: Animation styles
+    // Animation styles
     raysContainer: {
         position: 'absolute',
         width: width * 2,
@@ -549,7 +772,7 @@ const styles = StyleSheet.create({
         height: 12,
         borderRadius: 6,
     },
-    // NEW: Supercell-style card reveal
+    // Card reveal styles
     progressContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -580,5 +803,71 @@ const styles = StyleSheet.create({
         position: 'absolute',
         opacity: 0,
         pointerEvents: 'none',
+    },
+    // Pack count screen styles
+    countScreen: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        flex: 1,
+    },
+    stackedPacks: {
+        height: 150,
+        width: 120,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 30,
+    },
+    stackedPackItem: {
+        position: 'absolute',
+        width: 100,
+        height: 140,
+        borderRadius: 12,
+        backgroundColor: 'rgba(31, 41, 55, 0.9)',
+        borderWidth: 2,
+        borderColor: 'rgba(255,255,255,0.2)',
+        overflow: 'hidden',
+    },
+    stackedPackGradient: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    packCountText: {
+        fontSize: 48,
+        fontWeight: '900',
+        letterSpacing: 4,
+        textShadowColor: 'rgba(0,0,0,0.5)',
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 4,
+    },
+    packCountSubtext: {
+        fontSize: 16,
+        color: 'rgba(255,255,255,0.6)',
+        marginTop: 8,
+        marginBottom: 40,
+    },
+    startButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 40,
+        paddingVertical: 16,
+        borderRadius: 30,
+        gap: 10,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        elevation: 5,
+    },
+    startButtonText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        letterSpacing: 2,
+    },
+    // Summary container
+    summaryContainer: {
+        flex: 1,
+        width: '100%',
+        paddingTop: 60,
     },
 });

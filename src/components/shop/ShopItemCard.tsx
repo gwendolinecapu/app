@@ -172,25 +172,25 @@ export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits, 
                         <View style={[styles.priceTag, !canAfford && !isFree && styles.priceTagExpensive]}>
                             {isFree ? (
                                 <Text style={styles.freeText}>Gratuit</Text>
-                            ) : (
-                                    <Ionicons
-                                        name={currencyType === 'dust' ? 'sparkles' : 'diamond'}
-                                        size={12}
-                                        color={canAfford ? (currencyType === 'dust' ? '#E879F9' : colors.secondary) : colors.error}
-                                    />
-                                    <Text style={[
-                                        styles.priceText,
-                                        !canAfford && { color: colors.error },
-                                        currencyType === 'dust' && { color: '#E879F9' }
-                                    ]}>
-                                        {displayPrice}
-                                    </Text>
-                                </>
+                            ) : (<>
+                                <Ionicons
+                                    name={currencyType === 'dust' ? 'sparkles' : 'diamond'}
+                                    size={12}
+                                    color={canAfford ? (currencyType === 'dust' ? '#E879F9' : colors.secondary) : colors.error}
+                                />
+                                <Text style={[
+                                    styles.priceText,
+                                    !canAfford && { color: colors.error },
+                                    currencyType === 'dust' && { color: '#E879F9' }
+                                ]}>
+                                    {displayPrice}
+                                </Text>
+                            </>
+                            )}
+                        </View>
                     )}
                 </View>
-                    )}
             </View>
-        </View>
         </TouchableOpacity >
     );
 }

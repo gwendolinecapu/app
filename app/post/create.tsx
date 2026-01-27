@@ -350,12 +350,27 @@ export default function CreatePostScreen() {
                 mainMediaUrl = url;
             }
 
+
+            // Determine Author Name & Avatar for snapshot
+            let snapshotName = undefined;
+            let snapshotAvatar = undefined;
+
+            if (activeFront.type === 'single' && activeFront.alters[0]) {
+                snapshotName = activeFront.alters[0].name;
+                snapshotAvatar = activeFront.alters[0].avatar_url || activeFront.alters[0].avatar;
+            } else if (activeFront.type === 'co-front' && activeFront.alters.length > 0) {
+                snapshotName = activeFront.alters.map(a => a.name).join(' & ');
+                snapshotAvatar = activeFront.alters[0].avatar_url; // Use primary fronter avatar
+            }
+
             // Construct post data based on activeFront
             const postData: any = {
                 system_id: system.id,
                 content: content.trim(),
                 visibility: 'public', // Could be selectable
                 author_type: activeFront.type,
+                author_name: snapshotName,
+                author_avatar: snapshotAvatar,
             };
 
             // Add media

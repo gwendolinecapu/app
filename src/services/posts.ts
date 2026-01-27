@@ -132,8 +132,9 @@ export const PostService = {
 
             return {
                 ...post,
-                author_name: finalName || post.author_name || 'Utilisateur',
-                author_avatar: system?.avatar_url || post.author_avatar,
+                // Prioritize the snapshot author_name if available, otherwise fallback to system name
+                author_name: post.author_name || finalName || 'Utilisateur',
+                author_avatar: post.author_avatar || system?.avatar_url || post.author_avatar,
             };
         });
     },

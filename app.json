@@ -144,7 +144,6 @@
           }
         }
       ],
-      "expo-llm-mediapipe",
       "./plugins/withModularHeaders"
     ],
     "experiments": {

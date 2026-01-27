@@ -23,7 +23,11 @@ import {
     CREDIT_ITEMS,
     CREDIT_PACKS,
     COSMETIC_ITEMS,
+
     DailyReward,
+    PityProgress,
+    DEFAULT_PITY_PROGRESS,
+    CRAFT_PRICES,
 } from '../services/MonetizationTypes';
 
 interface MonetizationContextType {
@@ -31,7 +35,11 @@ interface MonetizationContextType {
     loading: boolean;
     tier: UserTier;
     credits: number;
+
     dust: number;
+    pityProgress: PityProgress;
+    updatePityProgress: (progress: PityProgress) => Promise<void>;
+    craftItem: (item: ShopItem) => Promise<boolean>;
 
     // Premium
     isPremium: boolean;
@@ -101,7 +109,9 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
     // États dérivés des services
     const [tier, setTier] = useState<UserTier>('free');
     const [credits, setCredits] = useState(0);
+
     const [dust, setDust] = useState(0);
+    const [pityProgress, setPityProgress] = useState<PityProgress>(DEFAULT_PITY_PROGRESS);
     const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
     const [isConversionModalVisible, setConversionModalVisible] = useState(false);
 
@@ -122,7 +132,9 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         if (currentAlter) {
             // Sync Credits
             setCredits(currentAlter.credits || 0);
+
             setDust(currentAlter.dust || 0);
+            setPityProgress(currentAlter.pityProgress || DEFAULT_PITY_PROGRESS);
 
             // Sync Inventory
             const defaults = ['theme_default', 'frame_simple', 'bubble_default', 'border_none'];
@@ -137,7 +149,10 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         } else {
             // Reset to defaults if no alter (shouldn't happen in app usage but safe)
             setCredits(0);
+            // Reset to defaults if no alter (shouldn't happen in app usage but safe)
+
             setDust(0);
+            setPityProgress(DEFAULT_PITY_PROGRESS);
             setOwnedItems(['theme_default', 'frame_simple', 'bubble_default', 'border_none']);
         }
     }, [currentAlter]);
@@ -261,6 +276,51 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
             return true;
         } catch (error) {
             console.error('[MonetizationContext] Failed to add item to inventory:', error);
+            return false;
+        }
+    }, [currentAlter, refreshAlters]);
+
+    const updatePityProgress = useCallback(async (progress: PityProgress): Promise<void> => {
+        if (!currentAlter) return;
+        try {
+            const alterRef = doc(db, 'alters', currentAlter.id);
+            await setDoc(alterRef, { pityProgress: progress }, { merge: true });
+
+            setPityProgress(progress);
+            refreshAlters();
+        } catch (error) {
+            console.error('[MonetizationContext] Failed to update pity progress:', error);
+        }
+    }, [currentAlter, refreshAlters]);
+
+    const craftItem = useCallback(async (item: ShopItem): Promise<boolean> => {
+        if (!currentAlter) return false;
+
+        const price = CRAFT_PRICES[item.rarity || 'common'];
+        if ((currentAlter.dust || 0) < price) {
+            return false;
+        }
+
+        try {
+            const alterRef = doc(db, 'alters', currentAlter.id);
+
+            // 1. Deduct Dust
+            const newDust = (currentAlter.dust || 0) - price;
+
+            // 2. Add to Inventory and Update Dust atomically (ideally transaction, but merge is fine for MVP)
+            await setDoc(alterRef, {
+                dust: newDust,
+                owned_items: arrayUnion(item.id)
+            }, { merge: true });
+
+            // 3. Update Local State
+            setDust(newDust);
+            setOwnedItems(prev => [...new Set([...prev, item.id])]);
+
+            refreshAlters();
+            return true;
+        } catch (error) {
+            console.error('[MonetizationContext] Failed to craft item:', error);
             return false;
         }
     }, [currentAlter, refreshAlters]);
@@ -502,7 +562,11 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         loading,
         tier,
         credits,
+
         dust,
+        pityProgress,
+        updatePityProgress,
+        craftItem,
 
         isPremium,
         isTrialActive,
@@ -551,7 +615,8 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         addToInventory,
         offerings,
     }), [
-        loading, tier, credits, dust, isPremium, isTrialActive, trialDaysRemaining,
+
+        loading, tier, credits, dust, pityProgress, isPremium, isTrialActive, trialDaysRemaining,
         premiumDaysRemaining, canUseFreeMont, isSilentTrialActive, shouldShowConversionModal,
         isAdFree, adFreeDaysRemaining, canWatchRewardAd, rewardAdsRemaining,
         adFreeProgress, premiumProgress, currentStreak, ownedItems, equippedItems, offerings

@@ -94,11 +94,14 @@ interface ShopItemCardProps {
     userCredits: number;
     containerStyle?: import('react-native').ViewStyle;
     avatarUrl?: string | null; // URL de la vraie photo de profil pour preview des cadres
+    priceOverride?: number;
+    currencyType?: 'credits' | 'dust';
 }
 
-export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits, containerStyle, avatarUrl }: ShopItemCardProps) {
-    const canAfford = (item.priceCredits || 0) <= userCredits;
-    const isFree = (item.priceCredits || 0) === 0;
+export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits, containerStyle, avatarUrl, priceOverride, currencyType = 'credits' }: ShopItemCardProps) {
+    const displayPrice = priceOverride !== undefined ? priceOverride : (item.priceCredits || 0);
+    const canAfford = displayPrice <= userCredits;
+    const isFree = displayPrice === 0;
 
     // Rarity Logic
     const rarity = item.rarity || 'common';
@@ -170,25 +173,25 @@ export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits, 
                             {isFree ? (
                                 <Text style={styles.freeText}>Gratuit</Text>
                             ) : (
-                                <>
                                     <Ionicons
-                                        name="diamond"
+                                        name={currencyType === 'dust' ? 'sparkles' : 'diamond'}
                                         size={12}
-                                        color={canAfford ? colors.secondary : colors.error}
+                                        color={canAfford ? (currencyType === 'dust' ? '#E879F9' : colors.secondary) : colors.error}
                                     />
                                     <Text style={[
                                         styles.priceText,
-                                        !canAfford && { color: colors.error }
+                                        !canAfford && { color: colors.error },
+                                        currencyType === 'dust' && { color: '#E879F9' }
                                     ]}>
-                                        {item.priceCredits}
+                                        {displayPrice}
                                     </Text>
                                 </>
-                            )}
-                        </View>
                     )}
                 </View>
+                    )}
             </View>
-        </TouchableOpacity>
+        </View>
+        </TouchableOpacity >
     );
 }
 

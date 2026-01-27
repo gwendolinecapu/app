@@ -1,4 +1,5 @@
 // Types pour PluralConnect
+import { PityProgress } from '../services/MonetizationTypes';
 
 export interface System {
     id: string;
@@ -114,6 +115,9 @@ export interface Alter {
 
     // Safety Plan
     safety_plan?: SafetyPlan;
+
+    // Monetization State
+    pityProgress?: PityProgress;
 }
 
 export interface VisualDNA {

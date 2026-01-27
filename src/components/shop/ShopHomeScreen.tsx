@@ -1,16 +1,16 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Platform, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
-import { colors, spacing } from '../../lib/theme';
+import { spacing } from '../../lib/theme';
 import { useMonetization } from '../../contexts/MonetizationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { LootBoxService } from '../../services/LootBoxService';
 import CreditService from '../../services/CreditService';
-import { ShopItem, ShopItemType, COSMETIC_ITEMS, LootBoxTier, PACK_TIERS } from '../../services/MonetizationTypes';
+import { ShopItem, ShopItemType, LootBoxTier, PACK_TIERS } from '../../services/MonetizationTypes';
 import { ShopItemCard } from './ShopItemCard';
 import { ShopItemModal } from './ShopItemModal';
 import LootBoxOpening from './LootBoxOpening';
@@ -136,22 +136,28 @@ export function ShopHomeScreen() {
                         const pack = PACK_TIERS[tier];
                         const visuals = {
                             basic: {
-                                color: ['#374151', '#111827'],
-                                borderColor: '#4B5563',
+                                color: ['#3F3F46', '#18181B'],
+                                borderColor: '#52525B',
                                 icon: 'cube-outline',
-                                glow: 'transparent'
+                                glow: 'transparent',
+                                label: 'BASIQUE',
+                                labelColor: '#A1A1AA'
                             },
                             standard: {
-                                color: ['#2563EB', '#1e40af'],
-                                borderColor: '#3B82F6',
-                                icon: 'layers-outline',
-                                glow: 'rgba(37, 99, 235, 0.3)'
+                                color: ['#3B82F6', '#1D4ED8'],
+                                borderColor: '#60A5FA',
+                                icon: 'diamond',
+                                glow: 'rgba(59, 130, 246, 0.4)',
+                                label: 'STANDARD',
+                                labelColor: '#93C5FD'
                             },
                             elite: {
-                                color: ['#D97706', '#92400e'],
-                                borderColor: '#F59E0B',
+                                color: ['#F59E0B', '#B45309'],
+                                borderColor: '#FBBF24',
                                 icon: 'star',
-                                glow: 'rgba(217, 119, 6, 0.4)'
+                                glow: 'rgba(245, 158, 11, 0.5)',
+                                label: 'ELITE',
+                                labelColor: '#FDE68A'
                             }
                         }[tier];
 
@@ -168,22 +174,33 @@ export function ShopHomeScreen() {
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 1 }}
                                 >
+                                    {/* Shine effect for premium feel */}
+                                    {tier !== 'basic' && (
+                                        <View style={styles.shineOverlay} />
+                                    )}
+
                                     <View style={styles.boosterHeader}>
-                                        <Text style={styles.boosterTier}>{tier.toUpperCase()}</Text>
-                                        <Ionicons name="hardware-chip-outline" size={12} color="rgba(255,255,255,0.3)" />
+                                        <Text style={[styles.boosterTier, { color: visuals.labelColor }]}>{visuals.label}</Text>
+                                        {tier === 'elite' && <Ionicons name="flame" size={12} color="#FBBF24" />}
                                     </View>
 
                                     <View style={styles.boosterCenter}>
-                                        <View style={[styles.boosterIconCircle, { borderColor: visuals.borderColor }]}>
+                                        <View style={[styles.boosterIconCircle, {
+                                            borderColor: visuals.borderColor,
+                                            shadowColor: visuals.borderColor,
+                                            shadowOffset: { width: 0, height: 0 },
+                                            shadowOpacity: tier === 'basic' ? 0 : 0.8,
+                                            shadowRadius: 12,
+                                        }]}>
                                             <Ionicons name={visuals.icon as any} size={32} color="#FFF" />
                                         </View>
-                                        <Text style={styles.boosterName}>{pack.name}</Text>
+                                        <Text style={styles.boosterName}>{pack.name.replace(' Pack', '')}</Text>
                                         <Text style={styles.boosterCards}>{pack.cardCount.min}-{pack.cardCount.max} Cartes</Text>
                                     </View>
 
-                                    <View style={styles.boosterPriceBtn}>
-                                        <Ionicons name="diamond" size={12} color="#FCD34D" />
-                                        <Text style={styles.boosterPriceText}>{pack.price}</Text>
+                                    <View style={[styles.boosterPriceBtn, tier === 'elite' && { backgroundColor: 'rgba(251, 191, 36, 0.2)' }]}>
+                                        <Ionicons name="diamond" size={12} color={tier === 'elite' ? '#FBBF24' : '#FCD34D'} />
+                                        <Text style={[styles.boosterPriceText, tier === 'elite' && { color: '#FBBF24' }]}>{pack.price}</Text>
                                     </View>
                                 </LinearGradient>
                             </TouchableOpacity>
@@ -226,11 +243,14 @@ export function ShopHomeScreen() {
                             ) : (
                                 <>
                                     <View style={[styles.adIconCircle, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
-                                        <Ionicons name="checkmark" size={24} color="#9CA3AF" />
+                                        <Ionicons name="time-outline" size={24} color="#6B7280" />
                                     </View>
-                                    <View>
-                                        <Text style={[styles.adTitleNew, { color: '#9CA3AF' }]}>Récupéré</Text>
-                                        <Text style={styles.adSubNew}>Reviens demain</Text>
+                                    <View style={{ alignItems: 'center' }}>
+                                        <Text style={[styles.adTitleNew, { color: '#6B7280', fontSize: 14 }]}>Déjà récupéré</Text>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 }}>
+                                            <Ionicons name="refresh" size={14} color="#9CA3AF" />
+                                            <Text style={[styles.adSubNew, { color: '#9CA3AF' }]}>Demain</Text>
+                                        </View>
                                     </View>
                                 </>
                             )}
@@ -450,6 +470,16 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontWeight: 'bold',
         fontSize: 14,
+    },
+    shineOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '50%',
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        borderTopLeftRadius: 19,
+        borderTopRightRadius: 19,
     },
     dailyScroll: {
         paddingHorizontal: spacing.md,

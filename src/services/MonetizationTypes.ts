@@ -59,6 +59,31 @@ export interface NativeAdData {
     network: AdNetwork;
 }
 
+// ==================== LOOT BOX 3.0 (TCG SYSTEM + PITY) ====================
+
+export type LootBoxTier = 'basic' | 'standard' | 'elite';
+export type SlotCategory = 'theme' | 'frame' | 'bubble' | 'any';
+
+/** Configuration du Pity System (anti-frustration) */
+export interface PityProgress {
+    epicCounter: number;      // Cartes tirées depuis dernier Epic+
+    legendaryCounter: number; // Cartes tirées depuis dernier Legendary+
+    totalCards: number;       // Total de cartes tirées
+}
+
+export const PITY_CONFIG = {
+    epicGuarantee: 20,        // Epic+ garanti toutes les 20 cartes
+    legendaryGuarantee: 60,   // Legendary+ garanti toutes les 60 cartes
+    softPityStart: 45,        // À partir de 45, chance Legendary augmente
+    softPityBonus: 0.02,      // +2% par carte après softPityStart
+} as const;
+
+export const DEFAULT_PITY_PROGRESS: PityProgress = {
+    epicCounter: 0,
+    legendaryCounter: 0,
+    totalCards: 0,
+};
+
 // ==================== PREMIUM ====================
 
 /** Statut de l'utilisateur */
@@ -84,6 +109,7 @@ export interface MonetizationStatus {
     hasSeenConversionModal: boolean;    // A vu la popup de conversion fin trial
     dust: number;                       // Poussière d'étoile (via doublons)
     currentStreak: number;              // Série de connexion actuelle
+    pityProgress: PityProgress;         // Progression Pity System
 }
 
 export interface DailyReward {
@@ -115,6 +141,7 @@ export const DEFAULT_MONETIZATION_STATUS: MonetizationStatus = {
     hasSeenConversionModal: false,
     dust: 0,
     currentStreak: 0,
+    pityProgress: DEFAULT_PITY_PROGRESS,
 };
 
 // ==================== CRÉDITS ====================
@@ -178,9 +205,13 @@ export const AD_CONFIG = {
 export const REWARD_AD_AMOUNT = 10; // Crédits gagnés par pub regardée (Updated)
 export const LOOT_BOX_PRICE = 30; // Legacy (replaced by PACK_TIERS)
 
-// ==================== LOOT BOX 2.0 (TCG SYSTEM) ====================
 
-export type LootBoxTier = 'basic' | 'standard' | 'elite';
+
+/** Structure d'un slot dans un pack (catégorie forcée) */
+export interface PackSlot {
+    category: SlotCategory;
+    guaranteedRarity?: Rarity; // Rareté minimum pour ce slot
+}
 
 export interface PackConfig {
     id: LootBoxTier;
@@ -191,12 +222,19 @@ export interface PackConfig {
         max: number;
         probabilities: { [count: number]: number }; // % chance for each count
     };
+    /** Structure des slots (catégories forcées) */
+    slots: PackSlot[];
     rarityGuarantees: {
         minRarity?: Rarity; // Rarity minimale garantie
         count?: number; // Combien de cartes ont cette garantie
     };
     dropRates: {
         [key in Rarity]: number; // % chance for each rarity
+    };
+    /** Bonus spéciaux pour ce tier */
+    bonuses?: {
+        dustBonus?: number;      // % bonus dust sur doublons
+        shinyChance?: number;    // Chance de version "shiny" animée
     };
 }
 
@@ -218,6 +256,12 @@ export const PACK_TIERS: Record<LootBoxTier, PackConfig> = {
             max: 3,
             probabilities: { 1: 0.60, 2: 0.30, 3: 0.10 }
         },
+        // Basic = tout aléatoire
+        slots: [
+            { category: 'any' },
+            { category: 'any' },
+            { category: 'any' },
+        ],
         rarityGuarantees: {},
         dropRates: {
             common: 0.85,
@@ -236,7 +280,18 @@ export const PACK_TIERS: Record<LootBoxTier, PackConfig> = {
             max: 5,
             probabilities: { 3: 0.70, 4: 0.25, 5: 0.05 }
         },
-        rarityGuarantees: {},
+        // Standard = Thème + Cadre + Any (garantit variété)
+        slots: [
+            { category: 'theme' },
+            { category: 'frame' },
+            { category: 'any' },
+            { category: 'any' },
+            { category: 'any' },
+        ],
+        rarityGuarantees: {
+            minRarity: 'rare',
+            count: 1
+        },
         dropRates: {
             common: 0.70,
             rare: 0.25,
@@ -254,9 +309,20 @@ export const PACK_TIERS: Record<LootBoxTier, PackConfig> = {
             max: 8,
             probabilities: { 5: 0.60, 6: 0.25, 7: 0.10, 8: 0.05 }
         },
+        // Elite = Collection complète garantie (Thème + Cadre + Bulle + Any)
+        slots: [
+            { category: 'theme', guaranteedRarity: 'rare' },
+            { category: 'frame' },
+            { category: 'bubble' },
+            { category: 'any' },
+            { category: 'any' },
+            { category: 'any' },
+            { category: 'any' },
+            { category: 'any' },
+        ],
         rarityGuarantees: {
             minRarity: 'rare',
-            count: 1
+            count: 2
         },
         dropRates: {
             common: 0.50,
@@ -264,8 +330,21 @@ export const PACK_TIERS: Record<LootBoxTier, PackConfig> = {
             epic: 0.08,
             legendary: 0.019,
             mythic: 0.001,
+        },
+        bonuses: {
+            dustBonus: 10,      // +10% dust sur doublons
+            shinyChance: 0.05,  // 5% chance version animée
         }
     }
+};
+
+/** Prix de craft par rareté (Forge) */
+export const CRAFT_PRICES: Record<Rarity, number> = {
+    common: 50,
+    rare: 300,
+    epic: 1500,
+    legendary: 6000,
+    mythic: 20000,
 };
 
 /** Configuration des gains de crédits */

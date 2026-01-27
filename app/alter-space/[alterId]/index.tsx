@@ -1,3 +1,4 @@
+import React, { useState, useEffect, useCallback } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
     View,

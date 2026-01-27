@@ -33,20 +33,22 @@ const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.6;
 const CARD_HEIGHT = CARD_WIDTH * 1.5;
 
-// Rarity-specific effects configuration
+// R6 STYLE: Rarity effects plus sobres
+// Wobble réservé Legendary/Mythic, sparkles one-shot, moins de screen shake
 const RARITY_EFFECTS: Record<string, {
     glowIntensity: number;
     bounceStrength: number;
     wobbleAmount: number;
-    sparkles: boolean;
+    sparkles: boolean;       // One-shot, pas loop
     screenShake: boolean;
+    hapticStyle: 'light' | 'medium' | 'heavy' | 'success';
 }> = {
-    common: { glowIntensity: 0, bounceStrength: 12, wobbleAmount: 0, sparkles: false, screenShake: false },
-    uncommon: { glowIntensity: 0.3, bounceStrength: 10, wobbleAmount: 2, sparkles: false, screenShake: false },
-    rare: { glowIntensity: 0.5, bounceStrength: 8, wobbleAmount: 4, sparkles: true, screenShake: false },
-    epic: { glowIntensity: 0.7, bounceStrength: 6, wobbleAmount: 6, sparkles: true, screenShake: true },
-    legendary: { glowIntensity: 0.9, bounceStrength: 5, wobbleAmount: 8, sparkles: true, screenShake: true },
-    mythic: { glowIntensity: 1, bounceStrength: 4, wobbleAmount: 10, sparkles: true, screenShake: true },
+    common: { glowIntensity: 0, bounceStrength: 12, wobbleAmount: 0, sparkles: false, screenShake: false, hapticStyle: 'light' },
+    uncommon: { glowIntensity: 0, bounceStrength: 11, wobbleAmount: 0, sparkles: false, screenShake: false, hapticStyle: 'light' },
+    rare: { glowIntensity: 0.4, bounceStrength: 10, wobbleAmount: 0, sparkles: false, screenShake: false, hapticStyle: 'medium' },
+    epic: { glowIntensity: 0.6, bounceStrength: 8, wobbleAmount: 0, sparkles: true, screenShake: false, hapticStyle: 'heavy' },
+    legendary: { glowIntensity: 0.8, bounceStrength: 6, wobbleAmount: 5, sparkles: true, screenShake: true, hapticStyle: 'success' },
+    mythic: { glowIntensity: 1, bounceStrength: 5, wobbleAmount: 8, sparkles: true, screenShake: true, hapticStyle: 'success' },
 };
 
 export default function CardReveal({ item, isNew, dustValue, delay = 0, onFlip, autoFlip = false, isActive = true }: CardRevealProps) {
@@ -128,41 +130,37 @@ export default function CardReveal({ item, isNew, dustValue, delay = 0, onFlip, 
         }
     }, [isActive, flipped]);
 
-    // Trigger effects when flipped
+    // R6 STYLE: Trigger effects when flipped (one-shot, pas de loops)
     useEffect(() => {
-        if (flipped && isSpecial) {
-            // Pulsing glow
-            glowOpacity.value = withRepeat(
-                withSequence(
-                    withTiming(effects.glowIntensity, { duration: 800 }),
-                    withTiming(effects.glowIntensity * 0.5, { duration: 800 })
-                ),
-                -1,
-                true
-            );
+        if (flipped) {
+            // Glow fade-in puis stable (pas de pulse loop)
+            if (isSpecial) {
+                glowOpacity.value = withTiming(effects.glowIntensity, { duration: 400 });
+            }
 
-            // Sparkle rotation for rare+
+            // R6 STYLE: Sparkle one-shot (une seule rotation puis stop)
             if (effects.sparkles) {
-                sparkleRotation.value = withRepeat(
-                    withTiming(360, { duration: 3000, easing: Easing.linear }),
-                    -1,
-                    false
+                sparkleRotation.value = withTiming(180, {
+                    duration: 600,
+                    easing: Easing.out(Easing.cubic)
+                });
+            }
+
+            // Wobble uniquement pour Legendary/Mythic (plus smooth)
+            if (effects.wobbleAmount > 0) {
+                wobble.value = withSequence(
+                    withTiming(effects.wobbleAmount, { duration: 80 }),
+                    withTiming(-effects.wobbleAmount * 0.5, { duration: 80 }),
+                    withTiming(effects.wobbleAmount * 0.2, { duration: 80 }),
+                    withTiming(0, { duration: 100 })
                 );
             }
 
-            // Wobble effect after flip
-            wobble.value = withSequence(
-                withTiming(effects.wobbleAmount, { duration: 100 }),
-                withTiming(-effects.wobbleAmount * 0.7, { duration: 100 }),
-                withTiming(effects.wobbleAmount * 0.4, { duration: 100 }),
-                withTiming(0, { duration: 150 })
-            );
-
-            // Scale bounce for legendary/mythic
+            // Scale bounce sobre pour legendary/mythic
             if (rarity === 'legendary' || rarity === 'mythic') {
                 cardScale.value = withSequence(
-                    withSpring(1.1, { damping: 4 }),
-                    withSpring(1, { damping: 8 })
+                    withSpring(1.06, { damping: 8 }),
+                    withSpring(1, { damping: 10 })
                 );
             }
         }

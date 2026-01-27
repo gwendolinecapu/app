@@ -76,46 +76,21 @@ export default React.memo(function BoosterPack({ tier, onOpen }: BoosterPackProp
     const glowScale = useSharedValue(1);
     const flashOpacity = useSharedValue(0);
 
-    // Floating idle animation
+    // STYLE R6: Animation idle sobre - seulement float, pas de shimmer constant
     useEffect(() => {
-        // Gentle floating up and down
+        // Gentle floating up and down (seule animation idle)
         floatY.value = withRepeat(
             withSequence(
-                withTiming(-8, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-                withTiming(8, { duration: 1500, easing: Easing.inOut(Easing.ease) })
+                withTiming(-5, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+                withTiming(5, { duration: 2000, easing: Easing.inOut(Easing.ease) })
             ),
             -1,
             true
         );
 
-        // Subtle rotation oscillation
-        floatRotate.value = withRepeat(
-            withSequence(
-                withTiming(-2, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
-                withTiming(2, { duration: 2000, easing: Easing.inOut(Easing.ease) })
-            ),
-            -1,
-            true
-        );
-
-        // Shimmer effect moving across the pack
-        shimmerX.value = withRepeat(
-            withTiming(PACK_WIDTH * 2, { duration: config.shimmerSpeed, easing: Easing.linear }),
-            -1,
-            false
-        );
-
-        // Glow pulsing for Elite tier
-        if (tier === 'elite') {
-            glowScale.value = withRepeat(
-                withSequence(
-                    withTiming(1.05, { duration: 1000 }),
-                    withTiming(1, { duration: 1000 })
-                ),
-                -1,
-                true
-            );
-        }
+        // Pas de rotation en idle (plus sobre)
+        // Pas de shimmer constant (sera déclenché au glissement)
+        // Pas de glow pulsant constant
 
         return () => {
             cancelAnimation(floatY);
@@ -125,18 +100,39 @@ export default React.memo(function BoosterPack({ tier, onOpen }: BoosterPackProp
         };
     }, [tier]);
 
+    // Track milestones for haptics (R6 style: precise ticks)
+    const lastMilestone = useSharedValue(0);
+
     const pan = Gesture.Pan()
         .onChange((event) => {
             if (opened) return;
             const progress = (event.translationX + PACK_WIDTH / 2) / PACK_WIDTH;
             tearProgress.value = Math.max(0, Math.min(1, progress));
 
-            // Shake intensity based on progress
-            shake.value = interpolate(progress, [0, 0.5, 0.7], [0, 3, 8]);
+            // Shake intensity based on progress (subtle)
+            shake.value = interpolate(progress, [0, 0.5, 0.7], [0, 2, 5]);
 
-            // Haptic feedback at milestones
-            if (Math.random() > 0.85) {
-                runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+            // R6 STYLE: Haptic tick at precise milestones (25%, 50%, 70%)
+            const milestones = [0.25, 0.50, 0.70];
+            for (const milestone of milestones) {
+                if (progress >= milestone && lastMilestone.value < milestone) {
+                    runOnJS(Haptics.impactAsync)(
+                        milestone >= 0.7
+                            ? Haptics.ImpactFeedbackStyle.Medium
+                            : Haptics.ImpactFeedbackStyle.Light
+                    );
+                    lastMilestone.value = milestone;
+                }
+            }
+
+            // Déclencher shimmer à partir de 30%
+            if (progress > 0.3 && shimmerX.value < 0) {
+                shimmerX.value = withTiming(PACK_WIDTH * 2, { duration: config.shimmerSpeed });
+            }
+
+            // Déclencher glow à partir de 50% (Elite)
+            if (progress > 0.5 && tier === 'elite') {
+                glowScale.value = withTiming(1.08, { duration: 300 });
             }
         })
         .onEnd(() => {
@@ -146,24 +142,37 @@ export default React.memo(function BoosterPack({ tier, onOpen }: BoosterPackProp
                 runOnJS(setOpened)(true);
                 runOnJS(Haptics.notificationAsync)(Haptics.NotificationFeedbackType.Success);
 
-                // Flash effect on open
+                // R6 STYLE: Rim-light effect (bords seulement, pas flash plein écran)
                 flashOpacity.value = withSequence(
-                    withTiming(1, { duration: 100 }),
-                    withTiming(0, { duration: 300 })
+                    withTiming(0.7, { duration: 80 }),  // Plus subtil
+                    withTiming(0, { duration: 250 })
                 );
 
-                // Opening sequence with enhanced animation
+                // Glow burst pour Elite
+                if (tier === 'elite') {
+                    glowScale.value = withSequence(
+                        withSpring(1.3, { damping: 5 }),
+                        withTiming(1, { duration: 200 })
+                    );
+                }
+
+                // Opening sequence sobre (moins de bounce)
                 packOpenScale.value = withSequence(
-                    withSpring(1.15, { damping: 8 }),
-                    withTiming(0.95, { duration: 150 }),
-                    withSpring(1.1, { damping: 10 })
+                    withSpring(1.08, { damping: 10 }),  // Moins exagéré
+                    withTiming(1.02, { duration: 100 }),
+                    withSpring(1.05, { damping: 12 })
                 );
-                packOpacity.value = withTiming(0, { duration: 400 }, () => {
+                packOpacity.value = withTiming(0, { duration: 350 }, () => {
                     runOnJS(onOpen)();
                 });
             } else {
                 tearProgress.value = withSpring(0);
                 shake.value = withTiming(0, { duration: 200 });
+                lastMilestone.value = 0; // Reset milestones
+                shimmerX.value = -PACK_WIDTH; // Reset shimmer
+                if (tier === 'elite') {
+                    glowScale.value = withTiming(1, { duration: 200 });
+                }
             }
         });
 

@@ -93,7 +93,8 @@ export default function NotificationsScreen() {
             // This ensures we catch NEW requests (via receiverSystemId) and OLD legacy requests (via receiverId)
 
             // A. System-wide fetch (Efficient)
-            const systemRequestsPromise = FriendService.getSystemRequests(user.uid, ['pending', 'accepted']);
+            const systemReceivedRequestsPromise = FriendService.getSystemRequests(user.uid, ['pending', 'accepted']);
+            const systemSentRequestsPromise = FriendService.getSystemSentRequests(user.uid, ['accepted']); // Only care about accepted for sent requests in this view
 
             // B. Per-Alter fetch (Legacy compatibility)
             const allAlterIds = alters.map(a => a.id);
@@ -101,31 +102,47 @@ export default function NotificationsScreen() {
                 allAlterIds.push(user.uid); // Ensure system profile is included
             }
 
-            const individualRequestsPromises = allAlterIds.map(id =>
+            const individualReceivedPromises = allAlterIds.map(id =>
                 FriendService.getRequests(id, ['pending', 'accepted'])
-                    .catch(e => {
-                        console.log(`Failed to fetch requests for ${id}`, e);
-                        return [];
-                    })
+                    .catch(() => [])
             );
 
-            const [systemRequests, ...individualResults] = await Promise.all([
-                systemRequestsPromise,
-                ...individualRequestsPromises
+            const individualSentPromises = allAlterIds.map(id =>
+                (FriendService as any).getSentRequests(id, ['accepted']) // Cast to any as we just added it
+                    .catch(() => [])
+            );
+
+            const [
+                systemReceived,
+                systemSent,
+                ...rest
+            ] = await Promise.all([
+                systemReceivedRequestsPromise,
+                systemSentRequestsPromise,
+                ...individualReceivedPromises,
+                ...individualSentPromises
             ]);
 
+            // Splitting individual results
+            const individualReceivedResults = rest.slice(0, allAlterIds.length);
+            const individualSentResults = rest.slice(allAlterIds.length);
+
             const allRequests = [
-                ...systemRequests,
-                ...individualResults.flat()
+                ...systemReceived,
+                ...systemSent,
+                ...individualReceivedResults.flat(),
+                ...individualSentResults.flat()
             ];
 
-            // Filter relevant requests for CURRENT ALTER only
-            // logic: show if receiverId is Me OR (receiverId is UserUID [legacy system request] AND I am Host/Admin?)
-            // For now, let's show requests explicitly for Me OR generic System requests (userId)
+            // Filter relevant requests for CURRENT ALTER (Sender OR Receiver)
             const relevantRequests = allRequests.filter(req =>
                 req.receiverId === currentAlter.id ||
-                req.receiverId === user.uid
+                req.senderId === currentAlter.id ||
+                req.receiverId === user.uid ||
+                req.senderId === user.uid
             );
+
+            console.log(`[Notifications] Found ${relevantRequests.length} relevant requests for Alter: ${currentAlter.name} (${currentAlter.id})`);
 
             // Deduplicate by ID
             const uniqueRequests = Array.from(new Map(relevantRequests.map(item => [item.id, item])).values());
@@ -159,18 +176,18 @@ export default function NotificationsScreen() {
 
             // Use Promise.all to enrich requests parallel
             const enrichedRequests = await Promise.all(uniqueRequests.map(async (req) => {
-                const info = await getSenderInfo(req.senderId);
+                const [senderInfo, receiverInfo] = await Promise.all([
+                    getSenderInfo(req.senderId),
+                    getSenderInfo(req.receiverId)
+                ]);
 
-                // Also get Receiver Name (my alter)
-                let receiverName = 'Vous';
-                const myAlter = alters.find(a => a.id === req.receiverId);
-                if (myAlter) {
-                    receiverName = myAlter.name;
-                } else if (req.receiverId === user.uid) {
-                    receiverName = 'Système';
-                }
-
-                return { ...req, senderName: info.name, senderAvatar: info.avatar, receiverName };
+                return {
+                    ...req,
+                    senderName: senderInfo.name,
+                    senderAvatar: senderInfo.avatar,
+                    receiverName: receiverInfo.name,
+                    receiverAvatar: receiverInfo.avatar
+                };
             }));
 
             // Sort by date descending
@@ -198,12 +215,16 @@ export default function NotificationsScreen() {
             for (const docSnapshot of querySnapshot.docs) {
                 const data = docSnapshot.data();
 
-                // FILTER: Include if it belongs to my system (targetSystemId matches user.uid)
-                // Relaxed logic: Show all notifications for the system, regardless of specific alter recipient
-                // This ensures the System Dashboard sees everything.
-                const isForMySystem = data.targetSystemId === user.uid;
+                // matchesAlter: specifically for this alter
+                // isSystemWide: notifications for the whole system (e.g. news)
+                // matchesSystemId: specifically for the main system profile
+                // NEW: matches senderAlterId - if I accepted a request, I want to see the "You accepted X" notification
+                const matchesAlter = data.recipientId === currentAlter.id;
+                const isSystemWide = !data.recipientId && data.targetSystemId === user.uid;
+                const matchesSystemId = data.recipientId === user.uid;
+                const isActionsByMe = (data.senderAlterId === currentAlter.id) && (data.type === 'friend_request_accepted' || data.type === 'FRIEND_REQUEST_ACCEPTED');
 
-                if (isForMySystem) {
+                if (matchesAlter || isSystemWide || matchesSystemId || isActionsByMe) {
                     loadedNotifications.push({
                         id: docSnapshot.id,
                         ...data,
@@ -212,6 +233,7 @@ export default function NotificationsScreen() {
                     } as Notification);
                 }
             }
+
 
             // Helper to detect if a string looks like a Firebase ID
             const looksLikeFirebaseId = (str: string) => {
@@ -260,26 +282,26 @@ export default function NotificationsScreen() {
             // Update notifications with verified data
             const verifiedNotifications = loadedNotifications.map(n => {
                 // Determine the relevant ID for this notification
-                let relevantId = n.senderId;
+                let relevantId = n.senderAlterId || n.senderId;
 
-                if (n.senderAlterId) {
-                    relevantId = n.senderAlterId;
-                } else if ((n.type === 'friend_request_accepted' || n.type === 'FRIEND_REQUEST_ACCEPTED')) {
-                    if (n.data?.alterId) {
-                        relevantId = n.data.alterId;
-                    } else if (!relevantId && n.data?.friendId) {
-                        relevantId = n.data.friendId;
-                    }
+                // Priority logic for friendship acceptance
+                if ((n.type === 'friend_request_accepted' || n.type === 'FRIEND_REQUEST_ACCEPTED')) {
+                    relevantId = n.senderAlterId || n.data?.alterId || n.senderId;
                 }
 
                 if (relevantId && senderProfiles.has(relevantId)) {
                     const profile = senderProfiles.get(relevantId)!;
 
                     if (!profile.exists) {
+                        // If profile not found in Firestore, but we have a name in the doc (from server), use it!
+                        if (n.actorName && n.actorName !== 'Utilisateur' && n.actorName !== 'Votre ami') {
+                            return { ...n, actorAvatar: n.actorAvatar || undefined };
+                        }
+
                         return {
                             ...n,
                             actorName: 'Alter supprimé',
-                            actorAvatar: null,
+                            actorAvatar: undefined,
                             isProfileDeleted: true
                         };
                     } else {
@@ -287,14 +309,14 @@ export default function NotificationsScreen() {
                         return {
                             ...n,
                             actorName: profile.name,
-                            actorAvatar: profile.avatar,
+                            actorAvatar: profile.avatar || undefined,
                             isProfileDeleted: false
                         };
                     }
                 }
 
-                // If we couldn't verify, keep original but mark as potentially deleted if missing info
-                return n;
+                // If we couldn't verify, keep original but ensure actorAvatar is not null
+                return { ...n, actorAvatar: n.actorAvatar || undefined };
             });
 
             // Special enrichment for friend_request_accepted TARGET (the friend) if needed is handled above partly
@@ -529,23 +551,27 @@ export default function NotificationsScreen() {
     };
 
     const renderFriendRequest = ({ item }: { item: FriendRequest }) => {
-        const senderName = (item as any).senderName || getAlterName(item.senderId);
+        // Find which side is 'Me' and which is 'Friend'
+        const isMeSender = item.senderId === currentAlter?.id;
+        const friendName = (item as any)[isMeSender ? 'receiverName' : 'senderName'] || 'Utilisateur';
+        const friendAvatar = (item as any)[isMeSender ? 'receiverAvatar' : 'senderAvatar'];
+
         const isAccepted = item.status === 'accepted';
 
         return (
             <View style={[styles.requestCard, isAccepted && { backgroundColor: themeColors?.border || 'rgba(0,0,0,0.05)' }]}>
                 <AvatarWithLoading
-                    uri={(item as any).senderAvatar}
-                    fallbackText={senderName}
+                    uri={friendAvatar}
+                    fallbackText={friendName}
                     size={50}
                     color={isAccepted ? colors.textMuted : themeColor}
                 />
                 <View style={styles.requestContent}>
-                    <Text style={[styles.requestTitle, { color: textColor }]}>{senderName}</Text>
+                    <Text style={[styles.requestTitle, { color: textColor }]}>{friendName}</Text>
                     <Text style={[styles.requestSubtitle, { color: textSecondaryColor }]}>
                         {isAccepted
-                            ? `Ami avec ${(item as any).receiverName || 'vous'}`
-                            : `Pour : ${(item as any).receiverName || 'vous'}`}
+                            ? `Ami avec ${isMeSender ? 'vous' : (currentAlter?.name || 'vous')}`
+                            : `Ami potentiel`}
                     </Text>
                 </View>
                 <View style={styles.requestActions}>

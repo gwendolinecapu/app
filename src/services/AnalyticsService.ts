@@ -1,9 +1,13 @@
-
-import { Platform } from 'react-native';
+import { Platform, NativeModules } from 'react-native';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 
 // Dual implementation for Native (react-native-firebase) and Web (firebase/analytics)
 let analytics: any = null;
 let isWebAnalytics = false;
+
+// Robust check for Expo Go
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient ||
+    Constants.appOwnership === 'expo';
 
 if (Platform.OS === 'web') {
     // Web: Use Firebase Web SDK
@@ -23,14 +27,23 @@ if (Platform.OS === 'web') {
     }
 } else {
     // Native: Use react-native-firebase
+    // GUARD: Skip if in Expo Go or if native module is missing
     try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const analyticsModule = require('@react-native-firebase/analytics');
-        analytics = analyticsModule.default;
+        // Safe access to NativeModules property
+        const hasRNFB = !!(NativeModules && (NativeModules as any).RNFBAppModule);
+
+        if (!isExpoGo && hasRNFB) {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const analyticsModule = require('@react-native-firebase/analytics');
+            analytics = analyticsModule.default;
+        } else {
+            // console.log('[AnalyticsService] Skipping Firebase Analytics in Expo Go or missing module.');
+        }
     } catch (e) {
-        console.warn('[AnalyticsService] Firebase Analytics native module not found. Analytics disabled.');
+        console.warn('[AnalyticsService] Firebase Analytics native module check failed:', e);
     }
 }
+
 
 
 /**

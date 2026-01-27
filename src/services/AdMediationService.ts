@@ -11,7 +11,7 @@
 
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import AnalyticsService from './AnalyticsService';
 import {
     AdNetwork,
@@ -27,7 +27,8 @@ import {
 // En Expo Go et sur Web, les modules natifs AdMob ne sont pas disponibles
 // On utilise des mocks pour éviter les crashes
 // =====================================================
-const isExpoGo = Constants.appOwnership === 'expo';
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient ||
+    Constants.appOwnership === 'expo';
 const isWeb = Platform.OS === 'web';
 
 // Declare types for AdMob to avoid TS errors

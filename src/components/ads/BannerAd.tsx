@@ -4,12 +4,36 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet, Platform, NativeModules } from 'react-native';
 import { colors, spacing } from '../../lib/theme';
 import { useMonetization } from '../../contexts/MonetizationContext';
 import { BannerPlacement } from '../../services/MonetizationTypes';
 
-import { BannerAd as AdMobBanner, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
+
+// AdMob types/mock
+let AdMobBanner: any = null;
+let BannerAdSize: any = { BANNER: 'BANNER' };
+let TestIds: any = { BANNER: 'ca-app-pub-3940256099942544/2934735716' };
+
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient ||
+    Constants.appOwnership === 'expo';
+
+if (!isExpoGo && Platform.OS !== 'web') {
+    try {
+        const hasAdMob = !!(NativeModules && (NativeModules as any).RNGoogleMobileAdsModule);
+
+        if (hasAdMob) {
+            const AdMobModule = require('react-native-google-mobile-ads');
+            AdMobBanner = AdMobModule.BannerAd;
+            BannerAdSize = AdMobModule.BannerAdSize;
+            TestIds = AdMobModule.TestIds;
+        }
+    } catch (e) {
+        console.warn('[BannerAd] AdMob native module not available');
+    }
+}
+
 
 interface BannerAdProps {
     placement: BannerPlacement;
@@ -24,6 +48,17 @@ export function BannerAd({ placement }: BannerAdProps) {
         return null;
     }
 
+    // Fallback if AdMob is not available (Expo Go or Web or Missing Native)
+    if (!AdMobBanner) {
+        return (
+            <View style={styles.container}>
+                <View style={styles.placeholder}>
+                    <Text style={styles.placeholderText}>Publicité (Mockée - Expo Go)</Text>
+                </View>
+            </View>
+        );
+    }
+
     return (
         <View style={styles.container}>
             <AdMobBanner
@@ -32,7 +67,7 @@ export function BannerAd({ placement }: BannerAdProps) {
                 requestOptions={{
                     requestNonPersonalizedAdsOnly: true,
                 }}
-                onPaid={(event) => {
+                onPaid={(event: any) => {
                     const AnalyticsService = require('../../services/AnalyticsService').default;
                     AnalyticsService.logAdRevenue({
                         value: event.value,
@@ -46,6 +81,7 @@ export function BannerAd({ placement }: BannerAdProps) {
             />
         </View>
     );
+
 }
 
 const styles = StyleSheet.create({

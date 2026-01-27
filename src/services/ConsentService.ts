@@ -1,7 +1,11 @@
-import { Platform } from 'react-native';
+import { Platform, NativeModules } from 'react-native';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 
 // Conditionally import native modules
 let requestTrackingPermissionsAsync: any = async () => ({ status: 'unavailable' });
+
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient ||
+    Constants.appOwnership === 'expo';
 
 if (Platform.OS !== 'web') {
     try {
@@ -16,13 +20,26 @@ if (Platform.OS !== 'web') {
 let AdsConsent: any;
 let AdsConsentStatus: any;
 
-try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mobileAds = require('react-native-google-mobile-ads');
-    AdsConsent = mobileAds.AdsConsent;
-    AdsConsentStatus = mobileAds.AdsConsentStatus;
-} catch {
-    console.warn('[ConsentService] Google Mobile Ads native module not found. Consent features will be disabled.');
+// GUARD: Skip if in Expo Go or if native module is missing
+if (!isExpoGo) {
+    try {
+        // Extra check for NativeModules.
+        const hasAdMob = !!(NativeModules && (NativeModules as any).RNGoogleMobileAdsModule);
+
+        if (hasAdMob) {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const mobileAds = require('react-native-google-mobile-ads');
+            AdsConsent = mobileAds.AdsConsent;
+            AdsConsentStatus = mobileAds.AdsConsentStatus;
+        } else {
+            // console.log('[ConsentService] AdMob native module not found via NativeModules.');
+        }
+    } catch {
+        console.warn('[ConsentService] Google Mobile Ads native module not found. Consent features will be disabled.');
+    }
+}
+
+if (!AdsConsent) {
     AdsConsent = {
         requestInfoUpdate: async () => ({ isConsentFormAvailable: false, status: 'UNKNOWN' }),
         loadAndShowConsentFormIfRequired: async () => ({ status: 'UNKNOWN' }),

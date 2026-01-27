@@ -11,7 +11,31 @@ import {
     StatusBar
 } from 'react-native';
 import { router } from 'expo-router';
-import crashlytics from '@react-native-firebase/crashlytics';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
+import { NativeModules } from 'react-native';
+
+// Guard for Crashlytics
+let crashlytics: any = null;
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient ||
+    Constants.appOwnership === 'expo';
+
+if (!isExpoGo && NativeModules.RNFBCrashlyticsModule) {
+    try {
+        crashlytics = require('@react-native-firebase/crashlytics').default;
+    } catch (e) {
+        console.warn('[Settings] Crashlytics native module not available');
+    }
+}
+
+// Fallback mock
+if (!crashlytics) {
+    crashlytics = () => ({
+        crash: () => console.log('[Settings] Crashlytics.crash() called (Mock)'),
+        log: (msg: string) => console.log('[Settings] Crashlytics.log:', msg),
+        recordError: (err: any) => console.log('[Settings] Crashlytics.recordError:', err),
+    });
+}
+
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useMonetization } from '../../src/contexts/MonetizationContext';
 import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';

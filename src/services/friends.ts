@@ -223,6 +223,32 @@ export const FriendService = {
     },
 
     /**
+     * Get pending requests sent BY an alter
+     */
+    getSentRequests: async (alterId: string, statuses: FriendRequestStatus[] = ['pending', 'accepted']) => {
+        const q = query(
+            collection(db, 'friend_requests'),
+            where('senderId', '==', alterId),
+            where('status', 'in', statuses)
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as FriendRequest));
+    },
+
+    /**
+     * Get all requests sent BY a system
+     */
+    getSystemSentRequests: async (systemId: string, statuses: FriendRequestStatus[] = ['pending', 'accepted']) => {
+        const q = query(
+            collection(db, 'friend_requests'),
+            where('systemId', '==', systemId),
+            where('status', 'in', statuses)
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as FriendRequest));
+    },
+
+    /**
      * Get friends list (people who follow this alter) -> actually "people this alter follows" (Following)
      */
     getFriends: async (alterId: string) => {

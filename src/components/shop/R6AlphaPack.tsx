@@ -77,21 +77,50 @@ const getHexagonPoints = (size: number, centerX: number, centerY: number): strin
     return points.join(' ');
 };
 
-// Crack Path Generator
+// Crack Path Generator (Organic Lightning Style)
 const generateCrackPath = (size: number, centerX: number, centerY: number, seed: number) => {
-    // Zig-zag central de haut en bas
-    const startY = centerY - size * 0.8;
-    const endY = centerY + size * 0.8;
-    const steps = 8;
-    const stepY = (endY - startY) / steps;
+    const points: { x: number, y: number }[] = [];
+    const startY = centerY - size * 0.7;
+    const endY = centerY + size * 0.7;
 
-    let d = `M ${centerX} ${startY}`;
-    for (let i = 1; i <= steps; i++) {
-        const y = startY + i * stepY;
-        const deviation = size * 0.15;
-        const x = centerX + (Math.random() - 0.5) * deviation;
-        d += ` L ${x} ${y}`;
+    let currentX = centerX;
+    let currentY = startY;
+
+    points.push({ x: currentX, y: currentY });
+
+    while (currentY < endY) {
+        const stepY = 15 + Math.random() * 20;
+        const deviationX = (Math.random() - 0.5) * 40; // More chaos
+
+        currentY += stepY;
+        currentX += deviationX;
+
+        // Keep within bounds roughly
+        if (Math.abs(currentX - centerX) > size * 0.3) {
+            currentX = centerX + (currentX - centerX) * 0.5;
+        }
+
+        points.push({ x: currentX, y: currentY });
     }
+
+    // Build path
+    let d = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 1; i < points.length; i++) {
+        d += ` L ${points[i].x} ${points[i].y}`;
+    }
+
+    // Add some random branches
+    for (let i = 2; i < points.length - 2; i += 2) {
+        if (Math.random() > 0.5) {
+            const p = points[i];
+            const branchLen = 20 + Math.random() * 30;
+            const angle = (Math.random() - 0.5) * Math.PI; // -90 to 90 degrees roughly
+            const branchX = p.x + Math.sin(angle) * branchLen;
+            const branchY = p.y + Math.cos(angle) * branchLen;
+            d += ` M ${p.x} ${p.y} L ${branchX} ${branchY}`;
+        }
+    }
+
     return d;
 };
 
@@ -157,10 +186,10 @@ export default function R6AlphaPack({ tier, spoilerRarity, onOpen, size = DEFAUL
     const crackPath = useMemo(() => generateCrackPath(size, center, center, Math.random()), [size, center]);
 
     // Debris
-    const debris = useMemo(() => Array.from({ length: 12 }).map(() => ({
-        x: center + (Math.random() - 0.5) * size * 0.5,
-        y: center + (Math.random() - 0.5) * size * 0.5,
-        size: 3 + Math.random() * 5,
+    const debris = useMemo(() => Array.from({ length: 20 }).map(() => ({
+        x: center + (Math.random() - 0.5) * size * 0.6,
+        y: center + (Math.random() - 0.5) * size * 0.6,
+        size: 2 + Math.random() * 6,
         color: Math.random() > 0.5 ? config.accentColor : config.baseColor
     })), [center, size, config]);
 

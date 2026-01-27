@@ -201,7 +201,12 @@ export function ShopHomeScreen() {
                         return (
                             <TouchableOpacity
                                 key={tier}
-                                style={[styles.boosterCard, { borderColor: visuals.borderColor, shadowColor: visuals.borderColor }]}
+                                style={[styles.boosterCard, {
+                                    borderColor: visuals.borderColor,
+                                    shadowColor: visuals.glow,
+                                    width: tier === 'elite' ? 160 : 140, // Elite larger
+                                    height: tier === 'elite' ? 240 : 210,
+                                }]}
                                 onPress={() => handleBuyPack(tier)}
                                 activeOpacity={0.8}
                             >
@@ -218,31 +223,36 @@ export function ShopHomeScreen() {
 
                                     <View style={styles.boosterHeader}>
                                         <Text style={[styles.boosterTier, { color: visuals.labelColor }]}>{visuals.label}</Text>
-                                        {tier === 'elite' && <Ionicons name="flame" size={12} color="#FBBF24" />}
+                                        {tier === 'elite' && <Ionicons name="flame" size={16} color="#FBBF24" />}
                                     </View>
 
                                     <View style={styles.boosterCenter}>
                                         <View style={[styles.boosterIconCircle, {
                                             borderColor: visuals.borderColor,
+                                            width: tier === 'elite' ? 80 : 60,
+                                            height: tier === 'elite' ? 80 : 60,
+                                            borderRadius: tier === 'elite' ? 40 : 30,
                                             shadowColor: visuals.borderColor,
                                             shadowOffset: { width: 0, height: 0 },
                                             shadowOpacity: tier === 'basic' ? 0 : 0.8,
-                                            shadowRadius: 12,
+                                            shadowRadius: 15,
                                         }]}>
-                                            <Ionicons name={visuals.icon as any} size={32} color="#FFF" />
+                                            <Ionicons name={visuals.icon as any} size={tier === 'elite' ? 40 : 30} color="#FFF" />
                                         </View>
-                                        <Text style={styles.boosterName}>{pack.name.replace(' Pack', '')}</Text>
+                                        <Text style={[styles.boosterName, tier === 'elite' && { fontSize: 20 }]}>{pack.name.replace(' Pack', '')}</Text>
                                         <Text style={styles.boosterCards}>{pack.cardCount.min}-{pack.cardCount.max} Cartes</Text>
                                         {tier === 'elite' && (
-                                            <Text style={[styles.boosterCards, { color: '#FBBF24', fontSize: 10, marginTop: -4 }]}>
-                                                +10% DUST • 5% SHINY
-                                            </Text>
+                                            <View style={{ backgroundColor: 'rgba(0,0,0,0.4)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, marginTop: 4 }}>
+                                                <Text style={[styles.boosterCards, { color: '#FBBF24', fontSize: 10, fontWeight: 'bold' }]}>
+                                                    MEILLEURE VALEUR
+                                                </Text>
+                                            </View>
                                         )}
                                     </View>
 
-                                    <View style={[styles.boosterPriceBtn, tier === 'elite' && { backgroundColor: 'rgba(251, 191, 36, 0.2)' }]}>
-                                        <Ionicons name="diamond" size={12} color={tier === 'elite' ? '#FBBF24' : '#FCD34D'} />
-                                        <Text style={[styles.boosterPriceText, tier === 'elite' && { color: '#FBBF24' }]}>{pack.price}</Text>
+                                    <View style={[styles.boosterPriceBtn, tier === 'elite' && { backgroundColor: '#FBBF24', borderColor: '#F59E0B' }]}>
+                                        <Ionicons name="diamond" size={12} color={tier === 'elite' ? '#000' : '#FCD34D'} />
+                                        <Text style={[styles.boosterPriceText, tier === 'elite' && { color: '#000' }]}>{pack.price}</Text>
                                     </View>
                                 </LinearGradient>
                             </TouchableOpacity>

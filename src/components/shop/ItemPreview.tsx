@@ -136,12 +136,20 @@ const ThemePreview = React.memo(({ item, scale, isAnimated }: { item: ShopItem; 
             </View>
 
             <View style={styles.mockBody}>
-                <View style={[styles.mockCard1, { backgroundColor: cardColor }]}>
-                    <View style={{ height: 2, width: '40%', backgroundColor: textColor, opacity: 0.7, marginBottom: 2, borderRadius: 1 }} />
-                    <View style={{ height: 2, width: '80%', backgroundColor: textColor, opacity: 0.4, borderRadius: 1 }} />
+                {/* Chat Bubble optimized */}
+                <View style={{ alignSelf: 'flex-start', backgroundColor: cardColor, padding: 4, borderRadius: 6, borderBottomLeftRadius: 1, marginBottom: 2 }}>
+                    <View style={{ height: 3, width: 24, backgroundColor: textColor, opacity: 0.8, borderRadius: 1 }} />
                 </View>
-                <View style={[styles.mockCard2, { backgroundColor: cardColor }]} />
-                <View style={[styles.mockCard3, { backgroundColor: cardColor }]} />
+                <View style={{ alignSelf: 'flex-end', backgroundColor: primaryColor, padding: 4, borderRadius: 6, borderBottomRightRadius: 1, marginBottom: 4 }}>
+                    <View style={{ height: 3, width: 30, backgroundColor: '#FFF', opacity: 0.9, borderRadius: 1 }} />
+                </View>
+
+                {/* Card */}
+                <View style={[styles.mockCard1, { backgroundColor: cardColor, height: 25 }]}>
+                    <View style={{ height: 3, width: '40%', backgroundColor: textColor, opacity: 0.7, marginBottom: 3, borderRadius: 1 }} />
+                    <View style={{ height: 2, width: '80%', backgroundColor: textColor, opacity: 0.4, borderRadius: 1, marginBottom: 2 }} />
+                    <View style={{ height: 2, width: '60%', backgroundColor: textColor, opacity: 0.4, borderRadius: 1 }} />
+                </View>
             </View>
 
             {/* FAB */}
@@ -249,10 +257,10 @@ const FramePreview = React.memo(({ item, scale, isAnimated, avatarUrl }: { item:
                         source={frameStyle.imageSource}
                         style={{
                             position: 'absolute',
-                            width: 76,
-                            height: 76,
-                            top: -10,
-                            left: -10,
+                            width: '135%', // Enlarge frame to sit AROUND avatar
+                            height: '135%',
+                            top: '-17.5%',
+                            left: '-17.5%',
                             zIndex: 10,
                         }}
                         resizeMode="contain"

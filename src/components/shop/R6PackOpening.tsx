@@ -339,6 +339,16 @@ export default function R6PackOpening({ visible, tier, packCount = 1, onClose }:
                                     isShiny={currentCard.isShiny}
                                     dustValue={currentCard.dustValue}
                                 />
+                                {/* Overlay invisible pour détecter le swipe si GestureDetector trop complexe à intégrer rapidement */}
+                                <View
+                                    style={StyleSheet.absoluteFill}
+                                    onTouchEnd={(e) => {
+                                        // Simple heuristic: if tap on right side -> next
+                                        if (e.nativeEvent.locationX > width * 0.7) {
+                                            handleNextCard();
+                                        }
+                                    }}
+                                />
 
                                 {/* Indicateur de progression */}
                                 {currentResult && (

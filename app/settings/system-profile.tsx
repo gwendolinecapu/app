@@ -87,11 +87,16 @@ export default function SystemProfileScreen() {
     return (
         <View style={styles.container}>
             <Stack.Screen options={{
-                title: "Profil Système",
-                headerStyle: { backgroundColor: colors.background },
-                headerTintColor: colors.text,
-                headerTitleStyle: { ...typography.h3, fontSize: 18 }
+                headerShown: false
             }} />
+
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <Ionicons name="arrow-back" size={24} color={colors.text} />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Profil Système</Text>
+                <View style={{ width: 40 }} />
+            </View>
 
             <ScrollView contentContainerStyle={styles.content}>
                 {/* Avatar Section */}
@@ -158,6 +163,26 @@ export default function SystemProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingTop: 60, // Space for dynamic island
+        paddingHorizontal: spacing.lg,
+        paddingBottom: spacing.md,
+        backgroundColor: colors.background,
+    },
+    backButton: {
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'flex-start',
+    },
+    headerTitle: {
+        ...typography.h3,
+        fontSize: 18,
+        color: colors.text,
+    },
     container: {
         flex: 1,
         backgroundColor: colors.background,

@@ -45,20 +45,20 @@ const TIER_THEME: Record<LootBoxTier, {
     basic: {
         primaryColor: '#9CA3AF',
         secondaryColor: '#4B5563',
-        rayColors: ['rgba(156, 163, 175, 0.3)', 'transparent'],
-        particleCount: 8,
+        rayColors: ['rgba(156, 163, 175, 0.15)', 'transparent'], // Reduced opacity
+        particleCount: 5, // Reduced from 8
     },
     standard: {
         primaryColor: '#60A5FA',
         secondaryColor: '#2563EB',
-        rayColors: ['rgba(96, 165, 250, 0.4)', 'transparent'],
-        particleCount: 12,
+        rayColors: ['rgba(96, 165, 250, 0.2)', 'transparent'], // Reduced opacity
+        particleCount: 8, // Reduced from 12
     },
     elite: {
         primaryColor: '#FCD34D',
         secondaryColor: '#D97706',
-        rayColors: ['rgba(252, 211, 77, 0.5)', 'transparent'],
-        particleCount: 20,
+        rayColors: ['rgba(252, 211, 77, 0.25)', 'transparent'], // Reduced opacity
+        particleCount: 15, // Reduced from 20
     },
 };
 

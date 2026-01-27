@@ -96,9 +96,10 @@ interface ShopItemCardProps {
     avatarUrl?: string | null; // URL de la vraie photo de profil pour preview des cadres
     priceOverride?: number;
     currencyType?: 'credits' | 'dust';
+    isShiny?: boolean;
 }
 
-export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits, containerStyle, avatarUrl, priceOverride, currencyType = 'credits' }: ShopItemCardProps) {
+export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits, containerStyle, avatarUrl, priceOverride, currencyType = 'credits', isShiny }: ShopItemCardProps) {
     const displayPrice = priceOverride !== undefined ? priceOverride : (item.priceCredits || 0);
     const canAfford = displayPrice <= userCredits;
     const isFree = displayPrice === 0;
@@ -123,6 +124,14 @@ export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits, 
             onPress={() => onPress(item)}
             activeOpacity={0.8}
         >
+            {/* SHINY EFFECT BACKGROUND */}
+            {isShiny && (
+                <Animated.View style={[
+                    StyleSheet.absoluteFill,
+                    { backgroundColor: '#FBBF24', opacity: 0.2 } // Subtle gold tint
+                ]} />
+            )}
+
             {/* Preview */}
             <View style={[
                 styles.previewContainer,
@@ -172,20 +181,21 @@ export function ShopItemCard({ item, onPress, isOwned, isEquipped, userCredits, 
                         <View style={[styles.priceTag, !canAfford && !isFree && styles.priceTagExpensive]}>
                             {isFree ? (
                                 <Text style={styles.freeText}>Gratuit</Text>
-                            ) : (<>
-                                <Ionicons
-                                    name={currencyType === 'dust' ? 'sparkles' : 'diamond'}
-                                    size={12}
-                                    color={canAfford ? (currencyType === 'dust' ? '#E879F9' : colors.secondary) : colors.error}
-                                />
-                                <Text style={[
-                                    styles.priceText,
-                                    !canAfford && { color: colors.error },
-                                    currencyType === 'dust' && { color: '#E879F9' }
-                                ]}>
-                                    {displayPrice}
-                                </Text>
-                            </>
+                            ) : (
+                                <>
+                                    <Ionicons
+                                        name={currencyType === 'dust' ? 'sparkles' : 'diamond'}
+                                        size={12}
+                                        color={canAfford ? (currencyType === 'dust' ? '#E879F9' : colors.secondary) : colors.error}
+                                    />
+                                    <Text style={[
+                                        styles.priceText,
+                                        !canAfford && { color: colors.error },
+                                        currencyType === 'dust' && { color: '#E879F9' }
+                                    ]}>
+                                        {displayPrice}
+                                    </Text>
+                                </>
                             )}
                         </View>
                     )}

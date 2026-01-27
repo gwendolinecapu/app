@@ -10,7 +10,7 @@ import { useMonetization } from '../../contexts/MonetizationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { LootBoxService } from '../../services/LootBoxService';
 import CreditService from '../../services/CreditService';
-import { ShopItem, ShopItemType, LootBoxTier, PACK_TIERS } from '../../services/MonetizationTypes';
+import { ShopItem, ShopItemType, LootBoxTier, PACK_TIERS, PITY_CONFIG } from '../../services/MonetizationTypes';
 import { ShopItemCard } from './ShopItemCard';
 import { ShopItemModal } from './ShopItemModal';
 import LootBoxOpening from './LootBoxOpening';
@@ -28,6 +28,7 @@ export function ShopHomeScreen() {
         equippedItems,
         purchaseItem,
         equipItem,
+        pityProgress,
     } = useMonetization();
     const { currentAlter } = useAuth();
 
@@ -131,6 +132,42 @@ export function ShopHomeScreen() {
                     </TouchableOpacity>
                 </View>
 
+                {/* PITY WIDGET */}
+                <View style={styles.pityContainer}>
+                    <View style={styles.pityRow}>
+                        <View style={styles.pityInfo}>
+                            <Text style={styles.pityLabel}>Prochain ÉPIQUE</Text>
+                            <Text style={styles.pityValue}>
+                                {Math.max(0, PITY_CONFIG.epicGuarantee - pityProgress.epicCounter)} ouvertures
+                            </Text>
+                        </View>
+                        <View style={styles.pityBarBg}>
+                            <View
+                                style={[
+                                    styles.pityBarFill,
+                                    { width: `${(pityProgress.epicCounter / PITY_CONFIG.epicGuarantee) * 100}%`, backgroundColor: '#A855F7' }
+                                ]}
+                            />
+                        </View>
+                    </View>
+                    <View style={styles.pityRow}>
+                        <View style={styles.pityInfo}>
+                            <Text style={styles.pityLabel}>Prochain LÉGENDAIRE</Text>
+                            <Text style={styles.pityValue}>
+                                {Math.max(0, PITY_CONFIG.legendaryGuarantee - pityProgress.legendaryCounter)} ouvertures
+                            </Text>
+                        </View>
+                        <View style={styles.pityBarBg}>
+                            <View
+                                style={[
+                                    styles.pityBarFill,
+                                    { width: `${(pityProgress.legendaryCounter / PITY_CONFIG.legendaryGuarantee) * 100}%`, backgroundColor: '#EAB308' }
+                                ]}
+                            />
+                        </View>
+                    </View>
+                </View>
+
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.boosterRow}>
                     {(['basic', 'standard', 'elite'] as LootBoxTier[]).map(tier => {
                         const pack = PACK_TIERS[tier];
@@ -196,6 +233,11 @@ export function ShopHomeScreen() {
                                         </View>
                                         <Text style={styles.boosterName}>{pack.name.replace(' Pack', '')}</Text>
                                         <Text style={styles.boosterCards}>{pack.cardCount.min}-{pack.cardCount.max} Cartes</Text>
+                                        {tier === 'elite' && (
+                                            <Text style={[styles.boosterCards, { color: '#FBBF24', fontSize: 10, marginTop: -4 }]}>
+                                                +10% DUST • 5% SHINY
+                                            </Text>
+                                        )}
                                     </View>
 
                                     <View style={[styles.boosterPriceBtn, tier === 'elite' && { backgroundColor: 'rgba(251, 191, 36, 0.2)' }]}>
@@ -485,6 +527,40 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.md,
         gap: spacing.md,
         paddingRight: 40,
+    },
+    pityContainer: {
+        paddingHorizontal: spacing.md,
+        marginBottom: spacing.md,
+        gap: 8,
+    },
+    pityRow: {
+        gap: 4,
+    },
+    pityInfo: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    pityLabel: {
+        color: 'rgba(255,255,255,0.6)',
+        fontSize: 10,
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+    },
+    pityValue: {
+        color: '#FFF',
+        fontSize: 10,
+        fontWeight: 'bold',
+    },
+    pityBarBg: {
+        height: 4,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 2,
+        overflow: 'hidden',
+    },
+    pityBarFill: {
+        height: '100%',
+        borderRadius: 2,
     },
     adCardNew: {
         width: 160,

@@ -10,6 +10,7 @@ import { ShopHomeScreen } from './ShopHomeScreen';
 import { ShopInventoryScreen } from './ShopInventoryScreen';
 import { ShopBankScreen } from './ShopBankScreen';
 import { ShopCatalogScreen } from './ShopCatalogScreen';
+import { ShopForgeScreen } from './ShopForgeScreen';
 
 import { useMonetization } from '../../contexts/MonetizationContext';
 
@@ -29,6 +30,7 @@ export function ShopShell({ isEmbedded = false }: ShopShellProps) {
         switch (activeTab) {
             case 'home': return 'BOUTIQUE';
             case 'inventory': return 'MON CASIER';
+            case 'forge': return 'LA FORGE';
             case 'bank': return 'BANQUE';
             case 'catalog': return 'CATALOGUE';
             default: return 'BOUTIQUE';
@@ -75,6 +77,7 @@ export function ShopShell({ isEmbedded = false }: ShopShellProps) {
             <View style={styles.contentArea}>
                 {activeTab === 'home' && <ShopHomeScreen />}
                 {activeTab === 'inventory' && <ShopInventoryScreen />}
+                {activeTab === 'forge' && <ShopForgeScreen />}
                 {activeTab === 'bank' && <ShopBankScreen />}
                 {activeTab === 'catalog' && <ShopCatalogScreen />}
             </View>

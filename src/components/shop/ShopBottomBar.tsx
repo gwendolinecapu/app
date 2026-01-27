@@ -4,7 +4,7 @@ import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing } from '../../lib/theme';
 
-export type ShopTab = 'home' | 'inventory' | 'bank' | 'catalog';
+export type ShopTab = 'home' | 'inventory' | 'forge' | 'bank' | 'catalog';
 
 interface ShopBottomBarProps {
     activeTab: ShopTab;
@@ -15,6 +15,7 @@ export function ShopBottomBar({ activeTab, onTabChange }: ShopBottomBarProps) {
     const tabs: { id: ShopTab; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
         { id: 'home', label: 'Accueil', icon: 'home' },
         { id: 'inventory', label: 'Casier', icon: 'shirt' },
+        { id: 'forge', label: 'Forge', icon: 'hammer' }, // or build
         { id: 'bank', label: 'Banque', icon: 'wallet' },
         { id: 'catalog', label: 'Catalogue', icon: 'grid' },
     ];

@@ -4,7 +4,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { PurchasesOffering } from 'react-native-purchases';
+import { PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
 import { doc, arrayUnion, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from './AuthContext';
@@ -421,7 +421,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
                 await new Promise(resolve => setTimeout(resolve, 1000));
 
                 if (packageId.includes('credits')) {
-                    const pack = CREDIT_PACKS.find(p => p.revenueCatPackageId === packageId || p.priceIAP === packageId || p.id === packageId);
+                    const pack = CREDIT_PACKS.find((p: ShopItem) => p.revenueCatPackageId === packageId || p.priceIAP === packageId || p.id === packageId);
                     if (pack && pack.id.includes('credits_')) {
                         const amount = parseInt(pack.id.replace('credits_', ''), 10);
                         if (!isNaN(amount) && currentAlter) {
@@ -444,7 +444,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
                 return false;
             }
 
-            const pkg = offerings.availablePackages.find(p => p.identifier === packageId);
+            const pkg = offerings.availablePackages.find((p: PurchasesPackage) => p.identifier === packageId);
             if (!pkg) {
                 return false;
             }
@@ -453,7 +453,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
             if (paymentSuccessful) {
                 if (packageId.includes('credits')) {
-                    const pack = CREDIT_PACKS.find(p => p.revenueCatPackageId === packageId || p.id === packageId);
+                    const pack = CREDIT_PACKS.find((p: ShopItem) => p.revenueCatPackageId === packageId || p.id === packageId);
                     if (pack && pack.id.includes('credits_')) {
                         const amount = parseInt(pack.id.replace('credits_', ''), 10);
                         if (!isNaN(amount) && currentAlter) {

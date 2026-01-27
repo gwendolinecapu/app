@@ -60,7 +60,7 @@ const TIER_CONFIG: Record<LootBoxTier, {
         name: 'ELITE',
         primaryColor: '#FCD34D',
         secondaryColor: '#D97706',
-        bgGradient: ['#1A150A', '#2E1F0F', '#1A150A'],
+        bgGradient: ['#1A150A', '#451a03', '#000000'],
     },
 };
 
@@ -404,8 +404,9 @@ const styles = StyleSheet.create({
     vignette: {
         ...StyleSheet.absoluteFillObject,
         backgroundColor: 'transparent',
-        borderWidth: 80,
-        borderColor: 'rgba(0,0,0,0.5)',
+        borderWidth: 0, // Removed solid border
+        // Use a radial gradient if possible later, for now just dark overlay
+        backgroundColor: 'rgba(0,0,0,0.3)',
     },
     bgParticle: {
         position: 'absolute',

@@ -11,6 +11,7 @@
  * - Système de Dust pour les doublons
  * - Bonus Elite (+10% dust, chance shiny)
  */
+import * as Crypto from 'expo-crypto';
 
 import {
     ShopItem,
@@ -89,17 +90,19 @@ const ITEMS_BY_RARITY: Record<Rarity, ShopItem[]> = {
     mythic: COSMETIC_ITEMS.filter(item => item.rarity === 'mythic'),
 };
 
+
 /**
  * Générateur de nombres aléatoires sécurisé
  */
 const secureRandom = (): number => {
-    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    try {
         const array = new Uint32Array(1);
-        crypto.getRandomValues(array);
+        Crypto.getRandomValues(array);
         return array[0] / 0xFFFFFFFF;
+    } catch (e) {
+        console.warn('[LootBox] Crypto error, falling back to Math.random:', e);
+        return Math.random();
     }
-    console.warn('[LootBox] crypto.getRandomValues non disponible');
-    return Math.random();
 };
 
 export const LootBoxService = {

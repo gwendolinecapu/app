@@ -425,7 +425,7 @@ class CreditService {
                 userId: this.userId,
                 amount,
                 type,
-                description,
+                description: description || '',
                 ...(itemId ? { itemId } : {}),
                 timestamp: Date.now(),
             };

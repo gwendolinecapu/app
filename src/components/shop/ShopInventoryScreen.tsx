@@ -12,7 +12,7 @@ const { width } = Dimensions.get('window');
 type FilterType = 'all' | 'decoration' | 'frame' | 'theme' | 'bubble';
 
 export function ShopInventoryScreen() {
-    const { ownedItems, equippedItems, equipItem } = useMonetization();
+    const { ownedItems, ownedShinyItems, equippedItems, equipItem } = useMonetization();
     const [filter, setFilter] = useState<FilterType>('all');
 
     const inventoryItems = useMemo<ShopItem[]>(() => {
@@ -61,6 +61,7 @@ export function ShopInventoryScreen() {
                 isEquipped={isEquipped(item.id, item.type)}
                 onPress={() => equipItem(item.id, item.type)}
                 containerStyle={{ width: '100%' }}
+                isShiny={ownedShinyItems.includes(item.id)}
             // Simple equip on press for now, or show modal detailing
             />
         </View>

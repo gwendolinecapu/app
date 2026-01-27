@@ -110,6 +110,7 @@ export interface MonetizationStatus {
     dust: number;                       // Poussière d'étoile (via doublons)
     currentStreak: number;              // Série de connexion actuelle
     pityProgress: PityProgress;         // Progression Pity System
+    owned_shiny_items: string[];        // IDs des items shiny possédés
 }
 
 export interface DailyReward {
@@ -142,6 +143,7 @@ export const DEFAULT_MONETIZATION_STATUS: MonetizationStatus = {
     dust: 0,
     currentStreak: 0,
     pityProgress: DEFAULT_PITY_PROGRESS,
+    owned_shiny_items: [],
 };
 
 // ==================== CRÉDITS ====================
@@ -583,6 +585,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         name: 'Cyberpunk',
         description: 'Néons et haute technologie.',
         priceCredits: 20,
+        rarity: 'common',
     },
     {
         id: 'theme_cafe_cosy',
@@ -591,6 +594,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         description: 'Ambiance chaleureuse.',
         priceCredits: 20,
         preview: '#8D6E63',
+        rarity: 'common',
     },
     {
         id: 'theme_anim_aurora',
@@ -600,6 +604,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         priceCredits: 75,
         featured: true,
         isAnimated: true,
+        rarity: 'rare',
     },
     {
         id: 'theme_anim_cosmos',
@@ -608,6 +613,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         description: 'Voyage interstellaire animé.',
         priceCredits: 75,
         isAnimated: true,
+        rarity: 'rare',
     },
     {
         id: 'theme_winter',
@@ -638,6 +644,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         description: 'Fraîcheur menthe douce.',
         priceCredits: 1000,
         preview: '#B5EAD7',
+        rarity: 'mythic',
     },
     {
         id: 'theme_cute_sky',
@@ -646,6 +653,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         description: 'Douceur céleste.',
         priceCredits: 1000,
         preview: '#A2D2FF',
+        rarity: 'mythic',
     },
     {
         id: 'theme_cute_lavender',
@@ -654,6 +662,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         description: 'Sérénité lavande.',
         priceCredits: 1000,
         preview: '#CDB4DB',
+        rarity: 'mythic',
     },
     {
         id: 'theme_cute_peach',
@@ -662,6 +671,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         description: 'Pêche sucrée.',
         priceCredits: 1000,
         preview: '#FFDAC1',
+        rarity: 'mythic',
     },
     {
         id: 'theme_cute_lemon',
@@ -670,6 +680,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         description: 'Zeste de citron doux.',
         priceCredits: 1000,
         preview: '#FFF9C4',
+        rarity: 'mythic',
     },
     {
         id: 'theme_cute_aqua',
@@ -678,6 +689,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         description: 'Lagon pastel.',
         priceCredits: 1000,
         preview: '#99F6E4',
+        rarity: 'mythic',
     },
     {
         id: 'theme_cute_cream',
@@ -686,6 +698,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         description: 'Douceur crème.',
         priceCredits: 1000,
         preview: '#FDFBF7',
+        rarity: 'mythic',
     },
     {
         id: 'theme_cute_coral',
@@ -694,6 +707,7 @@ export const COSMETIC_ITEMS: ShopItem[] = [
         description: 'Récif pastel.',
         priceCredits: 1000,
         preview: '#FF9AA2',
+        rarity: 'mythic',
     },
     // ========== NOUVEAUX THÈMES (Goth, Rétro, Luxe, Art) ==========
     {

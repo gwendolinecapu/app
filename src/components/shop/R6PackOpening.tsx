@@ -199,7 +199,7 @@ export default function R6PackOpening({ visible, tier, packCount = 1, onClose }:
         for (const result of allResults) {
             for (const card of result.cards) {
                 if (card.isNew) {
-                    await addToInventory(card.item.id);
+                    await addToInventory(card.item.id, card.isShiny);
                 }
             }
             if (result.totalDust > 0) {

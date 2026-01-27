@@ -74,6 +74,7 @@ interface MonetizationContextType {
 
     shopItems: ShopItem[];
     ownedItems: string[]; // IDs only
+    ownedShinyItems: string[]; // IDs of shiny versions owned
     equippedItems: Record<string, string>; // type -> itemId
     creditPacks: ShopItem[];
     purchaseItem: (item: ShopItem, alterId?: string) => Promise<boolean>;
@@ -96,7 +97,7 @@ interface MonetizationContextType {
     refresh: () => Promise<void>;
     addCredits: (amount: number, reason: string) => Promise<boolean>;
     addDust: (amount: number) => Promise<boolean>;
-    addToInventory: (itemId: string) => Promise<boolean>; // Add item without spending credits (for loot box)
+    addToInventory: (itemId: string, isShiny?: boolean) => Promise<boolean>; // Add item without spending credits (for loot box)
     offerings: PurchasesOffering | null;
 }
 
@@ -117,6 +118,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
     // Nouveaux états pour ShopUI
     const [ownedItems, setOwnedItems] = useState<string[]>([]);
+    const [ownedShinyItems, setOwnedShinyItems] = useState<string[]>([]);
     const [equippedItems, setEquippedItems] = useState<Record<string, string>>({});
 
     // ==================== INITIALIZATION ====================
@@ -142,6 +144,10 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
             const merged = [...new Set([...defaults, ...alterOwned])];
             setOwnedItems(merged);
 
+            // Sync Shiny Items
+            const alterShiny = currentAlter.owned_shiny_items || [];
+            setOwnedShinyItems(alterShiny);
+
             // Check equipped
             if (currentAlter.equipped_items) {
                 setEquippedItems(currentAlter.equipped_items);
@@ -153,7 +159,9 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
             setDust(0);
             setPityProgress(DEFAULT_PITY_PROGRESS);
+            setPityProgress(DEFAULT_PITY_PROGRESS);
             setOwnedItems(['theme_default', 'frame_simple', 'bubble_default', 'border_none']);
+            setOwnedShinyItems([]);
         }
     }, [currentAlter]);
 
@@ -254,7 +262,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
      * Ajoute un item à l'inventaire de l'alter sans dépenser de crédits
      * Utilisé pour les récompenses de loot box
      */
-    const addToInventory = useCallback(async (itemId: string): Promise<boolean> => {
+    const addToInventory = useCallback(async (itemId: string, isShiny: boolean = false): Promise<boolean> => {
         if (!currentAlter) {
             console.error('[MonetizationContext] Cannot add to inventory: no current alter');
             return false;
@@ -263,13 +271,22 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         try {
             const alterRef = doc(db, 'alters', currentAlter.id);
 
-            // Use setDoc with merge to ensure the field is created if it doesn't exist
-            await setDoc(alterRef, {
+            // Updates object dynamically
+            const updates: any = {
                 owned_items: arrayUnion(itemId)
-            }, { merge: true });
+            };
+            if (isShiny) {
+                updates.owned_shiny_items = arrayUnion(itemId);
+            }
+
+            // Use setDoc with merge to ensure the field is created if it doesn't exist
+            await setDoc(alterRef, updates, { merge: true });
 
             // Update local state immediately
             setOwnedItems(prev => [...new Set([...prev, itemId])]);
+            if (isShiny) {
+                setOwnedShinyItems(prev => [...new Set([...prev, itemId])]);
+            }
 
             // Refresh alters to sync
             refreshAlters();
@@ -595,6 +612,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
 
         shopItems: [...COSMETIC_ITEMS, ...CREDIT_ITEMS],
         ownedItems,
+        ownedShinyItems,
         equippedItems,
         creditPacks: CREDIT_PACKS,
         purchaseItem,
@@ -619,7 +637,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         loading, tier, credits, dust, pityProgress, isPremium, isTrialActive, trialDaysRemaining,
         premiumDaysRemaining, canUseFreeMont, isSilentTrialActive, shouldShowConversionModal,
         isAdFree, adFreeDaysRemaining, canWatchRewardAd, rewardAdsRemaining,
-        adFreeProgress, premiumProgress, currentStreak, ownedItems, equippedItems, offerings
+        adFreeProgress, premiumProgress, currentStreak, ownedItems, ownedShinyItems, equippedItems, offerings
     ]);
 
     return (

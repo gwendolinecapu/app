@@ -9,11 +9,11 @@ import Animated, {
     withRepeat,
     withSequence,
     withDelay,
-    runOnJS,
     interpolate,
     Easing,
     cancelAnimation,
     useAnimatedProps,
+    SharedValue,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { LootBoxTier, Rarity } from '../../services/MonetizationTypes';
@@ -82,7 +82,7 @@ const OrbitalParticle = React.memo(({
     total: number;
     orbitRadius: number;
     color: string;
-    holdProgress: Animated.SharedValue<number>;
+    holdProgress: SharedValue<number>;
 }) => {
     const baseAngle = (Math.PI * 2 / total) * index;
     const rotation = useSharedValue(baseAngle);
@@ -253,7 +253,7 @@ export default function R6AlphaPack({ tier, spoilerRarity, onOpen, size = DEFAUL
                 // Animation finale d'explosion
                 shake.value = 0;
                 pulseScale.value = withSequence(
-                    withSpring(1.3, { damping: 4 }),
+                    withTiming(1.15, { duration: 150 }),
                     withTiming(0, { duration: 200 })
                 );
                 glowIntensity.value = withTiming(1.5, { duration: 150 });

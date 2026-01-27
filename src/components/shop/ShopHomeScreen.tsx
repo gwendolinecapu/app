@@ -13,7 +13,7 @@ import CreditService from '../../services/CreditService';
 import { ShopItem, ShopItemType, LootBoxTier, PACK_TIERS, PITY_CONFIG } from '../../services/MonetizationTypes';
 import { ShopItemCard } from './ShopItemCard';
 import { ShopItemModal } from './ShopItemModal';
-import LootBoxOpening from './LootBoxOpening';
+import R6PackOpening from './R6PackOpening';
 import DropRateModal from './DropRateModal';
 
 const { width } = Dimensions.get('window');
@@ -360,7 +360,7 @@ export function ShopHomeScreen() {
             />
 
             {openingTier && (
-                <LootBoxOpening
+                <R6PackOpening
                     visible={lootBoxVisible}
                     tier={openingTier}
                     onClose={() => {

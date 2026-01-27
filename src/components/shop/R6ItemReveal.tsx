@@ -14,7 +14,7 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { ShopItem, Rarity } from '../../services/MonetizationTypes';
+import { ShopItem } from '../../services/MonetizationTypes';
 import LootBoxService from '../../services/LootBoxService';
 
 interface R6ItemRevealProps {
@@ -68,7 +68,7 @@ const BurstParticle = React.memo(({
     const style = useAnimatedStyle(() => {
         const x = Math.cos(angle) * distance * progress.value;
         const y = Math.sin(angle) * distance * progress.value;
-        const scale = interpolate(progress.value, [0, 0.3, 1], [0, 1.5, 0.3]);
+        const scale = interpolate(progress.value, [0, 0.3, 1], [0, 1, 0.3]);
 
         return {
             transform: [
@@ -111,7 +111,7 @@ const LightRay = React.memo(({
             withTiming(0, { duration: 400 })
         ));
         scaleY.value = withDelay(delay, withSequence(
-            withSpring(1.2, { damping: 6 }),
+            withTiming(1.1, { duration: 200, easing: Easing.out(Easing.cubic) }),
             withTiming(0.8, { duration: 400 })
         ));
     }, []);
@@ -154,7 +154,7 @@ const Sparkle = React.memo(({
 
     useEffect(() => {
         scale.value = withDelay(delay, withSequence(
-            withSpring(1, { damping: 4 }),
+            withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) }),
             withTiming(0, { duration: 400 })
         ));
         rotation.value = withDelay(delay, withTiming(180, { duration: 800 }));
@@ -200,8 +200,8 @@ export default function R6ItemReveal({ item, isNew, isShiny, dustValue, onComple
 
         // Halo expansion
         haloScale.value = withSequence(
-            withSpring(1.5, { damping: 6 }),
-            withSpring(1, { damping: 10 })
+            withTiming(1.3, { duration: 250, easing: Easing.out(Easing.cubic) }),
+            withTiming(1, { duration: 200 })
         );
         haloOpacity.value = withSequence(
             withTiming(1, { duration: 150 }),
@@ -210,8 +210,8 @@ export default function R6ItemReveal({ item, isNew, isShiny, dustValue, onComple
 
         // Item apparition
         itemScale.value = withDelay(200, withSequence(
-            withSpring(1.2, { damping: 5 }),
-            withSpring(1, { damping: 12 })
+            withTiming(1.1, { duration: 200, easing: Easing.out(Easing.cubic) }),
+            withTiming(1, { duration: 150 })
         ));
         itemOpacity.value = withDelay(200, withTiming(1, { duration: 300 }));
 

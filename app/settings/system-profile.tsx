@@ -15,7 +15,7 @@ export default function SystemProfileScreen() {
     const { user, system, refreshSystem } = useAuth();
     const [name, setName] = useState(system?.username || '');
     const [loading, setLoading] = useState(false);
-    const [avatar, setAvatar] = useState(system?.avatar_url || null);
+    const [avatar, setAvatar] = useState<string | null>(system?.avatar_url || null);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
@@ -38,6 +38,25 @@ export default function SystemProfileScreen() {
         }
     };
 
+    const handleAvatarPress = () => {
+        Alert.alert(
+            "Photo de profil",
+            "Que voulez-vous faire ?",
+            [
+                { text: "Annuler", style: "cancel" },
+                {
+                    text: "Supprimer la photo",
+                    style: "destructive",
+                    onPress: () => setAvatar(null)
+                },
+                {
+                    text: "Modifier la photo",
+                    onPress: pickImage
+                }
+            ]
+        );
+    };
+
     const handleSave = async () => {
         if (!user || !name.trim()) return;
 
@@ -45,19 +64,22 @@ export default function SystemProfileScreen() {
         try {
             let avatarUrl = system?.avatar_url;
 
-            // Upload new avatar if changed and is local uri
-            if (avatar && avatar !== system?.avatar_url) {
+            // Upload new avatar if changed (local file)
+            if (avatar && avatar !== system?.avatar_url && avatar.startsWith('file://')) {
                 const response = await fetch(avatar);
                 const blob = await response.blob();
-                const storageRef = ref(storage, `avatars/system/${user.uid}_${Date.now()}`);
+                const storageRef = ref(storage, `avatars/${user.uid}/system_${Date.now()}.jpg`);
                 await uploadBytes(storageRef, blob);
                 avatarUrl = await getDownloadURL(storageRef);
+            } else if (avatar === null) {
+                // Explicitly deleted
+                avatarUrl = null;
             }
 
             const systemRef = doc(db, 'systems', user.uid);
             await updateDoc(systemRef, {
                 username: name.trim(),
-                avatar_url: avatarUrl
+                avatar_url: avatarUrl || null
             });
 
             await refreshSystem();
@@ -101,7 +123,7 @@ export default function SystemProfileScreen() {
             <ScrollView contentContainerStyle={styles.content}>
                 {/* Avatar Section */}
                 <View style={styles.avatarContainer}>
-                    <TouchableOpacity onPress={pickImage} style={styles.avatarWrapper}>
+                    <TouchableOpacity onPress={handleAvatarPress} style={styles.avatarWrapper}>
                         {avatar ? (
                             <Image source={{ uri: avatar }} style={styles.avatar} />
                         ) : (

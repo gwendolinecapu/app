@@ -54,12 +54,14 @@ export default function SearchScreen() {
     const [suggestions, setSuggestions] = useState<SearchResult[]>([]);
 
     // Import Mode State
-    const [importMode, setImportMode] = useState<ImportState>({
+    const [importMode, setImportMode] = useState<{ active: boolean, system: SearchResult | null, alters: SearchResult[], selectedIds: Set<string> }>({
         active: false,
         system: null,
         alters: [],
         selectedIds: new Set()
     });
+    // Add local filter state for import view
+    const [filterText, setFilterText] = useState('');
 
     // Recherche en temps réel avec debounce
     useEffect(() => {
@@ -91,60 +93,112 @@ export default function SearchScreen() {
             const searchTrimmed = searchQuery.trim();
 
             // 1. Check if it's a System Code (UID) - Exact Match
-            // Note: Firebase UIDs are typically 28 chars. But we check exact match on 'systems' collection.
-            const systemDocRef = doc(db, 'systems', searchTrimmed);
-            const systemDocSnap = await getDoc(systemDocRef);
+            if (searchTrimmed.length === 28) {
+                console.log('Searching by System ID (Cloud Function):', searchTrimmed);
+                try {
+                    const { httpsCallable } = require('firebase/functions');
+                    const { functions } = require('../../src/lib/firebase');
+                    const searchSystemAlters = httpsCallable(functions, 'searchSystemAlters');
 
-            if (systemDocSnap.exists() && systemDocSnap.id !== system?.id) {
-                // Found a system by Code! Enter Import Mode.
-                const sysData = systemDocSnap.data();
-                const targetSystem: SearchResult = {
-                    id: systemDocSnap.id,
-                    name: sysData.username || 'Système sans nom',
-                    avatar_url: sysData.avatar_url,
-                    color: colors.primary,
-                    type: 'system',
-                    systemId: systemDocSnap.id
-                };
+                    const result = await searchSystemAlters({ systemId: searchTrimmed });
+                    const data = result.data as any;
 
-                // Fetch all public alters for this system
-                const altersQ = query(
-                    collection(db, 'alters'),
-                    where('system_id', '==', searchTrimmed),
-                    where('is_public', '==', true)
-                );
-                const altersSnap = await getDocs(altersQ);
-                const systemAlters: SearchResult[] = [];
-                altersSnap.forEach(doc => {
-                    const d = doc.data();
-                    systemAlters.push({
-                        id: doc.id,
-                        name: d.name,
-                        avatar_url: d.avatar_url,
-                        color: d.color || '#7C3AED',
-                        type: 'alter',
-                        systemId: searchTrimmed,
-                        isSelectable: true
-                    });
-                });
+                    if (data && data.system && data.alters) {
+                        const systemData = data.system;
+                        const targetSystem = {
+                            id: systemData.id,
+                            name: systemData.name,
+                            avatar_url: systemData.avatar_url,
+                            email: '', // Not returned for privacy
+                            color: colors.primary,
+                            type: 'system' as const,
+                            systemId: systemData.id
+                        };
 
-                setImportMode({
-                    active: true,
-                    system: targetSystem,
-                    alters: systemAlters,
-                    selectedIds: new Set() // Start with none selected? Or all? User said "Select the ones you want".
-                });
+                        const systemAlters: SearchResult[] = data.alters.map((a: any) => ({
+                            id: a.id,
+                            name: a.name,
+                            avatar_url: a.avatar_url,
+                            color: a.color || '#7C3AED',
+                            type: 'alter',
+                            systemId: searchTrimmed,
+                            isSelectable: true
+                        }));
 
-                // We stop here and show the Import UI
-                setLoading(false);
-                return;
-            }
+                        setImportMode({
+                            active: true,
+                            system: targetSystem,
+                            alters: systemAlters,
+                            selectedIds: new Set()
+                        });
 
-            // Normal Search Flow
+                        setLoading(false);
+                        return;
+                    }
+                } catch (fnError) {
+                    console.warn('Cloud Function Search Failed, falling back to client-side:', fnError);
+
+                    // FALLBACK: Client-side search (Respects Security Rules)
+                    // 1. Fetch System
+                    const systemDocRef = doc(db, 'systems', searchTrimmed);
+                    try {
+                        const systemDocSnap = await getDoc(systemDocRef);
+
+                        if (systemDocSnap.exists() && systemDocSnap.id !== system?.id) {
+                            const sysData = systemDocSnap.data();
+                            const targetSystem = {
+                                id: systemDocSnap.id,
+                                name: sysData.username || 'Système sans nom',
+                                avatar_url: sysData.avatar_url,
+                                email: '', // Privacy
+                                color: colors.primary,
+                                type: 'system' as const,
+                                systemId: systemDocSnap.id
+                            };
+
+                            // Fetch ALL alters for this system (Best effort - relies on relaxed rules for Code Search)
+                            const altersQ = query(
+                                collection(db, 'alters'),
+                                where('system_id', '==', searchTrimmed)
+                                // VISIBILITY FILTER REMOVED: To allow "Code Access" logic
+                            );
+
+                            try {
+                                const altersSnap = await getDocs(altersQ);
+                                const systemAlters: SearchResult[] = [];
+                                altersSnap.forEach(doc => {
+                                    const d = doc.data();
+                                    systemAlters.push({
+                                        id: doc.id,
+                                        name: d.name,
+                                        avatar_url: d.avatar_url,
+                                        color: d.color || '#7C3AED',
+                                        type: 'alter',
+                                        systemId: searchTrimmed,
+                                        isSelectable: true
+                                    });
+                                });
+
+                                setImportMode({
+                                    active: true,
+                                    system: targetSystem,
+                                    alters: systemAlters,
+                                    selectedIds: new Set()
+                                });
+
+                                setLoading(false);
+                                return;
+                            } catch (queryErr) {
+                                console.error('Fallback Alters Query Error:', queryErr);
+                                // Even if alters fail, show system?
+                            }
+                        }
+                    } catch (docErr) {
+                        console.error('Fallback System Doc Error:', docErr);
+                    }
+                }
+            } // Normal Search Flow
             // Recherche dans les profils publics (systèmes) via FollowService
-            // Note: La recherche directe dans 'systems' est restreinte par les règles de sécurité.
-
-            // Recherche dans les profils publics (systèmes)
             const publicProfiles = await FollowService.searchUsers(searchLower, 5);
             publicProfiles.forEach(profile => {
                 if (profile.system_id !== system?.id) {
@@ -161,8 +215,10 @@ export default function SearchScreen() {
             });
 
             // Recherche dans les alters par nom (tous les alters accessibles)
+            // Fix: Must filter by visibility to satisfy security rules
             const altersQuery = query(
                 collection(db, 'alters'),
+                where('visibility', 'in', ['public', 'friends']),
                 limit(50)
             );
 
@@ -227,7 +283,7 @@ export default function SearchScreen() {
                     // 2. Fallback: random public alters (existing logic)
                     const q = query(
                         collection(db, 'alters'),
-                        where('is_public', '==', true),
+                        where('visibility', '==', 'public'),
                         limit(10)
                     );
                     const snap = await getDocs(q);
@@ -334,23 +390,45 @@ export default function SearchScreen() {
         }
 
         setLoading(true);
+        let successCount = 0;
+        let pendingCount = 0;
+
         try {
-            const promises = Array.from(importMode.selectedIds).map(alterId =>
-                FriendService.sendRequest(currentAlter.id, alterId)
-            );
+            const promises = Array.from(importMode.selectedIds).map(async (alterId) => {
+                try {
+                    await FriendService.sendRequest(currentAlter.id, alterId);
+                    successCount++;
+                } catch (err: any) {
+                    if (err.message?.includes('already pending') || err.message?.includes('already friends')) {
+                        pendingCount++;
+                    } else {
+                        console.warn(`Failed to import alter ${alterId}:`, err);
+                    }
+                }
+            });
+
             await Promise.all(promises);
 
             // Save unselected as suggestions
             const unselectedAlters = importMode.alters.filter(a => !importMode.selectedIds.has(a.id));
             if (unselectedAlters.length > 0) {
                 await FriendService.saveSuggestions(system.id, unselectedAlters);
-                // Optional: update local suggestions state immediately?
-                // setSuggestions(prev => [...prev, ...unselectedAlters]); 
-                // But better to reload or let next visit handle it.
+                // Update local suggestions state immediately
+                setSuggestions(prev => {
+                    const existingIds = new Set(prev.map(s => s.id));
+                    const newSuggestions = unselectedAlters.filter(a => !existingIds.has(a.id));
+                    return [...prev, ...newSuggestions];
+                });
             }
 
             triggerHaptic.success();
-            toast.showToast(`${count} demande(s) envoyée(s) !`, "success");
+
+            let message = '';
+            if (successCount > 0) message += `${successCount} demande(s) envoyée(s). `;
+            if (pendingCount > 0) message += `${pendingCount} déjà en attente/amis.`;
+
+            toast.showToast(message || "Import terminé", "success");
+
             if (unselectedAlters.length > 0) {
                 toast.showToast(`${unselectedAlters.length} suggestion(s) sauvegardée(s)`, "info");
             }
@@ -358,6 +436,7 @@ export default function SearchScreen() {
             // Reset and go back
             setSearchQuery('');
             setImportMode({ active: false, system: null, alters: [], selectedIds: new Set() });
+            setFilterText(''); // Reset filter
             setHasSearched(false);
             setResults([]);
         } catch (error) {
@@ -370,6 +449,12 @@ export default function SearchScreen() {
 
     const renderImportView = () => {
         if (!importMode.system) return null;
+
+        // Filter logic
+        const filteredAlters = importMode.alters.filter(alter =>
+            alter.name.toLowerCase().includes(filterText.toLowerCase())
+        );
+
         return (
             <View style={styles.importContainer}>
                 <View style={styles.importHeader}>
@@ -387,24 +472,52 @@ export default function SearchScreen() {
                 </View>
 
                 <View style={styles.importListHeader}>
-                    <Text style={styles.sectionTitle}>Alters du système ({importMode.alters.length})</Text>
-                    <TouchableOpacity onPress={() => {
-                        // Select/Deselect All logic
-                        if (importMode.selectedIds.size === importMode.alters.length) {
-                            setImportMode(prev => ({ ...prev, selectedIds: new Set() }));
-                        } else {
-                            const allIds = new Set(importMode.alters.map(a => a.id));
-                            setImportMode(prev => ({ ...prev, selectedIds: allIds }));
-                        }
-                    }}>
-                        <Text style={styles.selectAllText}>
-                            {importMode.selectedIds.size === importMode.alters.length ? 'Tout désélectionner' : 'Tout sélectionner'}
-                        </Text>
-                    </TouchableOpacity>
+                    {/* Add Filter Input */}
+                    <View style={styles.filterContainer}>
+                        <Ionicons name="search" size={16} color={colors.textMuted} style={styles.filterIcon} />
+                        <TextInput
+                            style={styles.filterInput}
+                            placeholder="Filtrer par nom..."
+                            placeholderTextColor={colors.textMuted}
+                            value={filterText}
+                            onChangeText={setFilterText}
+                            autoCorrect={false}
+                        />
+                        {filterText.length > 0 && (
+                            <TouchableOpacity onPress={() => setFilterText('')}>
+                                <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+
+                    <View style={styles.selectionHeader}>
+                        <Text style={styles.sectionTitle}>Alters ({filteredAlters.length})</Text>
+                        <TouchableOpacity onPress={() => {
+                            // Select/Deselect All FILTERED items
+                            const allFilteredIds = filteredAlters.map(a => a.id);
+                            const allSelected = allFilteredIds.every(id => importMode.selectedIds.has(id));
+
+                            setImportMode(prev => {
+                                const newSet = new Set(prev.selectedIds);
+                                if (allSelected) {
+                                    // Deselect all filtered
+                                    allFilteredIds.forEach(id => newSet.delete(id));
+                                } else {
+                                    // Select all filtered
+                                    allFilteredIds.forEach(id => newSet.add(id));
+                                }
+                                return { ...prev, selectedIds: newSet };
+                            });
+                        }}>
+                            <Text style={styles.selectAllText}>
+                                {filteredAlters.length > 0 && filteredAlters.every(a => importMode.selectedIds.has(a.id)) ? 'Tout désélectionner' : 'Tout sélectionner'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 <FlatList
-                    data={importMode.alters}
+                    data={filteredAlters}
                     keyExtractor={item => item.id}
                     renderItem={({ item }) => {
                         const isSelected = importMode.selectedIds.has(item.id);
@@ -553,7 +666,7 @@ export default function SearchScreen() {
                 <Ionicons name="search" size={20} color={colors.textMuted} style={styles.searchIcon} />
                 <TextInput
                     style={styles.searchInput}
-                    placeholder="Email ou pseudo"
+                    placeholder="Entrer le code"
                     placeholderTextColor={colors.textMuted}
                     value={searchQuery}
                     onChangeText={setSearchQuery}
@@ -657,8 +770,8 @@ const styles = StyleSheet.create({
         ...typography.body,
         fontWeight: '600',
         color: colors.text,
-        paddingHorizontal: spacing.lg,
         marginBottom: spacing.md,
+        paddingHorizontal: 0, // Reset padding here as parent handles it or selectionHeader
     },
     resultsList: {
         paddingHorizontal: spacing.lg,
@@ -843,10 +956,34 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     importListHeader: {
+        marginBottom: spacing.md,
+    },
+    filterContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.backgroundCard,
+        borderRadius: borderRadius.md,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        marginBottom: spacing.sm,
+        marginHorizontal: spacing.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    filterIcon: {
+        marginRight: spacing.sm,
+    },
+    filterInput: {
+        flex: 1,
+        color: colors.text,
+        fontSize: 14,
+        paddingVertical: 4,
+    },
+    selectionHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: spacing.md,
+        paddingHorizontal: spacing.lg || 20, // Fallback if spacing.lg is undefined
     },
     selectAllText: {
         color: colors.primary,

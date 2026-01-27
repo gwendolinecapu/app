@@ -198,13 +198,12 @@ export default function NotificationsScreen() {
             for (const docSnapshot of querySnapshot.docs) {
                 const data = docSnapshot.data();
 
-                // FILTER: Only include if recipient matches current alter
-                // If recipientId is missing, assume it's for everyone or check targetSystemId
-                const isForMe = data.recipientId === currentAlter.id ||
-                    data.recipientId === user.uid ||
-                    (!data.recipientId && data.targetSystemId === user.uid);
+                // FILTER: Include if it belongs to my system (targetSystemId matches user.uid)
+                // Relaxed logic: Show all notifications for the system, regardless of specific alter recipient
+                // This ensures the System Dashboard sees everything.
+                const isForMySystem = data.targetSystemId === user.uid;
 
-                if (isForMe) {
+                if (isForMySystem) {
                     loadedNotifications.push({
                         id: docSnapshot.id,
                         ...data,
@@ -306,20 +305,8 @@ export default function NotificationsScreen() {
             loadedNotifications.length = 0;
             loadedNotifications.push(...verifiedNotifications);
 
-            // Ajouter les demandes d'amis comme notifications (si non dupliquées)
-            enrichedRequests.forEach(req => {
-                loadedNotifications.push({
-                    id: `friend_${req.id}`,
-                    type: 'friend_request',
-                    title: 'Nouvelle demande d\'ami',
-                    subtitle: `De: ${req.senderName}`,
-                    actorName: req.senderName, // Set actorName!
-                    timestamp: req.createdAt?.seconds ? new Date(req.createdAt.seconds * 1000) : new Date(),
-                    isRead: false,
-                    actionData: req,
-                    senderId: req.senderId
-                });
-            });
+            // Removed redundant friend request addition to notifications list
+            // They are already handled via the friendRequests state and merged in FlatList
 
             // Trier par date
             loadedNotifications.sort((a, b) => {
@@ -542,11 +529,11 @@ export default function NotificationsScreen() {
     };
 
     const renderFriendRequest = ({ item }: { item: FriendRequest }) => {
-        const senderName = getAlterName(item.senderId);
+        const senderName = (item as any).senderName || getAlterName(item.senderId);
         const isAccepted = item.status === 'accepted';
 
         return (
-            <View style={[styles.requestCard, isAccepted && { opacity: 0.6, backgroundColor: colors.backgroundLight + '40' }]}>
+            <View style={[styles.requestCard, isAccepted && { backgroundColor: themeColors?.border || 'rgba(0,0,0,0.05)' }]}>
                 <AvatarWithLoading
                     uri={(item as any).senderAvatar}
                     fallbackText={senderName}
@@ -648,7 +635,7 @@ export default function NotificationsScreen() {
                                 </View>
                             </View>
                         ) : /* Special case: Double Avatar for Self-Accepted Friend Request */
-                            (item.type === 'friend_request_accepted' || item.type === 'FRIEND_REQUEST_ACCEPTED') && item.senderId === currentAlter?.id && item.targetAvatar ? (
+                            (item.type === 'friend_request_accepted' || item.type === 'FRIEND_REQUEST_ACCEPTED') && item.senderAlterId === currentAlter?.id && item.targetAvatar ? (
                                 <View style={{ width: 50, height: 50, flexDirection: 'row', alignItems: 'center' }}>
                                     <AvatarWithLoading
                                         uri={item.actorAvatar}
@@ -680,7 +667,7 @@ export default function NotificationsScreen() {
                 <View style={styles.notificationContent}>
                     <Text style={styles.notificationText} numberOfLines={3}>
                         {/* Conditionally render actor name */
-                            !((item.type === 'friend_request_accepted' || item.type === 'FRIEND_REQUEST_ACCEPTED') && item.senderId === currentAlter?.id) && (
+                            !((item.type === 'friend_request_accepted' || item.type === 'FRIEND_REQUEST_ACCEPTED') && item.senderAlterId === currentAlter?.id) && (
                                 <Text style={[styles.username, { color: textColor }]}>{item.actorName || "Un utilisateur"}</Text>
                             )}
 
@@ -692,7 +679,7 @@ export default function NotificationsScreen() {
                             {item.type === 'friend_request' && " vous a envoyé une demande d'ami."}
                             {item.type === 'friend_new' && " est maintenant ami(e) avec vous."}
                             {(item.type === 'friend_request_accepted' || item.type === 'FRIEND_REQUEST_ACCEPTED') && (
-                                item.senderId === currentAlter?.id
+                                item.senderAlterId === currentAlter?.id
                                     ? `Vous avez accepté la demande d'ami${item.targetName ? ` de ${item.targetName}` : ''}.`
                                     : " a accepté votre demande d'ami."
                             )}

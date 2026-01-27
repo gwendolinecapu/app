@@ -9,7 +9,8 @@ import {
     updateDoc,
     deleteDoc,
     serverTimestamp,
-    getDoc
+    getDoc,
+    limit
 } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 
@@ -72,6 +73,7 @@ export const FriendService = {
                 alterId: receiverId
             },
             senderId: auth.currentUser.uid, // Sender System ID for profile linking
+            senderAlterId: senderId, // SPECIFIC ALTER ID
             read: false,
             created_at: serverTimestamp()
         });
@@ -81,141 +83,18 @@ export const FriendService = {
      * Accept a friend request
      */
     acceptRequest: async (requestId: string) => {
-
-        const reqRef = doc(db, 'friend_requests', requestId);
-        const reqSnap = await getDoc(reqRef);
-
-        if (!reqSnap.exists()) throw new Error('Request not found');
-        const data = reqSnap.data() as any;
-
-
-        let { senderId, receiverId, systemId: senderSystemId } = data as { senderId: string, receiverId: string, systemId: string };
-        const currentSystemId = auth.currentUser?.uid;
-
-        if (!currentSystemId) throw new Error('Not authenticated');
-
-        // FALLBACK: If systemId is missing in the request (old requests), fetch from sender alter
-        if (!senderSystemId) {
-            console.warn("Friend request missing systemId, fetching from sender alter...");
-            const senderDoc = await getDoc(doc(db, 'alters', senderId));
-            if (senderDoc.exists()) {
-                const senderData = senderDoc.data();
-                senderSystemId = senderData.userId || senderData.systemId || senderData.system_id;
-            }
-        }
-
-        if (!senderSystemId) {
-            console.error("Critical: Could not resolve senderSystemId. Friendship creation will fail.");
-            throw new Error("Could not resolve sender system ID");
-        }
-
-        // 1. Update request status
-
-        await updateDoc(reqRef, { status: 'accepted' });
-
-        // Mark related notification as read
-        const qNotif = query(
-            collection(db, 'notifications'),
-            where('data.requestId', '==', requestId),
-            where('read', '==', false)
-        );
-        const notifSnap = await getDocs(qNotif);
-        const updatePromises = notifSnap.docs.map(doc => updateDoc(doc.ref, { read: true }));
-        await Promise.all(updatePromises);
-
-
-        // 2. Create bilateral friendship
-        // Doc for Receiver (US) - linked to logic: "My friend X"
-
-        await addDoc(collection(db, 'friendships'), {
-            systemId: currentSystemId, // Owned by us
-            alterId: receiverId, // Me (receiver)
-            friendId: senderId, // Them (sender)
-            friendSystemId: senderSystemId, // Their system
-            createdAt: serverTimestamp()
-        });
-
-
-        // Doc for Sender (THEM) - linked to logic: "Your friend Y"
-        // We create it on their behalf (allowed by relaxed rules)
-
-        await addDoc(collection(db, 'friendships'), {
-            systemId: senderSystemId, // Owned by them
-            alterId: senderId, // Them (sender)
-            friendId: receiverId, // Me (receiver)
-            friendSystemId: currentSystemId, // My system
-            createdAt: serverTimestamp()
-        });
-
-
-        // 3. Notify the SENDER that we accepted
-        let targetSystemId = senderSystemId;
-
-        // Fallback: If systemId is missing in the request (old requests), fetch from sender alter
-        if (!targetSystemId) {
-            console.warn("Friend request missing systemId, fetching from sender alter...");
-            const senderDoc = await getDoc(doc(db, 'alters', senderId));
-            if (senderDoc.exists()) {
-                const senderData = senderDoc.data();
-                targetSystemId = senderData.userId || senderData.systemId || senderData.system_id;
-            }
-        }
-
-        if (targetSystemId) {
-            let senderName = 'Votre ami';
-            // Try to resolve our name for the notification
-            try {
-                const receiverDoc = await getDoc(doc(db, 'alters', receiverId));
-                if (receiverDoc.exists()) {
-                    senderName = receiverDoc.data().name;
-                }
-            } catch { }
-
-            await addDoc(collection(db, 'notifications'), {
-                recipientId: senderId, // The sender of the request
-                targetSystemId: targetSystemId,
-                type: 'friend_request_accepted',
-                title: 'Demande acceptée',
-                message: `${senderName} a accepté votre demande d'ami.`,
-                subtitle: 'Nouveau contact',
-                data: {
-                    alterId: receiverId, // The one who accepted (us)
-                    friendId: senderId,
-                },
-                senderId: currentSystemId, // Us (System ID for profile linking)
-                read: false,
-                created_at: serverTimestamp()
-            });
-        }
-
-        // 4. Notify the RECEIVER (Us) - "Vous êtes maintenant amis"
-        // This puts a confirmation in our own notification list
-        let senderAlterName = 'Cet alter';
         try {
-            const senderDoc = await getDoc(doc(db, 'alters', senderId));
-            if (senderDoc.exists()) {
-                senderAlterName = senderDoc.data().name;
-            }
-        } catch { }
+            const { getFunctions, httpsCallable } = await import('firebase/functions');
+            const functions = getFunctions();
+            const acceptFunc = httpsCallable(functions, 'acceptFriendRequest');
 
-        await addDoc(collection(db, 'notifications'), {
-            recipientId: receiverId, // Us
-            targetSystemId: currentSystemId,
-            type: 'friend_new', // New type or reuse accepted
-            title: 'Nouvel ami',
-            message: `${senderAlterName} et vous êtes maintenant ami(e)s.`,
-            subtitle: 'Connexion établie',
-            data: {
-                alterId: senderId, // The new friend
-                friendId: receiverId,
-            },
-            senderId: senderSystemId, // System ID for profile linking
-            senderAlterId: senderId, // IMPORTANT: Actual alter ID for correct name enrichment
-            actorName: senderAlterName, // Pre-populate to avoid enrichment issues
-            read: false,
-            created_at: serverTimestamp()
-        });
+            await acceptFunc({ requestId });
 
+            // Re-fetch notifications or state handled by caller
+        } catch (error: any) {
+            console.error("Accept Request Error (Cloud Function):", error);
+            throw new Error(error.message || "Impossible d'accepter la demande");
+        }
     },
 
     /**

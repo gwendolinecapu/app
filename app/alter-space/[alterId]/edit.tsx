@@ -45,6 +45,7 @@ export default function EditAlterProfileScreen() {
     const [majorRole, setMajorRole] = useState(''); // Primary role
     const [color, setColor] = useState(freeAlterColors[0]);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+    const [visibility, setVisibility] = useState<'public' | 'friends' | 'private' | 'system'>('private');
 
     // Dates
     const [birthDate, setBirthDate] = useState<Date | null>(null);
@@ -92,6 +93,7 @@ export default function EditAlterProfileScreen() {
                 setBio(data.bio || '');
                 setColor(data.color || freeAlterColors[0]);
                 setAvatarUrl(data.avatar_url || null);
+                setVisibility(data.visibility || 'private');
 
                 if (data.birthDate) {
                     setBirthDate(new Date(data.birthDate));
@@ -383,7 +385,9 @@ export default function EditAlterProfileScreen() {
                 color,
                 avatar_url: finalAvatarUrl || '',
                 custom_fields: customFields,
+                custom_fields: customFields,
                 role_ids: selectedCategoryIds, // System categories
+                visibility,
             };
 
             if (birthDate) {
@@ -613,6 +617,52 @@ export default function EditAlterProfileScreen() {
                             numberOfLines={4}
                         />
                     </View>
+                </View>
+
+                {/* ==================== VISIBILITY SECTION ==================== */}
+                <View style={[styles.sectionHeader, { marginTop: spacing.xl }]}>
+                    <Ionicons name="eye-outline" size={20} color={color} />
+                    <Text style={[styles.sectionHeaderText, { color: textColor }]}>Visibilité</Text>
+                </View>
+
+                <View style={styles.formSection}>
+                    <Text style={[styles.label, { color: textSecondaryColor, marginBottom: spacing.sm }]}>
+                        Qui peut voir cet alter ?
+                    </Text>
+                    <View style={styles.visibilityContainer}>
+                        {(['public', 'friends', 'private'] as const).map((v) => (
+                            <TouchableOpacity
+                                key={v}
+                                style={[
+                                    styles.visibilityOption,
+                                    visibility === v && { backgroundColor: color, borderColor: color },
+                                    { borderColor: borderColor }
+                                ]}
+                                onPress={() => setVisibility(v)}
+                            >
+                                <Ionicons
+                                    name={
+                                        v === 'public' ? 'globe-outline' :
+                                            v === 'friends' ? 'people-outline' :
+                                                'lock-closed-outline'
+                                    }
+                                    size={20}
+                                    color={visibility === v ? 'white' : textSecondaryColor}
+                                />
+                                <Text style={[
+                                    styles.visibilityText,
+                                    { color: visibility === v ? 'white' : textSecondaryColor }
+                                ]}>
+                                    {v === 'public' ? 'Public' : v === 'friends' ? 'Amis' : 'Privé'}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                    <Text style={{ fontSize: 12, color: textSecondaryColor, marginTop: spacing.xs, fontStyle: 'italic' }}>
+                        {visibility === 'public' ? 'Visible par tout le monde dans la recherche.' :
+                            visibility === 'friends' ? 'Visible uniquement par vos amis/followers.' :
+                                'Visible uniquement par vous.'}
+                    </Text>
                 </View>
 
                 {/* ==================== SYSTEM CATEGORIES SECTION ==================== */}
@@ -1502,4 +1552,29 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '500',
     },
+    visibilityContainer: {
+        flexDirection: 'row',
+        backgroundColor: colors.backgroundCard,
+        borderRadius: borderRadius.md,
+        padding: 4,
+        gap: 4,
+        borderWidth: 1,
+        borderColor: colors.border
+    },
+    visibilityOption: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.xs,
+        borderRadius: borderRadius.sm,
+        gap: 6,
+        borderWidth: 1,
+        borderColor: 'transparent'
+    },
+    visibilityText: {
+        fontWeight: '600',
+        fontSize: 13,
+    }
 });

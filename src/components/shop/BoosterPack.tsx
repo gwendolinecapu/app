@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, Text, Dimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -12,16 +12,20 @@ import Animated, {
     withRepeat,
     withSequence,
     Easing,
-    cancelAnimation
+    cancelAnimation,
+    interpolateColor,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { LootBoxTier } from '../../services/MonetizationTypes';
+import { LootBoxTier, Rarity } from '../../services/MonetizationTypes';
+import LootBoxService from '../../services/LootBoxService';
+import PackTearEffect from './PackTearEffect';
 
 interface BoosterPackProps {
     tier: LootBoxTier;
     onOpen: () => void;
+    spoilerRarity?: Rarity;  // Rareté à spoiler via la lueur (style R6)
 }
 
 const { width } = Dimensions.get('window');
@@ -58,10 +62,16 @@ const TIER_CONFIG: Record<LootBoxTier, {
     }
 };
 
-export default React.memo(function BoosterPack({ tier, onOpen }: BoosterPackProps) {
+export default React.memo(function BoosterPack({ tier, onOpen, spoilerRarity }: BoosterPackProps) {
     const config = TIER_CONFIG[tier];
     const [opened, setOpened] = useState(false);
     const [isOpening, setIsOpening] = useState(false);
+
+    // Couleur de lueur basée sur la rareté spoilée (style R6)
+    const spoilerGlowColor = useMemo(() => {
+        if (!spoilerRarity) return config.glowColor;
+        return LootBoxService.getRarityColor(spoilerRarity);
+    }, [spoilerRarity, config.glowColor]);
 
     // Animation values
     const tearProgress = useSharedValue(0);
@@ -75,6 +85,7 @@ export default React.memo(function BoosterPack({ tier, onOpen }: BoosterPackProp
     const shake = useSharedValue(0);
     const glowScale = useSharedValue(1);
     const flashOpacity = useSharedValue(0);
+    const rarityGlowIntensity = useSharedValue(0); // Pour la transition de couleur de lueur
 
     // STYLE R6: Animation idle sobre - seulement float, pas de shimmer constant
     useEffect(() => {
@@ -130,9 +141,15 @@ export default React.memo(function BoosterPack({ tier, onOpen }: BoosterPackProp
                 shimmerX.value = withTiming(PACK_WIDTH * 2, { duration: config.shimmerSpeed });
             }
 
-            // Déclencher glow à partir de 50% (Elite)
-            if (progress > 0.5 && tier === 'elite') {
-                glowScale.value = withTiming(1.08, { duration: 300 });
+            // R6 STYLE: Lueur de rareté qui s'intensifie à partir de 40%
+            if (progress > 0.4 && spoilerRarity) {
+                rarityGlowIntensity.value = interpolate(progress, [0.4, 0.7], [0, 1]);
+            }
+
+            // Déclencher glow à partir de 50% (toutes les raretés spéciales)
+            if (progress > 0.5) {
+                const isSpecialRarity = spoilerRarity && ['epic', 'legendary', 'mythic'].includes(spoilerRarity);
+                glowScale.value = withTiming(isSpecialRarity ? 1.12 : 1.08, { duration: 300 });
             }
         })
         .onEnd(() => {
@@ -199,20 +216,48 @@ export default React.memo(function BoosterPack({ tier, onOpen }: BoosterPackProp
         transform: [{ translateX: shimmerX.value }]
     }));
 
-    const glowStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: glowScale.value }],
-        opacity: tier === 'elite' ? 0.6 : 0.3
-    }));
+    // R6 STYLE: La lueur change de couleur selon la rareté spoilée
+    const glowStyle = useAnimatedStyle(() => {
+        // Interpoler la couleur entre la couleur du tier et celle de la rareté
+        const glowColor = spoilerRarity
+            ? interpolateColor(
+                tearProgress.value,
+                [0, 0.4, 0.6],
+                [config.glowColor, config.glowColor, spoilerGlowColor]
+            )
+            : config.glowColor;
+
+        // Intensité de la lueur basée sur la rareté
+        const baseOpacity = tier === 'elite' ? 0.6 : 0.3;
+        const rarityBoost = spoilerRarity && ['legendary', 'mythic'].includes(spoilerRarity) ? 0.3 : 0;
+        const intensityMultiplier = interpolate(tearProgress.value, [0, 0.5, 0.7], [1, 1.2, 1.5]);
+
+        return {
+            transform: [{ scale: glowScale.value }],
+            opacity: (baseOpacity + rarityBoost) * intensityMultiplier,
+            backgroundColor: glowColor,
+        };
+    });
 
     const flashStyle = useAnimatedStyle(() => ({
-        opacity: flashOpacity.value
+        opacity: flashOpacity.value,
+        // R6 STYLE: Flash de la couleur de rareté à l'ouverture
+        backgroundColor: spoilerRarity ? spoilerGlowColor : 'white',
     }));
 
     return (
         <GestureDetector gesture={pan}>
             <Animated.View style={[styles.container, containerStyle]}>
-                {/* Glow effect behind pack */}
-                <Animated.View style={[styles.glowEffect, { backgroundColor: config.glowColor }, glowStyle]} />
+                {/* Glow effect behind pack - R6 style with rarity color */}
+                <Animated.View style={[styles.glowEffect, glowStyle]} />
+
+                {/* R6 STYLE: Effet de déchirure avec lueur */}
+                <PackTearEffect
+                    tearProgress={tearProgress}
+                    glowColor={spoilerGlowColor}
+                    width={PACK_WIDTH}
+                    height={PACK_HEIGHT}
+                />
 
                 {/* Main Body of the Pack */}
                 <View style={styles.packBody}>
@@ -379,7 +424,7 @@ const styles = StyleSheet.create({
     },
     flashOverlay: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'white',
+        // backgroundColor est maintenant défini dynamiquement via flashStyle (couleur de rareté)
         borderRadius: 12,
         zIndex: 100,
         pointerEvents: 'none',

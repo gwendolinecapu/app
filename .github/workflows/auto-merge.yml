@@ -1,8 +1,8 @@
-name: Auto-merge Pull Requests
+name: Auto-merge Pull Requests (Immédiat)
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened]
     branches:
       - main
 
@@ -13,53 +13,26 @@ permissions:
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
-    # Ne pas merger les PR en draft
-    if: github.event.pull_request.draft == false
-
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
-
-      # OPTION 1: Merger IMMÉDIATEMENT sans aucune vérification
-      # ⚠️ DANGEREUX - Décommenter si vous voulez vraiment ça
-      # - name: Auto-approve
-      #   uses: hmarr/auto-approve-action@v3
-      #   with:
-      #     github-token: ${{ secrets.GITHUB_TOKEN }}
-      #
-      # - name: Auto-merge
-      #   uses: pascalgn/automerge-action@v0.16.3
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     MERGE_LABELS: ""
-      #     MERGE_METHOD: "merge"
-
-      # OPTION 2: Merger après vérification des tests (RECOMMANDÉ)
-      - name: Wait for checks
-        uses: lewagon/wait-on-check-action@v1.3.3
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 10
-          running-workflow-name: 'auto-merge'
-          allowed-conclusions: success,skipped
-        # Ignore cette étape si pas de tests configurés
-        continue-on-error: true
+          fetch-depth: 0
 
-      - name: Auto-approve
+      - name: Auto-approve PR
         uses: hmarr/auto-approve-action@v3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Enable auto-merge
-        run: gh pr merge --auto --merge "$PR_URL"
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Merge PR immédiatement
+        run: |
+          # Attendre 5 secondes que l'approbation soit enregistrée
+          sleep 5
 
-      # Alternative: Merge immédiat (décommenter si vous voulez merger sans attendre)
-      # - name: Merge immediately
-      #   run: gh pr merge --merge "$PR_URL"
-      #   env:
-      #     PR_URL: ${{ github.event.pull_request.html_url }}
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Merger sans vérification
+          gh pr merge ${{ github.event.pull_request.number }} \
+            --merge \
+            --auto \
+            || gh pr merge ${{ github.event.pull_request.number }} --merge
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

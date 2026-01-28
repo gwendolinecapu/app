@@ -11,8 +11,7 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated'
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { PackResult, CardResult } from '../../services/LootBoxService';
-import LootBoxService from '../../services/LootBoxService';
+import LootBoxService, { PackResult, CardResult } from '../../services/LootBoxService';
 
 const { width } = Dimensions.get('window');
 const MINI_CARD_WIDTH = (width - 80) / 4; // 4 cartes par ligne avec marges

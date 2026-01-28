@@ -24,11 +24,10 @@ import {
     CreditTransactionType,
     CREDIT_REWARDS,
     ShopItem,
-} from './MonetizationTypes';
+ DailyReward } from './MonetizationTypes';
 import PremiumService from './PremiumService';
 import { AlterService } from './alters';
 import { DailyRewardService } from './DailyRewardService';
-import { DailyReward } from './MonetizationTypes';
 
 const FIRESTORE_COLLECTION = 'user_monetization';
 const TRANSACTIONS_SUBCOLLECTION = 'credit_transactions';

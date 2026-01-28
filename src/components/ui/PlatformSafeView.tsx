@@ -11,7 +11,7 @@ import { isWeb } from '../../lib/platformDetection';
 interface PlatformSafeViewProps {
   children: React.ReactNode;
   style?: ViewStyle;
-  edges?: Array<'top' | 'right' | 'bottom' | 'left'>;
+  edges?: ('top' | 'right' | 'bottom' | 'left')[];
 }
 
 /**

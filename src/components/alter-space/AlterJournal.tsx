@@ -8,6 +8,9 @@ import { Alter } from '../../types';
 import { colors, spacing, typography, borderRadius } from '../../lib/theme';
 import { ThemeColors } from '../../lib/cosmetics';
 
+// ... (previous imports)
+import { SafetyPlanModal } from './SafetyPlanModal';
+
 interface AlterJournalProps {
     alter: Alter;
     themeColors?: ThemeColors | null;
@@ -133,9 +136,6 @@ const JournalSection: React.FC<JournalSectionProps> = ({
         </View>
     );
 };
-
-// ... (previous imports)
-import { SafetyPlanModal } from './SafetyPlanModal';
 
 export const AlterJournal: React.FC<AlterJournalProps> = ({ alter, themeColors, isPublic, editable }) => {
     // Only show "Role", "MajorRole", etc. in specialized components, rely on filtering for custom journals

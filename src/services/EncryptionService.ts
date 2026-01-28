@@ -1,13 +1,13 @@
 // Lazy import to avoid crash when native module is not available
+import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
+
 let Crypto: typeof import('expo-crypto') | null = null;
 try {
     Crypto = require('expo-crypto');
 } catch (e) {
     console.warn('[EncryptionService] expo-crypto not available, encryption disabled');
 }
-
-import * as SecureStore from 'expo-secure-store';
-import { Platform } from 'react-native';
 
 /**
  * EncryptionService - Service de chiffrement end-to-end pour PluralConnect

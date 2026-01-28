@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, StyleSheet, Text, Modal, TouchableOpacity, Dimensions, SafeAreaView } from 'react-native';
+import { View, StyleSheet, Text, Modal, TouchableOpacity, Dimensions, SafeAreaView , Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import Animated, {
     useSharedValue,
@@ -21,7 +21,6 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { Platform } from 'react-native';
 
 import BoosterPack from './BoosterPack';
 import CardReveal from './CardReveal';

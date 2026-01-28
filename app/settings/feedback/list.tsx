@@ -52,7 +52,14 @@ export default function FeedbackListScreen() {
     }, [user]);
 
     const getStatusConfig = (status: string) => {
-        switch (status) {
+        // Mapping des anciens statuts vers les nouveaux pour rétrocompatibilité
+        let mappedStatus = status;
+        if (status === 'NEW') mappedStatus = 'open';
+        if (status === 'CONFIRMED_BUG' || status === 'PLANNED') mappedStatus = 'in_progress';
+        if (status === 'DONE') mappedStatus = 'resolved';
+        if (status === 'NEED_INFO') mappedStatus = 'need_info';
+
+        switch (mappedStatus) {
             case 'open':
                 return {
                     label: 'Ouvert',

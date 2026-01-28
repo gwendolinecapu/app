@@ -9,7 +9,7 @@ import {
     ScrollView,
     Platform,
     StatusBar,
-} from 'react-native';
+ NativeModules } from 'react-native';
 import Animated, {
     FadeInDown,
     FadeInRight,
@@ -22,7 +22,16 @@ import Animated, {
 } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { NativeModules } from 'react-native';
+
+import { useAuth } from '../../src/contexts/AuthContext';
+import { useMonetization } from '../../src/contexts/MonetizationContext';
+import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { triggerHaptic } from '../../src/lib/haptics';
+import * as Clipboard from 'expo-clipboard';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
+import ConsentService from '../../src/services/ConsentService';
 
 // Guard for Crashlytics
 let crashlytics: any = null;
@@ -45,16 +54,6 @@ if (!crashlytics) {
         recordError: (err: any) => console.log('[Settings] Crashlytics.recordError:', err),
     });
 }
-
-import { useAuth } from '../../src/contexts/AuthContext';
-import { useMonetization } from '../../src/contexts/MonetizationContext';
-import { colors, spacing, borderRadius, typography } from '../../src/lib/theme';
-import { Ionicons } from '@expo/vector-icons';
-import { triggerHaptic } from '../../src/lib/haptics';
-import * as Clipboard from 'expo-clipboard';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LinearGradient } from 'expo-linear-gradient';
-import ConsentService from '../../src/services/ConsentService';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 

@@ -209,6 +209,20 @@
             ]
         },
         {
+            "collectionGroup": "feedbacks",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "userId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
             "collectionGroup": "fronting_history",
             "queryScope": "COLLECTION",
             "fields": [

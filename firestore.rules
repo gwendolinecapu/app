@@ -494,28 +494,49 @@ service cloud.firestore {
 
     // ============================================
     // Feedbacks Collection
+    // ✅ SÉCURISÉ: Support bugs ET features avec votes et commentaires
     // ============================================
     match /feedbacks/{feedbackId} {
-      // Create: Any auth user
+      // CRÉATION: Tout utilisateur authentifié peut créer un feedback
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      
-      // Read: Owner, Admin, or PUBLIC if it's a FEATURE
+
+      // LECTURE: Propriétaire, Admin, ou PUBLIC si c'est une FEATURE
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
         resource.data.type == 'FEATURE' ||
         isAdmin()
       );
-      
-      // Update: Admin (full access) OR User (Voting on Features)
+
+      // UPDATE: Admin (full access) OU User (Votes sur bugs ET features)
+      // ✅ FIX: Permettre votes sur bugs aussi pour montrer la fréquence
       allow update: if isAuthenticated() && (
         isAdmin() ||
-        (
-          resource.data.type == 'FEATURE' &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votes', 'voteCount'])
-        )
+        // User peut voter sur n'importe quel feedback (bug ou feature)
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votes', 'voteCount'])
       );
-      
+
+      // SUPPRESSION: Admin uniquement
       allow delete: if isAdmin();
+
+      // ============================================
+      // Comments Sub-Collection (précisions/réponses)
+      // ============================================
+      match /comments/{commentId} {
+        // LECTURE: Tout utilisateur authentifié peut lire les commentaires
+        allow read: if isAuthenticated();
+
+        // CRÉATION: Tout utilisateur authentifié peut commenter
+        allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+
+        // UPDATE: Interdit (commentaires immutables)
+        allow update: if false;
+
+        // SUPPRESSION: Auteur du commentaire ou admin
+        allow delete: if isAuthenticated() && (
+          resource.data.userId == request.auth.uid ||
+          isAdmin()
+        );
+      }
     }
 
     // ============================================

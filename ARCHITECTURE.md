@@ -75,7 +75,7 @@ plural-connect/
 |-----------|--------|
 | **Social** | `/post/create`, `/discover`, `/conversation`, `/group-chat` |
 | **Stories** | `/story/create`, `/story/view` |
-| **Outils** | `/journal`, `/calendar`, `/tasks`, `/inner-world` |
+| **Outils** | `/journal`, `/calendar`, `/tasks`, `/inner-world`, `/courses` |
 | **Crise** | `/crisis`, `/help` |
 | **Shop** | `/shop`, `/premium` |
 | **Admin** | `/admin` |
@@ -173,7 +173,9 @@ plural-connect/
 | `PremiumService.ts` | Logique Premium |
 | `CreditService.ts` | Système de crédits/streak |
  | `LootBoxService.ts` | Boîtes à récompenses (Coffres évolutifs) |
- | `FlashSaleService.ts` | Ventes flash quotidiennes |
+| `ForgeService.ts` | Forge (Crafting) avec rotation hebdomadaire |
+| `FlashSaleService.ts` | Ventes flash quotidiennes |
+| `DailyRewardService.ts` | Gestion des récompenses et streaks |
 | `AdMediationService.ts` | Gestion publicités AdMob |
 | `ConsentService.ts` | Consentement GDPR |
 | `ShopData.ts` | Données boutique |
@@ -318,6 +320,9 @@ interface Story {
 | `inner_worlds` | InnerWorld (headspace) |
 | `inner_world_shapes` | Éléments du headspace |
 | `help_requests` | Demandes d'aide |
+| `subjects` | Matières scolaires/études |
+| `categories` | Chapitres/Catégories de cours |
+| `course_notes` | Prises de notes de cours |
 
 ---
 

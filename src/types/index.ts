@@ -1,6 +1,8 @@
 // Types pour PluralConnect
 import { PityProgress } from '../services/MonetizationTypes';
 
+export * from '../services/MonetizationTypes';
+
 export interface System {
     id: string;
     email: string;
@@ -119,6 +121,38 @@ export interface Alter {
 
     // Monetization State
     pityProgress?: PityProgress;
+}
+
+// ============================================
+// Courses / Éducation
+// ============================================
+
+export interface Subject {
+    id: string;
+    name: string;
+    color: string;
+    icon: string;
+    systemId: string;
+    createdAt: any; // Firestore Timestamp
+}
+
+export interface CourseCategory {
+    id: string;
+    subjectId: string;
+    name: string;
+    systemId: string;
+    createdAt: any; // Firestore Timestamp
+}
+
+export interface CourseNote {
+    id: string;
+    categoryId: string;
+    subjectId: string;
+    title: string;
+    content: string;
+    systemId: string;
+    createdAt: any; // Firestore Timestamp
+    updatedAt: any; // Firestore Timestamp
 }
 
 export interface VisualDNA {

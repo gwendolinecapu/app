@@ -18,6 +18,11 @@ import {
     Image,
     Alert,
 } from 'react-native';
+import Animated, {
+    FadeInRight,
+    FadeOutLeft,
+    LinearTransition,
+} from 'react-native-reanimated';
 import { collection, query, where, getDocs, orderBy, limit, writeBatch, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../src/lib/firebase';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -33,6 +38,28 @@ import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
 import { AvatarWithLoading } from '../../src/components/ui/AvatarWithLoading';
 
 import { getThemeColors } from '../../src/lib/cosmetics';
+
+// Composant animé pour chaque item de notification
+const AnimatedNotificationWrapper = React.memo(({
+    children,
+    index,
+}: {
+    children: React.ReactNode;
+    index: number;
+}) => {
+    const delay = Math.min(index * 50, 400); // Cap delay at 400ms
+
+    return (
+        <Animated.View
+            entering={FadeInRight.delay(delay).duration(300).springify().damping(15)}
+            exiting={FadeOutLeft.duration(200)}
+            layout={LinearTransition.springify().damping(15)}
+        >
+            {children}
+        </Animated.View>
+    );
+});
+
 
 // Types pour les différentes notifications
 type NotificationType = 'friend_request' | 'follow' | 'like' | 'comment' | 'mention' | 'system' | 'friend_request_accepted' | 'FRIEND_REQUEST_ACCEPTED' | 'friend_new';
@@ -234,15 +261,6 @@ export default function NotificationsScreen() {
                 }
             }
 
-
-            // Helper to detect if a string looks like a Firebase ID
-            const looksLikeFirebaseId = (str: string) => {
-                if (!str) return false;
-                // Firebase IDs are typically 20-28 characters, mix of letters and numbers
-                const isLongAlphanumeric = str.length > 15 && /^[a-zA-Z0-9]+$/.test(str);
-                const hasMixedCase = /[a-z]/.test(str) && /[A-Z]/.test(str);
-                return isLongAlphanumeric && hasMixedCase;
-            };
 
             // Collect all unique sender IDs to verify existence
             const senderIdsToVerify = new Set<string>();
@@ -545,11 +563,6 @@ export default function NotificationsScreen() {
         );
     };
 
-    const getAlterName = (alterId: string): string => {
-        const alter = alters.find(a => a.id === alterId);
-        return alter?.name || alterId;
-    };
-
     const renderFriendRequest = ({ item }: { item: FriendRequest }) => {
         // Find which side is 'Me' and which is 'Friend'
         const isMeSender = item.senderId === currentAlter?.id;
@@ -790,11 +803,19 @@ export default function NotificationsScreen() {
                     ...notifications.filter(n => n.type !== 'friend_request').map(n => ({ ...n, _isFriendRequest: false, sortTime: n.timestamp?.getTime?.() || 0 }))
                 ].sort((a, b) => b.sortTime - a.sortTime)}
                 keyExtractor={(item: any) => item.id}
-                renderItem={({ item }: { item: any }) => {
+                renderItem={({ item, index }: { item: any; index: number }) => {
                     if (item._isFriendRequest) {
-                        return renderFriendRequest({ item });
+                        return (
+                            <AnimatedNotificationWrapper index={index}>
+                                {renderFriendRequest({ item })}
+                            </AnimatedNotificationWrapper>
+                        );
                     } else {
-                        return renderNotification({ item });
+                        return (
+                            <AnimatedNotificationWrapper index={index}>
+                                {renderNotification({ item })}
+                            </AnimatedNotificationWrapper>
+                        );
                     }
                 }}
                 ListEmptyComponent={!hasContent && !loading ? renderEmpty : null}

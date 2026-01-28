@@ -12,7 +12,8 @@ import {
     getDoc,
     limit
 } from 'firebase/firestore';
-import { db, auth } from '../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, auth, functions } from '../lib/firebase';
 
 export type FriendRequestStatus = 'pending' | 'accepted' | 'rejected';
 
@@ -81,6 +82,12 @@ export const FriendService = {
 
     /**
      * Accept a friend request
+     *
+     * NOTE: Using client-side implementation instead of Cloud Function due to Expo Go limitations.
+     * Cloud Function version (commented below) works in Development Builds but not in Expo Go
+     * because Expo Go doesn't properly forward authentication tokens to Cloud Functions.
+     *
+     * For production with Development Build, uncomment the Cloud Function version below.
      */
     acceptRequest: async (requestId: string) => {
         if (!auth.currentUser) {
@@ -89,57 +96,135 @@ export const FriendService = {
         }
 
         try {
-            console.log("[FriendService] Attempting to accept request:", requestId);
+            console.log("[FriendService] Attempting to accept request (client-side):", requestId);
 
-            // 1. Get Authentication Token manually
-            const token = await auth.currentUser.getIdToken(true);
-            if (!token) throw new Error("Impossible de récupérer le jeton d'authentification");
+            // 1. Get the friend request
+            const reqRef = doc(db, 'friend_requests', requestId);
+            const reqDoc = await getDoc(reqRef);
 
-            // 2. Construct URL (Dynamic based on project)
-            const projectId = auth.app.options.projectId || 'app-tdi'; // Fallback to known projectId
-            const region = 'us-central1';
-            const url = `https://${region}-${projectId}.cloudfunctions.net/acceptFriendRequest`;
+            if (!reqDoc.exists()) {
+                throw new Error('Demande introuvable');
+            }
 
-            console.log("[FriendService] Calling Function URL:", url);
+            const reqData = reqDoc.data();
+            const { senderId, receiverId, systemId: senderSystemId } = reqData;
 
-            // 3. Direct Fetch Call (Bypassing SDK issue)
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    data: { requestId } // Callable functions expect data wrapped in 'data'
-                })
+            // 2. Get sender and receiver system IDs
+            let resolvedSenderSystemId = senderSystemId;
+            if (!resolvedSenderSystemId) {
+                const senderDoc = await getDoc(doc(db, 'alters', senderId));
+                if (!senderDoc.exists()) throw new Error("Sender alter not found");
+                resolvedSenderSystemId = senderDoc.data()?.systemId || senderDoc.data()?.userId;
+            }
+
+            const receiverDoc = await getDoc(doc(db, 'alters', receiverId));
+            if (!receiverDoc.exists()) throw new Error("Receiver alter not found");
+            const receiverData = receiverDoc.data();
+            const receiverSystemId = receiverData?.systemId || receiverData?.userId || receiverData?.system_id;
+
+            console.log("[FriendService] Debug - receiverId:", receiverId);
+            console.log("[FriendService] Debug - receiverSystemId:", receiverSystemId);
+            console.log("[FriendService] Debug - auth.currentUser.uid:", auth.currentUser.uid);
+            console.log("[FriendService] Debug - receiverData fields:", {
+                systemId: receiverData?.systemId,
+                userId: receiverData?.userId,
+                system_id: receiverData?.system_id
             });
 
-            // 4. Handle Response
-            const textResult = await response.text();
-            console.log("[FriendService] Raw Response:", textResult.substring(0, 500)); // Log first 500 chars
-
-            let result;
-            try {
-                result = JSON.parse(textResult);
-            } catch (e) {
-                console.error("[FriendService] Failed to parse JSON. Raw response is not JSON.");
-                throw new Error("Erreur serveur (Réponse invalide)");
+            // Verify current user is the receiver
+            if (receiverSystemId !== auth.currentUser.uid) {
+                throw new Error("Vous ne pouvez pas accepter cette demande");
             }
 
-            if (!response.ok) {
-                // Parse Firebase Error format if possible
-                const errorMessage = result?.error?.message || result?.error || "Erreur inconnue";
-                console.error("[FriendService] Function Error:", errorMessage);
-                throw new Error(errorMessage);
-            }
+            // 3. Update request status
+            await updateDoc(reqRef, { status: 'accepted' });
 
-            console.log("[FriendService] Success:", result);
+            // 4. Create bidirectional friendships
+            await addDoc(collection(db, 'friendships'), {
+                systemId: receiverSystemId,
+                alterId: receiverId,
+                friendId: senderId,
+                friendSystemId: resolvedSenderSystemId,
+                createdAt: serverTimestamp()
+            });
+
+            await addDoc(collection(db, 'friendships'), {
+                systemId: resolvedSenderSystemId,
+                alterId: senderId,
+                friendId: receiverId,
+                friendSystemId: receiverSystemId,
+                createdAt: serverTimestamp()
+            });
+
+            // 5. Get names for notifications (reuse receiverData from above, fetch senderData)
+            const senderData = await getDoc(doc(db, 'alters', senderId));
+
+            const senderName = senderData.data()?.name || 'Cet alter';
+            const senderAvatar = senderData.data()?.avatar || senderData.data()?.avatar_url;
+            const receiverName = receiverData?.name || 'Votre ami';
+            const receiverAvatar = receiverData?.avatar || receiverData?.avatar_url;
+
+            // 6. Create notifications
+            // Notification for sender (request was accepted)
+            await addDoc(collection(db, 'notifications'), {
+                recipientId: senderId,
+                targetSystemId: resolvedSenderSystemId,
+                type: 'friend_request_accepted',
+                title: 'Demande acceptée',
+                message: " a accepté votre demande d'ami.",
+                data: { alterId: receiverId, friendId: senderId, requestId },
+                senderId: receiverSystemId,
+                senderAlterId: receiverId,
+                actorName: receiverName,
+                actorAvatar: receiverAvatar,
+                read: false,
+                created_at: serverTimestamp()
+            });
+
+            // Notification for receiver (you and X are now friends)
+            await addDoc(collection(db, 'notifications'), {
+                recipientId: receiverId,
+                targetSystemId: receiverSystemId,
+                type: 'friend_new',
+                title: 'Nouvel ami',
+                message: " est maintenant ami(e) avec vous.",
+                data: { alterId: senderId, friendId: receiverId, requestId },
+                senderId: resolvedSenderSystemId,
+                senderAlterId: senderId,
+                actorName: senderName,
+                actorAvatar: senderAvatar,
+                targetName: receiverName,
+                targetAvatar: receiverAvatar,
+                read: false,
+                created_at: serverTimestamp()
+            });
+
+            console.log("[FriendService] Friend request accepted successfully (client-side)");
+            return { success: true };
 
         } catch (error: any) {
-            console.error("Accept Request Error (Fetch):", error);
+            console.error("Accept Request Error (client-side):", error);
             throw new Error(error.message || "Impossible d'accepter la demande");
         }
     },
+
+    /*
+     * Cloud Function version - Use this in Development Build instead of Expo Go
+     *
+     * acceptRequest: async (requestId: string) => {
+     *     if (!auth.currentUser) {
+     *         throw new Error("Vous devez être connecté pour accepter une demande.");
+     *     }
+     *
+     *     try {
+     *         const acceptFriendRequestFunction = httpsCallable(functions, 'acceptFriendRequest');
+     *         const result = await acceptFriendRequestFunction({ requestId });
+     *         return result.data;
+     *     } catch (error: any) {
+     *         throw new Error(error.message || "Impossible d'accepter la demande");
+     *     }
+     * },
+     */
 
     /**
      * Accept a friend request by alter pair

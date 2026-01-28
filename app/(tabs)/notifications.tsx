@@ -640,6 +640,12 @@ export default function NotificationsScreen() {
 
             if (item.postId) {
                 router.push(`/post/${item.postId}` as any);
+            } else if (item.type === 'friend_new' || item.type === 'friend_request_accepted' || item.type === 'FRIEND_REQUEST_ACCEPTED') {
+                // For friend notifications, navigate to the specific alter's profile
+                const alterId = item.senderAlterId || item.senderId;
+                if (alterId) {
+                    router.push(`/alter-space/${alterId}` as any);
+                }
             } else if (item.senderId) {
                 router.push(`/profile/${item.senderId}` as any);
             }
@@ -668,6 +674,12 @@ export default function NotificationsScreen() {
                                 "Ce profil a été supprimé et n'est plus accessible.",
                                 [{ text: "OK" }]
                             );
+                        } else if (item.type === 'friend_new' || item.type === 'friend_request_accepted' || item.type === 'FRIEND_REQUEST_ACCEPTED') {
+                            // For friend notifications, navigate to the specific alter's profile
+                            const alterId = item.senderAlterId || item.senderId;
+                            if (alterId) {
+                                router.push(`/alter-space/${alterId}` as any);
+                            }
                         } else if (item.senderId) {
                             router.push(`/profile/${item.senderId}` as any);
                         }

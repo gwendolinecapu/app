@@ -169,8 +169,6 @@ export default function NotificationsScreen() {
                 req.senderId === user.uid
             );
 
-            console.log(`[Notifications] Found ${relevantRequests.length} relevant requests for Alter: ${currentAlter.name} (${currentAlter.id})`);
-
             // Deduplicate by ID
             const uniqueRequests = Array.from(new Map(relevantRequests.map(item => [item.id, item])).values());
 
@@ -195,8 +193,7 @@ export default function NotificationsScreen() {
 
                     // Profile doesn't exist (deleted or invalid ID)
                     return { name: 'Utilisateur inconnu', avatar: null, exists: false };
-                } catch (e) {
-                    console.error('[getSenderInfo] Error:', senderId, e);
+                } catch {
                     return { name: 'Utilisateur inconnu', avatar: null, exists: false };
                 }
             };
@@ -291,8 +288,7 @@ export default function NotificationsScreen() {
                 try {
                     const info = await getSenderInfo(sid);
                     senderProfiles.set(sid, info);
-                } catch (e) {
-                    console.error('Error fetching profile for verification:', sid, e);
+                } catch {
                     senderProfiles.set(sid, { name: 'Utilisateur inconnu', avatar: null, exists: false });
                 }
             }));
@@ -408,7 +404,6 @@ export default function NotificationsScreen() {
 
                 // Mark all unread notifications as read
                 const unreadNotifications = notifications.filter(n => !n.isRead);
-                console.log('[Notifications] Unread notifications to mark:', unreadNotifications.length);
 
                 if (unreadNotifications.length > 0) {
                     // Update each notification to read: true
@@ -417,16 +412,13 @@ export default function NotificationsScreen() {
                             try {
                                 // Skip friend requests as they're virtual notifications
                                 if (notif.id.startsWith('friend_')) {
-                                    console.log('[Notifications] Skipping friend request:', notif.id);
                                     return;
                                 }
 
-                                console.log('[Notifications] Marking as read:', notif.id);
                                 const notifRef = doc(db, 'notifications', notif.id);
                                 await updateDoc(notifRef, { read: true });
-                                console.log('[Notifications] Marked successfully:', notif.id);
-                            } catch (e) {
-                                console.error('[Notifications] Error marking notification:', notif.id, e);
+                            } catch {
+                                // Ignore error
                             }
                         })
                     );
@@ -543,8 +535,8 @@ export default function NotificationsScreen() {
                             for (const reqId of friendRequestIds) {
                                 try {
                                     await deleteDoc(doc(db, 'friend_requests', reqId));
-                                } catch (e) {
-                                    console.log('Could not delete friend request:', reqId);
+                                } catch {
+                                    // Ignore error
                                 }
                             }
 

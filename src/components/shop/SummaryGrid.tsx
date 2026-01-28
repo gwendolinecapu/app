@@ -34,7 +34,7 @@ interface StatBadgeProps {
 // Badge de statistique animé
 const StatBadge = ({ icon, label, value, color, delay = 0 }: StatBadgeProps) => (
     <Animated.View
-        entering={FadeInUp.delay(delay).springify()}
+        entering={FadeInUp.delay(delay).duration(350)}
         style={[styles.statBadge, { borderColor: color }]}
     >
         <Ionicons name={icon as any} size={18} color={color} />
@@ -56,7 +56,7 @@ const MiniCard = React.memo(({
 
     return (
         <Animated.View
-            entering={FadeIn.delay(100 + index * 50).springify()}
+            entering={FadeIn.delay(80 + index * 40).duration(300)}
             style={[
                 styles.miniCard,
                 { borderColor: rarityColor },
@@ -138,7 +138,7 @@ export default function SummaryGrid({ allResults, onClose }: SummaryGridProps) {
     return (
         <View style={styles.container}>
             {/* Header */}
-            <Animated.View entering={FadeInDown.springify()} style={styles.header}>
+            <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
                 <Text style={styles.title}>
                     {allResults.length} PACK{allResults.length > 1 ? 'S' : ''} OUVERT{allResults.length > 1 ? 'S' : ''} !
                 </Text>
@@ -173,9 +173,9 @@ export default function SummaryGrid({ allResults, onClose }: SummaryGridProps) {
             </View>
 
             {/* Highlight des raretés spéciales */}
-            {(legendaries.length > 0 || epics.length > 0) && (
+            {(legendaries.length > 0 || epics.length > 0 || shinyItems > 0) && (
                 <Animated.View
-                    entering={FadeIn.delay(300).springify()}
+                    entering={FadeIn.delay(300).duration(350)}
                     style={styles.highlightContainer}
                 >
                     {legendaries.length > 0 && (
@@ -226,7 +226,7 @@ export default function SummaryGrid({ allResults, onClose }: SummaryGridProps) {
             </ScrollView>
 
             {/* Bouton de fermeture */}
-            <Animated.View entering={FadeInUp.delay(400).springify()} style={styles.footer}>
+            <Animated.View entering={FadeInUp.delay(400).duration(350)} style={styles.footer}>
                 <TouchableOpacity style={styles.collectButton} onPress={onClose}>
                     <LinearGradient
                         colors={['#10B981', '#059669']}

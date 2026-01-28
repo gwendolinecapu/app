@@ -1,28 +1,23 @@
 import React, { useEffect, useCallback, useMemo } from 'react';
 import { View, StyleSheet, Dimensions, Pressable } from 'react-native';
-import Svg, { Polygon, Defs, LinearGradient, Stop, RadialGradient, Path, ClipPath, Rect, G } from 'react-native-svg';
+import Svg, { Polygon, Defs, LinearGradient, Stop, Path, ClipPath, G } from 'react-native-svg';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
-    withSpring,
     withTiming,
     withRepeat,
     withSequence,
-    withDelay,
     interpolate,
     Easing,
     cancelAnimation,
     useAnimatedProps,
     SharedValue,
-    runOnJS,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { LootBoxTier, Rarity } from '../../services/MonetizationTypes';
 import LootBoxService from '../../services/LootBoxService';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
-const AnimatedPolygon = Animated.createAnimatedComponent(Polygon);
-const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
 interface R6AlphaPackProps {
     tier: LootBoxTier;
@@ -78,7 +73,7 @@ const getHexagonPoints = (size: number, centerX: number, centerY: number): strin
 };
 
 // Crack Path Generator (Organic Lightning Style)
-const generateCrackPath = (size: number, centerX: number, centerY: number, seed: number) => {
+const generateCrackPath = (size: number, centerX: number, centerY: number) => {
     const points: { x: number, y: number }[] = [];
     const startY = centerY - size * 0.7;
     const endY = centerY + size * 0.7;
@@ -183,7 +178,7 @@ export default function R6AlphaPack({ tier, spoilerRarity, onOpen, size = DEFAUL
     const hasOpened = React.useRef(false);
 
     // Crack paths
-    const crackPath = useMemo(() => generateCrackPath(size, center, center, Math.random()), [size, center]);
+    const crackPath = useMemo(() => generateCrackPath(size, center, center), [size, center]);
 
     // Debris
     const debris = useMemo(() => Array.from({ length: 20 }).map(() => ({
@@ -295,6 +290,15 @@ export default function R6AlphaPack({ tier, spoilerRarity, onOpen, size = DEFAUL
         width: interpolate(holdProgress.value, [0, 1], [2, 10]),
     }));
 
+    const instructionStyle = useAnimatedStyle(() => ({
+        opacity: 1 - holdProgress.value,
+    }));
+
+    const crackGlowProps = useAnimatedProps(() => ({
+        strokeDasharray: [300, 300],
+        strokeDashoffset: (1 - crackProgress.value) * 300,
+    }));
+
     return (
         <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut}>
             <View style={[styles.container, { width: size, height: size }]}>
@@ -344,10 +348,7 @@ export default function R6AlphaPack({ tier, spoilerRarity, onOpen, size = DEFAUL
                                 fill="none"
                                 strokeLinecap="round"
                                 strokeOpacity={0.6}
-                                animatedProps={useAnimatedProps(() => ({
-                                    strokeDasharray: [300, 300],
-                                    strokeDashoffset: (1 - crackProgress.value) * 300
-                                }))}
+                                animatedProps={crackGlowProps}
                             />
                             {/* Crack Line */}
                             <AnimatedPath
@@ -370,7 +371,7 @@ export default function R6AlphaPack({ tier, spoilerRarity, onOpen, size = DEFAUL
                 </Animated.View>
 
                 {/* Instruction Text */}
-                <Animated.Text style={[styles.instruction, useAnimatedStyle(() => ({ opacity: 1 - holdProgress.value }))]}>
+                <Animated.Text style={[styles.instruction, instructionStyle]}>
                     MAINTENIR
                 </Animated.Text>
             </View>

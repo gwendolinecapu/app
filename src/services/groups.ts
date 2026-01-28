@@ -12,7 +12,8 @@ import {
     arrayUnion,
     arrayRemove,
     setDoc,
-    onSnapshot
+    onSnapshot,
+    runTransaction
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Group, Message } from '../types';
@@ -41,17 +42,17 @@ export const GroupService = {
             const groupRef = await addDoc(collection(db, 'groups'), groupData);
             const groupId = groupRef.id;
 
-            // 2. Ajouter le créateur comme admin
-            await addDoc(collection(db, 'group_members'), {
+            // 2. Ajouter le créateur comme admin (ID déterministe)
+            await setDoc(doc(db, 'group_members', `${groupId}_${ownerSystemId}`), {
                 group_id: groupId,
                 system_id: ownerSystemId,
                 role: 'admin',
                 joined_at: Date.now()
             });
 
-            // 3. Ajouter les autres membres (si implémenté)
+            // 3. Ajouter les autres membres
             for (const memberId of initialMembers) {
-                await addDoc(collection(db, 'group_members'), {
+                await setDoc(doc(db, 'group_members', `${groupId}_${memberId}`), {
                     group_id: groupId,
                     system_id: memberId,
                     role: 'member',
@@ -90,34 +91,52 @@ export const GroupService = {
     },
 
     /**
-     * Ajoute un membre à un groupe
+     * Ajoute un membre à un groupe (Transactionnel)
+     * Utilise une ID déterministe pour assurer l'intégrité
      */
     addMember: async (groupId: string, systemId: string) => {
         try {
-            // Vérifier si déjà membre
-            const q = query(
-                collection(db, 'group_members'),
-                where('group_id', '==', groupId),
-                where('system_id', '==', systemId)
-            );
-            const snapshot = await getDocs(q);
-
-            if (!snapshot.empty) return; // Déjà membre
-
-            // Ajouter à la collection group_members
-            await addDoc(collection(db, 'group_members'), {
-                group_id: groupId,
-                system_id: systemId,
-                role: 'member',
-                joined_at: Date.now()
-            });
-
-            // Mettre à jour le tableau dénormalisé members du groupe
             const groupRef = doc(db, 'groups', groupId);
-            await updateDoc(groupRef, {
-                members: arrayUnion(systemId)
-            });
+            const memberId = `${groupId}_${systemId}`;
+            const memberRef = doc(db, 'group_members', memberId);
 
+            await runTransaction(db, async (transaction) => {
+                const groupSnap = await transaction.get(groupRef);
+                const memberSnap = await transaction.get(memberRef);
+
+                if (!groupSnap.exists()) {
+                    throw new Error("Groupe introuvable");
+                }
+
+                const groupData = groupSnap.data();
+                const currentMembers = groupData.members || [];
+
+                // 1. Check consistency
+                const isMemberInArray = currentMembers.includes(systemId);
+                const isMemberDocExists = memberSnap.exists();
+
+                if (isMemberInArray && isMemberDocExists) {
+                    return; // Already synced
+                }
+
+                // 2. Perform updates
+                if (!isMemberDocExists) {
+                    // Create member doc
+                    transaction.set(memberRef, {
+                        group_id: groupId,
+                        system_id: systemId,
+                        role: 'member',
+                        joined_at: Date.now()
+                    });
+                }
+
+                if (!isMemberInArray) {
+                    // Update array
+                    transaction.update(groupRef, {
+                        members: arrayUnion(systemId)
+                    });
+                }
+            });
         } catch (error) {
             console.error("Erreur ajoutant membre:", error);
             throw error;
@@ -125,26 +144,39 @@ export const GroupService = {
     },
 
     /**
-     * Quitter un groupe
+     * Quitter un groupe (Transactionnel)
      */
     leaveGroup: async (groupId: string, systemId: string) => {
         try {
-            // 1. Trouver le document membre
+            // 1. Trouver les documents membres (peut être ID aléatoire ou déterministe)
+            // On fait la query AVANT la transaction car query() n'est pas supporté partout inside
             const q = query(
                 collection(db, 'group_members'),
                 where('group_id', '==', groupId),
                 where('system_id', '==', systemId)
             );
             const snapshot = await getDocs(q);
+            const memberRefs = snapshot.docs.map(d => d.ref);
 
-            // 2. Supprimer de la collection group_members
-            const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
-            await Promise.all(deletePromises);
-
-            // 3. Mettre à jour le tableau dénormalisé members du groupe
             const groupRef = doc(db, 'groups', groupId);
-            await updateDoc(groupRef, {
-                members: arrayRemove(systemId)
+
+            await runTransaction(db, async (transaction) => {
+                const groupSnap = await transaction.get(groupRef);
+                if (!groupSnap.exists()) throw new Error("Groupe introuvable");
+
+                // Delete all found member docs
+                for (const ref of memberRefs) {
+                    transaction.delete(ref);
+                }
+
+                // Fallback: Delete deterministic ID if not found in query (latency consistency)
+                const deterministicRef = doc(db, 'group_members', `${groupId}_${systemId}`);
+                transaction.delete(deterministicRef);
+
+                // Update array
+                transaction.update(groupRef, {
+                    members: arrayRemove(systemId)
+                });
             });
 
         } catch (error) {

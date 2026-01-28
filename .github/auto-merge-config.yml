@@ -1,0 +1,41 @@
+# Configuration optionnelle pour l'auto-merge
+# Décommentez les sections que vous voulez activer
+
+# Auteurs autorisés à déclencher l'auto-merge
+# Si vide ou commenté, tous les auteurs sont acceptés
+# allowed_authors:
+#   - "votre-username"
+#   - "dependabot[bot]"
+#   - "renovate[bot]"
+
+# Labels requis pour déclencher l'auto-merge
+# La PR doit avoir AU MOINS UN de ces labels
+# required_labels:
+#   - "automerge"
+#   - "dependencies"
+#   - "hotfix"
+
+# Labels bloquants (empêchent l'auto-merge)
+blocking_labels:
+  - "do-not-merge"
+  - "wip"
+  - "work-in-progress"
+  - "needs-review"
+
+# Méthode de merge (merge, squash, rebase)
+merge_method: "merge"
+
+# Supprimer la branche après merge
+delete_branch_after_merge: true
+
+# Attendre les reviews (nombre minimum)
+# Si > 0, attend X reviews approbations avant de merger
+# required_approvals: 1
+
+# Vérifications CI obligatoires
+# Liste des checks qui doivent passer avant le merge
+# Si vide, attend tous les checks
+# required_checks:
+#   - "test"
+#   - "lint"
+#   - "build"

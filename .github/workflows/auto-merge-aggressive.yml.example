@@ -1,0 +1,41 @@
+# ⚠️ VERSION ULTRA-AGGRESSIVE - MERGE IMMÉDIAT SANS VÉRIFICATION ⚠️
+# Pour activer : renommer ce fichier en "auto-merge-aggressive.yml"
+# et supprimer "auto-merge.yml"
+
+name: Auto-merge PRs (Mode Agressif)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+permissions:
+  pull-requests: write
+  contents: write
+  checks: write
+
+jobs:
+  instant-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Auto-approve PR
+        uses: hmarr/auto-approve-action@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge immediately (no checks)
+        run: gh pr merge --merge --admin "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete branch after merge
+        run: gh pr close "$PR_URL" || true
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: always()

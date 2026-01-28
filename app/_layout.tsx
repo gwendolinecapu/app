@@ -16,6 +16,7 @@ import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { OfflineBanner } from '../src/components/ui/OfflineBanner';
 import { SuccessAnimation } from '../src/components/ui/SuccessAnimation';
 import { SuccessAnimationProvider } from '../src/contexts/SuccessAnimationContext';
+import { AccessibilityProvider } from '../src/contexts/AccessibilityContext';
 import { colors, typography } from '../src/lib/theme';
 
 // Ignore specific warnings
@@ -34,6 +35,7 @@ export default function RootLayout() {
                         <AuthProvider>
                             <NetworkProvider>
                                 <ThemeProvider>
+                                  <AccessibilityProvider>
                                     <NotificationProvider>
                                         <MonetizationProvider>
                                             <SuccessAnimationProvider>
@@ -84,12 +86,6 @@ export default function RootLayout() {
                                                                     headerShown: false,
                                                                 }}
                                                             />
-                                                            <Stack.Screen name="settings/index" options={{ headerShown: false }} />
-                                                            <Stack.Screen name="settings/import" options={{ headerShown: false, presentation: 'modal' }} />
-                                                            <Stack.Screen name="settings/notifications" options={{ headerShown: false }} />
-                                                            <Stack.Screen name="settings/blocked" options={{ headerShown: false }} />
-                                                            <Stack.Screen name="settings/security" options={{ headerShown: false }} />
-                                                            <Stack.Screen name="settings/edit-system" options={{ headerShown: false }} />
 
                                                             <Stack.Screen name="roles/index" options={{ headerShown: false }} />
                                                             <Stack.Screen name="roles/create" options={{ headerShown: false, presentation: 'modal' }} />
@@ -129,6 +125,7 @@ export default function RootLayout() {
                                             </SuccessAnimationProvider>
                                         </MonetizationProvider>
                                     </NotificationProvider>
+                                  </AccessibilityProvider>
                                 </ThemeProvider>
                             </NetworkProvider>
                         </AuthProvider>

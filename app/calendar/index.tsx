@@ -46,11 +46,11 @@ export default function CalendarScreen() {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
     useEffect(() => {
-        if (user) {
+        if (user?.uid) {
             loadEvents();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
+    }, [user?.uid]);
 
     const loadEvents = async () => {
         if (!user) return;

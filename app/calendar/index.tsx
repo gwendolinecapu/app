@@ -52,7 +52,7 @@ export default function CalendarScreen() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.uid]);
 
-    const loadEvents = async () => {
+    const loadEvents = React.useCallback(async () => {
         if (!user) return;
         setRefreshing(true);
         try {
@@ -86,9 +86,9 @@ export default function CalendarScreen() {
         } finally {
             setRefreshing(false);
         }
-    };
+    }, [user]);
 
-    const renderItem = (item: any, firstItemInDay: boolean) => {
+    const renderItem = React.useCallback((item: any, firstItemInDay: boolean) => {
         const startDate = new Date(item.startTime);
         const endDate = new Date(item.endTime);
         const formatTime = (date: Date) => date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -111,7 +111,7 @@ export default function CalendarScreen() {
                 {item.concernedAlters?.length > 0 && (
                     <View style={styles.altersRow}>
                         {item.concernedAlters.map((alterId: string) => {
-                            const alter = alters.find(a => a.id === alterId);
+                            const alter = alters.find((a: any) => a.id === alterId);
                             if (!alter) return null;
                             return (
                                 <View key={alterId} style={[styles.alterBadge, { backgroundColor: alter.color || '#555' }]} />
@@ -121,15 +121,15 @@ export default function CalendarScreen() {
                 )}
             </TouchableOpacity>
         );
-    };
+    }, [alters]);
 
-    const renderEmptyDate = () => {
+    const renderEmptyDate = React.useCallback(() => {
         return (
             <View style={styles.emptyDate}>
                 <Text style={styles.emptyDateText}>Rien de prévu</Text>
             </View>
         );
-    };
+    }, []);
 
     return (
         <View style={styles.container}>

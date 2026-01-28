@@ -25,9 +25,6 @@ import { FeedbackType } from '../../../src/types/Feedback';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 
-// Config GitHub pour le lien
-const GITHUB_ISSUES_URL = 'https://github.com/gwendolinecapu/app/issues';
-
 export default function CreateFeedbackScreen() {
     const { colors } = useTheme();
     const router = useRouter();
@@ -146,24 +143,26 @@ export default function CreateFeedbackScreen() {
 
                     <Text style={[styles.successMessage, { color: colors.textSecondary }]}>
                         {isBug
-                            ? "Votre signalement de bug a été enregistré et sera automatiquement ajouté à notre tracker GitHub."
+                            ? "Votre signalement a été enregistré. Notre équipe va l'examiner rapidement."
                             : "Votre suggestion a été enregistrée. Elle apparaîtra bientôt sur la roadmap publique !"
                         }
                     </Text>
 
-                    {/* Lien vers GitHub Issues */}
+                    {/* Bouton pour voir ses feedbacks */}
                     <TouchableOpacity
-                        style={styles.githubLink}
-                        onPress={() => Linking.openURL(GITHUB_ISSUES_URL)}
+                        style={styles.viewFeedbackButton}
+                        onPress={() => {
+                            router.back();
+                            router.push('/settings/feedback/list' as any);
+                        }}
                     >
-                        <Ionicons name="logo-github" size={20} color="#FFF" />
-                        <Text style={styles.githubLinkText}>Voir sur GitHub</Text>
-                        <Ionicons name="open-outline" size={16} color="#FFF" />
+                        <Ionicons name="list-outline" size={20} color="#FFF" />
+                        <Text style={styles.viewFeedbackButtonText}>Voir mes signalements</Text>
                     </TouchableOpacity>
 
-                    <Text style={[styles.githubNote, { color: colors.textSecondary }]}>
-                        Une issue GitHub sera créée automatiquement dans quelques secondes.
-                        Vous pourrez suivre son statut et recevoir des notifications.
+                    <Text style={[styles.successNote, { color: colors.textSecondary }]}>
+                        Vous recevrez des notifications quand votre {isBug ? 'bug' : 'suggestion'} sera traité.
+                        Vous pourrez suivre son statut et ajouter des précisions.
                     </Text>
 
                     {/* Bouton retour */}
@@ -429,22 +428,27 @@ const styles = StyleSheet.create({
         lineHeight: 24,
         marginBottom: 24,
     },
-    githubLink: {
+    viewFeedbackButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#24292e',
+        backgroundColor: '#6366F1',
         paddingVertical: 14,
         paddingHorizontal: 24,
         borderRadius: 12,
         gap: 10,
         marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 3,
     },
-    githubLinkText: {
+    viewFeedbackButtonText: {
         color: '#FFF',
         fontSize: 16,
         fontWeight: '600',
     },
-    githubNote: {
+    successNote: {
         fontSize: 13,
         textAlign: 'center',
         lineHeight: 20,

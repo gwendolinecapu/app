@@ -10,18 +10,124 @@ import {
     doc,
     getDoc,
     serverTimestamp,
-    updateDoc,
     arrayUnion,
     arrayRemove,
     QueryDocumentSnapshot,
     deleteDoc,
-    documentId
+    documentId,
+    runTransaction
 } from 'firebase/firestore';
 import { db, storage } from '../lib/firebase';
 import { Post } from '../types';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const POSTS_COLLECTION = 'posts';
+
+// ============================================
+// CACHE LAYER - Optimise _enrichPostsWithAuthors
+// ============================================
+interface CacheEntry<T> {
+    data: T;
+    timestamp: number;
+}
+
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const altersCache = new Map<string, CacheEntry<any>>();
+const systemsCache = new Map<string, CacheEntry<any>>();
+
+/**
+ * Get cached item or return undefined
+ */
+const getCached = <T>(cache: Map<string, CacheEntry<T>>, key: string): T | undefined => {
+    const entry = cache.get(key);
+    if (!entry) return undefined;
+
+    // Check if expired
+    if (Date.now() - entry.timestamp > CACHE_TTL) {
+        cache.delete(key);
+        return undefined;
+    }
+
+    return entry.data;
+};
+
+/**
+ * Set cache entry with timestamp
+ */
+const setCached = <T>(cache: Map<string, CacheEntry<T>>, key: string, data: T): void => {
+    cache.set(key, { data, timestamp: Date.now() });
+};
+
+/**
+ * Clear cache (useful for testing or manual refresh)
+ */
+export const clearPostsCache = () => {
+    altersCache.clear();
+    systemsCache.clear();
+    inFlightRequests.clear();
+};
+
+// ============================================
+// REQUEST DEDUPLICATION - Évite requêtes simultanées identiques
+// ============================================
+const inFlightRequests = new Map<string, Promise<any>>();
+
+/**
+ * Deduplicate identical requests
+ * Returns existing promise if same request is already in flight
+ */
+const dedupe = async <T>(key: string, fn: () => Promise<T>): Promise<T> => {
+    // Check if request already in flight
+    if (inFlightRequests.has(key)) {
+        return inFlightRequests.get(key) as Promise<T>;
+    }
+
+    // Execute request and store promise
+    const promise = fn().finally(() => {
+        // Clean up after completion
+        inFlightRequests.delete(key);
+    });
+
+    inFlightRequests.set(key, promise);
+    return promise;
+};
+
+// ============================================
+// UPLOAD RETRY LOGIC - Backoff exponentiel
+// ============================================
+
+/**
+ * Retry une fonction async avec backoff exponentiel
+ * ✅ FIABILITÉ: Réessaie automatiquement en cas d'erreur réseau
+ */
+const retryWithBackoff = async <T>(
+    fn: () => Promise<T>,
+    maxRetries: number = 3,
+    baseDelay: number = 1000
+): Promise<T> => {
+    let lastError: Error | unknown;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            return await fn();
+        } catch (error) {
+            lastError = error;
+
+            // Don't retry on last attempt
+            if (attempt === maxRetries) {
+                break;
+            }
+
+            // Exponential backoff: 1s, 2s, 4s...
+            const delay = baseDelay * Math.pow(2, attempt);
+            console.warn(`Upload attempt ${attempt + 1} failed, retrying in ${delay}ms...`, error);
+
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+
+    throw lastError;
+};
 
 export const PostService = {
     /**
@@ -78,6 +184,7 @@ export const PostService = {
      */
     /**
      * Enrich posts with author details (alter name/avatar)
+     * ✅ OPTIMISÉ: Cache les alters/systems pour éviter requêtes répétées
      */
     _enrichPostsWithAuthors: async (posts: Post[]): Promise<Post[]> => {
         const alterIds = new Set(posts.map(p => p.alter_id).filter((id): id is string => !!id));
@@ -86,13 +193,39 @@ export const PostService = {
         const altersMap = new Map<string, any>();
         const systemsMap = new Map<string, any>();
 
-        const fetchByIds = async (collectionName: string, ids: Set<string>, map: Map<string, any>) => {
-            const idArray = Array.from(ids).filter(id => !!id);
-            if (idArray.length === 0) return;
+        // ✅ Check cache first
+        const uncachedAlterIds: string[] = [];
+        alterIds.forEach(id => {
+            const cached = getCached(altersCache, id);
+            if (cached) {
+                altersMap.set(id, cached);
+            } else {
+                uncachedAlterIds.push(id);
+            }
+        });
+
+        const uncachedSystemIds: string[] = [];
+        systemIds.forEach(id => {
+            const cached = getCached(systemsCache, id);
+            if (cached) {
+                systemsMap.set(id, cached);
+            } else {
+                uncachedSystemIds.push(id);
+            }
+        });
+
+        // ✅ Fetch only uncached items
+        const fetchByIds = async (
+            collectionName: string,
+            ids: string[],
+            map: Map<string, any>,
+            cache: Map<string, CacheEntry<any>>
+        ) => {
+            if (ids.length === 0) return;
 
             const chunks = [];
-            for (let i = 0; i < idArray.length; i += 10) {
-                chunks.push(idArray.slice(i, i + 10));
+            for (let i = 0; i < ids.length; i += 10) {
+                chunks.push(ids.slice(i, i + 10));
             }
 
             await Promise.all(chunks.map(async (chunk) => {
@@ -100,7 +233,10 @@ export const PostService = {
                     const q = query(collection(db, collectionName), where(documentId(), 'in', chunk));
                     const snapshot = await getDocs(q);
                     snapshot.forEach(doc => {
-                        map.set(doc.id, doc.data());
+                        const data = doc.data();
+                        map.set(doc.id, data);
+                        // ✅ Store in cache
+                        setCached(cache, doc.id, data);
                     });
                 } catch (e) {
                     console.warn(`Failed to fetch ${collectionName} chunk`, e);
@@ -108,9 +244,10 @@ export const PostService = {
             }));
         };
 
+        // ✅ Fetch in parallel, only uncached items
         await Promise.all([
-            fetchByIds('alters', alterIds, altersMap),
-            fetchByIds('systems', systemIds, systemsMap)
+            fetchByIds('alters', uncachedAlterIds, altersMap, altersCache),
+            fetchByIds('systems', uncachedSystemIds, systemsMap, systemsCache)
         ]);
 
         return posts.map(post => {
@@ -458,9 +595,10 @@ export const PostService = {
 
     /**
      * Upload an image for a post
+     * ✅ FIABILITÉ: Retry automatique avec backoff exponentiel
      */
     uploadImage: async (uri: string, systemId: string): Promise<string> => {
-        try {
+        return retryWithBackoff(async () => {
             const response = await fetch(uri);
             const blob = await response.blob();
             const filename = `posts/${systemId}/${Date.now()}.jpg`;
@@ -468,17 +606,15 @@ export const PostService = {
 
             await uploadBytes(storageRef, blob);
             return await getDownloadURL(storageRef);
-        } catch (error) {
-            console.error('Error uploading image:', error);
-            throw error;
-        }
+        }, 3, 1000); // 3 retries, 1s base delay
     },
 
     /**
      * Upload an audio file for a post (voice note)
+     * ✅ FIABILITÉ: Retry automatique avec backoff exponentiel
      */
     uploadAudio: async (uri: string, systemId: string): Promise<string> => {
-        try {
+        return retryWithBackoff(async () => {
             const response = await fetch(uri);
             const blob = await response.blob();
             // Extension depends on platform/recording settings, usually m4a or caf on iOS, 3gp/mp4 on Android
@@ -490,17 +626,15 @@ export const PostService = {
                 contentType: 'audio/m4a', // Best guess for high quality preset
             });
             return await getDownloadURL(storageRef);
-        } catch (error) {
-            console.error('Error uploading audio:', error);
-            throw error;
-        }
+        }, 3, 1000); // 3 retries, 1s base delay
     },
 
     /**
      * Upload a video for a post
+     * ✅ FIABILITÉ: Retry automatique avec backoff exponentiel
      */
     uploadVideo: async (uri: string, systemId: string): Promise<string> => {
-        try {
+        return retryWithBackoff(async () => {
             const response = await fetch(uri);
             const blob = await response.blob();
             const filename = `posts/${systemId}/video/${Date.now()}.mp4`;
@@ -510,101 +644,104 @@ export const PostService = {
                 contentType: 'video/mp4',
             });
             return await getDownloadURL(storageRef);
-        } catch (error) {
-            console.error('Error uploading video:', error);
-            throw error;
-        }
+        }, 3, 1500); // 3 retries, 1.5s base delay (videos are larger)
     },
 
     /**
      * Like or unlike a post
+     * ✅ Uses Firestore transaction to prevent race conditions
      */
     toggleLike: async (postId: string, userId: string, alterId?: string) => {
         try {
             const postRef = doc(db, POSTS_COLLECTION, postId);
-            const postSnap = await getDoc(postRef);
 
-            if (postSnap.exists()) {
+            // ✅ TRANSACTION: Ensures atomic read-modify-write
+            // Prevents race conditions when multiple users like simultaneously
+            const result = await runTransaction(db, async (transaction) => {
+                const postSnap = await transaction.get(postRef);
+
+                if (!postSnap.exists()) {
+                    throw new Error('Post not found');
+                }
+
                 const post = postSnap.data() as Post;
                 const likes = post.likes || [];
                 const actorId = alterId || userId;
                 const hasLiked = likes.includes(actorId);
 
                 if (hasLiked) {
-                    await updateDoc(postRef, {
+                    transaction.update(postRef, {
                         likes: arrayRemove(actorId)
                     });
                 } else {
-                    await updateDoc(postRef, {
+                    transaction.update(postRef, {
                         likes: arrayUnion(actorId)
                     });
+                }
 
-                    // Create notification if the liker is not the post owner
-                    // We allow same-system notifications if they are between different alters
-                    const recipientId = post.alter_id || post.system_id;
-                    const senderIdentifier = alterId || userId;
+                // Return data for notification creation (outside transaction)
+                return { post, hasLiked, actorId };
+            });
 
-                    if (recipientId !== senderIdentifier) {
+            // Create notification AFTER transaction (not critical path)
+            // If notification fails, the like is still recorded
+            if (!result.hasLiked) {
+                const { post, actorId } = result;
+                const recipientId = post.alter_id || post.system_id;
+                const senderIdentifier = actorId;
+
+                if (recipientId !== senderIdentifier) {
+                    try {
+                        // Fetch sender details for notification
+                        let senderName = 'Quelqu\'un';
                         try {
-                            // Fetch sender details to detail the notification
-                            let senderName = 'Quelqu\'un';
-                            try {
-                                const systemDoc = await getDoc(doc(db, 'systems', userId));
-                                if (systemDoc.exists()) {
-                                    const systemData = systemDoc.data();
-                                    senderName = systemData.username || 'Utilisateur'; // Fallback
-                                }
-
-                                if (alterId) {
-                                    const alterDoc = await getDoc(doc(db, 'alters', alterId));
-                                    if (alterDoc.exists()) {
-                                        const alterData = alterDoc.data();
-                                        // Format: "AlterName"
-                                        senderName = alterData.name;
-                                    }
-                                }
-                            } catch (fetchError) {
-                                console.warn('Error fetching sender details for notification:', fetchError);
+                            const systemDoc = await getDoc(doc(db, 'systems', userId));
+                            if (systemDoc.exists()) {
+                                const systemData = systemDoc.data();
+                                senderName = systemData.username || 'Utilisateur';
                             }
 
-                            // [DEBUG] Trace notification creation
-
-                            const notificationRef = collection(db, 'notifications'); // Re-introduced definition
-
-                            const notificationPayload = {
-                                type: 'like',
-                                recipientId: post.alter_id || post.system_id, // Target
-                                targetSystemId: post.system_id,
-                                senderId: userId,
-                                senderAlterId: alterId || null,
-                                actorName: senderName,
-                                postId: postId,
-                                read: false,
-                                created_at: serverTimestamp(),
-                                title: "Nouveau J'aime",
-                                body: `${senderName} a aimé votre publication`,
-                                subtitle: post.content || (post.media_url ? "Photo" : "Publication"),
-                                mediaUrl: post.media_url || null,
-                            };
-
-                            await addDoc(notificationRef, notificationPayload);
-
-
-                            // Send Push Notification
-                            // We need to import PushNotificationService at top of file, or use require/dynamic import to avoid circular dep if any
-                            // For now assuming we can import it or using a decoupled way. 
-                            // Ideally, move this logic to a Cloud Function.
-                            // But since we are doing it client side as requested:
-                            const { default: PushService } = await import('./PushNotificationService');
-                            await PushService.sendPostReactionNotification(
-                                post.system_id,
-                                senderName,
-                                '❤️'
-                            );
-                        } catch (notifError) {
-                            console.error('Error creating notification:', notifError);
-                            // Don't fail the like action if notification fails
+                            if (alterId) {
+                                const alterDoc = await getDoc(doc(db, 'alters', alterId));
+                                if (alterDoc.exists()) {
+                                    const alterData = alterDoc.data();
+                                    senderName = alterData.name;
+                                }
+                            }
+                        } catch (fetchError) {
+                            console.warn('Error fetching sender details for notification:', fetchError);
                         }
+
+                        const notificationRef = collection(db, 'notifications');
+
+                        const notificationPayload = {
+                            type: 'like',
+                            recipientId: post.alter_id || post.system_id,
+                            targetSystemId: post.system_id,
+                            senderId: userId,
+                            senderAlterId: alterId || null,
+                            actorName: senderName,
+                            postId: postId,
+                            read: false,
+                            created_at: serverTimestamp(),
+                            title: "Nouveau J'aime",
+                            body: `${senderName} a aimé votre publication`,
+                            subtitle: post.content || (post.media_url ? "Photo" : "Publication"),
+                            mediaUrl: post.media_url || null,
+                        };
+
+                        await addDoc(notificationRef, notificationPayload);
+
+                        // Send Push Notification
+                        const { default: PushService } = await import('./PushNotificationService');
+                        await PushService.sendPostReactionNotification(
+                            post.system_id,
+                            senderName,
+                            '❤️'
+                        );
+                    } catch (notifError) {
+                        console.error('Error creating notification:', notifError);
+                        // Don't fail the like action if notification fails
                     }
                 }
             }

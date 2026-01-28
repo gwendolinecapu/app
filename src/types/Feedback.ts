@@ -8,7 +8,12 @@ export type FeedbackStatus =
     | 'DONE'            // Fixed or Implemented
     | 'NOT_A_BUG'       // Working as intended or user error
     | 'DUPLICATE'       // Already known
-    | 'REJECTED';       // Won't do
+    | 'REJECTED'        // Won't do
+    // Alias pour l'UI (mappés aux valeurs ci-dessus)
+    | 'open'            // = NEW
+    | 'in_progress'     // = PLANNED ou CONFIRMED_BUG
+    | 'resolved'        // = DONE
+    | 'need_info';      // = NEED_INFO
 
 export interface Feedback {
     id: string;
@@ -45,4 +50,22 @@ export interface Feedback {
     // Voting System
     votes?: string[]; // Array of userIds who voted
     voteCount?: number; // Denormalized count for sorting
+
+    // GitHub Integration
+    githubIssueUrl?: string;
+    githubIssueNumber?: number;
+    githubCreatedAt?: any; // Firestore Timestamp
+}
+
+/**
+ * Comment/précision ajoutée à un feedback
+ */
+export interface FeedbackComment {
+    id?: string;
+    feedbackId?: string;
+    userId: string;
+    userEmail?: string;
+    text: string;
+    createdAt: string;
+    isAdmin?: boolean; // Pour distinguer les réponses de l'équipe
 }

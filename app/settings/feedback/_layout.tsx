@@ -32,6 +32,20 @@ export default function FeedbackLayout() {
                     title: "Envoyer un retour",
                 }}
             />
+            <Stack.Screen
+                name="list"
+                options={{
+                    headerShown: true,
+                    title: "Mes signalements",
+                }}
+            />
+            <Stack.Screen
+                name="[feedbackId]"
+                options={{
+                    headerShown: true,
+                    title: "Détail",
+                }}
+            />
         </Stack>
     );
 }

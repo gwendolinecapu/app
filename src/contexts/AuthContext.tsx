@@ -82,6 +82,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         let unsubscribeAlters: Unsubscribe | null = null;
 
         const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+            // CRITICAL: Cleanup previous listeners BEFORE creating new ones
+            // This prevents memory leaks if auth state changes rapidly
+            if (unsubscribeSystem) {
+                unsubscribeSystem();
+                unsubscribeSystem = null;
+            }
+            if (unsubscribeAlters) {
+                unsubscribeAlters();
+                unsubscribeAlters = null;
+            }
 
             // Set User ID for Analytics
             const AnalyticsService = require('../services/AnalyticsService').default;

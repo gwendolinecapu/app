@@ -13,10 +13,12 @@ import {
     startAfter,
     DocumentSnapshot,
     runTransaction,
-    QueryConstraint
+    QueryConstraint,
+    arrayUnion,
+    arrayRemove
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Feedback, FeedbackStatus, FeedbackType } from '../types/Feedback';
+import { Feedback, FeedbackStatus, FeedbackType, FeedbackComment } from '../types/Feedback';
 import CreditService from './CreditService';
 
 const COLLECTION = 'feedbacks';
@@ -181,6 +183,79 @@ class FeedbackService {
                 voteCount: newCount
             });
         });
+    }
+
+    /**
+     * Alias pour getFeedbackById (cohérence API)
+     */
+    async getFeedback(id: string): Promise<Feedback | null> {
+        return this.getFeedbackById(id);
+    }
+
+    /**
+     * Toggle vote on ANY feedback (bug or feature)
+     * Permet aux utilisateurs de voter pour montrer la fréquence d'un bug
+     */
+    async toggleVote(feedbackId: string, userId: string): Promise<void> {
+        const ref = doc(db, COLLECTION, feedbackId);
+
+        await runTransaction(db, async (transaction) => {
+            const docSnap = await transaction.get(ref);
+            if (!docSnap.exists()) throw new Error("Feedback not found");
+
+            const data = docSnap.data() as Feedback;
+            const votes = data.votes || [];
+            const hasVoted = votes.includes(userId);
+
+            let newVotes;
+            let newCount;
+
+            if (hasVoted) {
+                newVotes = votes.filter(id => id !== userId);
+                newCount = Math.max(0, (data.voteCount || 0) - 1);
+            } else {
+                newVotes = [...votes, userId];
+                newCount = (data.voteCount || 0) + 1;
+            }
+
+            transaction.update(ref, {
+                votes: newVotes,
+                voteCount: newCount
+            });
+        });
+    }
+
+    /**
+     * Add a comment/précision to a feedback
+     */
+    async addComment(feedbackId: string, comment: Omit<FeedbackComment, 'id' | 'feedbackId'>): Promise<string> {
+        const commentData: Omit<FeedbackComment, 'id'> = {
+            ...comment,
+            feedbackId
+        };
+
+        const docRef = await addDoc(
+            collection(db, COLLECTION, feedbackId, 'comments'),
+            commentData
+        );
+
+        return docRef.id;
+    }
+
+    /**
+     * Get comments for a feedback
+     */
+    async getFeedbackComments(feedbackId: string): Promise<FeedbackComment[]> {
+        const q = query(
+            collection(db, COLLECTION, feedbackId, 'comments'),
+            orderBy('createdAt', 'asc')
+        );
+
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        } as FeedbackComment));
     }
 }
 

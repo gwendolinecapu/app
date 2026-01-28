@@ -105,10 +105,22 @@ export default function FeedbackMenuScreen() {
                     ))}
                 </View>
 
+                {/* Bouton "Voir mes signalements" */}
+                <TouchableOpacity
+                    style={[styles.myFeedbacksButton, { backgroundColor: colors.surface }]}
+                    onPress={() => router.push('/settings/feedback/list' as any)}
+                >
+                    <Ionicons name="list-outline" size={24} color={colors.primary} />
+                    <Text style={[styles.myFeedbacksButtonText, { color: colors.text }]}>
+                        Voir mes signalements
+                    </Text>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+
                 <View style={[styles.infoBox, { backgroundColor: 'rgba(100, 100, 100, 0.1)' }]}>
                     <Ionicons name="information-circle-outline" size={24} color={colors.primary} />
                     <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                        Nous lisons tous les retours, mais nous ne pouvons pas répondre individuellement à chacun. Merci de votre compréhension.
+                        Suivez le statut de vos signalements, votez pour montrer leur importance et ajoutez des précisions.
                     </Text>
                 </View>
             </ScrollView>
@@ -202,6 +214,26 @@ const styles = StyleSheet.create({
     cardDescription: {
         fontSize: 14,
         lineHeight: 20,
+    },
+    myFeedbacksButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderRadius: 16,
+        marginBottom: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
+    },
+    myFeedbacksButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        flex: 1,
+        marginLeft: 12,
     },
     infoBox: {
         flexDirection: 'row',

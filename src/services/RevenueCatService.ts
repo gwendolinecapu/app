@@ -35,7 +35,8 @@ const API_KEYS = {
 };
 
 // TODO: Verify this Entitlement ID matches the one created in RevenueCat dashboard
-const ENTITLEMENT_ID = 'Plural Connect Pro';
+// We support multiple likely IDs to be robust against configuration mismatches (Display Name vs ID)
+const ENTITLEMENT_IDS = ['Plural Connect Pro', 'pro', 'premium'];
 
 class RevenueCatService {
     private static instance: RevenueCatService;
@@ -280,7 +281,22 @@ class RevenueCatService {
         if (!this.configured || !Purchases) return false;
         try {
             const info = customerInfo || await Purchases.getCustomerInfo();
-            return typeof info.entitlements.active[ENTITLEMENT_ID] !== "undefined";
+
+            // Check against all known entitlement IDs
+            const hasEntitlement = ENTITLEMENT_IDS.some(id =>
+                typeof info.entitlements.active[id] !== "undefined"
+            );
+
+            // Debug/Dev help: Log if we have active entitlements but none matched
+            if (!hasEntitlement && info.entitlements.active && Object.keys(info.entitlements.active).length > 0) {
+                console.warn(
+                    '[RevenueCat] User has active entitlements but none matched configured IDs:',
+                    Object.keys(info.entitlements.active),
+                    'Expected one of:', ENTITLEMENT_IDS
+                );
+            }
+
+            return hasEntitlement;
         } catch (e) {
             console.warn('[RevenueCat] Error checking entitlement:', e);
             return false;

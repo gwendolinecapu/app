@@ -433,12 +433,14 @@ export const PostService = {
 
             const promises = [];
 
-            // 1. Query by Alter IDs
+            // 1. Query by Alter IDs (only PUBLIC posts to comply with Firestore rules)
+            // ✅ FIX: Added visibility filter to prevent permission errors
             if (friendIds.length > 0) {
                 const targetAlterIds = friendIds.slice(0, 30);
                 let q1 = query(
                     collection(db, POSTS_COLLECTION),
                     where('alter_id', 'in', targetAlterIds),
+                    where('visibility', '==', 'public'),
                     orderBy('created_at', 'desc'),
                     limit(pageSize)
                 );
@@ -447,12 +449,14 @@ export const PostService = {
                 promises.push(getDocs(q1).then(snap => ({ source: 'alters', docs: snap.docs })));
             }
 
-            // 2. Query by System IDs
+            // 2. Query by System IDs (only PUBLIC posts to comply with Firestore rules)
+            // ✅ FIX: Added visibility filter to prevent permission errors
             if (friendSystemIds.length > 0) {
                 const targetSystemIds = friendSystemIds.slice(0, 30);
                 let q2 = query(
                     collection(db, POSTS_COLLECTION),
                     where('system_id', 'in', targetSystemIds),
+                    where('visibility', '==', 'public'),
                     orderBy('created_at', 'desc'),
                     limit(pageSize)
                 );

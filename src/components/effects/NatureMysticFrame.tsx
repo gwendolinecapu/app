@@ -6,7 +6,6 @@ import Animated, {
     withRepeat,
     withTiming,
     withDelay,
-    withSequence,
     Easing,
     cancelAnimation,
     interpolate,
@@ -20,7 +19,7 @@ const SPORE_COLORS = ['#d8f3dc', '#b7e4c7', '#ffffb7', '#fff']; // Pale Green/Go
 
 // ==================== SPORE COMPONENT ====================
 // Tiny floating particles representing magic spores or fireflies
-const Spore = React.memo(({ index, size }: { index: number; size: number }) => {
+const Spore = React.memo(function Spore({ index, size }: { index: number; size: number }) {
     const progress = useSharedValue(0);
 
     const config = useMemo(() => {
@@ -49,7 +48,7 @@ const Spore = React.memo(({ index, size }: { index: number; size: number }) => {
             false
         ));
         return () => cancelAnimation(progress);
-    }, [config]);
+    }, [config, progress]);
 
     const style = useAnimatedStyle(() => {
         const translateX = interpolate(progress.value, [0, 1], [config.startX, config.startX + config.driftX]);
@@ -86,7 +85,7 @@ export const NatureMysticFrame = ({ size = 88, children }: { size?: number, chil
     const imageSize = size * 1.55;
 
     return (
-        <View style={{ width: imageSize, height: imageSize, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={[styles.container, { width: imageSize, height: imageSize }]}>
 
             {/* 1. LAYER: GLOW (Background) */}
             <View style={[styles.glow, { width: size, height: size, borderRadius: size / 2 }]} />
@@ -99,24 +98,19 @@ export const NatureMysticFrame = ({ size = 88, children }: { size?: number, chil
             */}
 
             {/* 3. AVATAR (Content) */}
-            <View style={{ position: 'absolute', width: size, height: size, borderRadius: size / 2, overflow: 'hidden', zIndex: 10 }}>
+            <View style={[styles.avatarContainer, { width: size, height: size, borderRadius: size / 2 }]}>
                 {children}
             </View>
 
             {/* 4. FRAME IMAGE (Foreground) */}
             <Image
                 source={require('../../../assets/frames/frame_nature_mystic.png')}
-                style={{
-                    width: imageSize,
-                    height: imageSize,
-                    position: 'absolute',
-                    zIndex: 20
-                }}
+                style={[styles.frameImage, { width: imageSize, height: imageSize }]}
                 resizeMode="contain"
             />
 
             {/* 5. SPORES (Foreground Overlay) */}
-            <View style={[StyleSheet.absoluteFill, { zIndex: 30 }]} pointerEvents="none">
+            <View style={styles.sporesContainer} pointerEvents="none">
                 {Array.from({ length: NUM_SPORES }).map((_, i) => (
                     <Spore key={i} index={i} size={imageSize} />
                 ))}
@@ -127,27 +121,22 @@ export const NatureMysticFrame = ({ size = 88, children }: { size?: number, chil
 
 // ==================== MINI COMPONENT ====================
 
-export const NatureMysticFrameMini = React.memo(() => {
+export const NatureMysticFrameMini = React.memo(function NatureMysticFrameMini() {
     const size = 50;
     const imageSize = size * 1.55;
 
     return (
-        <View style={{ width: imageSize, height: imageSize, justifyContent: 'center', alignItems: 'center' }}>
-            <View style={[styles.glow, { width: 30, height: 30, borderRadius: 15 }]} />
+        <View style={[styles.container, { width: imageSize, height: imageSize }]}>
+            <View style={[styles.glow, styles.miniGlow]} />
             {/* Mini Avatar Placeholder handled by parent usually, but here we just show frame? 
                  No, Mini usually just shows the frame effect.
              */}
             <Image
                 source={require('../../../assets/frames/frame_nature_mystic.png')}
-                style={{
-                    width: imageSize,
-                    height: imageSize,
-                    position: 'absolute',
-                    zIndex: 20
-                }}
+                style={[styles.frameImage, { width: imageSize, height: imageSize }]}
                 resizeMode="contain"
             />
-            <View style={[StyleSheet.absoluteFill, { zIndex: 30 }]} pointerEvents="none">
+            <View style={styles.sporesContainer} pointerEvents="none">
                 {Array.from({ length: 8 }).map((_, i) => (
                     <Spore key={i} index={i} size={imageSize} />
                 ))}
@@ -157,6 +146,10 @@ export const NatureMysticFrameMini = React.memo(() => {
 });
 
 const styles = StyleSheet.create({
+    container: {
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
     glow: {
         position: 'absolute',
         backgroundColor: '#2d6a4f',
@@ -165,5 +158,23 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.5,
         shadowRadius: 15,
+    },
+    miniGlow: {
+        width: 30,
+        height: 30,
+        borderRadius: 15
+    },
+    avatarContainer: {
+        position: 'absolute',
+        overflow: 'hidden',
+        zIndex: 10
+    },
+    frameImage: {
+        position: 'absolute',
+        zIndex: 20
+    },
+    sporesContainer: {
+        ...StyleSheet.absoluteFillObject,
+        zIndex: 30
     }
 });

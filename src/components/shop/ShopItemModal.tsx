@@ -24,6 +24,7 @@ import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../lib/theme';
 import { ShopItem } from '../../services/MonetizationTypes';
+import { ItemPreview } from './ItemPreview';
 
 const { width, height } = Dimensions.get('window');
 
@@ -99,72 +100,9 @@ export function ShopItemModal({
         }
     };
 
-    // Render preview based on item type
+    // Render preview using centralized ItemPreview component
     const renderPreview = () => {
-        if (item.type === 'theme') {
-            return (
-                <View style={[styles.themePreview, { backgroundColor: item.preview }]}>
-                    {/* Mock app interface */}
-                    <View style={styles.mockHeader}>
-                        <View style={styles.mockHeaderBar} />
-                    </View>
-                    <View style={styles.mockContent}>
-                        <View style={[styles.mockCard, { backgroundColor: 'rgba(255,255,255,0.15)' }]} />
-                        <View style={[styles.mockCard, { backgroundColor: 'rgba(255,255,255,0.1)', width: '70%' }]} />
-                        <View style={[styles.mockCard, { backgroundColor: 'rgba(255,255,255,0.08)', width: '50%' }]} />
-                    </View>
-                    <View style={styles.mockNavbar}>
-                        <View style={styles.mockNavItem} />
-                        <View style={[styles.mockNavItem, styles.mockNavItemActive]} />
-                        <View style={styles.mockNavItem} />
-                    </View>
-                </View>
-            );
-        }
-
-        if (item.type === 'frame') {
-            return (
-                <View style={styles.framePreview}>
-                    <View style={[
-                        styles.frameCircle,
-                        item.id.includes('neon') && styles.frameNeon,
-                        item.id.includes('rainbow') && styles.frameRainbow,
-                        item.id.includes('double') && styles.frameDouble,
-                        item.id.includes('square') && { borderRadius: 16 },
-                    ]}>
-                        <Ionicons name="person" size={48} color={colors.textSecondary} />
-                    </View>
-                </View>
-            );
-        }
-
-        if (item.type === 'bubble') {
-            return (
-                <View style={styles.bubblePreviewContainer}>
-                    <View style={[
-                        styles.bubblePreview,
-                        item.id.includes('square') && { borderRadius: 4 },
-                        item.id.includes('cloud') && { borderRadius: 24, borderBottomLeftRadius: 4 },
-                        item.id.includes('pixel') && { borderRadius: 0 },
-                    ]}>
-                        <Text style={styles.bubbleText}>Salut ! Comment ça va ?</Text>
-                    </View>
-                    <View style={[
-                        styles.bubblePreviewAlt,
-                        item.id.includes('square') && { borderRadius: 4 },
-                        item.id.includes('cloud') && { borderRadius: 24, borderBottomRightRadius: 4 },
-                    ]}>
-                        <Text style={styles.bubbleText}>Très bien, merci ! 😊</Text>
-                    </View>
-                </View>
-            );
-        }
-
-        return (
-            <View style={styles.genericPreview}>
-                <Ionicons name="gift-outline" size={64} color={colors.primary} />
-            </View>
-        );
+        return <ItemPreview item={item} size="large" />;
     };
 
     return (

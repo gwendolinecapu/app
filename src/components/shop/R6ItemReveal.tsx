@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { ShopItem } from '../../services/MonetizationTypes';
 import LootBoxService from '../../services/LootBoxService';
+import { ItemPreview } from './ItemPreview';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -397,21 +398,9 @@ export default function R6ItemReveal({ item, isNew, isShiny, dustValue, onComple
                     {/* Accent line */}
                     <View style={[styles.accentLine, { backgroundColor: rarityColor }]} />
 
-                    {/* Preview de l'item */}
+                    {/* Preview de l'item - Utilise ItemPreview pour afficher la vraie preview */}
                     <View style={styles.previewContainer}>
-                        {item.preview && item.preview.startsWith('#') ? (
-                            <View style={[styles.colorPreview, { backgroundColor: item.preview, borderColor: `${rarityColor}60` }]}>
-                                <View style={[styles.colorInner, { backgroundColor: item.preview }]} />
-                            </View>
-                        ) : (
-                            <View style={[styles.iconContainer, { backgroundColor: `${rarityColor}20` }]}>
-                                <Ionicons
-                                    name={(item.icon as any) || 'cube'}
-                                    size={70}
-                                    color={rarityColor}
-                                />
-                            </View>
-                        )}
+                        <ItemPreview item={item} size="large" />
                     </View>
 
                     {/* Nom de l'item */}

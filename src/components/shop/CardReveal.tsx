@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics';
 import LootBoxService from '../../services/LootBoxService';
 import { ShopItem, Rarity } from '../../services/MonetizationTypes';
+import { ItemPreview } from './ItemPreview';
 
 interface CardRevealProps {
     item: ShopItem;
@@ -285,13 +286,9 @@ export default function CardReveal({ item, isNew, dustValue, delay = 0, onFlip, 
                             )}
                         </View>
 
-                        {/* Image / Preview */}
+                        {/* Image / Preview - Utilise ItemPreview pour afficher la vraie preview */}
                         <View style={styles.imageContainer}>
-                            {item.preview && item.preview.startsWith('#') ? (
-                                <View style={[styles.colorPreview, { backgroundColor: item.preview }]} />
-                            ) : (
-                                <Ionicons name={item.icon as any || "cube"} size={80} color="#374151" />
-                            )}
+                            <ItemPreview item={item} size="medium" />
                         </View>
 
                         {/* Footer: Name & Details */}

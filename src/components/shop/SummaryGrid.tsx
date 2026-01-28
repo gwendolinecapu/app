@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import LootBoxService, { PackResult, CardResult } from '../../services/LootBoxService';
+import { ItemPreview } from './ItemPreview';
 
 const { width } = Dimensions.get('window');
 const MINI_CARD_WIDTH = (width - 80) / 4; // 4 cartes par ligne avec marges
@@ -69,17 +70,9 @@ const MiniCard = React.memo(({
 
             {/* Contenu de la carte */}
             <View style={styles.miniCardContent}>
-                {/* Preview de l'item */}
+                {/* Preview de l'item - Utilise ItemPreview */}
                 <View style={styles.miniPreviewContainer}>
-                    {card.item.preview && card.item.preview.startsWith('#') ? (
-                        <View style={[styles.miniColorPreview, { backgroundColor: card.item.preview }]} />
-                    ) : (
-                        <Ionicons
-                            name={(card.item.icon as any) || 'cube'}
-                            size={24}
-                            color={rarityColor}
-                        />
-                    )}
+                    <ItemPreview item={card.item} size="small" />
                 </View>
 
                 {/* Badge rareté */}

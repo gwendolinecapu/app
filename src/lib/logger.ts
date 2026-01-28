@@ -1,3 +1,5 @@
+import crashlytics from '@react-native-firebase/crashlytics';
+
 /**
  * Production-safe logger
  * Seuls les logs d'erreur sont conservés en développement
@@ -31,11 +33,16 @@ export const Logger = {
     error: (message: string, error?: any) => {
         if (isDev) {
             console.error(`[ERROR] ${message}`, error);
+        } else {
+            crashlytics().log(message);
+            if (error instanceof Error) {
+                crashlytics().recordError(error);
+            } else if (error) {
+                crashlytics().recordError(new Error(`${message}: ${String(error)}`));
+            } else {
+                crashlytics().recordError(new Error(message));
+            }
         }
-        // TODO: En production, envoyer vers un service comme Sentry/Crashlytics
-        // if (!isDev && CrashReporting) {
-        //     CrashReporting.recordError(error);
-        // }
     },
 
     /**

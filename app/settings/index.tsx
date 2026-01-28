@@ -337,6 +337,7 @@ export default function SettingsScreen() {
                     <AnimatedSettingItem label="Widgets & Dynamic Island" icon="phone-portrait-outline" action={() => router.push('/settings/widgets' as any)} index={2} />
                     <AnimatedSettingItem label="Verrouillage FaceID" icon="scan-outline" action={toggleBiometric} value={isBiometricEnabled} index={3} />
                     <AnimatedSettingItem label="Flouter l'écran (App Switcher)" icon="eye-off-outline" action={handlePrivacyBlurToggle} value={privacyBlurEnabled} index={4} />
+                    <AnimatedSettingItem label="Accessibilité" icon="accessibility-outline" action={() => router.push('/settings/accessibility' as any)} index={5} />
                 </AnimatedSection>
 
                 {/* Feedback & Support */}

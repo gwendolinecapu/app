@@ -31,6 +31,7 @@ export default function SettingsLayout() {
             <Stack.Screen name="system-profile" options={{ headerShown: false }} />
             <Stack.Screen name="widgets" options={{ headerShown: false }} />
             <Stack.Screen name="feedback" options={{ headerShown: false }} />
+            <Stack.Screen name="accessibility" options={{ headerShown: false }} />
         </Stack>
     );
 }

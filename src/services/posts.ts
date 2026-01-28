@@ -184,14 +184,15 @@ export const PostService = {
      */
     /**
      * Enrich posts with author details (alter name/avatar)
-     * ✅ OPTIMISÉ: Cache les alters/systems pour éviter requêtes répétées
+     * ✅ OPTIMISÉ: Cache les alters/public_profiles pour éviter requêtes répétées
+     * ✅ SÉCURISÉ: Utilise public_profiles au lieu de systems pour éviter exposition des emails
      */
     _enrichPostsWithAuthors: async (posts: Post[]): Promise<Post[]> => {
         const alterIds = new Set(posts.map(p => p.alter_id).filter((id): id is string => !!id));
         const systemIds = new Set(posts.map(p => p.system_id).filter((id): id is string => !!id));
 
         const altersMap = new Map<string, any>();
-        const systemsMap = new Map<string, any>();
+        const profilesMap = new Map<string, any>();
 
         // ✅ Check cache first
         const uncachedAlterIds: string[] = [];
@@ -208,7 +209,7 @@ export const PostService = {
         systemIds.forEach(id => {
             const cached = getCached(systemsCache, id);
             if (cached) {
-                systemsMap.set(id, cached);
+                profilesMap.set(id, cached);
             } else {
                 uncachedSystemIds.push(id);
             }
@@ -245,13 +246,14 @@ export const PostService = {
         };
 
         // ✅ Fetch in parallel, only uncached items
+        // ✅ SECURITY FIX: Use public_profiles instead of systems
         await Promise.all([
             fetchByIds('alters', uncachedAlterIds, altersMap, altersCache),
-            fetchByIds('systems', uncachedSystemIds, systemsMap, systemsCache)
+            fetchByIds('public_profiles', uncachedSystemIds, profilesMap, systemsCache)
         ]);
 
         return posts.map(post => {
-            const system = systemsMap.get(post.system_id);
+            const profile = profilesMap.get(post.system_id);
 
             if (post.alter_id && altersMap.has(post.alter_id)) {
                 const alter = altersMap.get(post.alter_id);
@@ -263,15 +265,15 @@ export const PostService = {
                 };
             }
 
-            // Fallback to system info
-            const resolvedName = system?.username || system?.email?.split('@')[0] || 'Utilisateur';
-            const finalName = resolvedName === 'Système' && system?.username ? system.username : resolvedName;
+            // Fallback to public profile info (no email exposure)
+            const resolvedName = profile?.display_name || 'Utilisateur';
+            const finalName = resolvedName === 'Système' && profile?.display_name ? profile.display_name : resolvedName;
 
             return {
                 ...post,
-                // Prioritize the snapshot author_name if available, otherwise fallback to system name
+                // Prioritize the snapshot author_name if available, otherwise fallback to profile name
                 author_name: post.author_name || finalName || 'Utilisateur',
-                author_avatar: post.author_avatar || system?.avatar_url || post.author_avatar,
+                author_avatar: post.author_avatar || profile?.avatar_url || post.author_avatar,
             };
         });
     },
@@ -693,12 +695,13 @@ export const PostService = {
                 if (recipientId !== senderIdentifier) {
                     try {
                         // Fetch sender details for notification
+                        // ✅ SECURITY FIX: Use public_profiles instead of systems
                         let senderName = 'Quelqu\'un';
                         try {
-                            const systemDoc = await getDoc(doc(db, 'systems', userId));
-                            if (systemDoc.exists()) {
-                                const systemData = systemDoc.data();
-                                senderName = systemData.username || 'Utilisateur';
+                            const profileDoc = await getDoc(doc(db, 'public_profiles', userId));
+                            if (profileDoc.exists()) {
+                                const profileData = profileDoc.data();
+                                senderName = profileData.display_name || 'Utilisateur';
                             }
 
                             if (alterId) {

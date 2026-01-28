@@ -1202,6 +1202,218 @@ export const getFrameStyle = (frameId?: string, size: number = 88): FrameStyle =
                 imageSource: require('../../assets/frames/frame_cow_ears.png'),
             };
 
+        // ===== CADRES PRIDE (GRATUITS) =====
+        case 'frame_pride_rainbow':
+            return {
+                containerStyle: {
+                    borderWidth: 4,
+                    borderColor: '#E40303', // Rouge (fallback)
+                    padding: 3,
+                    borderRadius: size / 2,
+                    shadowColor: '#FF8C00',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.6,
+                    shadowRadius: 8,
+                    elevation: 4,
+                }
+            };
+        case 'frame_pride_progress':
+            return {
+                containerStyle: {
+                    borderWidth: 4,
+                    borderColor: '#5BCEFA', // Bleu trans
+                    padding: 3,
+                    borderRadius: size / 2,
+                    shadowColor: '#F5A9B8',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.6,
+                    shadowRadius: 8,
+                    elevation: 4,
+                }
+            };
+        case 'frame_pride_trans':
+            return {
+                containerStyle: {
+                    borderWidth: 4,
+                    borderColor: '#5BCEFA', // Bleu clair
+                    padding: 3,
+                    borderRadius: size / 2,
+                    shadowColor: '#F5A9B8', // Rose
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.8,
+                    shadowRadius: 10,
+                    elevation: 5,
+                }
+            };
+        case 'frame_pride_bi':
+            return {
+                containerStyle: {
+                    borderWidth: 4,
+                    borderColor: '#D60270', // Magenta
+                    padding: 3,
+                    borderRadius: size / 2,
+                    shadowColor: '#0038A8', // Bleu
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.7,
+                    shadowRadius: 8,
+                    elevation: 4,
+                }
+            };
+        case 'frame_pride_pan':
+            return {
+                containerStyle: {
+                    borderWidth: 4,
+                    borderColor: '#FF218C', // Rose
+                    padding: 3,
+                    borderRadius: size / 2,
+                    shadowColor: '#21B1FF', // Cyan
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.7,
+                    shadowRadius: 8,
+                    elevation: 4,
+                }
+            };
+        case 'frame_pride_lesbian':
+            return {
+                containerStyle: {
+                    borderWidth: 4,
+                    borderColor: '#D52D00', // Orange foncé
+                    padding: 3,
+                    borderRadius: size / 2,
+                    shadowColor: '#D362A4', // Rose
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.7,
+                    shadowRadius: 8,
+                    elevation: 4,
+                }
+            };
+        case 'frame_pride_gay':
+            return {
+                containerStyle: {
+                    borderWidth: 4,
+                    borderColor: '#078D70', // Teal
+                    padding: 3,
+                    borderRadius: size / 2,
+                    shadowColor: '#3D1A78', // Violet
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.7,
+                    shadowRadius: 8,
+                    elevation: 4,
+                }
+            };
+        case 'frame_pride_nb':
+            return {
+                containerStyle: {
+                    borderWidth: 4,
+                    borderColor: '#FCF434', // Jaune
+                    padding: 3,
+                    borderRadius: size / 2,
+                    shadowColor: '#9C59D1', // Violet
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.7,
+                    shadowRadius: 8,
+                    elevation: 4,
+                }
+            };
+        case 'frame_pride_ace':
+            return {
+                containerStyle: {
+                    borderWidth: 4,
+                    borderColor: '#810081', // Violet
+                    padding: 3,
+                    borderRadius: size / 2,
+                    shadowColor: '#A3A3A3', // Gris
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.6,
+                    shadowRadius: 8,
+                    elevation: 4,
+                }
+            };
+        case 'frame_pride_aro':
+            return {
+                containerStyle: {
+                    borderWidth: 4,
+                    borderColor: '#3DA542', // Vert
+                    padding: 3,
+                    borderRadius: size / 2,
+                    shadowColor: '#A7D379', // Vert clair
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.6,
+                    shadowRadius: 8,
+                    elevation: 4,
+                }
+            };
+        case 'frame_pride_genderfluid':
+            return {
+                containerStyle: {
+                    borderWidth: 4,
+                    borderColor: '#FF75A2', // Rose
+                    padding: 3,
+                    borderRadius: size / 2,
+                    shadowColor: '#333EBD', // Bleu
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.7,
+                    shadowRadius: 8,
+                    elevation: 4,
+                }
+            };
+        case 'frame_pride_genderqueer':
+            return {
+                containerStyle: {
+                    borderWidth: 4,
+                    borderColor: '#B57EDC', // Lavande
+                    padding: 3,
+                    borderRadius: size / 2,
+                    shadowColor: '#4A8123', // Vert
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.6,
+                    shadowRadius: 8,
+                    elevation: 4,
+                }
+            };
+        case 'frame_pride_intersex':
+            return {
+                containerStyle: {
+                    borderWidth: 4,
+                    borderColor: '#FFD800', // Jaune
+                    padding: 3,
+                    borderRadius: size / 2,
+                    shadowColor: '#7902AA', // Violet
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.8,
+                    shadowRadius: 10,
+                    elevation: 5,
+                }
+            };
+        case 'frame_pride_poly':
+            return {
+                containerStyle: {
+                    borderWidth: 4,
+                    borderColor: '#0000FF', // Bleu
+                    padding: 3,
+                    borderRadius: size / 2,
+                    shadowColor: '#FF0000', // Rouge
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.6,
+                    shadowRadius: 8,
+                    elevation: 4,
+                }
+            };
+        case 'frame_pride_agender':
+            return {
+                containerStyle: {
+                    borderWidth: 4,
+                    borderColor: '#B9B9B9', // Gris
+                    padding: 3,
+                    borderRadius: size / 2,
+                    shadowColor: '#B8F483', // Vert clair
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.6,
+                    shadowRadius: 8,
+                    elevation: 4,
+                }
+            };
+
         default:
             return defaultStyle;
     }

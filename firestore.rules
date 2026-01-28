@@ -41,22 +41,16 @@ service cloud.firestore {
 
     // ============================================
     // Systems Collection
-    // 🔴 RISQUE DE SÉCURITÉ: EXPOSITION D'EMAILS
+    // ✅ SÉCURISÉ: Emails protégés, données publiques dans public_profiles
     // ============================================
     match /systems/{systemId} {
-      // ⚠️ PROBLÈME CRITIQUE: Cette règle expose les emails de tous les utilisateurs
-      // aux autres utilisateurs authentifiés !
-      //
-      // LECTURE: Actuellement permissive pour compatibilité avec fonctionnalités existantes
-      // (affichage usernames sur posts, recherche, social features)
-      //
-      // 🛠️ SOLUTION RECOMMANDÉE (Sprint 4) :
-      // 1. Migrer username, avatar, bio vers 'public_profiles' (collection existante)
-      // 2. Mettre à jour tous les services pour utiliser public_profiles au lieu de systems
-      // 3. Restreindre systems à: allow read: if systemId == request.auth.uid || isAdmin();
-      //
-      // TEMPORAIRE: Permissif pour ne pas casser les fonctionnalités
-      allow read: if isAuthenticated();
+      // ✅ FIX CRITIQUE: Restriction lecture aux propriétaires et admins uniquement
+      // Données publiques (username, avatar, bio) sont maintenant dans public_profiles
+      // LECTURE: Propriétaire ou Admin uniquement
+      allow read: if isAuthenticated() && (
+        systemId == request.auth.uid ||
+        isAdmin()
+      );
 
       // ÉCRITURE: Propriétaire uniquement (sécurisé ✅)
       allow write: if isAuthenticated() && request.auth.uid == systemId;
@@ -218,30 +212,44 @@ service cloud.firestore {
 
     // ============================================
     // Groups Collection (Sprint 5)
+    // ✅ SÉCURISÉ: Groupes visibles uniquement par les membres (ou publics si is_public)
     // ============================================
     match /groups/{groupId} {
-      // Any auth user can see groups for now (Public discovery)
-      allow read: if isAuthenticated();
+      // ✅ FIX: Restreindre lecture aux membres du groupe ou groupes publics
+      allow read: if isAuthenticated() && (
+        request.auth.uid in resource.data.members ||
+        resource.data.is_public == true ||
+        resource.data.created_by == request.auth.uid
+      );
+
       // Only auth user can create
       allow create: if isAuthenticated();
+
       // Creator OR existing members can update (add members)
       allow update: if isAuthenticated() && (
         resource.data.created_by == request.auth.uid ||
         request.auth.uid in resource.data.members
       );
+
       // Only creator can delete
       allow delete: if isAuthenticated() && resource.data.created_by == request.auth.uid;
     }
 
     // ============================================
     // Group Members Collection
+    // ✅ SÉCURISÉ: Memberships visibles uniquement par les membres du même groupe
     // ============================================
     match /group_members/{memberId} {
-      // Can read memberships if auth
-      allow read: if isAuthenticated();
-      // Can create if: adding yourself OR if you're already a member of the group
-      // FIX: Ensure user is adding THEMSELVES (system_id matches auth)
+      // ✅ FIX: Restreindre lecture aux membres du même groupe
+      allow read: if isAuthenticated() && (
+        resource.data.system_id == request.auth.uid ||
+        // Ou si l'utilisateur est membre du même groupe
+        get(/databases/$(database)/documents/groups/$(resource.data.group_id)).data.members.hasAny([request.auth.uid])
+      );
+
+      // Can create if adding yourself
       allow create: if isAuthenticated() && request.resource.data.system_id == request.auth.uid;
+
       // Can leave (delete) if it's your own membership
       allow delete: if isAuthenticated() && resource.data.system_id == request.auth.uid;
       // No updates allowed (must leave and rejoin)
@@ -466,25 +474,29 @@ service cloud.firestore {
 
     // ============================================
     // Notifications Collection
+    // ✅ SÉCURISÉ: Validation du senderId pour éviter spam/usurpation
     // ============================================
     match /notifications/{notificationId} {
       // Read: Recipient is User UID OR Recipient is an Alter owned by User (via denormalized targetSystemId)
-      // FIX: Ensure only the recipient or the target system can read notifications
       allow read: if isAuthenticated() && (
         resource.data.recipientId == request.auth.uid ||
         resource.data.targetSystemId == request.auth.uid
       );
-      
-      // Create: Allow any authenticated user to send a notification
-      // Ideally restrict so you can't spoof senderId, but recipient check is most important for privacy.
-      allow create: if isAuthenticated();
-      
+
+      // Create: ✅ FIX: Valider que senderId correspond à l'utilisateur authentifié
+      // Empêche l'usurpation d'identité et le spam de notifications
+      allow create: if isAuthenticated() && (
+        request.resource.data.senderId == request.auth.uid ||
+        // Admins peuvent créer des notifications pour n'importe qui
+        isAdmin()
+      );
+
       // Update: Recipient can mark as read
       allow update: if isAuthenticated() && (
         resource.data.recipientId == request.auth.uid ||
         resource.data.targetSystemId == request.auth.uid
       ) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'is_read']);
-      
+
       // Delete: Recipient can delete
       allow delete: if isAuthenticated() && (
         resource.data.recipientId == request.auth.uid ||
@@ -541,20 +553,28 @@ service cloud.firestore {
 
     // ============================================
     // Stories Collection
+    // ✅ SÉCURISÉ: Stories avec contrôle de visibilité
     // ============================================
     match /stories/{storyId} {
-      // Read: any authenticated user
-      allow read: if isAuthenticated();
-      
+      // ✅ FIX: Respecter la visibilité des stories (comme les posts)
+      allow read: if isAuthenticated() && (
+        resource.data.system_id == request.auth.uid ||
+        resource.data.visibility == 'public' ||
+        // Stories 'system' visibles uniquement par le même système
+        (resource.data.visibility == 'system' && resource.data.system_id == request.auth.uid)
+        // Note: 'friends' et 'private' nécessiteraient des vérifications supplémentaires
+        // Pour l'instant, filtrage côté client recommandé
+      );
+
       // Create: user must own the valid system_id
       allow create: if isAuthenticated() && request.resource.data.system_id == request.auth.uid;
-      
+
       // Delete: only owner
       allow delete: if isAuthenticated() && resource.data.system_id == request.auth.uid;
-      
+
       // Update: Owner OR Viewers (to add themselves to viewers array)
       allow update: if isAuthenticated() && (
-        resource.data.system_id == request.auth.uid || 
+        resource.data.system_id == request.auth.uid ||
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewers'])
       );
     }

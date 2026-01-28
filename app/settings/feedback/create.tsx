@@ -10,10 +10,12 @@ import {
     KeyboardAvoidingView,
     Platform,
     Alert,
-    ActivityIndicator
+    ActivityIndicator,
+    Linking
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../../src/contexts/ThemeContext';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { useToast } from '../../../src/components/ui/Toast';
@@ -22,6 +24,9 @@ import { FeedbackType } from '../../../src/types/Feedback';
 
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
+
+// Config GitHub pour le lien
+const GITHUB_ISSUES_URL = 'https://github.com/gwendolinecapu/app/issues';
 
 export default function CreateFeedbackScreen() {
     const { colors } = useTheme();
@@ -34,6 +39,7 @@ export default function CreateFeedbackScreen() {
     const isBug = type === 'BUG';
 
     const [loading, setLoading] = useState(false);
+    const [submitted, setSubmitted] = useState(false);
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [consent, setConsent] = useState(false);
@@ -105,8 +111,8 @@ export default function CreateFeedbackScreen() {
 
             await FeedbackService.createFeedback(feedbackData);
 
-            showToast('Merci ! Votre retour a bien été envoyé.', 'success');
-            router.back();
+            // Afficher l'écran de succès
+            setSubmitted(true);
 
         } catch (error) {
             console.error('Error sending feedback:', error);
@@ -115,6 +121,64 @@ export default function CreateFeedbackScreen() {
             setLoading(false);
         }
     };
+
+    // Écran de succès après soumission
+    if (submitted) {
+        return (
+            <View style={[styles.successContainer, { backgroundColor: colors.background }]}>
+                <Stack.Screen options={{ title: "Envoyé !" }} />
+
+                <View style={styles.successContent}>
+                    <LinearGradient
+                        colors={isBug ? ['#EF4444', '#DC2626'] : ['#F59E0B', '#D97706']}
+                        style={styles.successIcon}
+                    >
+                        <Ionicons
+                            name={isBug ? "bug" : "bulb"}
+                            size={48}
+                            color="#FFF"
+                        />
+                    </LinearGradient>
+
+                    <Text style={[styles.successTitle, { color: colors.text }]}>
+                        Merci pour votre retour !
+                    </Text>
+
+                    <Text style={[styles.successMessage, { color: colors.textSecondary }]}>
+                        {isBug
+                            ? "Votre signalement de bug a été enregistré et sera automatiquement ajouté à notre tracker GitHub."
+                            : "Votre suggestion a été enregistrée. Elle apparaîtra bientôt sur la roadmap publique !"
+                        }
+                    </Text>
+
+                    {/* Lien vers GitHub Issues */}
+                    <TouchableOpacity
+                        style={styles.githubLink}
+                        onPress={() => Linking.openURL(GITHUB_ISSUES_URL)}
+                    >
+                        <Ionicons name="logo-github" size={20} color="#FFF" />
+                        <Text style={styles.githubLinkText}>Voir sur GitHub</Text>
+                        <Ionicons name="open-outline" size={16} color="#FFF" />
+                    </TouchableOpacity>
+
+                    <Text style={[styles.githubNote, { color: colors.textSecondary }]}>
+                        Une issue GitHub sera créée automatiquement dans quelques secondes.
+                        Vous pourrez suivre son statut et recevoir des notifications.
+                    </Text>
+
+                    {/* Bouton retour */}
+                    <TouchableOpacity
+                        style={[styles.backButton, { backgroundColor: colors.surface }]}
+                        onPress={() => router.back()}
+                    >
+                        <Text style={[styles.backButtonText, { color: colors.text }]}>
+                            Retour aux paramètres
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    }
 
     const renderInput = (
         label: string,
@@ -329,5 +393,73 @@ const styles = StyleSheet.create({
     },
     radioText: {
         fontSize: 14,
-    }
+    },
+    // Success screen styles
+    successContainer: {
+        flex: 1,
+    },
+    successContent: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 32,
+    },
+    successIcon: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 8,
+    },
+    successTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    successMessage: {
+        fontSize: 16,
+        textAlign: 'center',
+        lineHeight: 24,
+        marginBottom: 24,
+    },
+    githubLink: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#24292e',
+        paddingVertical: 14,
+        paddingHorizontal: 24,
+        borderRadius: 12,
+        gap: 10,
+        marginBottom: 16,
+    },
+    githubLinkText: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    githubNote: {
+        fontSize: 13,
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 32,
+        paddingHorizontal: 20,
+    },
+    backButton: {
+        paddingVertical: 14,
+        paddingHorizontal: 32,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    backButtonText: {
+        fontSize: 16,
+        fontWeight: '500',
+    },
 });

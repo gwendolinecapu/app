@@ -21,6 +21,7 @@ import { FollowService } from '../../src/services/follows';
 import { useToast } from '../../src/components/ui/Toast';
 import { triggerHaptic } from '../../src/lib/haptics';
 import { AnimatedPressable } from '../../src/components/ui/AnimatedPressable';
+import { getThemeColors } from '../../src/lib/cosmetics';
 
 
 interface SearchResult {
@@ -44,6 +45,19 @@ interface ImportState {
 export default function SearchScreen() {
     const { system, currentAlter } = useAuth();
     const toast = useToast();
+
+    // Determine Theme Colors
+    const themeColors = currentAlter?.equipped_items?.theme
+        ? getThemeColors(currentAlter.equipped_items.theme)
+        : null;
+
+    const themeColor = themeColors?.primary || currentAlter?.color || colors.primary;
+    const backgroundColor = themeColors?.background || colors.background;
+    const backgroundCardColor = themeColors?.backgroundCard || colors.backgroundCard;
+    const textColor = themeColors?.text || colors.text;
+    const textSecondaryColor = themeColors?.textSecondary || colors.textSecondary;
+    const borderColor = themeColors?.border || colors.border;
+
     const [searchQuery, setSearchQuery] = useState('');
     const [results, setResults] = useState<SearchResult[]>([]);
     const [loading, setLoading] = useState(false);
@@ -280,28 +294,9 @@ export default function SearchScreen() {
                 if (savedSuggestions.length > 0) {
                     setSuggestions(savedSuggestions);
                 } else {
-                    // 2. Fallback: random public alters (existing logic)
-                    const q = query(
-                        collection(db, 'alters'),
-                        where('visibility', '==', 'public'),
-                        limit(10)
-                    );
-                    const snap = await getDocs(q);
-                    const sugg: SearchResult[] = [];
-                    snap.forEach(doc => {
-                        const data = doc.data();
-                        if (data.system_id !== system.id) {
-                            sugg.push({
-                                id: doc.id,
-                                name: data.name,
-                                avatar_url: data.avatar_url,
-                                color: data.color || '#7C3AED',
-                                type: 'alter',
-                                systemId: data.system_id,
-                            });
-                        }
-                    });
-                    setSuggestions(sugg.slice(0, 5));
+                    // 2. Fallback: No random public alters query (causes permission issues)
+                    // Instead, leave suggestions empty or show a message
+                    setSuggestions([]);
                 }
             } catch (e) {
                 console.error("Error loading suggestions:", e);
@@ -561,7 +556,7 @@ export default function SearchScreen() {
 
         return (
             <AnimatedPressable
-                style={styles.resultItem}
+                style={[styles.resultItem, { backgroundColor: backgroundCardColor }]}
                 onPress={() => {
                     if (item.type === 'system') {
                         router.push(`/profile/${item.id}`);
@@ -580,11 +575,11 @@ export default function SearchScreen() {
                     )}
                 </View>
                 <View style={styles.resultInfo}>
-                    <Text style={styles.resultName}>{item.name}</Text>
+                    <Text style={[styles.resultName, { color: textColor }]}>{item.name}</Text>
                     {item.email && (
-                        <Text style={styles.resultEmail}>{item.email}</Text>
+                        <Text style={[styles.resultEmail, { color: textSecondaryColor }]}>{item.email}</Text>
                     )}
-                    <Text style={styles.resultType}>
+                    <Text style={[styles.resultType, { color: themeColor }]}>
                         {item.type === 'system' ? 'Système' : 'Alter'}
                         {item.systemId === system?.id && ' (Votre système)'}
                     </Text>
@@ -605,7 +600,7 @@ export default function SearchScreen() {
 
     const renderSuggestedBubbles = () => (
         <View style={styles.suggestedSection}>
-            <Text style={styles.sectionTitle}>Suggestions</Text>
+            <Text style={[styles.sectionTitle, { color: textColor }]}>Suggestions</Text>
             <View style={styles.bubblesRow}>
                 {suggestions.length > 0 ? (
                     suggestions.map((sugg) => {
@@ -650,24 +645,24 @@ export default function SearchScreen() {
     );
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
             {/* Header */}
             <View style={styles.header}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     <AnimatedPressable onPress={() => router.back()}>
-                        <Ionicons name="arrow-back" size={24} color={colors.text} />
+                        <Ionicons name="arrow-back" size={24} color={textColor} />
                     </AnimatedPressable>
-                    <Text style={styles.title}>Recherche</Text>
+                    <Text style={[styles.title, { color: textColor }]}>Recherche</Text>
                 </View>
             </View>
 
             {/* Search Input - Design Canva avec "Email ou pseudo" */}
-            <View style={styles.searchContainer}>
-                <Ionicons name="search" size={20} color={colors.textMuted} style={styles.searchIcon} />
+            <View style={[styles.searchContainer, { backgroundColor: backgroundCardColor, borderColor }]}>
+                <Ionicons name="search" size={20} color={textSecondaryColor} style={styles.searchIcon} />
                 <TextInput
-                    style={styles.searchInput}
+                    style={[styles.searchInput, { color: textColor }]}
                     placeholder="Entrer le code"
-                    placeholderTextColor={colors.textMuted}
+                    placeholderTextColor={textSecondaryColor}
                     value={searchQuery}
                     onChangeText={setSearchQuery}
                     autoCapitalize="none"
@@ -675,7 +670,7 @@ export default function SearchScreen() {
                 />
                 {searchQuery.length > 0 && (
                     <AnimatedPressable onPress={() => setSearchQuery('')}>
-                        <Ionicons name="close-circle" size={20} color={colors.textMuted} />
+                        <Ionicons name="close-circle" size={20} color={textSecondaryColor} />
                     </AnimatedPressable>
                 )}
             </View>
@@ -683,13 +678,13 @@ export default function SearchScreen() {
             {/* Results Section OR Import View */}
             {loading ? (
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={colors.primary} />
+                    <ActivityIndicator size="large" color={themeColor} />
                 </View>
             ) : importMode.active ? (
                 renderImportView()
             ) : hasSearched && results.length > 0 ? (
                 <View style={styles.resultsSection}>
-                    <Text style={styles.sectionTitle}>Résultats</Text>
+                    <Text style={[styles.sectionTitle, { color: textColor }]}>Résultats</Text>
                     <FlatList
                         data={results}
                         renderItem={renderResult}
@@ -700,9 +695,9 @@ export default function SearchScreen() {
                 </View>
             ) : hasSearched && results.length === 0 ? (
                 <View style={styles.emptyState}>
-                    <Ionicons name="search-outline" size={64} color={colors.textMuted} />
-                    <Text style={styles.emptyTitle}>Aucun résultat</Text>
-                    <Text style={styles.emptySubtitle}>
+                    <Ionicons name="search-outline" size={64} color={textSecondaryColor} />
+                    <Text style={[styles.emptyTitle, { color: textColor }]}>Aucun résultat</Text>
+                    <Text style={[styles.emptySubtitle, { color: textSecondaryColor }]}>
                         Essayez avec un autre email ou pseudo
                     </Text>
                 </View>
@@ -712,9 +707,9 @@ export default function SearchScreen() {
                     {renderSuggestedBubbles()}
 
                     <View style={styles.emptyState}>
-                        <Ionicons name="people-outline" size={64} color={colors.textMuted} />
-                        <Text style={styles.emptyTitle}>Chercher des amis</Text>
-                        <Text style={styles.emptySubtitle}>
+                        <Ionicons name="people-outline" size={64} color={textSecondaryColor} />
+                        <Text style={[styles.emptyTitle, { color: textColor }]}>Chercher des amis</Text>
+                        <Text style={[styles.emptySubtitle, { color: textSecondaryColor }]}>
                             Recherchez d&apos;autres systèmes par pseudo ou email pour les ajouter en ami
                         </Text>
                     </View>

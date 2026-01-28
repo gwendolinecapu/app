@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     View,
     Text,
@@ -45,8 +45,8 @@ export const MagicPostGenerator: React.FC<MagicPostGeneratorProps> = ({
     alters,
     activeAlterId
 }) => {
-    // Filter alters with DNA
-    const magicAlters = alters.filter(a => a.visual_dna?.is_ready);
+    // Filter alters with DNA (Memoized for performance)
+    const magicAlters = useMemo(() => alters.filter(a => a.visual_dna?.is_ready), [alters]);
 
     const [selectedAlterId, setSelectedAlterId] = useState<string>(
         (activeAlterId && magicAlters.find(a => a.id === activeAlterId)) ? activeAlterId : (magicAlters[0]?.id || '')

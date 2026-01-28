@@ -42,38 +42,20 @@ async function uploadImage(buffer: Buffer, path: string, compress = false): Prom
             .toBuffer();
 
         if (compressedBuffer.length > maxSizeBytes) {
-            // 2. Try lowest quality considered (20) to fail fast or establish lower bound
-            const lowQualityBuffer = await sharp(buffer)
-                .jpeg({ quality: 20, progressive: true })
-                .toBuffer();
+            // Optimization: Try fixed steps (60, 40, 20) to reduce CPU usage
+            const qualities = [60, 40, 20];
+            for (const q of qualities) {
+                const buf = await sharp(buffer)
+                    .jpeg({ quality: q, progressive: true })
+                    .toBuffer();
 
-            if (lowQualityBuffer.length > maxSizeBytes) {
-                // Even lowest quality is too big. Set compressedBuffer to this so resize fallback triggers.
-                compressedBuffer = lowQualityBuffer;
-            } else {
-                // 3. Binary search in range [30, 80]
-                // We know 20 fits, 90 doesn't.
-                let bestBuffer = lowQualityBuffer;
-                const qualities = [30, 40, 50, 60, 70, 80];
-                let left = 0;
-                let right = qualities.length - 1;
-
-                while (left <= right) {
-                    const mid = Math.floor((left + right) / 2);
-                    const q = qualities[mid];
-
-                    const buf = await sharp(buffer)
-                        .jpeg({ quality: q, progressive: true })
-                        .toBuffer();
-
-                    if (buf.length <= maxSizeBytes) {
-                        bestBuffer = buf;
-                        left = mid + 1; // Try higher
-                    } else {
-                        right = mid - 1; // Try lower
-                    }
+                if (buf.length < compressedBuffer.length) {
+                    compressedBuffer = buf;
                 }
-                compressedBuffer = bestBuffer;
+
+                if (compressedBuffer.length <= maxSizeBytes) {
+                    break;
+                }
             }
         }
 

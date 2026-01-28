@@ -3,18 +3,19 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Alert
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 
 import { spacing } from '../../lib/theme';
 import { useMonetization } from '../../contexts/MonetizationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { LootBoxService } from '../../services/LootBoxService';
 import CreditService from '../../services/CreditService';
-import { ShopItem, ShopItemType, LootBoxTier, PACK_TIERS, PITY_CONFIG } from '../../services/MonetizationTypes';
+import { ShopItem, ShopItemType, LootBoxTier, PACK_TIERS, PITY_CONFIG, WheelReward } from '../../services/MonetizationTypes';
 import { ShopItemCard } from './ShopItemCard';
 import { ShopItemModal } from './ShopItemModal';
 import R6PackOpening from './R6PackOpening';
 import DropRateModal from './DropRateModal';
+import { AdRewardWheel } from './AdRewardWheel';
 
 const { width } = Dimensions.get('window');
 
@@ -24,6 +25,8 @@ export function ShopHomeScreen() {
         isPremium,
         canWatchRewardAd,
         watchRewardAd,
+        rewardAdsRemaining,
+        claimWheelReward,
         ownedItems,
         equippedItems,
         purchaseItem,
@@ -34,6 +37,7 @@ export function ShopHomeScreen() {
 
     const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0 });
     const [loadingAd, setLoadingAd] = useState(false);
+    const [wheelVisible, setWheelVisible] = useState(false);
 
     // LootBox State
     const [openingTier, setOpeningTier] = useState<LootBoxTier | null>(null);
@@ -97,11 +101,29 @@ export function ShopHomeScreen() {
         if (!canWatchRewardAd || loadingAd) return;
         setLoadingAd(true);
         try {
-            await watchRewardAd('current_user');
+            const result = await watchRewardAd(currentAlter?.id || 'current_user');
+            if (result.completed) {
+                setWheelVisible(true);
+            }
         } catch (e) {
             console.error(e);
         } finally {
             setLoadingAd(false);
+        }
+    };
+
+    const handleWheelClose = async (rewards: WheelReward[]) => {
+        setWheelVisible(false);
+        if (!currentAlter) return;
+
+        for (const reward of rewards) {
+            if (reward.type === 'credits' || reward.type === 'dust') {
+                await claimWheelReward(currentAlter.id, reward.amount, reward.type);
+            } else if (reward.type === 'pack' && reward.packTier) {
+                // Open loot box for pack rewards
+                setOpeningTier(reward.packTier);
+                setLootBoxVisible(true);
+            }
         }
     };
 
@@ -116,14 +138,14 @@ export function ShopHomeScreen() {
     return (
         <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
             {/* HERO BANNER / WELCOME */}
-            <View style={styles.heroSection}>
+            <Animated.View entering={FadeInDown.duration(500)} style={styles.heroSection}>
                 <Text style={styles.heroWelcome}>Bienvenue dans la</Text>
                 <Text style={styles.heroTitle}>Boutique Plural</Text>
-                <Text style={styles.heroSubtitle}>Personnalisez votre expérience</Text>
-            </View>
+                <Text style={styles.heroSubtitle}>Personnalisez votre experience</Text>
+            </Animated.View>
 
             {/* 1. EXTENSION PACKS (Redesigned) */}
-            <View style={styles.section}>
+            <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.section}>
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>PACKS D'EXTENSION</Text>
                     <TouchableOpacity style={styles.infoBadge} onPress={() => { setDropRateTier('basic'); setDropRateVisible(true); }}>
@@ -259,18 +281,18 @@ export function ShopHomeScreen() {
                         );
                     })}
                 </ScrollView>
-            </View>
+            </Animated.View>
 
             {/* 2. DAILY FLASH (Redesigned) */}
-            <View style={styles.sectionHeader}>
+            <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.sectionHeader}>
                 <View>
                     <Text style={styles.sectionTitle}>FLASH QUOTIDIEN</Text>
-                    <Text style={styles.sectionSubtitle}>Mise à jour dans {timeLeft.hours}h {timeLeft.minutes}m</Text>
+                    <Text style={styles.sectionSubtitle}>Mise a jour dans {timeLeft.hours}h {timeLeft.minutes}m</Text>
                 </View>
-            </View>
+            </Animated.View>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dailyScroll}>
-                {/* AD CARD (Redesigned) */}
+                {/* WHEEL OF FORTUNE CARD */}
                 <TouchableOpacity
                     activeOpacity={0.9}
                     onPress={handleWatchAd}
@@ -278,18 +300,18 @@ export function ShopHomeScreen() {
                     style={styles.adCardNew}
                 >
                     <LinearGradient
-                        colors={canWatchRewardAd ? ['#10B981', '#059669'] : ['#374151', '#1F2937']}
+                        colors={canWatchRewardAd ? ['#F59E0B', '#D97706'] : ['#374151', '#1F2937']}
                         style={styles.adGradientNew}
                     >
                         <View style={styles.adContentNew}>
                             {canWatchRewardAd ? (
                                 <>
-                                    <View style={styles.adIconCircle}>
-                                        <Ionicons name="play" size={24} color="#10B981" />
+                                    <View style={[styles.adIconCircle, { backgroundColor: 'rgba(0,0,0,0.2)' }]}>
+                                        <Ionicons name="trophy" size={28} color="#FDE68A" />
                                     </View>
-                                    <View>
-                                        <Text style={styles.adTitleNew}>Cadeau Gratuit</Text>
-                                        <Text style={styles.adSubNew}>Regarder une pub</Text>
+                                    <View style={{ alignItems: 'center' }}>
+                                        <Text style={styles.adTitleNew}>Roue Gratuite</Text>
+                                        <Text style={styles.adSubNew}>Gagne jusqu'a 200</Text>
                                     </View>
                                 </>
                             ) : (
@@ -298,11 +320,7 @@ export function ShopHomeScreen() {
                                         <Ionicons name="time-outline" size={24} color="#6B7280" />
                                     </View>
                                     <View style={{ alignItems: 'center' }}>
-                                        <Text style={[styles.adTitleNew, { color: '#6B7280', fontSize: 14 }]}>Déjà récupéré</Text>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 }}>
-                                            <Ionicons name="refresh" size={14} color="#9CA3AF" />
-                                            <Text style={[styles.adSubNew, { color: '#9CA3AF' }]}>Demain</Text>
-                                        </View>
+                                        <Text style={[styles.adTitleNew, { color: '#6B7280', fontSize: 14 }]}>Reviens demain</Text>
                                     </View>
                                 </>
                             )}
@@ -311,7 +329,7 @@ export function ShopHomeScreen() {
                         {canWatchRewardAd && (
                             <View style={styles.adRewardBadge}>
                                 <Ionicons name="diamond" size={12} color="#FFD700" />
-                                <Text style={styles.adRewardTextNew}>+50</Text>
+                                <Text style={styles.adRewardTextNew}>{rewardAdsRemaining} tours</Text>
                             </View>
                         )}
 
@@ -330,7 +348,7 @@ export function ShopHomeScreen() {
                 {dailyItems.map((item, index) => (
                     <Animated.View
                         key={item.id}
-                        entering={FadeInDown.delay(index * 100).springify()}
+                        entering={FadeInRight.delay(300 + index * 80).springify()}
                     >
                         <View style={{ width: width * 0.4 }}>
                             <ShopItemCard
@@ -384,6 +402,11 @@ export function ShopHomeScreen() {
                 visible={dropRateVisible}
                 tier={dropRateTier}
                 onClose={() => setDropRateVisible(false)}
+            />
+
+            <AdRewardWheel
+                visible={wheelVisible}
+                onClose={handleWheelClose}
             />
         </ScrollView>
     );

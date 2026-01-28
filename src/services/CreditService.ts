@@ -194,8 +194,6 @@ class CreditService {
      * User said: "Daily rewards... tracking should be per Alter... allowing each to claim/watch independently"
      */
     async claimRewardAd(alterId: string): Promise<number> {
-        // We could track "last_reward_ad" on alter to implement cooldowns if needed.
-        // For now, just grant the credits.
         const amount = CREDIT_REWARDS.REWARD_AD;
 
         const alterRef = doc(db, 'alters', alterId);
@@ -203,8 +201,25 @@ class CreditService {
             last_reward_ad: Date.now()
         });
 
-        await this.addCredits(alterId, amount, 'reward_ad', 'Vidéo publicitaire');
+        await this.addCredits(alterId, amount, 'reward_ad', 'Video publicitaire');
         return amount;
+    }
+
+    /**
+     * Reclame une recompense de la roulette (montant variable)
+     */
+    async claimWheelReward(alterId: string, amount: number, rewardType: 'credits' | 'dust'): Promise<void> {
+        const alterRef = doc(db, 'alters', alterId);
+        await updateDoc(alterRef, {
+            last_reward_ad: Date.now()
+        });
+
+        if (rewardType === 'dust') {
+            await updateDoc(alterRef, { dust: increment(amount) });
+            await this.recordTransaction(alterId, amount, 'reward_wheel', `Roulette: +${amount} Poussiere`);
+        } else {
+            await this.addCredits(alterId, amount, 'reward_wheel', `Roulette: +${amount} Credits`);
+        }
     }
 
     /**

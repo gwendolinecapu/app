@@ -153,6 +153,7 @@ export type CreditTransactionType =
     | 'daily_login'     // Connexion quotidienne
     | 'daily_login_premium' // Connexion quotidienne premium
     | 'reward_ad'       // Pub reward
+    | 'reward_wheel'    // Récompense roulette
     | 'streak_bonus'    // Bonus streak 7 jours
     | 'purchase_iap'    // Achat in-app
     | 'spend_decoration' // Achat décoration
@@ -1719,6 +1720,44 @@ export const DECORATION_PRICES: Record<DecorationRarity, number> = {
     legendary: 1000,
     mythic: 2000,
 };
+
+// ==================== ROULETTE (AD REWARD WHEEL) ====================
+
+export type WheelRewardType = 'credits' | 'dust' | 'pack' | 'extra_spin';
+
+export interface WheelReward {
+    type: WheelRewardType;
+    amount: number;
+    segmentIndex: number;
+    label: string;
+    packTier?: LootBoxTier;
+}
+
+export interface WheelSegment {
+    label: string;
+    rewardType: WheelRewardType;
+    amount: number;
+    color: string;
+    probability: number;
+    isJackpot?: boolean;
+    icon?: string; // Ionicons name
+    packTier?: LootBoxTier;
+}
+
+export const WHEEL_SEGMENTS: WheelSegment[] = [
+    { label: '5',        rewardType: 'credits',    amount: 5,   color: '#6B7280', probability: 0.20, icon: 'diamond' },
+    { label: '10',       rewardType: 'credits',    amount: 10,  color: '#3B82F6', probability: 0.18, icon: 'diamond' },
+    { label: '+1 Tour',  rewardType: 'extra_spin', amount: 1,   color: '#14B8A6', probability: 0.12, icon: 'reload' },
+    { label: '25',       rewardType: 'credits',    amount: 25,  color: '#10B981', probability: 0.12, icon: 'diamond' },
+    { label: 'Basic',    rewardType: 'pack',       amount: 1,   color: '#52525B', probability: 0.08, icon: 'cube', packTier: 'basic' },
+    { label: '50',       rewardType: 'credits',    amount: 50,  color: '#F59E0B', probability: 0.07, icon: 'diamond' },
+    { label: '+2 Tours', rewardType: 'extra_spin', amount: 2,   color: '#0EA5E9', probability: 0.05, icon: 'reload' },
+    { label: '100',      rewardType: 'credits',    amount: 100, color: '#EF4444', probability: 0.04, icon: 'diamond' },
+    { label: '50 Dust',  rewardType: 'dust',       amount: 50,  color: '#E879F9', probability: 0.04, icon: 'sparkles' },
+    { label: 'Standard', rewardType: 'pack',       amount: 1,   color: '#3B82F6', probability: 0.03, icon: 'diamond', packTier: 'standard' },
+    { label: '+3 Tours', rewardType: 'extra_spin', amount: 3,   color: '#8B5CF6', probability: 0.02, icon: 'reload' },
+    { label: 'Elite',    rewardType: 'pack',       amount: 1,   color: '#FBBF24', probability: 0.01, icon: 'star', packTier: 'elite', isJackpot: true },
+];
 
 // ==================== EXPORTS ====================
 

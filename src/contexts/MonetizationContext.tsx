@@ -65,6 +65,7 @@ interface MonetizationContextType {
     premiumProgress: { current: number; needed: number };
     watchRewardAd: (alterId: string) => Promise<RewardResult>;
     claimRewardAd: (alterId: string) => Promise<number>;
+    claimWheelReward: (alterId: string, amount: number, rewardType: 'credits' | 'dust') => Promise<void>;
 
     // Crédits
     // checkDailyLogin is likely not used directly in UI as much as claim button
@@ -375,7 +376,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         const result = await AdMediationService.showRewardedAd();
 
         if (result.completed) {
-            await CreditService.claimRewardAd(alterId);
+            // Credits are now handled by the wheel reward (claimWheelReward)
             await PremiumService.recordRewardAdWatch();
             refreshState();
         }
@@ -400,6 +401,11 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         const result = await CreditService.claimRewardAd(alterId);
         refreshState();
         return result;
+    }, [refreshState]);
+
+    const claimWheelReward = useCallback(async (alterId: string, amount: number, rewardType: 'credits' | 'dust') => {
+        await CreditService.claimWheelReward(alterId, amount, rewardType);
+        refreshState();
     }, [refreshState]);
 
     // ==================== BOUTIQUE ====================
@@ -605,6 +611,7 @@ export function MonetizationProvider({ children }: { children: React.ReactNode }
         premiumProgress,
         watchRewardAd,
         claimRewardAd,
+        claimWheelReward,
 
         checkDailyLogin: canClaimDaily,
         currentStreak,

@@ -563,3 +563,8 @@ export interface StoryHighlight {
     created_at: any;
     updated_at: any;
 }
+
+export type GridItem =
+    | { type: 'blurry' }
+    | { type: 'add' }
+    | { type: 'alter'; data: Alter };

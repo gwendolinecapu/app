@@ -1,19 +1,12 @@
 import React, { memo, useCallback } from 'react';
-import { View, FlatList, RefreshControl, Dimensions, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
-import { colors, spacing } from '../../lib/theme';
-import { Alter } from '../../types';
-import { AlterBubble } from './AlterBubble';
-import { DashboardHeader } from './DashboardHeader';
+import { FlatList, RefreshControl, Dimensions, StyleSheet } from 'react-native';
+import { colors } from '../../lib/theme';
+import { Alter, GridItem } from '../../types';
+import { DashboardGridItem } from './DashboardGridItem';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CONTAINER_PADDING = 16;
 const AVAILABLE_WIDTH = SCREEN_WIDTH - (CONTAINER_PADDING * 2);
-
-export type GridItem =
-    | { type: 'blurry' }
-    | { type: 'add' }
-    | { type: 'alter'; data: Alter };
 
 interface DashboardGridProps {
     data: GridItem[];
@@ -47,33 +40,26 @@ const DashboardGridComponent = ({
     onAlterLongPress,
 }: DashboardGridProps) => {
 
-    const renderItem = useCallback(({ item }: { item: GridItem }) => (
-        <View style={{ width: AVAILABLE_WIDTH / numColumns, alignItems: 'center' }}>
-            <AlterBubble
-                alter={item.type === 'alter' ? item.data : undefined}
-                type={item.type}
-                size={bubbleSize}
+    const renderItem = useCallback(({ item }: { item: GridItem }) => {
+        const isSelected = item.type === 'alter' && selectedAlters.includes(item.data.id);
+        const dimmed = selectionMode === 'multi' && selectedAlters.length > 0 && (item.type !== 'alter' || !selectedAlters.includes(item.data.id));
+
+        return (
+            <DashboardGridItem
+                item={item}
+                isSelected={isSelected}
+                dimmed={dimmed}
                 selectionMode={selectionMode}
-                isSelected={item.type === 'alter' && selectedAlters.includes(item.data.id)}
-                dimmed={selectionMode === 'multi' && selectedAlters.length > 0 && (item.type !== 'alter' || !selectedAlters.includes(item.data.id))}
                 deleteMode={deleteMode}
-                onPress={() => {
-                    if (item.type === 'alter') toggleSelection(item.data.id);
-                    else if (item.type === 'blurry') handleBlurryMode();
-                    else if (item.type === 'add') setModalVisible(true);
-                }}
-                onLongPress={() => {
-                    if (item.type === 'alter') {
-                        if (onAlterLongPress) {
-                            onAlterLongPress(item.data);
-                        } else {
-                            router.push(`/alter-space/${item.data.id}` as any);
-                        }
-                    }
-                }}
+                bubbleSize={bubbleSize}
+                itemWidth={AVAILABLE_WIDTH / numColumns}
+                toggleSelection={toggleSelection}
+                handleBlurryMode={handleBlurryMode}
+                setModalVisible={setModalVisible}
+                onAlterLongPress={onAlterLongPress}
             />
-        </View>
-    ), [numColumns, bubbleSize, selectionMode, selectedAlters, deleteMode, toggleSelection, handleBlurryMode, setModalVisible]);
+        );
+    }, [selectionMode, selectedAlters, deleteMode, bubbleSize, numColumns, toggleSelection, handleBlurryMode, setModalVisible, onAlterLongPress]);
 
     const keyExtractor = useCallback((item: GridItem) => item.type === 'alter' ? item.data.id : item.type, []);
 

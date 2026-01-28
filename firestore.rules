@@ -124,53 +124,6 @@ service cloud.firestore {
     
     // ... (rest of file) ...
 
-    // ============================================
-    // Friend Requests Collection
-    // NOTE: senderId and receiverId are Alter IDs, NOT user auth UIDs!
-    // We use systemId to track ownership.
-    // ============================================
-    match /friend_requests/{requestId} {
-      // Read: any authenticated user can read friend requests
-      allow read: if isAuthenticated();
-      
-      // Create: sender's system must be authenticated, force server timestamp
-      allow create: if isAuthenticated() && 
-                    request.resource.data.systemId == request.auth.uid &&
-                    request.resource.data.createdAt == request.time;
-      
-      // Update: ONLY receiver can update (to accept/reject)
-      // We check if the auth user is the receiver system
-      // Update: allow any authenticated user to update status (for debugging)
-      allow update: if isAuthenticated();
-      
-      // Delete: sender (cancel) or receiver (reject/cleanup)
-      allow delete: if isAuthenticated() && (
-         resource.data.systemId == request.auth.uid || 
-         resource.data.receiverSystemId == request.auth.uid
-      );
-    }
-
-    // ============================================
-    // Friendships Collection
-    // Read: any authenticated user (needed for bilateral friend checks)
-    // Create: any authenticated user (for bilateral creation)
-    // Delete: only the owner of that side of the friendship
-    // ============================================
-    match /friendships/{friendshipId} {
-      // Read: any authenticated user can read friendships 
-      // (needed for checkStatus to work across systems)
-      allow read: if isAuthenticated();
-      
-      // Create: user must be one of the systems involved
-      // Create: allow any authenticated user (debugging)
-      allow create: if isAuthenticated();
-      
-      // Delete: can only delete your own friendships
-      allow delete: if isAuthenticated() && (
-        resource.data.systemId == request.auth.uid ||
-        resource.data.system_id == request.auth.uid
-      );
-    }
     
     // ============================================
     // Emotions Collection
@@ -286,7 +239,7 @@ service cloud.firestore {
         resource.data.senderId == request.auth.uid || 
         resource.data.systemId == request.auth.uid ||
         // Check if the current user owns the receiver alter
-        get(/databases/$(database)/documents/alters/$(resource.data.receiver_alter_id)).data.systemId == request.auth.uid
+        get(/databases/$(database)/documents/alters/$(resource.data.receiver_alter_id)).data.system_id == request.auth.uid
       );
 
       // Allow create if systemId matches (for multi-alter systems) OR senderId (legacy) matches
@@ -301,7 +254,7 @@ service cloud.firestore {
         (
              // Check if user is the receiver system (using systemId logic or alter ownership)
              // Since messages have receiver_alter_id, we check if that alter belongs to auth user
-             get(/databases/$(database)/documents/alters/$(resource.data.receiver_alter_id)).data.systemId == request.auth.uid &&
+             get(/databases/$(database)/documents/alters/$(resource.data.receiver_alter_id)).data.system_id == request.auth.uid &&
              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['is_read'])
         )
       );
@@ -499,16 +452,21 @@ service cloud.firestore {
     // ============================================
     match /notifications/{notificationId} {
       // Read: Recipient is User UID OR Recipient is an Alter owned by User (via denormalized targetSystemId)
-      // Read: Recipient is User UID OR Recipient is an Alter owned by User (via denormalized targetSystemId)
       // FIX: Ensure only the recipient or the target system can read notifications
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && (
+        resource.data.recipientId == request.auth.uid ||
+        resource.data.targetSystemId == request.auth.uid
+      );
       
       // Create: Allow any authenticated user to send a notification
+      // Ideally restrict so you can't spoof senderId, but recipient check is most important for privacy.
       allow create: if isAuthenticated();
       
       // Update: Recipient can mark as read
-      // Update: Allow any auth user (debugging)
-      allow update: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        resource.data.recipientId == request.auth.uid ||
+        resource.data.targetSystemId == request.auth.uid
+      ) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'is_read']);
       
       // Delete: Recipient can delete
       allow delete: if isAuthenticated() && (

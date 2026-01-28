@@ -83,16 +83,60 @@ export const FriendService = {
      * Accept a friend request
      */
     acceptRequest: async (requestId: string) => {
+        if (!auth.currentUser) {
+            console.error("[FriendService] User not authenticated locally");
+            throw new Error("Vous devez être connecté pour accepter une demande.");
+        }
+
         try {
-            const { getFunctions, httpsCallable } = await import('firebase/functions');
-            const functions = getFunctions();
-            const acceptFunc = httpsCallable(functions, 'acceptFriendRequest');
+            console.log("[FriendService] Attempting to accept request:", requestId);
 
-            await acceptFunc({ requestId });
+            // 1. Get Authentication Token manually
+            const token = await auth.currentUser.getIdToken(true);
+            if (!token) throw new Error("Impossible de récupérer le jeton d'authentification");
 
-            // Re-fetch notifications or state handled by caller
+            // 2. Construct URL (Dynamic based on project)
+            const projectId = auth.app.options.projectId || 'app-tdi'; // Fallback to known projectId
+            const region = 'us-central1';
+            const url = `https://${region}-${projectId}.cloudfunctions.net/acceptFriendRequest`;
+
+            console.log("[FriendService] Calling Function URL:", url);
+
+            // 3. Direct Fetch Call (Bypassing SDK issue)
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    data: { requestId } // Callable functions expect data wrapped in 'data'
+                })
+            });
+
+            // 4. Handle Response
+            const textResult = await response.text();
+            console.log("[FriendService] Raw Response:", textResult.substring(0, 500)); // Log first 500 chars
+
+            let result;
+            try {
+                result = JSON.parse(textResult);
+            } catch (e) {
+                console.error("[FriendService] Failed to parse JSON. Raw response is not JSON.");
+                throw new Error("Erreur serveur (Réponse invalide)");
+            }
+
+            if (!response.ok) {
+                // Parse Firebase Error format if possible
+                const errorMessage = result?.error?.message || result?.error || "Erreur inconnue";
+                console.error("[FriendService] Function Error:", errorMessage);
+                throw new Error(errorMessage);
+            }
+
+            console.log("[FriendService] Success:", result);
+
         } catch (error: any) {
-            console.error("Accept Request Error (Cloud Function):", error);
+            console.error("Accept Request Error (Fetch):", error);
             throw new Error(error.message || "Impossible d'accepter la demande");
         }
     },

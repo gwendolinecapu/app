@@ -174,6 +174,9 @@ export default function NotificationsScreen() {
 
             // Helper to fetch keys
             const getSenderInfo = async (senderId: string) => {
+                if (!senderId) {
+                    return { name: 'Utilisateur inconnu', avatar: null, exists: false };
+                }
                 try {
                     // Try Alter
                     const { doc, getDoc } = await import('firebase/firestore');
@@ -189,6 +192,11 @@ export default function NotificationsScreen() {
                     if (systemSnap.exists()) {
                         const data = systemSnap.data();
                         return { name: data.username || 'Système', avatar: data.avatar || data.avatar_url, exists: true };
+                    }
+
+                    // Special case: if senderId looks like a name instead of a Firebase ID
+                    if (senderId.length < 15 || !looksLikeFirebaseId(senderId)) {
+                        return { name: senderId, avatar: null, exists: false };
                     }
 
                     // Profile doesn't exist (deleted or invalid ID)
@@ -307,8 +315,14 @@ export default function NotificationsScreen() {
                     const profile = senderProfiles.get(relevantId)!;
 
                     if (!profile.exists) {
-                        // If profile not found in Firestore, but we have a name in the doc (from server), use it!
-                        if (n.actorName && n.actorName !== 'Utilisateur' && n.actorName !== 'Votre ami') {
+                        // If profile not found in Firestore, but we have a name in the doc (from server/function), use it!
+                        if (n.actorName && n.actorName !== 'Utilisateur' && n.actorName !== 'Votre ami' && n.actorName !== 'Utilisateur inconnu') {
+                            return { ...n, actorAvatar: n.actorAvatar || undefined };
+                        }
+
+                        // For friend_request_accepted, we might have targetName
+                        if (n.type === 'friend_request_accepted' && n.targetName) {
+                            // If this is a notification "by me", and we have targetName, it's the person I accepted
                             return { ...n, actorAvatar: n.actorAvatar || undefined };
                         }
 
@@ -439,18 +453,24 @@ export default function NotificationsScreen() {
         setRefreshing(false);
     }, [loadData]);
 
-    // Actions sur les demandes d'amis
     const handleAcceptRequest = async (requestId: string) => {
+        if (!requestId) {
+            Alert.alert('Erreur', 'ID de requête manquant');
+            return;
+        }
         try {
+            setLoading(true);
             triggerHaptic.success();
             await FriendService.acceptRequest(requestId);
-            loadData();
+            await loadData();
+            triggerHaptic.success();
         } catch (error: any) {
             console.error('[Notifications] Error accepting request:', error);
-            console.error('Error Code:', error.code);
-            console.error('Error Message:', error.message);
-            Alert.alert('Erreur', `Impossible d'accepter la demande: ${error.message}`);
+            const errorMsg = error.message || 'not-found';
+            Alert.alert('Erreur', `Impossible d'accepter la demande: ${errorMsg}`);
             triggerHaptic.error();
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -584,6 +604,8 @@ export default function NotificationsScreen() {
                         <View style={[styles.acceptButton, { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.success }]}>
                             <Text style={[styles.acceptButtonText, { color: colors.success }]}>Amis</Text>
                         </View>
+                    ) : isMeSender ? (
+                        <Text style={[styles.statusText, { color: textSecondaryColor, fontSize: 12, marginRight: 10 }]}>En attente</Text>
                     ) : (
                         <>
                             <AnimatedPressable style={[styles.acceptButton, { backgroundColor: themeColor }]} onPress={() => handleAcceptRequest(item.id)}>

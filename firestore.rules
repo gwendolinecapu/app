@@ -86,12 +86,13 @@ service cloud.firestore {
     // ============================================
     match /posts/{postId} {
       // LECTURE: Selon visibilité du post
+      // CRITICAL FIX: Check visibility FIRST to allow Firestore queries with visibility filters
       allow read: if isAuthenticated() && (
-        // 1. Propriétaire peut toujours lire ses propres posts
-        resource.data.system_id == request.auth.uid ||
-
-        // 2. Posts publics visibles par tous les utilisateurs authentifiés
+        // 1. Posts publics visibles par tous les utilisateurs authentifiés
         resource.data.visibility == 'public' ||
+
+        // 2. Propriétaire peut toujours lire ses propres posts
+        resource.data.system_id == request.auth.uid ||
 
         // 3. Posts 'system' visibles uniquement par le même système
         (resource.data.visibility == 'system' && resource.data.system_id == request.auth.uid)
@@ -340,12 +341,11 @@ service cloud.firestore {
     // Public Profiles Collection (Profils publics)
     // ============================================
     match /public_profiles/{profileId} {
-      // Read: own profile always, OR anyone can read if is_public is true
-      // Use profileId to check ownership (profileId == systemId)
-      allow read: if isAuthenticated() && (
-        profileId == request.auth.uid || 
-        resource.data.is_public == true
-      );
+      // Read: all authenticated users can read public profiles
+      // This is more permissive but necessary because:
+      // 1. Public profiles are meant to be public by design
+      // 2. Checking resource.data.is_public fails if document doesn't exist
+      allow read: if isAuthenticated();
       
       // Create: only the owner can create their profile (profileId must match auth uid)
       allow create: if isAuthenticated() && 

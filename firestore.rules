@@ -498,17 +498,21 @@ service cloud.firestore {
     // Notifications Collection
     // ============================================
     match /notifications/{notificationId} {
-      // Read: Recipient is User UID OR Recipient is an Alter owned by User (via denormalized targetSystemId)
-      // Read: Recipient is User UID OR Recipient is an Alter owned by User (via denormalized targetSystemId)
-      // FIX: Ensure only the recipient or the target system can read notifications
-      allow read: if isAuthenticated();
+      // Read: Only the recipient (user or system) can read their notifications
+      allow read: if isAuthenticated() && (
+        resource.data.recipientId == request.auth.uid ||
+        resource.data.targetSystemId == request.auth.uid
+      );
       
-      // Create: Allow any authenticated user to send a notification
-      allow create: if isAuthenticated();
+      // Create: Allow any authenticated user to send a notification, but enforce senderId match
+      allow create: if isAuthenticated() &&
+        request.resource.data.senderId == request.auth.uid;
       
-      // Update: Recipient can mark as read
-      // Update: Allow any auth user (debugging)
-      allow update: if isAuthenticated();
+      // Update: Only recipient/targetSystem can update (e.g. to mark as read)
+      allow update: if isAuthenticated() && (
+        resource.data.recipientId == request.auth.uid ||
+        resource.data.targetSystemId == request.auth.uid
+      );
       
       // Delete: Recipient can delete
       allow delete: if isAuthenticated() && (

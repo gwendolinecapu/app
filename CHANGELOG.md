@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased]
+
+### ✨ Nouvelles Fonctionnalités
+- **Forge (Crafting)** : Système de forge permettant de crafter des items rares avec de la Dust (poussière d'étoile).
+  - Rotation hebdomadaire des items disponibles.
+  - Système de seed pour garantir la même boutique pour tous.
+- **Cours & Études** : Module complet de gestion scolaire/universitaire (`/courses`).
+  - Gestion des Matières, Catégories (Chapitres) et Notes.
+  - UI dédiée avec fil d'Ariane et organisation hiérarchique.
+
+### ♻️ Refactoring
+- **Architecture Services** : Extraction de la logique métier dans des services dédiés :
+  - `DailyRewardService` : Gestion centralisée des récompenses quotidiennes et calcul des streaks.
+  - `ForgeService` : Logique de rotation et de craft.
+
 ## [2026-01-26] Fix Authentification Web & Permissions 🔥
 
 ### 🛠️ Correctifs Critiques

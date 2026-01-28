@@ -34,25 +34,13 @@ service cloud.firestore {
              get(/databases/$(database)/documents/systems/$(request.auth.uid)).data.isAdmin == true;
     }
 
-    // Check if a field is unchanged
-    function isUnchanged(field) {
-      return request.resource.data[field] == resource.data[field];
-    }
-
     // ============================================
     // Systems Collection
     // ============================================
     match /systems/{systemId} {
-      // Users can read/write their own system document
-      // Admins can read any system document
-      // FIX: Restrict read access. 
-      // Only allow reading public info? For now, keep auth read but we should filter fields in client
-      // or use a public_systems collection for public data.
-      // Reverting to same rule but adding comment about visibility awareness.
       allow read: if isAuthenticated();
       allow write: if isAuthenticated() && request.auth.uid == systemId;
 
-      // Friend Suggestions Subcollection
       match /friend_suggestions/{suggestionId} {
         allow read, write: if isAuthenticated() && request.auth.uid == systemId;
       }
@@ -60,18 +48,8 @@ service cloud.firestore {
 
     // ============================================
     // Alters Collection
-    // Read: All authenticated users (for social features, search, profiles)
-    // Write: Only the owner
     // ============================================
     match /alters/{alterId} {
-      // Read: any authenticated user can read alters (needed for social/search)
-      // FIX: Implement visibility checks.
-      // 1. Owner can always read.
-      // 2. 'public' visibility -> everyone.
-      // 3. 'friends' visibility -> check friendship.
-      // 4. 'private' -> owner only.
-      // FIX: Temporary relaxation to allow "Code Search". 
-      // Allows any authenticated user to read alters if they know the ID or query by System ID.
       allow read: if isAuthenticated();
       allow create: if isOwnerCreate();
       allow update, delete: if isOwner(resource);
@@ -79,102 +57,80 @@ service cloud.firestore {
     
     // ============================================
     // Posts Collection
-    // Lecture par tous les utilisateurs authentifiés (pour permettre les queries)
-    // Écriture uniquement par le propriétaire
     // ============================================
     match /posts/{postId} {
-      // Lecture: tout utilisateur authentifié peut lire les posts
       allow read: if isAuthenticated();
-      // Création: propriétaire uniquement
       allow create: if isOwnerCreate();
-      // Modification: propriétaire OU n'importe qui pour les likes (champ 'likes' uniquement)
-      // FIX: Secure likes. Prevent arbitrary modification.
-      // Cloud Function is preferred for high-volume counters, but for simple app:
-      // Enforce `likes` can only be incremented/decremented by 1?
-      // Or just stricter check.
       allow update: if isOwner(resource) || (
         isAuthenticated() && 
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'comments_count']) &&
-        // Validate likes formatting/logic if possible, or accept risk for MVP social features
-        // Better: require custom `likePost` function but keeping rules simple for now.
-        // Adding: limit magnitude of change if possible? 
-        // For now, accepting "Important" risk level mitigation via narrower affectedKeys scope already present.
-        true
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'comments_count'])
       );
-      // Suppression: propriétaire uniquement
       allow delete: if isOwner(resource);
       
-      // ============================================
-      // Comments Sub-Collection
-      // ============================================
       match /comments/{commentId} {
-        // Lecture: tout utilisateur authentifié (plus sécurisé)
         allow read: if isAuthenticated();
-        
-        // Création: tout utilisateur authentifié
         allow create: if isAuthenticated();
-        
-        // Suppression: auteur du commentaire ou propriétaire du post
         allow delete: if isAuthenticated() && (
           request.auth.uid == resource.data.author_id || 
           isOwner(get(/databases/$(database)/documents/posts/$(postId)))
         );
       }
     }
-    
-    // ... (rest of file) ...
 
     // ============================================
     // Friend Requests Collection
-    // NOTE: senderId and receiverId are Alter IDs, NOT user auth UIDs!
-    // We use systemId to track ownership.
     // ============================================
     match /friend_requests/{requestId} {
-      // Read: any authenticated user can read friend requests
-      allow read: if isAuthenticated();
+      // Read: Sender OR Receiver (via systemId or lookup)
+      allow read: if isAuthenticated() && (
+        resource.data.systemId == request.auth.uid ||
+        resource.data.receiverSystemId == request.auth.uid ||
+        // Fallback for legacy requests where receiverSystemId might be missing
+        get(/databases/$(database)/documents/alters/$(resource.data.receiverId)).data.systemId == request.auth.uid
+      );
       
-      // Create: sender's system must be authenticated, force server timestamp
+      // Create: Sender only
       allow create: if isAuthenticated() && 
                     request.resource.data.systemId == request.auth.uid &&
                     request.resource.data.createdAt == request.time;
       
-      // Update: ONLY receiver can update (to accept/reject)
-      // We check if the auth user is the receiver system
-      // Update: allow any authenticated user to update status (for debugging)
-      allow update: if isAuthenticated();
+      // Update: Receiver only (to accept/reject)
+      allow update: if isAuthenticated() && (
+         resource.data.receiverSystemId == request.auth.uid ||
+         get(/databases/$(database)/documents/alters/$(resource.data.receiverId)).data.systemId == request.auth.uid
+      ) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
       
-      // Delete: sender (cancel) or receiver (reject/cleanup)
+      // Delete: Sender or Receiver
       allow delete: if isAuthenticated() && (
          resource.data.systemId == request.auth.uid || 
-         resource.data.receiverSystemId == request.auth.uid
+         resource.data.receiverSystemId == request.auth.uid ||
+         get(/databases/$(database)/documents/alters/$(resource.data.receiverId)).data.systemId == request.auth.uid
       );
     }
 
     // ============================================
     // Friendships Collection
-    // Read: any authenticated user (needed for bilateral friend checks)
-    // Create: any authenticated user (for bilateral creation)
-    // Delete: only the owner of that side of the friendship
     // ============================================
     match /friendships/{friendshipId} {
-      // Read: any authenticated user can read friendships 
-      // (needed for checkStatus to work across systems)
+      // Read: any authenticated user (needed for checkStatus)
       allow read: if isAuthenticated();
       
       // Create: user must be one of the systems involved
-      // Create: allow any authenticated user (debugging)
-      allow create: if isAuthenticated();
+      allow create: if isAuthenticated() && (
+        request.resource.data.systemId == request.auth.uid ||
+        request.resource.data.friendSystemId == request.auth.uid
+      );
       
-      // Delete: can only delete your own friendships
+      // Delete: involved system
       allow delete: if isAuthenticated() && (
         resource.data.systemId == request.auth.uid ||
+        resource.data.friendSystemId == request.auth.uid ||
         resource.data.system_id == request.auth.uid
       );
     }
     
     // ============================================
-    // Emotions Collection
-    // SÉCURISÉ: Seul le propriétaire peut accéder à ses émotions
+    // Emotions, Journal, Fronting, Tasks, Roles, Inner World
     // ============================================
     match /emotions/{emotionId} {
       allow read: if isOwner(resource);
@@ -182,64 +138,36 @@ service cloud.firestore {
       allow update, delete: if isOwner(resource);
     }
 
-    // ============================================
-    // Journal Entries Collection
-    // ============================================
     match /journal_entries/{entryId} {
       allow read: if isOwner(resource);
       allow create: if isOwnerCreate();
       allow update, delete: if isOwner(resource);
     }
 
-    // ============================================
-    // Fronting History Collection
-    // ============================================
     match /fronting_history/{entryId} {
       allow read: if isOwner(resource);
       allow create: if isOwnerCreate();
       allow update, delete: if isOwner(resource);
     }
 
-    // ============================================
-    // Tasks Collection
-    // ============================================
     match /tasks/{taskId} {
       allow read: if isOwner(resource);
       allow create: if isOwnerCreate();
       allow update, delete: if isOwner(resource);
     }
 
-    // ============================================
-    // Roles Collection
-    // ============================================
     match /roles/{roleId} {
       allow read: if isOwner(resource);
       allow create: if isOwnerCreate();
       allow update, delete: if isOwner(resource);
     }
 
-    // ============================================
-    // Subsystems Collection
-    // Pour organiser les alters en groupes (sous-systèmes)
-    // ============================================
     match /subsystems/{subsystemId} {
-      // Read: owner can read their subsystems
-      allow read: if isAuthenticated() && 
-        resource.data.parent_system_id == request.auth.uid;
-      
-      // Create: owner can create subsystems
-      allow create: if isAuthenticated() && 
-        request.resource.data.parent_system_id == request.auth.uid;
-      
-      // Update/Delete: owner only
-      allow update, delete: if isAuthenticated() && 
-        resource.data.parent_system_id == request.auth.uid;
+      allow read: if isAuthenticated() && resource.data.parent_system_id == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.parent_system_id == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.parent_system_id == request.auth.uid;
     }
 
-
-    // ============================================
-    // Help Requests Collection
-    // ============================================
     match /help_requests/{requestId} {
       allow read: if isOwner(resource);
       allow create: if isOwnerCreate();
@@ -247,34 +175,23 @@ service cloud.firestore {
     }
 
     // ============================================
-    // Groups Collection (Sprint 5)
+    // Groups Collection
     // ============================================
     match /groups/{groupId} {
-      // Any auth user can see groups for now (Public discovery)
       allow read: if isAuthenticated();
-      // Only auth user can create
       allow create: if isAuthenticated();
-      // Creator OR existing members can update (add members)
       allow update: if isAuthenticated() && (
         resource.data.created_by == request.auth.uid ||
         request.auth.uid in resource.data.members
       );
-      // Only creator can delete
       allow delete: if isAuthenticated() && resource.data.created_by == request.auth.uid;
     }
 
-    // ============================================
-    // Group Members Collection
-    // ============================================
     match /group_members/{memberId} {
-      // Can read memberships if auth
       allow read: if isAuthenticated();
-      // Can create if: adding yourself OR if you're already a member of the group
-      // FIX: Ensure user is adding THEMSELVES (system_id matches auth)
+      // FIX: Ensure user is adding THEMSELVES
       allow create: if isAuthenticated() && request.resource.data.system_id == request.auth.uid;
-      // Can leave (delete) if it's your own membership
       allow delete: if isAuthenticated() && resource.data.system_id == request.auth.uid;
-      // No updates allowed (must leave and rejoin)
     }
 
     // ============================================
@@ -285,26 +202,24 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (
         resource.data.senderId == request.auth.uid || 
         resource.data.systemId == request.auth.uid ||
-        // Check if the current user owns the receiver alter
         get(/databases/$(database)/documents/alters/$(resource.data.receiver_alter_id)).data.systemId == request.auth.uid
       );
 
-      // Allow create if systemId matches (for multi-alter systems) OR senderId (legacy) matches
       allow create: if isAuthenticated() && (
         (request.resource.data.systemId == request.auth.uid) || 
         (request.resource.data.senderId == request.auth.uid)
       );
+
       allow update: if isAuthenticated() && (
         (resource.data.systemId == request.auth.uid) ||
         (resource.data.senderId == request.auth.uid) ||
         // Allow recipient to mark as read
         (
-             // Check if user is the receiver system (using systemId logic or alter ownership)
-             // Since messages have receiver_alter_id, we check if that alter belongs to auth user
              get(/databases/$(database)/documents/alters/$(resource.data.receiver_alter_id)).data.systemId == request.auth.uid &&
              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['is_read'])
         )
       );
+
       allow delete: if isAuthenticated() && (
         (resource.data.systemId == request.auth.uid) ||
         (resource.data.senderId == request.auth.uid)
@@ -312,86 +227,56 @@ service cloud.firestore {
     }
 
     // ============================================
-    // Conversations Collection
-    // SÉCURISÉ: Seuls les participants peuvent accéder
+    // Conversations
     // ============================================
     match /conversations/{conversationId} {
-      // Lecture autorisée si l'utilisateur est participant
       allow read: if isAuthenticated() && 
         (resource.data.participants != null && request.auth.uid in resource.data.participants);
-      // Création autorisée si l'utilisateur s'inclut dans les participants
       allow create: if isAuthenticated() && 
         (request.resource.data.participants != null && request.auth.uid in request.resource.data.participants);
-      // Modification autorisée si participant existant
       allow update: if isAuthenticated() && 
         (resource.data.participants != null && request.auth.uid in resource.data.participants);
-      allow delete: if false; // Désactiver la suppression pour préserver l'historique
+      allow delete: if false;
     }
 
-    // ============================================
-    // Conversation Participants Collection
-    // SÉCURISÉ: Lecture si auth, création/suppression de ses propres participations
-    // ============================================
     match /conversation_participants/{participantId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.system_id == request.auth.uid;
       allow delete: if isAuthenticated() && resource.data.system_id == request.auth.uid;
-      allow update: if false; // Pas de modification, uniquement création/suppression
-    }
-
-    // ============================================
-    // Follows Collection (Système de suivi social)
-    // ============================================
-    match /follows/{followId} {
-      // Lecture: tout utilisateur authentifié peut voir les follows
-      allow read: if isAuthenticated();
-      
-      // Création: uniquement si l'utilisateur est le follower
-      allow create: if isAuthenticated() && 
-        request.resource.data.follower_id == request.auth.uid;
-      
-      // Suppression: uniquement si l'utilisateur est le follower  
-      allow delete: if isAuthenticated() && 
-        resource.data.follower_id == request.auth.uid;
-      
-      // Pas de modification des follows
       allow update: if false;
     }
 
     // ============================================
-    // Public Profiles Collection (Profils publics)
+    // Follows
+    // ============================================
+    match /follows/{followId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.follower_id == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.follower_id == request.auth.uid;
+      allow update: if false;
+    }
+
+    // ============================================
+    // Public Profiles
     // ============================================
     match /public_profiles/{profileId} {
-      // Read: own profile always, OR anyone can read if is_public is true
-      // Use profileId to check ownership (profileId == systemId)
       allow read: if isAuthenticated() && (
         profileId == request.auth.uid || 
         resource.data.is_public == true
       );
-      
-      // Create: only the owner can create their profile (profileId must match auth uid)
       allow create: if isAuthenticated() && 
         profileId == request.auth.uid &&
         request.resource.data.system_id == request.auth.uid;
-      
-      // Update: only the owner
-      allow update: if isAuthenticated() && 
-        profileId == request.auth.uid;
-      
-      // Delete: only the owner
-      allow delete: if isAuthenticated() && 
-        profileId == request.auth.uid;
+      allow update: if isAuthenticated() && profileId == request.auth.uid;
+      allow delete: if isAuthenticated() && profileId == request.auth.uid;
     }
 
     // ============================================
-    // User Monetization Collection
+    // Monetization
     // ============================================
     match /user_monetization/{userId} {
-      // Read: Owner only
       allow read: if isAuthenticated() && userId == request.auth.uid;
-      // Write: BLOCKED (Must use Cloud Functions)
       allow write: if false;
-      
       match /credit_transactions/{transactionId} {
         allow read: if isAuthenticated() && userId == request.auth.uid;
         allow write: if false; 
@@ -404,111 +289,23 @@ service cloud.firestore {
     }
 
     // ============================================
-    // System Chats Collection (Team Chat)
-    // ============================================
-    match /system_chats/{userId} {
-      allow read, write: if isAuthenticated() && request.auth.uid == userId;
-
-      match /messages/{messageId} {
-        allow read, write: if isAuthenticated() && request.auth.uid == userId;
-      }
-    }
-
-    // ============================================
-    // Tasks Collection
-    // ============================================
-    match /system_tasks/{taskId} {
-      allow read: if isAuthenticated() && resource.data.system_id == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.system_id == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.system_id == request.auth.uid;
-    }
-
-    // ============================================
-    // Fronting History Collection
-    // ============================================
-    match /fronting_history/{historyId} {
-      allow read: if isAuthenticated() && resource.data.system_id == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.system_id == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.system_id == request.auth.uid;
-    }
-
-
-
-    // ============================================
-    // Friend Requests Collection
-    // NOTE: senderId and receiverId are Alter IDs, NOT user auth UIDs!
-    // We use systemId to track ownership.
-    // ============================================
-    match /friend_requests/{requestId} {
-      // Read: any authenticated user can read friend requests
-      // FIX: Restrict read to sender or receiver system.
-      allow read: if isAuthenticated() && (
-        resource.data.systemId == request.auth.uid || 
-        resource.data.receiverSystemId == request.auth.uid ||
-        // Legacy/Alter support
-        get(/databases/$(database)/documents/alters/$(resource.data.receiverId)).data.systemId == request.auth.uid
-      );
-      
-      // Create: sender's system must be authenticated, force server timestamp
-      allow create: if isAuthenticated() && 
-                    request.resource.data.systemId == request.auth.uid &&
-                    request.resource.data.createdAt == request.time;
-      
-      // Update: ONLY receiver can update (to accept/reject)
-      // We check if the auth user is the receiver system
-      allow update: if isAuthenticated() && (
-         resource.data.receiverSystemId == request.auth.uid ||
-         // Fallback if systemId not directly on doc (lookup via receiverId)
-         get(/databases/$(database)/documents/alters/$(resource.data.receiverId)).data.systemId == request.auth.uid
-      ) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
-      
-      // Delete: sender (cancel) or receiver (reject/cleanup)
-      allow delete: if isAuthenticated() && (
-         resource.data.systemId == request.auth.uid || 
-         resource.data.receiverSystemId == request.auth.uid
-      );
-    }
-
-    // ============================================
-    // Friendships Collection
-    // Read: any authenticated user (needed for bilateral friend checks)
-    // Create: any authenticated user (for bilateral creation)
-    // Delete: only the owner of that side of the friendship
-    // ============================================
-    match /friendships/{friendshipId} {
-      // Read: any authenticated user can read friendships 
-      // (needed for checkStatus to work across systems)
-      allow read: if isAuthenticated();
-      
-      // Create: user must be one of the systems involved
-      allow create: if isAuthenticated() && (
-        request.resource.data.systemId == request.auth.uid || 
-        request.resource.data.friendSystemId == request.auth.uid
-      );
-      
-      // Delete: can only delete your own friendships
-      allow delete: if isAuthenticated() && (
-        resource.data.systemId == request.auth.uid ||
-        resource.data.system_id == request.auth.uid
-      );
-    }
-
-
-    // ============================================
     // Notifications Collection
     // ============================================
     match /notifications/{notificationId} {
-      // Read: Recipient is User UID OR Recipient is an Alter owned by User (via denormalized targetSystemId)
-      // Read: Recipient is User UID OR Recipient is an Alter owned by User (via denormalized targetSystemId)
-      // FIX: Ensure only the recipient or the target system can read notifications
-      allow read: if isAuthenticated();
+      // FIX: Secure read access to recipient only
+      allow read: if isAuthenticated() && (
+        resource.data.recipientId == request.auth.uid ||
+        resource.data.targetSystemId == request.auth.uid
+      );
       
-      // Create: Allow any authenticated user to send a notification
+      // Create: Allow any auth user (to send notification)
       allow create: if isAuthenticated();
       
       // Update: Recipient can mark as read
-      // Update: Allow any auth user (debugging)
-      allow update: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        resource.data.recipientId == request.auth.uid ||
+        resource.data.targetSystemId == request.auth.uid
+      ) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'is_read']);
       
       // Delete: Recipient can delete
       allow delete: if isAuthenticated() && (
@@ -518,20 +315,15 @@ service cloud.firestore {
     }
 
     // ============================================
-    // Feedbacks Collection
+    // Misc
     // ============================================
     match /feedbacks/{feedbackId} {
-      // Create: Any auth user
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      
-      // Read: Owner, Admin, or PUBLIC if it's a FEATURE
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
         resource.data.type == 'FEATURE' ||
         isAdmin()
       );
-      
-      // Update: Admin (full access) OR User (Voting on Features)
       allow update: if isAuthenticated() && (
         isAdmin() ||
         (
@@ -539,33 +331,19 @@ service cloud.firestore {
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votes', 'voteCount'])
         )
       );
-      
       allow delete: if isAdmin();
     }
 
-    // ============================================
-    // Stories Collection
-    // ============================================
     match /stories/{storyId} {
-      // Read: any authenticated user
       allow read: if isAuthenticated();
-      
-      // Create: user must own the valid system_id
       allow create: if isAuthenticated() && request.resource.data.system_id == request.auth.uid;
-      
-      // Delete: only owner
       allow delete: if isAuthenticated() && resource.data.system_id == request.auth.uid;
-      
-      // Update: Owner OR Viewers (to add themselves to viewers array)
       allow update: if isAuthenticated() && (
         resource.data.system_id == request.auth.uid || 
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewers'])
       );
     }
 
-    // ============================================
-    // Inner World Collections
-    // ============================================
     match /inner_worlds/{worldId} {
       allow read: if isOwner(resource);
       allow create: if isOwnerCreate();
@@ -578,87 +356,58 @@ service cloud.firestore {
       allow update, delete: if isOwner(resource);
     }
 
-    // ============================================
-    // Story Highlights Collection
-    // ============================================
     match /story_highlights/{highlightId} {
       allow read: if isAuthenticated();
       allow create: if isOwnerCreate();
       allow update, delete: if isOwner(resource);
     }
 
-    // ============================================
-    // FCM Tokens Collection
-    // ============================================
     match /fcm_tokens/{tokenId} {
-      // Read: Authenticated users need to read tokens to send pushes (client-side implementation)
       allow read: if isAuthenticated();
-      
-      // Write: User can only write their own token matches their UID
-      // Doc ID format is usually ${userId}_${deviceId}
       allow write: if isAuthenticated() && tokenId.matches(request.auth.uid + '_.*');
     }
 
-    // ============================================
-    // Courses - Subjects Collection
-    // ============================================
     match /subjects/{subjectId} {
       allow read: if isAuthenticated() && resource.data.systemId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.systemId == request.auth.uid;
       allow update, delete: if isAuthenticated() && resource.data.systemId == request.auth.uid;
     }
 
-    // ============================================
-    // Courses - Categories Collection
-    // ============================================
     match /categories/{categoryId} {
       allow read: if isAuthenticated() && resource.data.systemId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.systemId == request.auth.uid;
       allow update, delete: if isAuthenticated() && resource.data.systemId == request.auth.uid;
     }
 
-    // ============================================
-    // Courses - Notes Collection
-    // ============================================
     match /course_notes/{noteId} {
       allow read: if isAuthenticated() && resource.data.systemId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.systemId == request.auth.uid;
       allow update, delete: if isAuthenticated() && resource.data.systemId == request.auth.uid;
     }
 
-    // ============================================
-    // Landing Page - Early Signups Collection
-    // Public write for email collection (no auth required)
-    // Public read for duplicate detection in transactions
-    // SÉCURISÉ: Signups sont immuables (no updates)
-    // ============================================
+    match /system_chats/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      match /messages/{messageId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
+    }
+
+    match /system_tasks/{taskId} {
+      allow read: if isAuthenticated() && resource.data.system_id == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.system_id == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.system_id == request.auth.uid;
+    }
+
+    // Landing Page
     match /early_signups/{signupId} {
-      // ✅ Anyone can read (needed for transaction.get() duplicate check)
-      // Note: emails are hashed/sanitized as doc IDs, raw data not exposed
       allow read: if true;
-      
-      // Anyone can create a signup (landing page visitors)
       allow create: if true;
-      
-      // ✅ SÉCURISÉ: Updates interdits - signups sont immuables
       allow update: if false;
-      
-      // No one can delete
       allow delete: if false;
     }
 
-    // ============================================
-    // Landing Page - Stats Collection
-    // Counter document for real-time signup count
-    // SÉCURISÉ: Public read, write via Cloud Function uniquement
-    // ============================================
     match /landing_stats/{statId} {
-      // Anyone can read stats (for real-time counter)
       allow read: if true;
-      
-      // ✅ SÉCURISÉ: Write désactivé pour clients directs
-      // Utiliser Cloud Function pour atomic increment
-      // FIX: Disable client-side write completely to enforce Cloud Function usage
       allow write: if false; 
     }
   }

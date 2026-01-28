@@ -7,14 +7,12 @@ import { COSMETIC_ITEMS, type ShopItem } from './MonetizationTypes';
 
 class FlashSaleService {
     /**
-     * Seed basé sur la date du jour (même logique que LootBoxService)
-     * Change à minuit chaque jour
+     * Seed basé sur la date du jour (UTC Epoch Day)
+     * Change à minuit UTC chaque jour
+     * Stable pour tous les utilisateurs
      */
     private getDailySeed(): number {
-        const now = new Date();
-        // Reset à minuit (timezone locale)
-        const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        return Math.floor(dayStart.getTime() / 1000);
+        return Math.floor(Date.now() / (24 * 60 * 60 * 1000));
     }
 
     /**
@@ -86,13 +84,17 @@ class FlashSaleService {
     }
 
     /**
-     * Obtient le temps restant jusqu'au prochain reset (minuit)
+     * Obtient le temps restant jusqu'au prochain reset (minuit UTC)
      * Retourne { hours, minutes }
      */
     public getTimeUntilReset(): { hours: number; minutes: number } {
         const now = new Date();
-        const midnight = new Date(now);
-        midnight.setHours(24, 0, 0, 0); // Prochain minuit
+        const midnight = new Date(Date.UTC(
+            now.getUTCFullYear(),
+            now.getUTCMonth(),
+            now.getUTCDate() + 1, // Demain UTC
+            0, 0, 0, 0
+        ));
 
         const diff = midnight.getTime() - now.getTime();
         const hours = Math.floor(diff / (1000 * 60 * 60));

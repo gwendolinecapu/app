@@ -15,7 +15,8 @@ import {
     QueryDocumentSnapshot,
     deleteDoc,
     documentId,
-    runTransaction
+    runTransaction,
+    writeBatch
 } from 'firebase/firestore';
 import { db, storage } from '../lib/firebase';
 import { Post } from '../types';
@@ -755,14 +756,30 @@ export const PostService = {
     },
 
     /**
-     * Delete a post
+     * Delete a post and its comments (up to batch limit)
+     * Prevents orphaned comments
      */
     deletePost: async (postId: string) => {
         try {
-            await deleteDoc(doc(db, POSTS_COLLECTION, postId));
-            // Note: Cloud functions or triggers should handle deleting subcollections (comments) and storage files (images)
-            // Ideally we should delete them here too if no cloud functions are set up.
-            // For now, we assume simple deletion.
+            const batch = writeBatch(db);
+
+            // 1. Get comments (up to 499 to leave room for post delete)
+            const commentsRef = collection(db, POSTS_COLLECTION, postId, 'comments');
+            // We fetch the first batch of comments.
+            // If there are more than 499, they will remain orphaned (rare case),
+            // but this covers the vast majority of cases without a dedicated Cloud Function.
+            const q = query(commentsRef, limit(499));
+            const commentsSnap = await getDocs(q);
+
+            commentsSnap.docs.forEach((doc) => {
+                batch.delete(doc.ref);
+            });
+
+            // 2. Delete post
+            const postRef = doc(db, POSTS_COLLECTION, postId);
+            batch.delete(postRef);
+
+            await batch.commit();
         } catch (error) {
             console.error('Error deleting post:', error);
             throw error;

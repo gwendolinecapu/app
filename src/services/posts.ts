@@ -366,9 +366,10 @@ export const PostService = {
      */
     fetchGlobalFeed: async (lastVisible: QueryDocumentSnapshot | null = null, pageSize: number = 20) => {
         try {
-            // For now, fetch all posts ordered by date.
+            // Fetch only public posts to comply with Firestore rules
             let q = query(
                 collection(db, POSTS_COLLECTION),
+                where('visibility', '==', 'public'),
                 orderBy('created_at', 'desc'),
                 limit(pageSize)
             );

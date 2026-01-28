@@ -186,15 +186,18 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         });
 
         // Listen to pending friend requests for THIS ALTER ONLY
+        // Filter by receiverSystemId first (for Firestore security rules compliance)
         const requestQuery = query(
             collection(db, 'friend_requests'),
-            where('receiverId', '==', currentAlter.id),
+            where('receiverSystemId', '==', user.uid),
             where('status', '==', 'pending')
         );
 
         const unsubRequests = onSnapshot(requestQuery, (snapshot) => {
+            // Filter client-side for the specific alter
+            const alterRequests = snapshot.docs.filter(doc => doc.data().receiverId === currentAlter.id);
             // Only count requests that haven't been viewed yet
-            const newRequests = snapshot.docs.filter(doc => !viewedRequestIds.has(doc.id));
+            const newRequests = alterRequests.filter(doc => !viewedRequestIds.has(doc.id));
             requestCount = newRequests.length;
             setUnreadCount(notifCount + requestCount);
         }, (error) => {

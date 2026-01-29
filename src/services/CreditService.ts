@@ -129,10 +129,8 @@ class CreditService {
 
             const data = snap.data();
             const lastClaim = data.last_daily_reward;
-            if (!lastClaim) return true;
 
-            const today = new Date().toISOString().split('T')[0];
-            return lastClaim !== today;
+            return DailyRewardService.canClaim(lastClaim);
         } catch (e) {
             console.error('Error checking daily login:', e);
             return false;
@@ -160,10 +158,7 @@ class CreditService {
         const currentStreak = alterData.daily_reward_streak || 0;
 
         // Use Service for Streak Logic
-        // Convert YYYY-MM-DD string to timestamp for service? 
-        // Service expects timestamp number.
-        const lastClaimTimestamp = lastClaim ? new Date(lastClaim).getTime() : null;
-        const newStreak = DailyRewardService.calculateStreak(lastClaimTimestamp, currentStreak);
+        const newStreak = DailyRewardService.calculateStreak(lastClaim, currentStreak);
 
         const isPremium = PremiumService.isPremium();
 
@@ -464,14 +459,14 @@ class CreditService {
     /**
      * Récupère l'historique des transactions
      */
-    async getTransactionHistory(count: number = 20): Promise<CreditTransaction[]> {
-        if (!this.userId) return [];
+    async getTransactionHistory(alterId: string, count: number = 20): Promise<CreditTransaction[]> {
+        if (!this.userId || !alterId) return [];
 
         try {
             const transactionsRef = collection(
                 db,
-                FIRESTORE_COLLECTION,
-                this.userId,
+                'alters',
+                alterId,
                 TRANSACTIONS_SUBCOLLECTION
             );
 

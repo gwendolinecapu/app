@@ -59,7 +59,7 @@ export const DailyRewardService = {
     /**
      * Vérifie si l'utilisateur peut réclamer sa récompense aujourd'hui
      */
-    canClaim(lastClaimDate: number | null): boolean {
+    canClaim(lastClaimDate: number | string | null): boolean {
         if (!lastClaimDate) return true;
 
         const last = new Date(lastClaimDate);
@@ -78,7 +78,7 @@ export const DailyRewardService = {
      * Si c'était avant-hier (UTC) -> Reset à 1
      * Si c'est aujourd'hui (UTC) -> Reste pareil (ne devrait pas être appelé si canClaim est false)
      */
-    calculateStreak(lastClaimDate: number | null, currentStreak: number): number {
+    calculateStreak(lastClaimDate: number | string | null, currentStreak: number): number {
         if (!lastClaimDate) return 1;
 
         const last = new Date(lastClaimDate);

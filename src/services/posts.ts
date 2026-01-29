@@ -146,7 +146,7 @@ export const PostService = {
             });
             return docRef.id;
         } catch (error) {
-            console.error('Error creating post:', error);
+            console.error('[PostService.createPost] Error:', error);
             throw error;
         }
     },
@@ -173,7 +173,7 @@ export const PostService = {
             }
             return null;
         } catch (error) {
-            console.error('Error fetching post by ID:', error);
+            console.error('[PostService.getPostById] Error:', error);
             throw error;
         }
     },
@@ -314,7 +314,7 @@ export const PostService = {
                 lastVisible: querySnapshot.docs[querySnapshot.docs.length - 1]
             };
         } catch (error) {
-            console.error('Error fetching alter posts:', error);
+            console.error('[PostService.fetchPostsByAlter] Error:', error);
             throw error;
         }
     },
@@ -356,7 +356,7 @@ export const PostService = {
                 lastVisible: querySnapshot.docs[querySnapshot.docs.length - 1]
             };
         } catch (error) {
-            console.error('Error fetching posts:', error);
+            console.error('[PostService.fetchPosts] Error:', error);
             throw error;
         }
     },
@@ -398,7 +398,7 @@ export const PostService = {
                 lastVisible: querySnapshot.docs[querySnapshot.docs.length - 1]
             };
         } catch (error) {
-            console.error('Error fetching global feed:', error);
+            console.error('[PostService.fetchGlobalFeed] Error:', error);
             throw error;
         }
     },
@@ -526,7 +526,7 @@ export const PostService = {
                 }
             };
         } catch (error) {
-            console.error('Error fetching friend feed:', error);
+            console.error('[PostService.fetchFeed] Error:', error);
             throw error;
         }
     },
@@ -554,7 +554,7 @@ export const PostService = {
                 lastVisible: result.lastVisible // This is imperfect for pagination since we might skip docs, but suffice for MVP feed
             };
         } catch (error) {
-            console.error('Error fetching video feed:', error);
+            console.error('[PostService.fetchVideoFeed] Error:', error);
             throw error;
         }
     },
@@ -595,7 +595,7 @@ export const PostService = {
                 lastVisible: querySnapshot.docs[querySnapshot.docs.length - 1]
             };
         } catch (error) {
-            console.error('Error fetching tagged posts:', error);
+            console.error('[PostService.fetchTaggedPosts] Error:', error);
             throw error;
         }
     },
@@ -717,7 +717,7 @@ export const PostService = {
                                 }
                             }
                         } catch (fetchError) {
-                            console.warn('Error fetching sender details for notification:', fetchError);
+                            console.warn('[PostService] Error fetching sender details for notification:', fetchError);
                         }
 
                         const notificationRef = collection(db, 'notifications');
@@ -748,13 +748,13 @@ export const PostService = {
                             '❤️'
                         );
                     } catch (notifError) {
-                        console.error('Error creating notification:', notifError);
+                        console.error('[PostService] Error creating notification:', notifError);
                         // Don't fail the like action if notification fails
                     }
                 }
             }
         } catch (error) {
-            console.error('Error toggling like:', error);
+            console.error('[PostService.toggleLike] Error:', error);
             throw error;
         }
     },
@@ -769,7 +769,7 @@ export const PostService = {
             // Ideally we should delete them here too if no cloud functions are set up.
             // For now, we assume simple deletion.
         } catch (error) {
-            console.error('Error deleting post:', error);
+            console.error('[PostService.deletePost] Error:', error);
             throw error;
         }
     }

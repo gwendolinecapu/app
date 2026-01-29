@@ -14,8 +14,12 @@ export default function SocialWebRoute() {
     useEffect(() => {
         const fetchAlter = async () => {
             if (alterId) {
-                const data = await AlterService.getAlter(alterId);
-                setAlter(data);
+                try {
+                    const data = await AlterService.getAlter(alterId);
+                    setAlter(data);
+                } catch (error) {
+                    console.error('Error fetching alter:', error);
+                }
             }
             setLoading(false);
         };

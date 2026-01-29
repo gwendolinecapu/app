@@ -125,14 +125,15 @@ class CreditService {
         try {
             const alterRef = doc(db, 'alters', alterId);
             const snap = await getDoc(alterRef);
-            if (!snap.exists()) return true; // New alter can claim? Or verify system policy. Assuming yes.
+            if (!snap.exists()) return true;
 
             const data = snap.data();
-            const lastClaim = data.last_daily_reward;
-            if (!lastClaim) return true;
+            const lastClaim = data.last_daily_reward; // String YYYY-MM-DD
 
-            const today = new Date().toISOString().split('T')[0];
-            return lastClaim !== today;
+            // Convert string date (UTC) to timestamp for service check
+            const lastClaimTimestamp = lastClaim ? new Date(lastClaim).getTime() : null;
+
+            return DailyRewardService.canClaim(lastClaimTimestamp);
         } catch (e) {
             console.error('Error checking daily login:', e);
             return false;
@@ -350,28 +351,11 @@ class CreditService {
     }
 
     /**
-     * ADMIN: Ajoute des crédits à n'importe quel utilisateur
+     * ADMIN: Ajoute des crédits à n'importe quel utilisateur (via son alter principal)
      */
     async addCreditsToUser(targetUserId: string, amount: number, type: CreditTransactionType, description?: string): Promise<void> {
         try {
-            // Transaction Firestore
-            const transaction: Omit<CreditTransaction, 'id'> = {
-                userId: targetUserId,
-                amount,
-                type,
-                description,
-                timestamp: Date.now(),
-            };
-
-            const transactionsRef = collection(db, FIRESTORE_COLLECTION, targetUserId, TRANSACTIONS_SUBCOLLECTION);
-            await addDoc(transactionsRef, transaction);
-
-            // Update User Balance
-            const userRef = doc(db, FIRESTORE_COLLECTION, targetUserId);
-            // Use increment for safety
-            await setDoc(userRef, { credits: increment(amount) }, { merge: true });
-
-
+            await this.addCreditsForUser(targetUserId, amount, type, description);
         } catch (error) {
             console.error('[CreditService] Failed to add credits to user:', error);
             throw error;
@@ -462,16 +446,16 @@ class CreditService {
     }
 
     /**
-     * Récupère l'historique des transactions
+     * Récupère l'historique des transactions pour un alter
      */
-    async getTransactionHistory(count: number = 20): Promise<CreditTransaction[]> {
+    async getTransactionHistory(alterId: string, count: number = 20): Promise<CreditTransaction[]> {
         if (!this.userId) return [];
 
         try {
             const transactionsRef = collection(
                 db,
-                FIRESTORE_COLLECTION,
-                this.userId,
+                'alters',
+                alterId,
                 TRANSACTIONS_SUBCOLLECTION
             );
 

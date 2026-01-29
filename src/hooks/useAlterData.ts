@@ -19,7 +19,7 @@ export interface AlterData {
 }
 
 export const useAlterData = (alterId: string | undefined): AlterData => {
-    const { alters } = useAuth();
+    const { alters, user } = useAuth();
     const [alter, setAlter] = useState<Alter | null>(null);
     const [posts, setPosts] = useState<Post[]>([]);
     const [friendCount, setFriendCount] = useState(0);
@@ -47,13 +47,29 @@ export const useAlterData = (alterId: string | undefined): AlterData => {
     }, [alterId]);
 
     const fetchPosts = useCallback(async () => {
-        if (!alterId) return;
+        if (!alterId || !user) return;
         try {
-            const q = query(
-                collection(db, 'posts'),
-                where('alter_id', '==', alterId),
-                orderBy('created_at', 'desc')
-            );
+            // Check if viewing own alter (belongs to current user's system)
+            const isOwnAlter = alters.some(a => a.id === alterId);
+
+            // If viewing own alter, fetch all posts by system_id to comply with Firestore rules
+            // If viewing someone else's alter, only fetch public posts
+            let q;
+            if (isOwnAlter) {
+                q = query(
+                    collection(db, 'posts'),
+                    where('alter_id', '==', alterId),
+                    where('system_id', '==', user.uid),
+                    orderBy('created_at', 'desc')
+                );
+            } else {
+                q = query(
+                    collection(db, 'posts'),
+                    where('alter_id', '==', alterId),
+                    where('visibility', '==', 'public'),
+                    orderBy('created_at', 'desc')
+                );
+            }
 
             const querySnapshot = await getDocs(q);
             const data: Post[] = [];
@@ -64,7 +80,7 @@ export const useAlterData = (alterId: string | undefined): AlterData => {
         } catch (err) {
             console.error('Error fetching posts:', err);
         }
-    }, [alterId]);
+    }, [alterId, alters, user]);
 
     const refresh = async () => {
         setRefreshing(true);

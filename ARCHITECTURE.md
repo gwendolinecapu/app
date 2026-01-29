@@ -1,9 +1,9 @@
 # 🏗 Architecture du Projet PluralConnect
 
-> **Dernière mise à jour** : 19 janvier 2026
+> **Dernière mise à jour** : 26 Janvier 2026
 > 
 > Ce document détaille l'architecture technique de l'application PluralConnect.
-> Voir aussi : [VISION.md](file:///Users/faucqueurstacy/Downloads/plural-connect/VISION.md) pour la vision produit.
+> Voir aussi : [VISION.md](VISION.md) pour la vision produit.
 
 ---
 
@@ -19,6 +19,7 @@
 | **Achats In-App** | RevenueCat (`react-native-purchases`) |
 | **Publicité** | Google AdMob (`react-native-google-mobile-ads`) |
 | **Notifications** | Firebase Cloud Messaging + Expo Notifications |
+| **IA Locale** | ONNX Runtime (Gemma 2B) |
 
 ---
 
@@ -32,11 +33,14 @@ plural-connect/
 │   ├── alter-space/       # 🌟 AlterSpace (Instagram-like par alter)
 │   ├── settings/          # Paramètres (13 sous-pages)
 │   ├── story/             # Stories (création, visualisation)
-│   └── ...                # +26 routes au total
+│   ├── courses.tsx        # 📚 Cours & Études
+│   ├── tools/             # 🛠️ Outils (Hub)
+│   ├── team-chat.tsx      # 💬 Chat Système interne
+│   └── ...                # +30 routes au total
 │
 ├── src/                    # 💻 Code source logique
 │   ├── components/        # 100+ composants UI
-│   ├── services/          # 40 services métier
+│   ├── services/          # 50+ services métier
 │   ├── contexts/          # 6 contextes globaux
 │   ├── hooks/             # 7 hooks personnalisés
 │   ├── lib/               # Utilitaires et configuration
@@ -75,7 +79,9 @@ plural-connect/
 |-----------|--------|
 | **Social** | `/post/create`, `/discover`, `/conversation`, `/group-chat` |
 | **Stories** | `/story/create`, `/story/view` |
-| **Outils** | `/journal`, `/calendar`, `/tasks`, `/inner-world`, `/courses` |
+| **Outils** | `/journal`, `/calendar`, `/tasks`, `/inner-world` |
+| **Études** | `/courses`, `/categories` (Gestion catégories/matières) |
+| **Système** | `/team-chat`, `/team-hub`, `/checkin` (Fronting), `/roles` |
 | **Crise** | `/crisis`, `/help` |
 | **Shop** | `/shop`, `/premium` |
 | **Admin** | `/admin` |
@@ -118,16 +124,19 @@ plural-connect/
 
 ---
 
-## ⚙️ Services (`src/services/`) - 40 fichiers
+## ⚙️ Services (`src/services/`) - 50+ fichiers
 
-### 🔐 Authentification & Infrastructure
+### 🔐 Authentification, Sécurité & Infrastructure
 
 | Service | Rôle |
 |---------|------|
 | `GoogleAuthService.ts` | Connexion Google |
+| `EncryptionService.ts` | Chiffrement End-to-End (E2EE) |
+| `PasswordService.ts` | Hashage et protection par mot de passe |
 | `NotificationService.ts` | Notifications locales |
 | `PushNotificationService.ts` | Notifications push Firebase |
 | `AnalyticsService.ts` | Analytics Firebase |
+| `ConsentService.ts` | Gestion du consentement GDPR (UMP) |
 
 ### 👥 Social & Contenu
 
@@ -149,10 +158,11 @@ plural-connect/
 |---------|------|
 | `alters.ts` | Gestion des alters |
 | `systems.ts` | Gestion des systèmes |
+| `SubsystemService.ts` | Gestion des sous-systèmes (hiérarchie) |
 | `fronting.ts` | Fronting & co-fronting |
 | `FrontingCheckInService.ts` | Check-in et historique fronting |
 | `emotions.ts` | Suivi des émotions |
-| `roles.ts` | Rôles des alters (Protecteur, etc.) |
+| `RoleService.ts` | Rôles des alters (Protecteur, etc.) |
 | `groups.ts` | Groupes d'alters (catégories) |
 | `InnerWorldService.ts` | InnerWorld (headspace visuel) |
 
@@ -165,19 +175,18 @@ plural-connect/
 | `CalendarService.ts` | Événements calendrier |
 | `help.ts` | Demandes d'aide |
 
-### 💰 Monétisation
+### 💰 Monétisation & Boutique
 
 | Service | Rôle |
 |---------|------|
 | `RevenueCatService.ts` | Abonnements Premium |
 | `PremiumService.ts` | Logique Premium |
 | `CreditService.ts` | Système de crédits/streak |
- | `LootBoxService.ts` | Boîtes à récompenses (Coffres évolutifs) |
+| `LootBoxService.ts` | Boîtes à récompenses (TCG System) |
 | `ForgeService.ts` | Forge (Crafting) avec rotation hebdomadaire |
 | `FlashSaleService.ts` | Ventes flash quotidiennes |
 | `DailyRewardService.ts` | Gestion des récompenses et streaks |
 | `AdMediationService.ts` | Gestion publicités AdMob |
-| `ConsentService.ts` | Consentement GDPR |
 | `ShopData.ts` | Données boutique |
 | `DecorationService.ts` | Thèmes et décorations |
 | `MonetizationTypes.ts` | Types monétisation |
@@ -186,9 +195,9 @@ plural-connect/
 
 | Service | Rôle |
 |---------|------|
- | `LocalAIService.ts` | IA locale (résumés, suggestions - Gemma/Native) |
+| `LocalAIService.ts` | IA locale (Gemma ONNX / Native) |
 | `importer.ts` | Import depuis Simply Plural, etc. |
- | `DynamicIslandService.ts` | Dynamic Island iOS (Live Activities) |
+| `DynamicIslandService.ts` | Dynamic Island iOS (Live Activities) |
 | `FeedbackService.ts` | Envoi de feedbacks |
 
 ---
@@ -243,6 +252,8 @@ plural-connect/
 |------------|------|-------------|
 | `systems` | `System` | Comptes utilisateurs (systèmes TDI) |
 | `alters` | `Alter` | Entités au sein d'un système |
+| `subsystems` | `Subsystem` | Groupes d'alters hiérarchiques |
+| `roles` | `Role` | Rôles système définis par l'utilisateur |
 | `posts` | `Post` | Publications du feed |
 | `stories` | `Story` | Stories éphémères 24h |
 | `public_profiles` | `PublicProfile` | Profils publics optimisés |
@@ -271,7 +282,8 @@ interface Alter {
   bio?: string;
   avatar_url?: string;
   color?: string;
-  role_ids?: string[];
+  role_ids?: string[]; // Référence vers la collection `roles`
+  subsystem_id?: string; // Référence vers `subsystems`
   is_active: boolean; // En front actuellement
   is_host?: boolean;
   password?: string; // Protection AlterSpace
@@ -309,14 +321,13 @@ interface Story {
 
 | Collection | Description |
 |------------|-------------|
-| `messages` | Chat interne/externe |
+| `messages` | Chat interne/externe (Chiffré E2EE possible) |
 | `conversations` | Threads de conversation |
 | `groups` | Groupes de discussion |
 | `emotions` | Suivi émotionnel |
 | `journal_entries` | Entrées de journal |
 | `tasks` | Tâches avec gamification |
 | `fronting_history` | Historique de fronting |
-| `roles` | Rôles personnalisés |
 | `inner_worlds` | InnerWorld (headspace) |
 | `inner_world_shapes` | Éléments du headspace |
 | `help_requests` | Demandes d'aide |
@@ -352,7 +363,7 @@ graph LR
 
 1. **Utilisateur** interagit avec un **Composant** (`app/` ou `src/components`)
 2. Le Composant appelle un **Service** (`src/services`)
-3. Le Service communique avec **Firebase**
+3. Le Service communique avec **Firebase** ou l'API native
 4. Les données sont stockées dans un **Contexte** (`src/contexts`)
 5. L'UI se met à jour automatiquement
 

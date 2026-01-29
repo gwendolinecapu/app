@@ -20,6 +20,10 @@ if (!isExpoGo && Platform.OS !== 'web') {
     }
 }
 
+/**
+ * Service gérant l'authentification Google via Firebase Auth.
+ * Supporte le Web et le Natif (sauf Expo Go).
+ */
 class GoogleAuthService {
     private configured = false;
 
@@ -27,6 +31,9 @@ class GoogleAuthService {
         this.configure();
     }
 
+    /**
+     * Configure le SDK Google Sign-In (Natif uniquement).
+     */
     private configure() {
         if (Platform.OS === 'web' || isExpoGo || !GoogleSignin) return;
 
@@ -43,6 +50,10 @@ class GoogleAuthService {
         }
     }
 
+    /**
+     * Lance le flux de connexion Google.
+     * @returns UserCredential si succès, throw Error sinon.
+     */
     async signIn() {
         // WEB Implementation
         if (Platform.OS === 'web') {
@@ -88,6 +99,9 @@ class GoogleAuthService {
         }
     }
 
+    /**
+     * Déconnecte l'utilisateur de Google (Natif uniquement).
+     */
     async signOut() {
         if (Platform.OS === 'web' || isExpoGo || !GoogleSignin) return;
         try {

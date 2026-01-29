@@ -53,6 +53,9 @@ class NotificationService {
 
     // ==================== INITIALIZATION ====================
 
+    /**
+     * Initialise le service, charge les préférences et demande les permissions.
+     */
     async initialize(): Promise<void> {
         // Configurer le comportement des notifications
         if (Platform.OS !== 'web') {
@@ -86,6 +89,10 @@ class NotificationService {
 
     }
 
+    /**
+     * Demande les permissions de notification à l'utilisateur.
+     * @returns true si accordé, false sinon.
+     */
     async requestPermissions(): Promise<boolean> {
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
@@ -127,6 +134,9 @@ class NotificationService {
 
     // ==================== SETTINGS ====================
 
+    /**
+     * Charge les paramètres de notification depuis le stockage local.
+     */
     async loadSettings(): Promise<NotificationSettings> {
         try {
             const stored = await AsyncStorage.getItem(SETTINGS_KEY);
@@ -139,6 +149,9 @@ class NotificationService {
         return this.settings;
     }
 
+    /**
+     * Sauvegarde les paramètres et reprogramme les notifications.
+     */
     async saveSettings(settings: Partial<NotificationSettings>): Promise<void> {
         this.settings = { ...this.settings, ...settings };
         try {
@@ -150,10 +163,16 @@ class NotificationService {
         }
     }
 
+    /**
+     * Retourne les paramètres actuels.
+     */
     getSettings(): NotificationSettings {
         return this.settings;
     }
 
+    /**
+     * Met à jour une préférence de notification spécifique.
+     */
     async updatePreference(
         type: NotificationType,
         updates: Partial<NotificationPreference>
@@ -170,6 +189,9 @@ class NotificationService {
 
     // ==================== SCHEDULING ====================
 
+    /**
+     * Programme toutes les notifications activées selon les fréquences définies.
+     */
     async scheduleAllNotifications(): Promise<void> {
         if (Platform.OS === 'web') return;
 
@@ -311,6 +333,9 @@ class NotificationService {
 
     // ==================== IMMEDIATE NOTIFICATIONS ====================
 
+    /**
+     * Envoie une notification immédiate (one-shot).
+     */
     async sendImmediateNotification(
         type: NotificationType,
         variables: Record<string, string> = {}
@@ -341,6 +366,9 @@ class NotificationService {
         }
     }
 
+    /**
+     * Envoie une affirmation positive aléatoire.
+     */
     async sendAffirmation(): Promise<void> {
         if (Platform.OS === 'web') return;
 
@@ -419,6 +447,9 @@ class NotificationService {
 
     // ==================== LISTENERS ====================
 
+    /**
+     * Ajoute un écouteur pour les notifications reçues au premier plan.
+     */
     addNotificationReceivedListener(
         callback: (notification: Notifications.Notification) => void
     ): Notifications.EventSubscription | null {
@@ -426,6 +457,9 @@ class NotificationService {
         return Notifications.addNotificationReceivedListener(callback);
     }
 
+    /**
+     * Ajoute un écouteur pour les réponses aux notifications (clic).
+     */
     addNotificationResponseListener(
         callback: (response: Notifications.NotificationResponse) => void
     ): Notifications.EventSubscription | null {

@@ -466,8 +466,7 @@ export default function NotificationsScreen() {
             triggerHaptic.success();
         } catch (error: any) {
             console.error('[Notifications] Error accepting request:', error);
-            const errorMsg = error.message || 'not-found';
-            Alert.alert('Erreur', `Impossible d'accepter la demande: ${errorMsg}`);
+            Alert.alert('Erreur', "Impossible d'accepter la demande d'ami. Veuillez réessayer.");
             triggerHaptic.error();
         } finally {
             setLoading(false);
@@ -481,6 +480,7 @@ export default function NotificationsScreen() {
             loadData();
         } catch (error) {
             console.error('[Notifications] Error rejecting request:', error);
+            Alert.alert('Erreur', "Impossible de refuser la demande.");
             triggerHaptic.error();
         }
     };
@@ -515,7 +515,7 @@ export default function NotificationsScreen() {
                         } catch (error) {
                             console.error('Error deleting notification:', error);
                             triggerHaptic.error();
-                            Alert.alert('Érreur', "Impossible de supprimer la notification");
+                            Alert.alert('Erreur', "Impossible de supprimer la notification");
                         }
                     }
                 }
@@ -565,7 +565,7 @@ export default function NotificationsScreen() {
                             triggerHaptic.success();
                         } catch (error) {
                             console.error('Error clear all:', error);
-                            Alert.alert('Érreur', "Impossible de tout supprimer");
+                            Alert.alert('Erreur', "Impossible de tout supprimer");
                         } finally {
                             setLoading(false);
                         }

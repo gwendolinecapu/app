@@ -190,6 +190,7 @@ export default function ProfileScreen() {
             setStats(prev => ({ ...prev, posts: data.length }));
         } catch (error) {
             console.error('Error fetching profile posts:', error);
+            Alert.alert('Erreur', 'Impossible de charger les publications.');
         }
     };
 
@@ -243,6 +244,7 @@ export default function ProfileScreen() {
                 }
             } else {
                 console.error('Error fetching follow stats:', error);
+                // Silent fail for stats is often acceptable, but let's log it.
             }
         }
     };
@@ -266,6 +268,7 @@ export default function ProfileScreen() {
             await PostService.toggleLike(postId, user.uid);
         } catch (error) {
             console.error('Like failed', error);
+            Alert.alert('Erreur', "Impossible d'aimer la publication.");
             // Revert optimistic update
             setPosts(prev => prev.map(post => {
                 if (post.id === postId) {
